@@ -210,6 +210,31 @@ func FirstTokenMs(v int) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldFirstTokenMs, v))
 }
 
+// ClientTransport applies equality check predicate on the "client_transport" field. It's identical to ClientTransportEQ.
+func ClientTransport(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldClientTransport, v))
+}
+
+// AuthLatencyMs applies equality check predicate on the "auth_latency_ms" field. It's identical to AuthLatencyMsEQ.
+func AuthLatencyMs(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldAuthLatencyMs, v))
+}
+
+// RoutingLatencyMs applies equality check predicate on the "routing_latency_ms" field. It's identical to RoutingLatencyMsEQ.
+func RoutingLatencyMs(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldRoutingLatencyMs, v))
+}
+
+// UpstreamLatencyMs applies equality check predicate on the "upstream_latency_ms" field. It's identical to UpstreamLatencyMsEQ.
+func UpstreamLatencyMs(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamLatencyMs, v))
+}
+
+// ResponseLatencyMs applies equality check predicate on the "response_latency_ms" field. It's identical to ResponseLatencyMsEQ.
+func ResponseLatencyMs(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldResponseLatencyMs, v))
+}
+
 // UserAgent applies equality check predicate on the "user_agent" field. It's identical to UserAgentEQ.
 func UserAgent(v string) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldUserAgent, v))
@@ -1648,6 +1673,281 @@ func FirstTokenMsIsNil() predicate.UsageLog {
 // FirstTokenMsNotNil applies the NotNil predicate on the "first_token_ms" field.
 func FirstTokenMsNotNil() predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldNotNull(FieldFirstTokenMs))
+}
+
+// ClientTransportEQ applies the EQ predicate on the "client_transport" field.
+func ClientTransportEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldClientTransport, v))
+}
+
+// ClientTransportNEQ applies the NEQ predicate on the "client_transport" field.
+func ClientTransportNEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldClientTransport, v))
+}
+
+// ClientTransportIn applies the In predicate on the "client_transport" field.
+func ClientTransportIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldClientTransport, vs...))
+}
+
+// ClientTransportNotIn applies the NotIn predicate on the "client_transport" field.
+func ClientTransportNotIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldClientTransport, vs...))
+}
+
+// ClientTransportGT applies the GT predicate on the "client_transport" field.
+func ClientTransportGT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldClientTransport, v))
+}
+
+// ClientTransportGTE applies the GTE predicate on the "client_transport" field.
+func ClientTransportGTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldClientTransport, v))
+}
+
+// ClientTransportLT applies the LT predicate on the "client_transport" field.
+func ClientTransportLT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldClientTransport, v))
+}
+
+// ClientTransportLTE applies the LTE predicate on the "client_transport" field.
+func ClientTransportLTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldClientTransport, v))
+}
+
+// ClientTransportContains applies the Contains predicate on the "client_transport" field.
+func ClientTransportContains(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContains(FieldClientTransport, v))
+}
+
+// ClientTransportHasPrefix applies the HasPrefix predicate on the "client_transport" field.
+func ClientTransportHasPrefix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasPrefix(FieldClientTransport, v))
+}
+
+// ClientTransportHasSuffix applies the HasSuffix predicate on the "client_transport" field.
+func ClientTransportHasSuffix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasSuffix(FieldClientTransport, v))
+}
+
+// ClientTransportIsNil applies the IsNil predicate on the "client_transport" field.
+func ClientTransportIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldClientTransport))
+}
+
+// ClientTransportNotNil applies the NotNil predicate on the "client_transport" field.
+func ClientTransportNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldClientTransport))
+}
+
+// ClientTransportEqualFold applies the EqualFold predicate on the "client_transport" field.
+func ClientTransportEqualFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEqualFold(FieldClientTransport, v))
+}
+
+// ClientTransportContainsFold applies the ContainsFold predicate on the "client_transport" field.
+func ClientTransportContainsFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContainsFold(FieldClientTransport, v))
+}
+
+// AuthLatencyMsEQ applies the EQ predicate on the "auth_latency_ms" field.
+func AuthLatencyMsEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldAuthLatencyMs, v))
+}
+
+// AuthLatencyMsNEQ applies the NEQ predicate on the "auth_latency_ms" field.
+func AuthLatencyMsNEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldAuthLatencyMs, v))
+}
+
+// AuthLatencyMsIn applies the In predicate on the "auth_latency_ms" field.
+func AuthLatencyMsIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldAuthLatencyMs, vs...))
+}
+
+// AuthLatencyMsNotIn applies the NotIn predicate on the "auth_latency_ms" field.
+func AuthLatencyMsNotIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldAuthLatencyMs, vs...))
+}
+
+// AuthLatencyMsGT applies the GT predicate on the "auth_latency_ms" field.
+func AuthLatencyMsGT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldAuthLatencyMs, v))
+}
+
+// AuthLatencyMsGTE applies the GTE predicate on the "auth_latency_ms" field.
+func AuthLatencyMsGTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldAuthLatencyMs, v))
+}
+
+// AuthLatencyMsLT applies the LT predicate on the "auth_latency_ms" field.
+func AuthLatencyMsLT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldAuthLatencyMs, v))
+}
+
+// AuthLatencyMsLTE applies the LTE predicate on the "auth_latency_ms" field.
+func AuthLatencyMsLTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldAuthLatencyMs, v))
+}
+
+// AuthLatencyMsIsNil applies the IsNil predicate on the "auth_latency_ms" field.
+func AuthLatencyMsIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldAuthLatencyMs))
+}
+
+// AuthLatencyMsNotNil applies the NotNil predicate on the "auth_latency_ms" field.
+func AuthLatencyMsNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldAuthLatencyMs))
+}
+
+// RoutingLatencyMsEQ applies the EQ predicate on the "routing_latency_ms" field.
+func RoutingLatencyMsEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldRoutingLatencyMs, v))
+}
+
+// RoutingLatencyMsNEQ applies the NEQ predicate on the "routing_latency_ms" field.
+func RoutingLatencyMsNEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldRoutingLatencyMs, v))
+}
+
+// RoutingLatencyMsIn applies the In predicate on the "routing_latency_ms" field.
+func RoutingLatencyMsIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldRoutingLatencyMs, vs...))
+}
+
+// RoutingLatencyMsNotIn applies the NotIn predicate on the "routing_latency_ms" field.
+func RoutingLatencyMsNotIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldRoutingLatencyMs, vs...))
+}
+
+// RoutingLatencyMsGT applies the GT predicate on the "routing_latency_ms" field.
+func RoutingLatencyMsGT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldRoutingLatencyMs, v))
+}
+
+// RoutingLatencyMsGTE applies the GTE predicate on the "routing_latency_ms" field.
+func RoutingLatencyMsGTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldRoutingLatencyMs, v))
+}
+
+// RoutingLatencyMsLT applies the LT predicate on the "routing_latency_ms" field.
+func RoutingLatencyMsLT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldRoutingLatencyMs, v))
+}
+
+// RoutingLatencyMsLTE applies the LTE predicate on the "routing_latency_ms" field.
+func RoutingLatencyMsLTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldRoutingLatencyMs, v))
+}
+
+// RoutingLatencyMsIsNil applies the IsNil predicate on the "routing_latency_ms" field.
+func RoutingLatencyMsIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldRoutingLatencyMs))
+}
+
+// RoutingLatencyMsNotNil applies the NotNil predicate on the "routing_latency_ms" field.
+func RoutingLatencyMsNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldRoutingLatencyMs))
+}
+
+// UpstreamLatencyMsEQ applies the EQ predicate on the "upstream_latency_ms" field.
+func UpstreamLatencyMsEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamLatencyMs, v))
+}
+
+// UpstreamLatencyMsNEQ applies the NEQ predicate on the "upstream_latency_ms" field.
+func UpstreamLatencyMsNEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldUpstreamLatencyMs, v))
+}
+
+// UpstreamLatencyMsIn applies the In predicate on the "upstream_latency_ms" field.
+func UpstreamLatencyMsIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldUpstreamLatencyMs, vs...))
+}
+
+// UpstreamLatencyMsNotIn applies the NotIn predicate on the "upstream_latency_ms" field.
+func UpstreamLatencyMsNotIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldUpstreamLatencyMs, vs...))
+}
+
+// UpstreamLatencyMsGT applies the GT predicate on the "upstream_latency_ms" field.
+func UpstreamLatencyMsGT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldUpstreamLatencyMs, v))
+}
+
+// UpstreamLatencyMsGTE applies the GTE predicate on the "upstream_latency_ms" field.
+func UpstreamLatencyMsGTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldUpstreamLatencyMs, v))
+}
+
+// UpstreamLatencyMsLT applies the LT predicate on the "upstream_latency_ms" field.
+func UpstreamLatencyMsLT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldUpstreamLatencyMs, v))
+}
+
+// UpstreamLatencyMsLTE applies the LTE predicate on the "upstream_latency_ms" field.
+func UpstreamLatencyMsLTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldUpstreamLatencyMs, v))
+}
+
+// UpstreamLatencyMsIsNil applies the IsNil predicate on the "upstream_latency_ms" field.
+func UpstreamLatencyMsIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldUpstreamLatencyMs))
+}
+
+// UpstreamLatencyMsNotNil applies the NotNil predicate on the "upstream_latency_ms" field.
+func UpstreamLatencyMsNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldUpstreamLatencyMs))
+}
+
+// ResponseLatencyMsEQ applies the EQ predicate on the "response_latency_ms" field.
+func ResponseLatencyMsEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldResponseLatencyMs, v))
+}
+
+// ResponseLatencyMsNEQ applies the NEQ predicate on the "response_latency_ms" field.
+func ResponseLatencyMsNEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldResponseLatencyMs, v))
+}
+
+// ResponseLatencyMsIn applies the In predicate on the "response_latency_ms" field.
+func ResponseLatencyMsIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldResponseLatencyMs, vs...))
+}
+
+// ResponseLatencyMsNotIn applies the NotIn predicate on the "response_latency_ms" field.
+func ResponseLatencyMsNotIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldResponseLatencyMs, vs...))
+}
+
+// ResponseLatencyMsGT applies the GT predicate on the "response_latency_ms" field.
+func ResponseLatencyMsGT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldResponseLatencyMs, v))
+}
+
+// ResponseLatencyMsGTE applies the GTE predicate on the "response_latency_ms" field.
+func ResponseLatencyMsGTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldResponseLatencyMs, v))
+}
+
+// ResponseLatencyMsLT applies the LT predicate on the "response_latency_ms" field.
+func ResponseLatencyMsLT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldResponseLatencyMs, v))
+}
+
+// ResponseLatencyMsLTE applies the LTE predicate on the "response_latency_ms" field.
+func ResponseLatencyMsLTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldResponseLatencyMs, v))
+}
+
+// ResponseLatencyMsIsNil applies the IsNil predicate on the "response_latency_ms" field.
+func ResponseLatencyMsIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldResponseLatencyMs))
+}
+
+// ResponseLatencyMsNotNil applies the NotNil predicate on the "response_latency_ms" field.
+func ResponseLatencyMsNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldResponseLatencyMs))
 }
 
 // UserAgentEQ applies the EQ predicate on the "user_agent" field.

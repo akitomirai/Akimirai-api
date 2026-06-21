@@ -1244,6 +1244,13 @@ export interface UsageLog {
   duration_ms: number | null
   first_token_ms: number | null
 
+  // 性能观测字段
+  client_transport?: string | null
+  auth_latency_ms?: number | null
+  routing_latency_ms?: number | null
+  upstream_latency_ms?: number | null
+  response_latency_ms?: number | null
+
   // 图片生成字段
   image_count: number
   image_size: string | null

@@ -467,6 +467,14 @@ type UsageLog struct {
 	DurationMs   *int   `json:"duration_ms"`
 	FirstTokenMs *int   `json:"first_token_ms"`
 
+	// 性能观测：客户端入站传输协议
+	ClientTransport *string `json:"client_transport,omitempty"`
+	// 性能观测：各阶段延迟分解（毫秒）
+	AuthLatencyMs     *int `json:"auth_latency_ms,omitempty"`
+	RoutingLatencyMs  *int `json:"routing_latency_ms,omitempty"`
+	UpstreamLatencyMs *int `json:"upstream_latency_ms,omitempty"`
+	ResponseLatencyMs *int `json:"response_latency_ms,omitempty"`
+
 	// 图片生成字段
 	ImageCount         int            `json:"image_count"`
 	ImageSize          *string        `json:"image_size"`

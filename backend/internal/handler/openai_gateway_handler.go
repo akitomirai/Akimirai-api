@@ -498,6 +498,17 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		inboundEndpoint := GetInboundEndpoint(c)
 		upstreamEndpoint := GetUpstreamEndpoint(c, account.Platform)
 
+		// 提取性能观测字段（必须在闭包外读取 gin.Context，Worker 池异步执行时 gin.Context 已回收）
+		clientTransport := string(service.GetOpenAIClientTransport(c))
+		var clientTransportPtr *string
+		if clientTransport != "" {
+			clientTransportPtr = &clientTransport
+		}
+		aAuthLatencyMs := getContextIntPtr(c, service.OpsAuthLatencyMsKey)
+		aRoutingLatencyMs := getContextIntPtr(c, service.OpsRoutingLatencyMsKey)
+		aUpstreamLatencyMs := getContextIntPtr(c, service.OpsUpstreamLatencyMsKey)
+		aResponseLatencyMs := getContextIntPtr(c, service.OpsResponseLatencyMsKey)
+
 		// 使用量记录通过有界 worker 池提交，避免请求热路径创建无界 goroutine。
 		cyberBlocked := service.GetOpsCyberPolicy(c) != nil
 		h.submitOpenAIUsageRecordTask(c.Request.Context(), result, func(ctx context.Context) {
@@ -515,6 +526,11 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 				APIKeyService:      h.apiKeyService,
 				ChannelUsageFields: channelMapping.ToUsageFields(reqModel, result.UpstreamModel),
 				CyberBlocked:       cyberBlocked,
+				ClientTransport:    clientTransportPtr,
+				AuthLatencyMs:      aAuthLatencyMs,
+				RoutingLatencyMs:   aRoutingLatencyMs,
+				UpstreamLatencyMs:  aUpstreamLatencyMs,
+				ResponseLatencyMs:  aResponseLatencyMs,
 			}); err != nil {
 				logger.L().With(
 					zap.String("component", "handler.openai_gateway.responses"),
@@ -903,6 +919,17 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 		inboundEndpoint := GetInboundEndpoint(c)
 		upstreamEndpoint := GetUpstreamEndpoint(c, account.Platform)
 
+		// 提取性能观测字段（必须在闭包外读取 gin.Context）
+		clientTransport := string(service.GetOpenAIClientTransport(c))
+		var clientTransportPtr *string
+		if clientTransport != "" {
+			clientTransportPtr = &clientTransport
+		}
+		bAuthLatencyMs := getContextIntPtr(c, service.OpsAuthLatencyMsKey)
+		bRoutingLatencyMs := getContextIntPtr(c, service.OpsRoutingLatencyMsKey)
+		bUpstreamLatencyMs := getContextIntPtr(c, service.OpsUpstreamLatencyMsKey)
+		bResponseLatencyMs := getContextIntPtr(c, service.OpsResponseLatencyMsKey)
+
 		cyberBlocked := service.GetOpsCyberPolicy(c) != nil
 		h.submitOpenAIUsageRecordTask(c.Request.Context(), result, func(ctx context.Context) {
 			if err := h.gatewayService.RecordUsage(ctx, &service.OpenAIRecordUsageInput{
@@ -919,6 +946,11 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 				APIKeyService:      h.apiKeyService,
 				ChannelUsageFields: channelMappingMsg.ToUsageFields(reqModel, result.UpstreamModel),
 				CyberBlocked:       cyberBlocked,
+				ClientTransport:    clientTransportPtr,
+				AuthLatencyMs:      bAuthLatencyMs,
+				RoutingLatencyMs:   bRoutingLatencyMs,
+				UpstreamLatencyMs:  bUpstreamLatencyMs,
+				ResponseLatencyMs:  bResponseLatencyMs,
 			}); err != nil {
 				logger.L().With(
 					zap.String("component", "handler.openai_gateway.messages"),
@@ -1497,6 +1529,13 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, result.FirstTokenMs)
 				inboundEndpoint := GetInboundEndpoint(c)
 				upstreamEndpoint := GetUpstreamEndpoint(c, account.Platform)
+				// 提取性能观测字段（WS 入站，transport 固定为 "ws"）
+				wsTransport := "ws"
+				wsTransportPtr := &wsTransport
+				wsAuthLatencyMs := getContextIntPtr(c, service.OpsAuthLatencyMsKey)
+				wsRoutingLatencyMs := getContextIntPtr(c, service.OpsRoutingLatencyMsKey)
+				wsUpstreamLatencyMs := getContextIntPtr(c, service.OpsUpstreamLatencyMsKey)
+				wsResponseLatencyMs := getContextIntPtr(c, service.OpsResponseLatencyMsKey)
 				cyberBlocked := service.GetOpsCyberPolicy(c) != nil
 				h.submitOpenAIUsageRecordTask(ctx, result, func(taskCtx context.Context) {
 					if err := h.gatewayService.RecordUsage(taskCtx, &service.OpenAIRecordUsageInput{
@@ -1513,6 +1552,11 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 						APIKeyService:      h.apiKeyService,
 						ChannelUsageFields: channelMappingWS.ToUsageFields(reqModel, result.UpstreamModel),
 						CyberBlocked:       cyberBlocked,
+						ClientTransport:    wsTransportPtr,
+						AuthLatencyMs:      wsAuthLatencyMs,
+						RoutingLatencyMs:   wsRoutingLatencyMs,
+						UpstreamLatencyMs:  wsUpstreamLatencyMs,
+						ResponseLatencyMs:  wsResponseLatencyMs,
 					}); err != nil {
 						reqLog.Error("openai.websocket_record_usage_failed",
 							zap.Int64("account_id", account.ID),
@@ -1675,6 +1719,30 @@ func (h *OpenAIGatewayHandler) missingResponsesDependencies() []string {
 		missing = append(missing, "concurrencyHelper")
 	}
 	return missing
+}
+
+func getContextIntPtr(c *gin.Context, key string) *int {
+	if c == nil || key == "" {
+		return nil
+	}
+	v, ok := c.Get(key)
+	if !ok {
+		return nil
+	}
+	var val int
+	switch t := v.(type) {
+	case int64:
+		val = int(t)
+	case int:
+		val = t
+	case int32:
+		val = int(t)
+	case float64:
+		val = int(t)
+	default:
+		return nil
+	}
+	return &val
 }
 
 func getContextInt64(c *gin.Context, key string) (int64, bool) {

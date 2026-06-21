@@ -3,6 +3,7 @@ package service
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -3406,9 +3407,17 @@ func (s *OpenAIGatewayService) buildUpstreamRequestOpenAIPassthrough(
 	}
 	targetURL = appendOpenAIResponsesRequestPathSuffix(targetURL, openAIResponsesRequestPathSuffix(c))
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, targetURL, bytes.NewReader(body))
+	// 上游请求体 gzip 压缩
+	reqBody := body
+	if compressedBody, ok := s.maybeGzipCompressBody(body); ok {
+		reqBody = compressedBody
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, targetURL, bytes.NewReader(reqBody))
 	if err != nil {
 		return nil, err
+	}
+	if len(reqBody) != len(body) {
+		req.Header.Set("Content-Encoding", "gzip")
 	}
 	req = req.WithContext(WithHTTPUpstreamProfile(req.Context(), HTTPUpstreamProfileOpenAI))
 
@@ -3449,7 +3458,7 @@ func (s *OpenAIGatewayService) buildUpstreamRequestOpenAIPassthrough(
 				req.Header.Set("version", codexCLIVersion)
 			}
 			if clientSessionID == "" {
-				clientSessionID = resolveOpenAICompactSessionID(c)
+				clientSessionID = resolveOpenAICompactSessionID(c, body)
 			}
 		} else if req.Header.Get("accept") == "" {
 			req.Header.Set("accept", "text/event-stream")
@@ -4145,6 +4154,33 @@ func writeOpenAIPassthroughResponseHeaders(dst http.Header, src http.Header, fil
 	}
 }
 
+// gzipCompressThreshold 是上游请求体 gzip 压缩的最小字节数阈值（1KB）。
+const gzipCompressThreshold = 1024
+
+// maybeGzipCompressBody 在配置启用且 body 大于阈值时对请求体做 gzip 压缩。
+// 返回压缩后的 body 和是否需要设置 Content-Encoding: gzip。
+func (s *OpenAIGatewayService) maybeGzipCompressBody(body []byte) ([]byte, bool) {
+	if s == nil || s.cfg == nil || !s.cfg.Gateway.UpstreamRequestGzip {
+		return body, false
+	}
+	if len(body) <= gzipCompressThreshold {
+		return body, false
+	}
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	if _, err := gw.Write(body); err != nil {
+		return body, false
+	}
+	if err := gw.Close(); err != nil {
+		return body, false
+	}
+	if buf.Len() >= len(body) {
+		// 压缩后反而更大（小 body 或不可压缩数据），不压缩
+		return body, false
+	}
+	return buf.Bytes(), true
+}
+
 func (s *OpenAIGatewayService) buildUpstreamRequest(ctx context.Context, c *gin.Context, account *Account, body []byte, token string, isStream bool, promptCacheKey string, isCodexCLI bool) (*http.Request, error) {
 	// Determine target URL based on account type
 	var targetURL string
@@ -4169,9 +4205,17 @@ func (s *OpenAIGatewayService) buildUpstreamRequest(ctx context.Context, c *gin.
 	}
 	targetURL = appendOpenAIResponsesRequestPathSuffix(targetURL, openAIResponsesRequestPathSuffix(c))
 
-	req, err := http.NewRequestWithContext(ctx, "POST", targetURL, bytes.NewReader(body))
+	// 上游请求体 gzip 压缩（大 body 场景减少网络传输）
+	reqBody := body
+	if compressedBody, ok := s.maybeGzipCompressBody(body); ok {
+		reqBody = compressedBody
+	}
+	req, err := http.NewRequestWithContext(ctx, "POST", targetURL, bytes.NewReader(reqBody))
 	if err != nil {
 		return nil, err
+	}
+	if len(reqBody) != len(body) {
+		req.Header.Set("Content-Encoding", "gzip")
 	}
 	req = req.WithContext(WithHTTPUpstreamProfile(req.Context(), HTTPUpstreamProfileOpenAI))
 
@@ -4218,7 +4262,7 @@ func (s *OpenAIGatewayService) buildUpstreamRequest(ctx context.Context, c *gin.
 			if req.Header.Get("version") == "" {
 				req.Header.Set("version", codexCLIVersion)
 			}
-			compactSession := resolveOpenAICompactSessionID(c)
+			compactSession := resolveOpenAICompactSessionID(c, body)
 			req.Header.Set("session_id", isolateOpenAISessionID(apiKeyID, compactSession))
 		} else {
 			req.Header.Set("accept", "text/event-stream")
@@ -5750,7 +5794,7 @@ func normalizeOpenAICompactRequestBody(body []byte) ([]byte, bool, error) {
 	return normalized, true, nil
 }
 
-func resolveOpenAICompactSessionID(c *gin.Context) string {
+func resolveOpenAICompactSessionID(c *gin.Context, body []byte) string {
 	if c != nil {
 		if sessionID := strings.TrimSpace(c.GetHeader("session_id")); sessionID != "" {
 			return sessionID
@@ -5763,6 +5807,12 @@ func resolveOpenAICompactSessionID(c *gin.Context) string {
 				return strings.TrimSpace(seedStr)
 			}
 		}
+	}
+	// 回退：从请求体内容中派生稳定会话 ID，避免每次请求生成随机 UUID 导致上游缓存完全无法命中。
+	// 当客户端未显式传递 session_id / conversation_id / prompt_cache_key 时，
+	// 使用 model + tools + instructions + 首条用户消息的内容摘要作为会话标识。
+	if contentSeed := deriveOpenAIContentSessionSeed(body); contentSeed != "" {
+		return contentSeed
 	}
 	return uuid.NewString()
 }
@@ -5825,6 +5875,12 @@ type OpenAIRecordUsageInput struct {
 	APIKeyService      APIKeyQuotaUpdater
 	// CyberBlocked 为 true 时把该用量行标记为 cyber（request_type=cyber），计费逻辑不变。
 	CyberBlocked bool
+	// 性能观测字段（从 gin context 提取，handler 层设置）
+	ClientTransport   *string
+	AuthLatencyMs     *int
+	RoutingLatencyMs  *int
+	UpstreamLatencyMs *int
+	ResponseLatencyMs *int
 	ChannelUsageFields
 }
 
@@ -6050,6 +6106,11 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	usageLog.OpenAIWSMode = result.OpenAIWSMode
 	usageLog.DurationMs = &durationMs
 	usageLog.FirstTokenMs = result.FirstTokenMs
+	usageLog.ClientTransport = input.ClientTransport
+	usageLog.AuthLatencyMs = input.AuthLatencyMs
+	usageLog.RoutingLatencyMs = input.RoutingLatencyMs
+	usageLog.UpstreamLatencyMs = input.UpstreamLatencyMs
+	usageLog.ResponseLatencyMs = input.ResponseLatencyMs
 	usageLog.CreatedAt = time.Now()
 	// 设置渠道信息
 	usageLog.ChannelID = optionalInt64Ptr(input.ChannelID)

@@ -158,10 +158,15 @@ type UsageLog struct {
 	RequestType  RequestType
 	Stream       bool
 	OpenAIWSMode bool
-	DurationMs   *int
-	FirstTokenMs *int
-	UserAgent    *string
-	IPAddress    *string
+	DurationMs     *int
+	FirstTokenMs   *int
+	ClientTransport *string // "http" / "ws"
+	AuthLatencyMs    *int
+	RoutingLatencyMs *int
+	UpstreamLatencyMs *int
+	ResponseLatencyMs *int
+	UserAgent      *string
+	IPAddress      *string
 
 	// Cache TTL Override 标记（管理员强制替换了缓存 TTL 计费）
 	CacheTTLOverridden bool

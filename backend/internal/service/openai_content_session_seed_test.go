@@ -1,8 +1,12 @@
 package service
 
 import (
+	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
 
@@ -79,6 +83,78 @@ func TestDeriveOpenAIContentSessionSeed_ChatCompletions_WithTools(t *testing.T) 
 	s2 := deriveOpenAIContentSessionSeed(withoutTools)
 	require.NotEqual(t, s1, s2, "tools should affect the seed")
 	require.Contains(t, s1, "|tools=")
+}
+
+func newGinTestContext() *gin.Context {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest("POST", "/v1/responses", nil)
+	return c
+}
+
+func TestResolveOpenAICompactSessionID_ContentFallback(t *testing.T) {
+	// 无 session_id / conversation_id / prompt_cache_key 时，应从 body 内容派生稳定会话 ID
+	body := []byte(`{"model":"gpt-5.5","input":[{"role":"user","content":"Hello"}]}`)
+	c := newGinTestContext()
+	sessionID := resolveOpenAICompactSessionID(c, body)
+	// 应派生出内容摘要，不应为随机 UUID
+	require.NotEmpty(t, sessionID)
+	require.Contains(t, sessionID, "compat_cs_", "fallback should produce content-derived seed, not random UUID")
+}
+
+func TestResolveOpenAICompactSessionID_UsesHeaderFirst(t *testing.T) {
+	// session_id 头应优先于内容派生
+	body := []byte(`{"model":"gpt-5.5"}`)
+	c := newGinTestContext()
+	c.Request.Header.Set("session_id", "my-session-123")
+	sessionID := resolveOpenAICompactSessionID(c, body)
+	require.Equal(t, "my-session-123", sessionID)
+}
+
+func TestMaybeGzipCompressBody_Disabled(t *testing.T) {
+	svc := &OpenAIGatewayService{cfg: &config.Config{Gateway: config.GatewayConfig{UpstreamRequestGzip: false}}}
+	body := make([]byte, 2048)
+	for i := range body {
+		body[i] = byte('a' + i%26)
+	}
+	compressed, ok := svc.maybeGzipCompressBody(body)
+	require.False(t, ok)
+	require.Equal(t, body, compressed)
+}
+
+func TestMaybeGzipCompressBody_SmallBody(t *testing.T) {
+	svc := &OpenAIGatewayService{cfg: &config.Config{Gateway: config.GatewayConfig{UpstreamRequestGzip: true}}}
+	body := []byte(`{"model":"gpt-5.5"}`) // < 1KB
+	compressed, ok := svc.maybeGzipCompressBody(body)
+	require.False(t, ok, "small body should not be compressed")
+	require.Equal(t, body, compressed)
+}
+
+func TestMaybeGzipCompressBody_LargeBody(t *testing.T) {
+	svc := &OpenAIGatewayService{cfg: &config.Config{Gateway: config.GatewayConfig{UpstreamRequestGzip: true}}}
+	// 构造大于 1KB 的可压缩 JSON（重复 pattern）
+	var sb strings.Builder
+	sb.WriteString(`{"model":"gpt-5.5","messages":["`)
+	for i := 0; i < 400; i++ {
+		sb.WriteString("aaaa")
+	}
+	sb.WriteString(`"]}`)
+	body := []byte(sb.String())
+	require.Greater(t, len(body), gzipCompressThreshold)
+
+	compressed, ok := svc.maybeGzipCompressBody(body)
+	require.True(t, ok, "large compressible body should be compressed")
+	require.Less(t, len(compressed), len(body), "compressed size should be smaller")
+}
+
+func TestResolveOpenAICompactSessionID_StableSameBody(t *testing.T) {
+	// 相同 body 内容应多次产生相同会话 ID
+	body := []byte(`{"model":"gpt-5.5","input":[{"role":"user","content":"persistent session"}]}`)
+	c1 := newGinTestContext()
+	c2 := newGinTestContext()
+	id1 := resolveOpenAICompactSessionID(c1, body)
+	id2 := resolveOpenAICompactSessionID(c2, body)
+	require.Equal(t, id1, id2, "same content should yield stable session ID")
 }
 
 func TestDeriveOpenAIContentSessionSeed_ChatCompletions_WithFunctions(t *testing.T) {

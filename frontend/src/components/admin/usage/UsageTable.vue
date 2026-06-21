@@ -267,6 +267,11 @@
             <span class="text-gray-400">{{ t('usage.totalTokens') }}</span>
             <span class="font-semibold text-blue-400">{{ ((tokenTooltipData?.input_tokens || 0) + (tokenTooltipData?.output_tokens || 0) + (tokenTooltipData?.cache_creation_tokens || 0) + (tokenTooltipData?.cache_read_tokens || 0)).toLocaleString() }}</span>
           </div>
+          <!-- Cache Hit Ratio -->
+          <div v-if="tokenTooltipData && getPerRequestCacheHitRatio(tokenTooltipData) !== null" class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">{{ t('usage.cacheHitRate') }}</span>
+            <span class="font-semibold text-sky-400">{{ getPerRequestCacheHitRatio(tokenTooltipData) }}%</span>
+          </div>
         </div>
         <div class="absolute right-full top-1/2 h-0 w-0 -translate-y-1/2 border-b-[6px] border-r-[6px] border-t-[6px] border-b-transparent border-r-gray-900 border-t-transparent dark:border-r-gray-800"></div>
       </div>
@@ -366,6 +371,40 @@
           <div class="flex items-center justify-between gap-6">
             <span class="text-gray-400">{{ t('usage.serviceTier') }}</span>
             <span class="font-semibold text-cyan-300">{{ getUsageServiceTierLabel(tooltipData?.service_tier, t) }}</span>
+          </div>
+          <!-- Latency Breakdown -->
+          <div v-if="hasLatencyBreakdown(tooltipData)" class="mb-2 border-b border-gray-700 pb-1.5">
+            <div class="text-xs font-semibold text-gray-300 mb-1">{{ t('usage.latencyBreakdown') }}</div>
+            <div v-if="tooltipData?.client_transport" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.clientTransport') }}</span>
+              <span class="font-medium"
+                :class="tooltipData.client_transport === 'ws' ? 'text-violet-300' : 'text-emerald-300'"
+              >{{ tooltipData.client_transport.toUpperCase() }}</span>
+            </div>
+            <div v-if="tooltipData?.auth_latency_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.authLatency') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(tooltipData.auth_latency_ms) }}</span>
+            </div>
+            <div v-if="tooltipData?.routing_latency_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.routingLatency') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(tooltipData.routing_latency_ms) }}</span>
+            </div>
+            <div v-if="tooltipData?.upstream_latency_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.upstreamLatency') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(tooltipData.upstream_latency_ms) }}</span>
+            </div>
+            <div v-if="tooltipData?.response_latency_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.responseLatency') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(tooltipData.response_latency_ms) }}</span>
+            </div>
+            <div v-if="tooltipData?.duration_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.duration') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(tooltipData.duration_ms) }}</span>
+            </div>
+            <div v-if="tooltipData?.first_token_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.firstToken') }}</span>
+              <span class="font-medium text-amber-300">{{ formatDuration(tooltipData.first_token_ms) }}</span>
+            </div>
           </div>
           <div class="flex items-center justify-between gap-6">
             <span class="text-gray-400">{{ t('usage.rate') }}</span>
@@ -531,5 +570,27 @@ const showTokenTooltip = (event: MouseEvent, row: AdminUsageLog) => {
 const hideTokenTooltip = () => {
   tokenTooltipVisible.value = false
   tokenTooltipData.value = null
+}
+
+/** 是否包含延迟分解信息 */
+const hasLatencyBreakdown = (row: { client_transport?: string | null; auth_latency_ms?: number | null; routing_latency_ms?: number | null; upstream_latency_ms?: number | null; response_latency_ms?: number | null } | null | undefined): boolean => {
+  if (!row) return false
+  return (
+    row.client_transport != null ||
+    row.auth_latency_ms != null ||
+    row.routing_latency_ms != null ||
+    row.upstream_latency_ms != null ||
+    row.response_latency_ms != null
+  )
+}
+
+/** 计算单行缓存命中率 = cache_read / (input + cache_read + cache_write) × 100 */
+const getPerRequestCacheHitRatio = (row: { input_tokens?: number; cache_read_tokens?: number; cache_creation_tokens?: number }): number | null => {
+  const input = row.input_tokens ?? 0
+  const read = row.cache_read_tokens ?? 0
+  const write = row.cache_creation_tokens ?? 0
+  const total = input + read + write
+  if (total <= 0) return null
+  return parseFloat(((read / total) * 100).toFixed(1))
 }
 </script>

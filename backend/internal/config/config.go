@@ -744,6 +744,10 @@ type GatewayConfig struct {
 	// 超过此时间未使用的客户端会被标记为可回收
 	// 建议值：根据用户访问频率设置，一般 10-30 分钟
 	ClientIdleTTLSeconds int `mapstructure:"client_idle_ttl_seconds"`
+	// UpstreamRequestGzip: 是否对上游请求体启用 gzip 压缩（默认关闭）
+	// 开启后对大请求体（>1KB）进行 gzip 压缩再发送，减少网络传输时间。
+	// 适用于 /responses 大输入场景（如 80K+ tokens 的 JSON body）。
+	UpstreamRequestGzip bool `mapstructure:"upstream_request_gzip"`
 	// ConcurrencySlotTTLMinutes: 并发槽位过期时间（分钟）
 	// 应大于最长 LLM 请求时间，防止请求完成前槽位过期
 	ConcurrencySlotTTLMinutes int `mapstructure:"concurrency_slot_ttl_minutes"`

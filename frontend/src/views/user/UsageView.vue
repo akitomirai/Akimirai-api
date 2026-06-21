@@ -474,6 +474,11 @@
             <span class="text-gray-400">{{ t('usage.totalTokens') }}</span>
             <span class="font-semibold text-blue-400">{{ ((tokenTooltipData?.input_tokens || 0) + (tokenTooltipData?.output_tokens || 0) + (tokenTooltipData?.cache_creation_tokens || 0) + (tokenTooltipData?.cache_read_tokens || 0)).toLocaleString() }}</span>
           </div>
+          <!-- Cache Hit Ratio -->
+          <div v-if="tokenTooltipData && getPerRequestCacheHitRatio(tokenTooltipData) !== null" class="flex items-center justify-between gap-6">
+            <span class="text-gray-400">{{ t('usage.cacheHitRate') }}</span>
+            <span class="font-semibold text-sky-400">{{ getPerRequestCacheHitRatio(tokenTooltipData) }}%</span>
+          </div>
         </div>
         <!-- Tooltip Arrow (left side) -->
         <div
@@ -579,6 +584,40 @@
           <div class="flex items-center justify-between gap-6">
             <span class="text-gray-400">{{ t('usage.serviceTier') }}</span>
             <span class="font-semibold text-cyan-300">{{ getUsageServiceTierLabel(tooltipData?.service_tier, t) }}</span>
+          </div>
+          <!-- Latency Breakdown -->
+          <div v-if="hasLatencyBreakdown(tooltipData)" class="mb-2 border-b border-gray-700 pb-1.5">
+            <div class="text-xs font-semibold text-gray-300 mb-1">{{ t('usage.latencyBreakdown') }}</div>
+            <div v-if="tooltipData?.client_transport" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.clientTransport') }}</span>
+              <span class="font-medium"
+                :class="tooltipData.client_transport === 'ws' ? 'text-violet-300' : 'text-emerald-300'"
+              >{{ tooltipData.client_transport.toUpperCase() }}</span>
+            </div>
+            <div v-if="tooltipData?.auth_latency_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.authLatency') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(tooltipData.auth_latency_ms) }}</span>
+            </div>
+            <div v-if="tooltipData?.routing_latency_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.routingLatency') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(tooltipData.routing_latency_ms) }}</span>
+            </div>
+            <div v-if="tooltipData?.upstream_latency_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.upstreamLatency') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(tooltipData.upstream_latency_ms) }}</span>
+            </div>
+            <div v-if="tooltipData?.response_latency_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.responseLatency') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(tooltipData.response_latency_ms) }}</span>
+            </div>
+            <div v-if="tooltipData?.duration_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.duration') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(tooltipData.duration_ms) }}</span>
+            </div>
+            <div v-if="tooltipData?.first_token_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.firstToken') }}</span>
+              <span class="font-medium text-amber-300">{{ formatDuration(tooltipData.first_token_ms) }}</span>
+            </div>
           </div>
           <div class="flex items-center justify-between gap-6">
             <span class="text-gray-400">{{ t('usage.rate') }}</span>
@@ -775,6 +814,8 @@ const getRequestTypeLabel = (log: UsageLog): string => {
   const requestType = resolveUsageRequestType(log)
   if (requestType === 'cyber') return t('usage.cyber')
   if (requestType === 'ws_v2') return t('usage.ws')
+  // 非 WS 但有 openai_ws_mode 标记，显示 "WS (HTTP)" 以区分传输方式
+  if (log.openai_ws_mode) return `${t('usage.ws')}`
   if (requestType === 'stream') return t('usage.stream')
   if (requestType === 'sync') return t('usage.sync')
   return t('usage.unknown')
@@ -783,7 +824,7 @@ const getRequestTypeLabel = (log: UsageLog): string => {
 const getRequestTypeBadgeClass = (log: UsageLog): string => {
   const requestType = resolveUsageRequestType(log)
   if (requestType === 'cyber') return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-  if (requestType === 'ws_v2') return 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200'
+  if (requestType === 'ws_v2' || log.openai_ws_mode) return 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200'
   if (requestType === 'stream') return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
   if (requestType === 'sync') return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
   return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
@@ -801,7 +842,10 @@ const getRequestTypeExportText = (log: UsageLog): string => {
 
 const formatUsageEndpoints = (log: UsageLog): string => {
   const inbound = log.inbound_endpoint?.trim()
-  return inbound || '-'
+  const upstream = log.upstream_endpoint?.trim()
+  if (!inbound && !upstream) return '-'
+  if (!upstream || upstream === inbound) return inbound || '-'
+  return `${inbound} → ${upstream}`
 }
 
 const formatTokens = (value: number): string => {
@@ -1067,6 +1111,28 @@ const showTokenTooltip = (event: MouseEvent, row: UsageLog) => {
 const hideTokenTooltip = () => {
   tokenTooltipVisible.value = false
   tokenTooltipData.value = null
+}
+
+/** 是否包含延迟分解信息 */
+const hasLatencyBreakdown = (row: UsageLog | null | undefined): boolean => {
+  if (!row) return false
+  return (
+    row.client_transport != null ||
+    row.auth_latency_ms != null ||
+    row.routing_latency_ms != null ||
+    row.upstream_latency_ms != null ||
+    row.response_latency_ms != null
+  )
+}
+
+/** 计算单行缓存命中率 = cache_read / (input + cache_read + cache_write) × 100 */
+const getPerRequestCacheHitRatio = (row: UsageLog): number | null => {
+  const input = row.input_tokens ?? 0
+  const read = row.cache_read_tokens ?? 0
+  const write = row.cache_creation_tokens ?? 0
+  const total = input + read + write
+  if (total <= 0) return null
+  return parseFloat(((read / total) * 100).toFixed(1))
 }
 
 // ── Error Requests Tab ──────────────────────────────────────────────────────

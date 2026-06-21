@@ -118,6 +118,24 @@ func (UsageLog) Fields() []ent.Field {
 		field.Int("first_token_ms").
 			Optional().
 			Nillable(),
+		// 客户端入站传输协议 ("http" / "ws")
+		field.String("client_transport").
+			MaxLen(10).
+			Optional().
+			Nillable(),
+		// 性能观测：各阶段延迟（毫秒）
+		field.Int("auth_latency_ms").
+			Optional().
+			Nillable(),
+		field.Int("routing_latency_ms").
+			Optional().
+			Nillable(),
+		field.Int("upstream_latency_ms").
+			Optional().
+			Nillable(),
+		field.Int("response_latency_ms").
+			Optional().
+			Nillable(),
 		field.String("user_agent").
 			MaxLen(512).
 			Optional().
