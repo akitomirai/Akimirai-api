@@ -5,13 +5,17 @@ import type { User } from '@/types'
 
 const {
   updateProfileMock,
+  getQQAvatarSuggestionMock,
   showSuccessMock,
   showErrorMock,
+  refreshUserMock,
   authStoreState
 } = vi.hoisted(() => ({
   updateProfileMock: vi.fn(),
+  getQQAvatarSuggestionMock: vi.fn(),
   showSuccessMock: vi.fn(),
   showErrorMock: vi.fn(),
+  refreshUserMock: vi.fn(),
   authStoreState: {
     user: null as User | null
   }
@@ -19,12 +23,15 @@ const {
 
 vi.mock('@/api', () => ({
   userAPI: {
-    updateProfile: updateProfileMock
+    updateProfile: updateProfileMock,
+    getQQAvatarSuggestion: getQQAvatarSuggestionMock
   }
 }))
 
 vi.mock('@/stores/auth', () => ({
-  useAuthStore: () => authStoreState
+  useAuthStore: () => Object.assign(authStoreState, {
+    refreshUser: refreshUserMock
+  })
 }))
 
 vi.mock('@/stores/app', () => ({
@@ -50,6 +57,17 @@ vi.mock('vue-i18n', async (importOriginal) => {
         if (key === 'profile.avatar.uploadHint') return 'Uploaded images are compressed to 20KB when possible'
         if (key === 'profile.avatar.saveSuccess') return 'Avatar updated'
         if (key === 'profile.avatar.deleteSuccess') return 'Avatar removed'
+        if (key === 'profile.avatar.qqTitle') return 'QQ Email Avatar'
+        if (key === 'profile.avatar.qqHint') return `QQ number ${params?.qq} was detected`
+        if (key === 'profile.avatar.qqLoading') return 'Checking QQ email avatar...'
+        if (key === 'profile.avatar.qqCheckAction') return 'Check QQ avatar'
+        if (key === 'profile.avatar.qqConsentHint') return 'Click check to load a QQ avatar preview'
+        if (key === 'profile.avatar.qqUseAction') return 'Use QQ avatar'
+        if (key === 'profile.avatar.qqCurrent') return 'In use'
+        if (key === 'profile.avatar.qqLoadFailed') return 'Failed to check QQ avatar'
+        if (key === 'profile.avatar.qqUnavailable') return 'No available QQ avatar was detected'
+        if (key === 'profile.avatar.qqImageFailed') return 'QQ avatar cannot be previewed right now'
+        if (key === 'profile.avatar.qqPreviewAlt') return 'QQ avatar preview'
         if (key === 'profile.avatar.invalidType') return 'Please choose an image file'
         if (key === 'profile.avatar.gifTooLarge') return 'GIF avatars must already be 20KB or smaller'
         if (key === 'profile.avatar.compressTooLarge') return 'Unable to compress this image below 20KB'
@@ -147,8 +165,15 @@ function installAvatarCompressionMocks(blobSize = 8 * 1024) {
 describe('ProfileAvatarCard', () => {
   beforeEach(() => {
     updateProfileMock.mockReset()
+    getQQAvatarSuggestionMock.mockReset()
     showSuccessMock.mockReset()
     showErrorMock.mockReset()
+    refreshUserMock.mockReset()
+    getQQAvatarSuggestionMock.mockResolvedValue({
+      available: false,
+      reason: 'not_qq_email'
+    })
+    refreshUserMock.mockResolvedValue(createUser())
     authStoreState.user = null
   })
 
@@ -235,6 +260,114 @@ describe('ProfileAvatarCard', () => {
 
     const preview = wrapper.get('[data-testid="profile-avatar-preview"]')
     expect(preview.attributes('src')).toBe('data:image/webp;base64,Y29tcHJlc3NlZC1hdmF0YXI=')
+  })
+
+  it('checks for a QQ avatar only after explicit user action', async () => {
+    const qqAvatarUrl = 'https://q.qlogo.cn/headimg_dl?dst_uin=123456789&spec=640&img_type=jpg'
+    const updatedUser = createUser({
+      email: '123456789@qq.com',
+      avatar_url: qqAvatarUrl
+    })
+    getQQAvatarSuggestionMock.mockResolvedValue({
+      available: true,
+      qq: '123456789',
+      avatar_url: qqAvatarUrl
+    })
+    updateProfileMock.mockResolvedValue(updatedUser)
+    refreshUserMock.mockResolvedValue(updatedUser)
+    authStoreState.user = createUser({ email: '123456789@qq.com' })
+
+    const wrapper = mount(ProfileAvatarCard, {
+      props: {
+        user: authStoreState.user
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    await flushAsyncWork()
+
+    expect(getQQAvatarSuggestionMock).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="profile-qq-avatar-preview"]').exists()).toBe(false)
+
+    await wrapper.get('[data-testid="profile-qq-avatar-check"]').trigger('click')
+    await flushAsyncWork()
+
+    expect(getQQAvatarSuggestionMock).toHaveBeenCalledTimes(1)
+    const preview = wrapper.get('[data-testid="profile-qq-avatar-preview"]')
+    expect(preview.attributes('src')).toBe(qqAvatarUrl)
+
+    await wrapper.get('[data-testid="profile-qq-avatar-adopt"]').trigger('click')
+
+    expect(updateProfileMock).toHaveBeenCalledWith({ avatar_url: qqAvatarUrl })
+    expect(refreshUserMock).toHaveBeenCalled()
+    expect(authStoreState.user?.avatar_url).toBe(qqAvatarUrl)
+    expect(showSuccessMock).toHaveBeenCalledWith('Avatar updated')
+  })
+
+  it('keeps the upload flow visible when no QQ avatar suggestion is available', async () => {
+    authStoreState.user = createUser({ email: 'alice@example.com' })
+
+    const wrapper = mount(ProfileAvatarCard, {
+      props: {
+        user: authStoreState.user
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    await flushAsyncWork()
+
+    expect(getQQAvatarSuggestionMock).not.toHaveBeenCalled()
+    expect(wrapper.find('[data-testid="profile-qq-avatar-card"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="profile-avatar-file-input"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="profile-avatar-save"]').exists()).toBe(true)
+
+    await wrapper.get('[data-testid="profile-qq-avatar-check"]').trigger('click')
+    await flushAsyncWork()
+
+    expect(getQQAvatarSuggestionMock).toHaveBeenCalledTimes(1)
+    expect(wrapper.text()).toContain('No available QQ avatar was detected')
+    expect(wrapper.find('[data-testid="profile-avatar-file-input"]').exists()).toBe(true)
+  })
+
+  it('disables QQ adoption when the suggested avatar cannot be previewed', async () => {
+    const qqAvatarUrl = 'https://q.qlogo.cn/headimg_dl?dst_uin=123456789&spec=640&img_type=jpg'
+    getQQAvatarSuggestionMock.mockResolvedValue({
+      available: true,
+      qq: '123456789',
+      avatar_url: qqAvatarUrl
+    })
+    authStoreState.user = createUser({ email: '123456789@qq.com' })
+
+    const wrapper = mount(ProfileAvatarCard, {
+      props: {
+        user: authStoreState.user
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    await wrapper.get('[data-testid="profile-qq-avatar-check"]').trigger('click')
+    await flushAsyncWork()
+    await wrapper.get('[data-testid="profile-qq-avatar-preview"]').trigger('error')
+
+    expect(wrapper.text()).toContain('QQ avatar cannot be previewed right now')
+    expect(wrapper.find('[data-testid="profile-avatar-file-input"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="profile-qq-avatar-adopt"]').attributes('disabled')).toBeDefined()
+
+    await wrapper.get('[data-testid="profile-qq-avatar-adopt"]').trigger('click')
+
+    expect(updateProfileMock).not.toHaveBeenCalled()
   })
 
   it('deletes the current avatar', async () => {

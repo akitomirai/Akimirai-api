@@ -41,6 +41,53 @@
           </p>
         </div>
 
+        <div
+          v-if="showQQAvatarCard"
+          class="rounded-lg border border-primary-100 bg-primary-50/60 p-3 dark:border-primary-900/60 dark:bg-primary-950/20"
+          data-testid="profile-qq-avatar-card"
+        >
+          <div v-if="qqAvatarLoading" class="text-sm text-gray-500 dark:text-gray-400">
+            {{ t('profile.avatar.qqLoading') }}
+          </div>
+          <div v-else-if="qqAvatarAvailable" class="flex flex-wrap items-center gap-3">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white text-sm font-semibold text-primary-700 shadow-sm dark:bg-dark-800 dark:text-primary-300">
+              <img
+                data-testid="profile-qq-avatar-preview"
+                :src="qqAvatarUrl"
+                :alt="t('profile.avatar.qqPreviewAlt')"
+                class="h-full w-full object-cover"
+                @error="handleQQAvatarImageError"
+              >
+            </div>
+            <div class="min-w-[10rem] flex-1">
+              <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                {{ t('profile.avatar.qqTitle') }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                {{ t('profile.avatar.qqHint', { qq: qqAvatarSuggestion?.qq || '' }) }}
+              </p>
+              <p v-if="qqAvatarError" class="mt-1 text-xs text-red-600 dark:text-red-400">
+                {{ qqAvatarError }}
+              </p>
+            </div>
+            <button
+              data-testid="profile-qq-avatar-adopt"
+              type="button"
+              class="btn btn-primary btn-sm"
+              :disabled="avatarSaving || qqAvatarCurrent || qqAvatarImageFailed"
+              @click="handleQQAvatarAdopt"
+            >
+              {{ qqAvatarCurrent ? t('profile.avatar.qqCurrent') : t('profile.avatar.qqUseAction') }}
+            </button>
+          </div>
+          <div v-else-if="qqAvatarError" class="text-sm text-red-600 dark:text-red-400">
+            {{ qqAvatarError }}
+          </div>
+          <div v-else-if="qqAvatarUnavailable" class="text-sm text-gray-500 dark:text-gray-400">
+            {{ t('profile.avatar.qqUnavailable') }}
+          </div>
+        </div>
+
         <div class="flex flex-wrap items-center gap-3">
           <label class="btn btn-secondary btn-sm cursor-pointer">
             <input
@@ -72,7 +119,20 @@
           >
             {{ t('common.delete') }}
           </button>
+
+          <button
+            data-testid="profile-qq-avatar-check"
+            type="button"
+            class="btn btn-secondary btn-sm"
+            :disabled="avatarSaving || qqAvatarLoading || !props.user"
+            @click="handleQQAvatarCheck"
+          >
+            {{ t('profile.avatar.qqCheckAction') }}
+          </button>
         </div>
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          {{ t('profile.avatar.qqConsentHint') }}
+        </p>
       </div>
     </div>
   </div>
@@ -84,6 +144,7 @@ import { useI18n } from 'vue-i18n'
 import { userAPI } from '@/api'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
+import type { QQAvatarSuggestion } from '@/api/user'
 import type { User } from '@/types'
 import { extractApiErrorMessage } from '@/utils/apiError'
 
@@ -103,15 +164,38 @@ const avatarScaleSteps = [1, 0.92, 0.84, 0.76, 0.68, 0.6, 0.52, 0.44, 0.36]
 const avatarQualitySteps = [0.92, 0.84, 0.76, 0.68, 0.6, 0.52, 0.44, 0.36]
 const avatarDraft = ref('')
 const avatarSaving = ref(false)
+const qqAvatarSuggestion = ref<QQAvatarSuggestion | null>(null)
+const qqAvatarLoading = ref(false)
+const qqAvatarError = ref('')
+const qqAvatarImageFailed = ref(false)
+const qqAvatarChecked = ref(false)
 
 const displayName = computed(() => props.user?.username?.trim() || props.user?.email?.trim() || t('profile.user'))
 const avatarInitial = computed(() => displayName.value.charAt(0).toUpperCase() || 'U')
-const avatarPreviewUrl = computed(() => avatarDraft.value.trim() || props.user?.avatar_url?.trim() || '')
+const currentAvatarUrl = computed(() => {
+  if (authStore.user && props.user && authStore.user.id === props.user.id) {
+    return authStore.user.avatar_url?.trim() || props.user.avatar_url?.trim() || ''
+  }
+  return props.user?.avatar_url?.trim() || ''
+})
+const avatarPreviewUrl = computed(() => avatarDraft.value.trim() || currentAvatarUrl.value)
+const qqAvatarUrl = computed(() => qqAvatarSuggestion.value?.avatar_url?.trim() || '')
+const qqAvatarAvailable = computed(() => Boolean(qqAvatarSuggestion.value?.available && qqAvatarUrl.value))
+const qqAvatarUnavailable = computed(() => qqAvatarChecked.value && !qqAvatarLoading.value && !qqAvatarError.value && !qqAvatarAvailable.value)
+const showQQAvatarCard = computed(() => qqAvatarLoading.value || Boolean(qqAvatarError.value) || qqAvatarAvailable.value || qqAvatarUnavailable.value)
+const qqAvatarCurrent = computed(() => currentAvatarUrl.value !== '' && currentAvatarUrl.value === qqAvatarUrl.value)
 
 watch(
   () => props.user?.avatar_url,
   () => {
     avatarDraft.value = ''
+  }
+)
+
+watch(
+  () => props.user?.email,
+  () => {
+    resetQQAvatarSuggestion()
   }
 )
 
@@ -127,6 +211,49 @@ function normalizeUploadedAvatar(value: string): string | null {
   }
 
   return normalized
+}
+
+function resetQQAvatarSuggestion() {
+  qqAvatarSuggestion.value = null
+  qqAvatarError.value = ''
+  qqAvatarImageFailed.value = false
+  qqAvatarChecked.value = false
+}
+
+async function loadQQAvatarSuggestion() {
+  if (!props.user) {
+    resetQQAvatarSuggestion()
+    return
+  }
+
+  qqAvatarChecked.value = true
+  qqAvatarLoading.value = true
+  qqAvatarError.value = ''
+  qqAvatarImageFailed.value = false
+  try {
+    const suggestion = await userAPI.getQQAvatarSuggestion()
+    qqAvatarSuggestion.value = suggestion.available ? suggestion : null
+  } catch (error: unknown) {
+    qqAvatarSuggestion.value = null
+    qqAvatarError.value = extractApiErrorMessage(error, t('profile.avatar.qqLoadFailed'))
+  } finally {
+    qqAvatarLoading.value = false
+  }
+}
+
+async function saveAvatarURL(avatarURL: string) {
+  avatarSaving.value = true
+  try {
+    const updated = await userAPI.updateProfile({ avatar_url: avatarURL })
+    authStore.user = updated
+    avatarDraft.value = avatarURL.startsWith('data:image/') ? updated.avatar_url?.trim() || '' : ''
+    await authStore.refreshUser?.().catch(() => undefined)
+    appStore.showSuccess(t('profile.avatar.saveSuccess'))
+  } catch (error: unknown) {
+    appStore.showError(extractApiErrorMessage(error, t('common.error')))
+  } finally {
+    avatarSaving.value = false
+  }
 }
 
 function readFileAsDataURL(file: File): Promise<string> {
@@ -204,6 +331,22 @@ async function prepareAvatarUpload(file: File): Promise<File> {
   return compressAvatarFile(file)
 }
 
+function handleQQAvatarImageError() {
+  qqAvatarImageFailed.value = true
+  qqAvatarError.value = t('profile.avatar.qqImageFailed')
+}
+
+async function handleQQAvatarCheck() {
+  await loadQQAvatarSuggestion()
+}
+
+async function handleQQAvatarAdopt() {
+  if (avatarSaving.value || !qqAvatarAvailable.value || qqAvatarImageFailed.value) {
+    return
+  }
+  await saveAvatarURL(qqAvatarUrl.value)
+}
+
 async function handleAvatarFileChange(event: Event) {
   const input = event.target as HTMLInputElement | null
   const file = input?.files?.[0]
@@ -233,24 +376,14 @@ async function handleAvatarSave() {
     return
   }
 
-  avatarSaving.value = true
-  try {
-    const updated = await userAPI.updateProfile({ avatar_url: normalized })
-    authStore.user = updated
-    avatarDraft.value = updated.avatar_url?.trim() || ''
-    appStore.showSuccess(t('profile.avatar.saveSuccess'))
-  } catch (error: unknown) {
-    appStore.showError(extractApiErrorMessage(error, t('common.error')))
-  } finally {
-    avatarSaving.value = false
-  }
+  await saveAvatarURL(normalized)
 }
 
 async function handleAvatarDelete() {
   if (avatarSaving.value) {
     return
   }
-  if (!avatarDraft.value.trim() && !props.user?.avatar_url?.trim()) {
+  if (!avatarDraft.value.trim() && !currentAvatarUrl.value) {
     appStore.showError(t('profile.avatar.emptyDeleteHint'))
     return
   }

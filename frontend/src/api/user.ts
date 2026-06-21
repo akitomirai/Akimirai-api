@@ -19,6 +19,13 @@ import type {
   PlatformQuotasResponse,
 } from '@/types'
 
+export interface QQAvatarSuggestion {
+  available: boolean
+  qq?: string
+  avatar_url?: string
+  reason?: string
+}
+
 /**
  * Get current user profile
  * @returns User profile data
@@ -41,6 +48,11 @@ export async function updateProfile(profile: {
   balance_notify_extra_emails?: NotifyEmailEntry[]
 }): Promise<User> {
   const { data } = await apiClient.put<User>('/user', profile)
+  return data
+}
+
+export async function getQQAvatarSuggestion(): Promise<QQAvatarSuggestion> {
+  const { data } = await apiClient.get<QQAvatarSuggestion>('/user/avatar/qq-suggestion')
   return data
 }
 
@@ -197,6 +209,7 @@ export async function getMyPlatformQuotas(): Promise<PlatformQuotasResponse> {
 export const userAPI = {
   getProfile,
   updateProfile,
+  getQQAvatarSuggestion,
   changePassword,
   sendNotifyEmailCode,
   verifyNotifyEmail,

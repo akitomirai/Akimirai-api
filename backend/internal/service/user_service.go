@@ -48,6 +48,7 @@ const (
 	maxNotifyEmails      = 3 // Maximum number of notification emails per user
 	maxInlineAvatarBytes = 100 * 1024
 	targetAvatarBytes    = 20 * 1024
+	qqAvatarSpec         = "640"
 
 	// User-level rate limiting for notify email verification codes
 	notifyCodeUserRateLimit  = 5
@@ -192,6 +193,13 @@ type UserAvatar struct {
 	ContentType     string
 	ByteSize        int
 	SHA256          string
+}
+
+type QQAvatarSuggestion struct {
+	Available bool   `json:"available"`
+	QQ        string `json:"qq,omitempty"`
+	AvatarURL string `json:"avatar_url,omitempty"`
+	Reason    string `json:"reason,omitempty"`
 }
 
 type UpsertUserAvatarInput struct {
@@ -492,6 +500,54 @@ func (s *UserService) SetAvatar(ctx context.Context, userID int64, raw string) (
 		return nil, fmt.Errorf("upsert avatar: %w", err)
 	}
 	return avatar, nil
+}
+
+func (s *UserService) GetQQAvatarSuggestion(ctx context.Context, userID int64) (*QQAvatarSuggestion, error) {
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get user: %w", err)
+	}
+
+	qq, ok := extractQQNumberFromEmail(user.Email)
+	if !ok {
+		return &QQAvatarSuggestion{
+			Available: false,
+			Reason:    "not_qq_email",
+		}, nil
+	}
+
+	avatarURL := buildQQAvatarURL(qq)
+	if err := ValidateUserAvatar(avatarURL); err != nil {
+		return &QQAvatarSuggestion{
+			Available: false,
+			QQ:        qq,
+			Reason:    "invalid_avatar_url",
+		}, nil
+	}
+
+	return &QQAvatarSuggestion{
+		Available: true,
+		QQ:        qq,
+		AvatarURL: avatarURL,
+	}, nil
+}
+
+func extractQQNumberFromEmail(email string) (string, bool) {
+	local, domain, ok := strings.Cut(strings.TrimSpace(email), "@")
+	if !ok || strings.TrimSpace(local) == "" || !strings.EqualFold(strings.TrimSpace(domain), "qq.com") {
+		return "", false
+	}
+
+	for _, r := range local {
+		if r < '0' || r > '9' {
+			return "", false
+		}
+	}
+	return local, true
+}
+
+func buildQQAvatarURL(qq string) string {
+	return "https://q.qlogo.cn/headimg_dl?dst_uin=" + url.QueryEscape(qq) + "&spec=" + qqAvatarSpec + "&img_type=jpg"
 }
 
 func applyUserAvatar(user *User, avatar *UserAvatar) {

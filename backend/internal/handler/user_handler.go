@@ -130,6 +130,24 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 	response.Success(c, profileResp)
 }
 
+// GetQQAvatarSuggestion returns a QQ avatar candidate for numeric qq.com emails.
+// GET /api/v1/user/avatar/qq-suggestion
+func (h *UserHandler) GetQQAvatarSuggestion(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	suggestion, err := h.userService.GetQQAvatarSuggestion(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	response.Success(c, suggestion)
+}
+
 // ChangePassword handles changing user password
 // POST /api/v1/users/me/password
 func (h *UserHandler) ChangePassword(c *gin.Context) {

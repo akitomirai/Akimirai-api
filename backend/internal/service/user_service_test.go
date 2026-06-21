@@ -812,6 +812,58 @@ func TestUpdateProfile_StoresRemoteAvatarURL(t *testing.T) {
 	require.Zero(t, updated.AvatarByteSize)
 }
 
+func TestGetQQAvatarSuggestion_ReturnsAvatarForNumericQQEmail(t *testing.T) {
+	repo := &mockUserRepo{
+		getByIDUser: &User{
+			ID:    19,
+			Email: "123456789@qq.com",
+		},
+	}
+	svc := NewUserService(repo, nil, nil, nil)
+
+	suggestion, err := svc.GetQQAvatarSuggestion(context.Background(), 19)
+
+	require.NoError(t, err)
+	require.True(t, suggestion.Available)
+	require.Equal(t, "123456789", suggestion.QQ)
+	require.Equal(t, "https://q.qlogo.cn/headimg_dl?dst_uin=123456789&spec=640&img_type=jpg", suggestion.AvatarURL)
+	require.Empty(t, suggestion.Reason)
+}
+
+func TestGetQQAvatarSuggestion_ReturnsUnavailableForNonQQEmail(t *testing.T) {
+	repo := &mockUserRepo{
+		getByIDUser: &User{
+			ID:    20,
+			Email: "alice@example.com",
+		},
+	}
+	svc := NewUserService(repo, nil, nil, nil)
+
+	suggestion, err := svc.GetQQAvatarSuggestion(context.Background(), 20)
+
+	require.NoError(t, err)
+	require.False(t, suggestion.Available)
+	require.Equal(t, "not_qq_email", suggestion.Reason)
+	require.Empty(t, suggestion.AvatarURL)
+}
+
+func TestGetQQAvatarSuggestion_ReturnsUnavailableForNonNumericQQEmail(t *testing.T) {
+	repo := &mockUserRepo{
+		getByIDUser: &User{
+			ID:    21,
+			Email: "alice@qq.com",
+		},
+	}
+	svc := NewUserService(repo, nil, nil, nil)
+
+	suggestion, err := svc.GetQQAvatarSuggestion(context.Background(), 21)
+
+	require.NoError(t, err)
+	require.False(t, suggestion.Available)
+	require.Equal(t, "not_qq_email", suggestion.Reason)
+	require.Empty(t, suggestion.AvatarURL)
+}
+
 func TestUpdateProfile_DeletesAvatarOnEmptyString(t *testing.T) {
 	empty := ""
 	repo := &mockUserRepo{

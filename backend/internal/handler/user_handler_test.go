@@ -177,6 +177,84 @@ func TestUserHandlerUpdateProfileReturnsAvatarURL(t *testing.T) {
 	require.Equal(t, "handler-avatar", resp.Data.Username)
 }
 
+func TestUserHandlerGetQQAvatarSuggestionReturnsAvatarURL(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	repo := &userHandlerRepoStub{
+		user: &service.User{
+			ID:       11,
+			Email:    "123456789@qq.com",
+			Username: "qq-avatar",
+			Role:     service.RoleUser,
+			Status:   service.StatusActive,
+		},
+	}
+	handler := NewUserHandler(service.NewUserService(repo, nil, nil, nil), nil, nil, nil, nil, nil)
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/user/avatar/qq-suggestion", nil)
+	c.Set(string(middleware2.ContextKeyUser), middleware2.AuthSubject{UserID: 11})
+
+	handler.GetQQAvatarSuggestion(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+
+	var resp struct {
+		Code int `json:"code"`
+		Data struct {
+			Available bool   `json:"available"`
+			QQ        string `json:"qq"`
+			AvatarURL string `json:"avatar_url"`
+			Reason    string `json:"reason"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &resp))
+	require.Equal(t, 0, resp.Code)
+	require.True(t, resp.Data.Available)
+	require.Equal(t, "123456789", resp.Data.QQ)
+	require.Equal(t, "https://q.qlogo.cn/headimg_dl?dst_uin=123456789&spec=640&img_type=jpg", resp.Data.AvatarURL)
+	require.Empty(t, resp.Data.Reason)
+}
+
+func TestUserHandlerGetQQAvatarSuggestionReturnsUnavailableForNonQQEmail(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	repo := &userHandlerRepoStub{
+		user: &service.User{
+			ID:       12,
+			Email:    "alice@example.com",
+			Username: "no-qq-avatar",
+			Role:     service.RoleUser,
+			Status:   service.StatusActive,
+		},
+	}
+	handler := NewUserHandler(service.NewUserService(repo, nil, nil, nil), nil, nil, nil, nil, nil)
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/user/avatar/qq-suggestion", nil)
+	c.Set(string(middleware2.ContextKeyUser), middleware2.AuthSubject{UserID: 12})
+
+	handler.GetQQAvatarSuggestion(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+
+	var resp struct {
+		Code int `json:"code"`
+		Data struct {
+			Available bool   `json:"available"`
+			AvatarURL string `json:"avatar_url"`
+			Reason    string `json:"reason"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &resp))
+	require.Equal(t, 0, resp.Code)
+	require.False(t, resp.Data.Available)
+	require.Equal(t, "not_qq_email", resp.Data.Reason)
+	require.Empty(t, resp.Data.AvatarURL)
+}
+
 func TestUserHandlerGetProfileReturnsIdentitySummaries(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
