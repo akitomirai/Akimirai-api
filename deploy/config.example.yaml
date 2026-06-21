@@ -5,7 +5,43 @@
 # 复制此文件到 /etc/sub2api/config.yaml 并根据需要修改
 #
 # Documentation / 文档: https://github.com/Wei-Shaw/sub2api
-
+#
+# =============================================================================
+# Security Best Practices / 安全最佳实践
+# =============================================================================
+# 1. Change all default passwords/secrets:
+#    - default.admin_password (set a strong password)
+#    - jwt.secret (generate with: openssl rand -hex 32)
+#    - totp.encryption_key (generate with: openssl rand -hex 32)
+#    - database.password (use a strong, unique password)
+#    - redis.password (set a password in production)
+#
+# 2. Sensitive data handling (automatic protections):
+#    - API keys, tokens, OAuth secrets in logs are REDACTED via logredact package
+#    - Error responses do NOT leak internal details (only generic messages)
+#    - Account credentials are stripped from API responses (DTO layer)
+#    - Admin dashboard shows aggregated stats, not individual credentials
+#    - Content moderation API keys are SHA-256 hashed in-memory
+#    - Payment data is AES-GCM encrypted at rest
+#
+# 3. Content safety / 内容安全:
+#    - Content moderation: keyword + OpenAI Moderation API (see content_moderation.go)
+#    - Rate limiting: Redis-based sliding window per IP
+#    - URL allowlist: SSRF protection for upstream hosts
+#    - CSRF protection: CSP headers, CORS restrictions
+#
+# 4. Network security / 网络安全:
+#    - TLS fingerprint simulation (utls) for upstream requests
+#    - Proxy support with TLS tunnel (HTTP CONNECT, SOCKS5)
+#    - HTTP/2 cleartext (h2c) support for client connections
+#    - Response header filtering (strip sensitive upstream headers)
+#
+# 5. Operational security / 运维安全:
+#    - Log sampling to prevent log flooding
+#    - Circuit breaker for billing service
+#    - Graceful degradation (rate limiter fail-open by default)
+#    - Backup/restore procedures recommended before destructive operations
+#
 # =============================================================================
 # Server Configuration
 # 服务器配置
@@ -200,6 +236,15 @@ gateway:
   # - account_proxy: Isolate by account+proxy combination (default, finest granularity)
   # - account_proxy: 按账户+代理组合隔离（默认，最细粒度）
   connection_pool_isolation: "account_proxy"
+  # Enable gzip compression for upstream request bodies (default: false)
+  # 是否对上游请求体启用 gzip 压缩（默认关闭）
+  # When enabled, request bodies >1KB are gzip-compressed before sending to upstream,
+  # reducing network transfer time. Useful for large /responses JSON bodies (80K+ tokens).
+  # 开启后对大请求体（>1KB）进行 gzip 压缩再发送，减少网络传输时间。
+  # 适用于 /responses 大输入场景（如 80K+ tokens 的 JSON body）。
+  # Rollback: set to false or remove this line, then restart the service.
+  # 回滚方式：设置为 false 或删除此行，然后重启服务。
+  upstream_request_gzip: false
   # Force Codex CLI mode: treat all /openai/v1/responses requests as Codex CLI.
   # 强制按 Codex CLI 处理 /openai/v1/responses 请求（用于网关未透传/改写 User-Agent 的兜底）。
   #

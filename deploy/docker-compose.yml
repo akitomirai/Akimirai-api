@@ -147,6 +147,9 @@ services:
       # =======================================================================
       # Image Generation Stream & Concurrency
       # =======================================================================
+      # Gateway upstream request gzip compression
+      - GATEWAY_UPSTREAM_REQUEST_GZIP=${GATEWAY_UPSTREAM_REQUEST_GZIP:-false}
+      # =======================================================================
       # OpenAI HTTP upstream protocol/timeout
       - GATEWAY_OPENAI_RESPONSE_HEADER_TIMEOUT=${GATEWAY_OPENAI_RESPONSE_HEADER_TIMEOUT:-0}
       - GATEWAY_OPENAI_HTTP2_ENABLED=${GATEWAY_OPENAI_HTTP2_ENABLED:-true}
