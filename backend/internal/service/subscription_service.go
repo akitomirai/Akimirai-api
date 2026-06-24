@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand/v2"
@@ -296,6 +297,9 @@ func (s *SubscriptionService) withSubscriptionUpdateTx(ctx context.Context, fn f
 	}
 
 	tx, err := s.entClient.Tx(ctx)
+	if errors.Is(err, dbent.ErrTxStarted) {
+		return fn(ctx)
+	}
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}

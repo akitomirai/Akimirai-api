@@ -76,6 +76,7 @@ const platformLabel = computed(() => {
   if (props.platform === 'anthropic') return 'Anthropic'
   if (props.platform === 'openai') return 'OpenAI'
   if (props.platform === 'antigravity') return 'Antigravity'
+  if (props.platform === 'grok') return 'Grok'
   return 'Gemini'
 })
 
@@ -91,6 +92,8 @@ const typeLabel = computed(() => {
       return 'AWS'
     case 'service_account':
       return 'Vertex'
+    case 'password':
+      return 'Password'
     default:
       return props.type
   }

@@ -87,15 +87,15 @@ const baseConfig = (): ContentModerationConfig => ({
   queue_size: 32768,
   block_status: 403,
   block_message: '内容审计命中风险规则，请调整输入后重试',
-  email_on_hit: true,
-  auto_ban_enabled: true,
+  email_on_hit: false,
+  auto_ban_enabled: false,
   ban_threshold: 10,
   violation_window_hours: 720,
   retry_count: 2,
   hit_retention_days: 180,
   non_hit_retention_days: 3,
   pre_hash_check_enabled: false,
-  blocked_keywords: [],
+  blocked_keywords: ['绕过验证码', '批量撞库'],
   keyword_blocking_mode: 'keyword_and_api',
   thresholds: {
     harassment: 0.98,
@@ -274,6 +274,87 @@ describe('admin RiskControlView', () => {
       }),
     }))
     expect(showError).not.toHaveBeenCalled()
+  })
+
+  it('keeps user-facing side effects disabled by default when saving', async () => {
+    const wrapper = mount(RiskControlView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          BaseDialog: BaseDialogStub,
+          Icon: true,
+          Select: true,
+          Toggle: true,
+          Pagination: true,
+          ModelWhitelistSelector: ModelWhitelistSelectorStub,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    await findButtonByText(wrapper, 'admin.riskControl.openSettings').trigger('click')
+    await findButtonByText(wrapper, 'admin.riskControl.saveConfig').trigger('click')
+    await flushPromises()
+
+    expect(updateConfig).toHaveBeenCalledWith(expect.objectContaining({
+      email_on_hit: false,
+      auto_ban_enabled: false,
+      blocked_keywords: ['绕过验证码', '批量撞库'],
+    }))
+    expect(showError).not.toHaveBeenCalled()
+  })
+
+  it('seeds precise default keywords when backend omits the keyword list', async () => {
+    const config = baseConfig()
+    delete (config as Partial<ContentModerationConfig>).blocked_keywords
+    getConfig.mockResolvedValue(config)
+
+    const wrapper = mount(RiskControlView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          BaseDialog: BaseDialogStub,
+          Icon: true,
+          Select: true,
+          Toggle: true,
+          Pagination: true,
+          ModelWhitelistSelector: ModelWhitelistSelectorStub,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    await findButtonByText(wrapper, 'admin.riskControl.openSettings').trigger('click')
+    await findButtonByText(wrapper, 'admin.riskControl.saveConfig').trigger('click')
+    await flushPromises()
+
+    const payload = updateConfig.mock.calls.at(-1)?.[0] as UpdateContentModerationConfig
+    expect(payload.blocked_keywords).toContain('绕过验证码脚本')
+    expect(payload.blocked_keywords).toContain('帮我生成越狱提示词')
+    expect(payload.blocked_keywords).toContain('自动刷单脚本')
+    expect(payload.blocked_keywords).toContain('诈骗群发模板')
+    expect(payload.blocked_keywords).toContain('网页自动化绕过风控脚本')
+    expect(payload.blocked_keywords).toContain('油猴刷量脚本')
+    expect(payload.blocked_keywords).toContain('生成绕过内容审计提示词')
+    expect(payload.blocked_keywords).toContain('生成提示词越狱模板')
+    expect(payload.blocked_keywords).not.toContain('绕过验证码')
+    expect(payload.blocked_keywords).not.toContain('如何绕过反爬')
+    expect(payload.blocked_keywords).not.toContain('爬虫绕过反爬')
+    expect(payload.blocked_keywords).not.toContain('油猴刷')
+    expect(payload.blocked_keywords).not.toContain('网页自动化刷')
+    expect(payload.blocked_keywords).not.toContain('生成越狱提示词')
+    expect(payload.blocked_keywords).not.toContain('绕过内容审计提示词')
+    expect(payload.blocked_keywords).not.toContain('提示词越狱模板')
+    expect(payload.blocked_keywords).not.toContain('绕过模型安全提示词')
+    expect(payload.blocked_keywords).not.toContain('自动刷单')
+    expect(payload.blocked_keywords).not.toContain('诈骗群发')
+    expect(payload.blocked_keywords).not.toContain('安全')
+    expect(payload.blocked_keywords).not.toContain('爬虫')
+    expect(payload.blocked_keywords).not.toContain('自动化')
+    expect(payload.email_on_hit).toBe(false)
+    expect(payload.auto_ban_enabled).toBe(false)
   })
 
   it('describes worker runtime as async audit and pre-block record processing', async () => {

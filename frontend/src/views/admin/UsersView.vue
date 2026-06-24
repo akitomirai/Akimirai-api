@@ -277,8 +277,8 @@
             </div>
           </template>
 
-          <template #cell-username="{ value }">
-            <span class="text-sm text-gray-700 dark:text-gray-300">{{ value || '-' }}</span>
+          <template #cell-username="{ value, row }">
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{ resolveUserDisplayName({ username: value, email: row.email }, '-') }}</span>
           </template>
 
           <template #cell-notes="{ value }">
@@ -754,6 +754,7 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 import { formatDateTime } from '@/utils/format'
+import { resolveUserDisplayName } from '@/utils/userDisplay'
 import Icon from '@/components/icons/Icon.vue'
 
 const { t } = useI18n()

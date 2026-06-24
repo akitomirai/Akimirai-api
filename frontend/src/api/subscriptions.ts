@@ -6,6 +6,18 @@
 import { apiClient } from './client'
 import type { UserSubscription, SubscriptionProgress } from '@/types'
 
+export interface BalanceSubscriptionPurchaseRequest {
+  plan_id: number
+}
+
+export interface BalanceSubscriptionPurchaseResponse {
+  subscription: UserSubscription
+  balance_before: number
+  balance_after: number
+  price: number
+  shortfall: number
+}
+
 /**
  * Subscription summary for user dashboard
  */
@@ -67,10 +79,21 @@ export async function getSubscriptionProgress(
   return response.data
 }
 
+export async function purchaseWithBalance(
+  payload: BalanceSubscriptionPurchaseRequest
+): Promise<BalanceSubscriptionPurchaseResponse> {
+  const response = await apiClient.post<BalanceSubscriptionPurchaseResponse>(
+    '/payment/subscriptions/balance',
+    payload
+  )
+  return response.data
+}
+
 export default {
   getMySubscriptions,
   getActiveSubscriptions,
   getSubscriptionsProgress,
   getSubscriptionSummary,
-  getSubscriptionProgress
+  getSubscriptionProgress,
+  purchaseWithBalance
 }

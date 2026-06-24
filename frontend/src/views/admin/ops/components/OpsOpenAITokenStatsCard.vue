@@ -38,6 +38,86 @@ const totalPages = computed(() => {
   const size = pageSize.value > 0 ? pageSize.value : 20
   return Math.max(1, Math.ceil(total.value / size))
 })
+const totalRequestCount = computed(() =>
+  items.value.reduce((sum, row) => sum + (Number.isFinite(row.request_count) ? row.request_count : 0), 0)
+)
+const totalInputTokens = computed(() =>
+  items.value.reduce((sum, row) => sum + (Number.isFinite(row.total_input_tokens) ? row.total_input_tokens : 0), 0)
+)
+const totalCacheReadTokens = computed(() =>
+  items.value.reduce((sum, row) => sum + (Number.isFinite(row.total_cache_read_tokens) ? row.total_cache_read_tokens : 0), 0)
+)
+const totalCacheCreationTokens = computed(() =>
+  items.value.reduce((sum, row) => sum + (Number.isFinite(row.total_cache_creation_tokens) ? row.total_cache_creation_tokens : 0), 0)
+)
+const cacheReadRatio = computed(() => {
+  if (totalInputTokens.value <= 0) return null
+  return totalCacheReadTokens.value / totalInputTokens.value
+})
+const weightedFirstTokenMs = computed(() => {
+  let weighted = 0
+  let count = 0
+  for (const row of items.value) {
+    if (typeof row.avg_first_token_ms !== 'number' || !Number.isFinite(row.avg_first_token_ms)) continue
+    if (!Number.isFinite(row.requests_with_first_token) || row.requests_with_first_token <= 0) continue
+    weighted += row.avg_first_token_ms * row.requests_with_first_token
+    count += row.requests_with_first_token
+  }
+  return count > 0 ? weighted / count : null
+})
+const weightedTokensPerSec = computed(() => {
+  let weighted = 0
+  let count = 0
+  for (const row of items.value) {
+    if (typeof row.avg_tokens_per_sec !== 'number' || !Number.isFinite(row.avg_tokens_per_sec)) continue
+    if (!Number.isFinite(row.request_count) || row.request_count <= 0) continue
+    weighted += row.avg_tokens_per_sec * row.request_count
+    count += row.request_count
+  }
+  return count > 0 ? weighted / count : null
+})
+const metricCards = computed(() => [
+  {
+    label: t('admin.ops.openaiTokenStats.metrics.cacheReadRatio'),
+    value: formatPercent(cacheReadRatio.value),
+    caption: t('admin.ops.openaiTokenStats.metrics.cacheReadCaption', {
+      tokens: formatInt(totalCacheReadTokens.value)
+    })
+  },
+  {
+    label: t('admin.ops.openaiTokenStats.metrics.avgFirstToken'),
+    value: formatMs(weightedFirstTokenMs.value),
+    caption: t('admin.ops.openaiTokenStats.metrics.firstTokenCaption', {
+      requests: formatInt(totalRequestCount.value)
+    })
+  },
+  {
+    label: t('admin.ops.openaiTokenStats.metrics.avgTokensPerSec'),
+    value: formatRate(weightedTokensPerSec.value),
+    caption: t('admin.ops.openaiTokenStats.metrics.tokensPerSecCaption')
+  }
+])
+const optimizationTips = computed(() => {
+  if (items.value.length === 0) return []
+
+  const tips: string[] = []
+  const ratio = cacheReadRatio.value ?? 0
+  const ttft = weightedFirstTokenMs.value ?? 0
+
+  if (totalInputTokens.value >= 10_000 && ratio < 0.15) {
+    tips.push(t('admin.ops.openaiTokenStats.tips.lowCacheRead'))
+  }
+  if (totalCacheCreationTokens.value > 0 && totalCacheReadTokens.value < totalCacheCreationTokens.value * 0.5) {
+    tips.push(t('admin.ops.openaiTokenStats.tips.cacheWriteHeavy'))
+  }
+  if (ttft >= 3000) {
+    tips.push(t('admin.ops.openaiTokenStats.tips.highFirstToken'))
+  }
+  if (tips.length === 0) {
+    tips.push(t('admin.ops.openaiTokenStats.tips.healthy'))
+  }
+  return tips.slice(0, 3)
+})
 
 const timeRangeOptions = computed(() => [
   { value: '30m', label: t('admin.ops.timeRange.30m') },
@@ -71,9 +151,19 @@ function formatRate(v?: number | null): string {
   return v.toFixed(2)
 }
 
+function formatPercent(v?: number | null): string {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return '-'
+  return `${(v * 100).toFixed(1)}%`
+}
+
 function formatInt(v?: number | null): string {
   if (typeof v !== 'number' || !Number.isFinite(v)) return '-'
   return formatNumber(Math.round(v))
+}
+
+function formatMs(v?: number | null): string {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return '-'
+  return `${Math.round(v)}ms`
 }
 
 function buildParams() {
@@ -156,9 +246,14 @@ function onNextPage() {
 <template>
   <section class="card p-4 md:p-5">
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <h3 class="text-sm font-bold text-gray-900 dark:text-white">
-        {{ t('admin.ops.openaiTokenStats.title') }}
-      </h3>
+      <div>
+        <h3 class="text-sm font-bold text-gray-900 dark:text-white">
+          {{ t('admin.ops.openaiTokenStats.title') }}
+        </h3>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          {{ t('admin.ops.openaiTokenStats.subtitle') }}
+        </p>
+      </div>
       <div class="flex flex-wrap items-center gap-2">
         <div class="w-36">
           <Select v-model="timeRange" :options="timeRangeOptions" />
@@ -208,7 +303,31 @@ function onNextPage() {
       :description="t('admin.ops.openaiTokenStats.empty')"
     />
 
-    <div v-else class="space-y-3">
+    <div v-else class="space-y-4">
+      <div class="grid gap-3 md:grid-cols-3">
+        <div
+          v-for="metric in metricCards"
+          :key="metric.label"
+          class="rounded-xl border border-gray-200 bg-gray-50/70 p-4 dark:border-dark-700 dark:bg-dark-900/40"
+        >
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ metric.label }}</p>
+          <p class="mt-2 text-2xl font-bold tabular-nums text-gray-900 dark:text-white">{{ metric.value }}</p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ metric.caption }}</p>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-blue-100 bg-blue-50/70 p-4 dark:border-blue-900/40 dark:bg-blue-950/20">
+        <p class="text-xs font-bold uppercase tracking-wide text-blue-700 dark:text-blue-300">
+          {{ t('admin.ops.openaiTokenStats.optimizationTitle') }}
+        </p>
+        <ul class="mt-2 space-y-1 text-sm text-blue-950 dark:text-blue-100">
+          <li v-for="tip in optimizationTips" :key="tip" class="flex gap-2">
+            <span class="mt-2 h-1 w-1 flex-none rounded-full bg-blue-500"></span>
+            <span>{{ tip }}</span>
+          </li>
+        </ul>
+      </div>
+
       <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-dark-700">
         <div class="max-h-[420px] overflow-auto">
           <table class="min-w-full text-left text-xs md:text-sm">
@@ -216,6 +335,10 @@ function onNextPage() {
               <tr class="border-b border-gray-200 text-gray-500 dark:border-dark-700 dark:text-gray-400">
                 <th class="px-2 py-2 font-semibold">{{ t('admin.ops.openaiTokenStats.table.model') }}</th>
                 <th class="px-2 py-2 font-semibold">{{ t('admin.ops.openaiTokenStats.table.requestCount') }}</th>
+                <th class="px-2 py-2 font-semibold">{{ t('admin.ops.openaiTokenStats.table.totalInputTokens') }}</th>
+                <th class="px-2 py-2 font-semibold">{{ t('admin.ops.openaiTokenStats.table.cacheReadRatio') }}</th>
+                <th class="px-2 py-2 font-semibold">{{ t('admin.ops.openaiTokenStats.table.totalCacheReadTokens') }}</th>
+                <th class="px-2 py-2 font-semibold">{{ t('admin.ops.openaiTokenStats.table.totalCacheCreationTokens') }}</th>
                 <th class="px-2 py-2 font-semibold">{{ t('admin.ops.openaiTokenStats.table.avgTokensPerSec') }}</th>
                 <th class="px-2 py-2 font-semibold">{{ t('admin.ops.openaiTokenStats.table.avgFirstTokenMs') }}</th>
                 <th class="px-2 py-2 font-semibold">{{ t('admin.ops.openaiTokenStats.table.totalOutputTokens') }}</th>
@@ -231,10 +354,24 @@ function onNextPage() {
               >
                 <td class="px-2 py-2 font-medium">{{ row.model }}</td>
                 <td class="px-2 py-2">{{ formatInt(row.request_count) }}</td>
+                <td class="px-2 py-2">{{ formatInt(row.total_input_tokens) }}</td>
+                <td class="px-2 py-2">
+                  <div class="flex min-w-24 items-center gap-2">
+                    <div class="h-1.5 w-14 overflow-hidden rounded-full bg-gray-100 dark:bg-dark-700">
+                      <div
+                        class="h-full rounded-full bg-primary-500"
+                        :style="{ width: `${Math.max(0, Math.min(100, (row.cache_read_ratio ?? 0) * 100))}%` }"
+                      ></div>
+                    </div>
+                    <span class="tabular-nums">{{ formatPercent(row.cache_read_ratio) }}</span>
+                  </div>
+                </td>
+                <td class="px-2 py-2">{{ formatInt(row.total_cache_read_tokens) }}</td>
+                <td class="px-2 py-2">{{ formatInt(row.total_cache_creation_tokens) }}</td>
                 <td class="px-2 py-2">{{ formatRate(row.avg_tokens_per_sec) }}</td>
-                <td class="px-2 py-2">{{ formatRate(row.avg_first_token_ms) }}</td>
+                <td class="px-2 py-2">{{ formatMs(row.avg_first_token_ms) }}</td>
                 <td class="px-2 py-2">{{ formatInt(row.total_output_tokens) }}</td>
-                <td class="px-2 py-2">{{ formatInt(row.avg_duration_ms) }}</td>
+                <td class="px-2 py-2">{{ formatMs(row.avg_duration_ms) }}</td>
                 <td class="px-2 py-2">{{ formatInt(row.requests_with_first_token) }}</td>
               </tr>
             </tbody>

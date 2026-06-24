@@ -138,3 +138,11 @@ docs/*
 frontend/coverage/
 aicodex
 output/
+
+# Build artifacts (large binaries)
+backend/build-artifacts/
+backend/backend/build-artifacts/
+
+# Trellis dev tools
+.trellis/
+.agents/

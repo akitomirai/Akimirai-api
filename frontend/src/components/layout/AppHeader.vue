@@ -218,6 +218,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAppStore, useAuthStore, useOnboardingStore } from '@/stores'
 import { useAdminSettingsStore } from '@/stores/adminSettings'
+import { resolveUserDisplayName } from '@/utils/userDisplay'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMini.vue'
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
@@ -245,21 +246,12 @@ const showOnboardingButton = computed(() => {
 
 const userInitials = computed(() => {
   if (!user.value) return ''
-  // Prefer username, fallback to email
-  if (user.value.username) {
-    return user.value.username.substring(0, 2).toUpperCase()
-  }
-  if (user.value.email) {
-    // Get the part before @ and take first 2 chars
-    const localPart = user.value.email.split('@')[0]
-    return localPart.substring(0, 2).toUpperCase()
-  }
-  return ''
+  return displayName.value.substring(0, 2).toUpperCase()
 })
 
 const displayName = computed(() => {
   if (!user.value) return ''
-  return user.value.username || user.value.email?.split('@')[0] || ''
+  return resolveUserDisplayName(user.value)
 })
 
 const pageTitle = computed(() => {

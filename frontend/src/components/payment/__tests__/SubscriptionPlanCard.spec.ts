@@ -18,7 +18,17 @@ const i18n = createI18n({
           rate: "Rate",
           unlimited: "Unlimited",
         },
+        currentBalance: "Current Balance",
+        balancePayment: "Balance Payment",
+        balanceAvailable: "Available",
+        balanceShortfall: "Short {amount}",
+        useBalanceSubscribe: "Use Balance",
+        rechargeShortfallAction: "Recharge",
+        externalPaymentSubscribe: "Pay Externally",
         subscribeNow: "Subscribe now",
+      },
+      common: {
+        processing: "Processing...",
       },
     },
   },
@@ -60,5 +70,67 @@ describe("SubscriptionPlanCard", () => {
     expect(text).toContain("Claude");
     expect(text).toContain("Gemini");
     expect(text).toContain("Imagen");
+  });
+
+  it("emits balance subscribe when balance covers the plan", async () => {
+    const wrapper = mount(SubscriptionPlanCard, {
+      props: {
+        plan: {
+          id: 1,
+          group_id: 10,
+          group_platform: "openai",
+          name: "Pro",
+          price: 10,
+          amount: 1000,
+          features: [],
+          rate_multiplier: 1,
+          validity_days: 30,
+          validity_unit: "day",
+          supported_model_scopes: [],
+          is_active: true,
+        },
+        balance: 20,
+        showBalanceAction: true,
+      },
+      global: { plugins: [i18n] },
+    });
+
+    expect(wrapper.text()).toContain("$20.00");
+    expect(wrapper.text()).toContain("payment.useBalanceSubscribe");
+    await wrapper.findAll("button")[0].trigger("click");
+
+    expect(wrapper.emitted("balance-subscribe")?.[0]?.[0]).toMatchObject({ id: 1 });
+    expect(wrapper.emitted("recharge")).toBeUndefined();
+  });
+
+  it("emits recharge when balance is short", async () => {
+    const wrapper = mount(SubscriptionPlanCard, {
+      props: {
+        plan: {
+          id: 1,
+          group_id: 10,
+          group_platform: "openai",
+          name: "Pro",
+          price: 10,
+          amount: 1000,
+          features: [],
+          rate_multiplier: 1,
+          validity_days: 30,
+          validity_unit: "day",
+          supported_model_scopes: [],
+          is_active: true,
+        },
+        balance: 4,
+        showBalanceAction: true,
+      },
+      global: { plugins: [i18n] },
+    });
+
+    expect(wrapper.text()).toContain("$4.00");
+    expect(wrapper.text()).toContain("payment.rechargeShortfallAction");
+    await wrapper.findAll("button")[0].trigger("click");
+
+    expect(wrapper.emitted("recharge")?.[0]?.[0]).toMatchObject({ id: 1 });
+    expect(wrapper.emitted("balance-subscribe")).toBeUndefined();
   });
 });

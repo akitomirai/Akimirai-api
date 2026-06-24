@@ -147,6 +147,7 @@ import { useAuthStore } from '@/stores/auth'
 import type { QQAvatarSuggestion } from '@/api/user'
 import type { User } from '@/types'
 import { extractApiErrorMessage } from '@/utils/apiError'
+import { resolveUserDisplayName } from '@/utils/userDisplay'
 
 const props = withDefaults(defineProps<{
   user: User | null
@@ -170,7 +171,7 @@ const qqAvatarError = ref('')
 const qqAvatarImageFailed = ref(false)
 const qqAvatarChecked = ref(false)
 
-const displayName = computed(() => props.user?.username?.trim() || props.user?.email?.trim() || t('profile.user'))
+const displayName = computed(() => resolveUserDisplayName(props.user, t('profile.user')))
 const avatarInitial = computed(() => displayName.value.charAt(0).toUpperCase() || 'U')
 const currentAvatarUrl = computed(() => {
   if (authStore.user && props.user && authStore.user.id === props.user.id) {

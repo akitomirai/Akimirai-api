@@ -168,3 +168,21 @@ func TestMigration151AddsAccountAutoPauseExpiryPartialIndex(t *testing.T) {
 	require.Contains(t, sql, "auto_pause_on_expired = TRUE")
 	require.Contains(t, sql, "expires_at IS NOT NULL")
 }
+
+func TestMigration156RefinesContentModerationKeywordsWithoutResettingCustomConfig(t *testing.T) {
+	content, err := FS.ReadFile("156_refine_content_moderation_keyword_defaults.sql")
+	require.NoError(t, err)
+
+	sql := string(content)
+	require.Contains(t, sql, "jsonb_array_elements_text")
+	require.Contains(t, sql, "WHERE lower(trim(keyword)) NOT IN")
+	require.Contains(t, sql, "'email_on_hit', false")
+	require.Contains(t, sql, "'auto_ban_enabled', false")
+	require.Contains(t, sql, "'reverse shell'")
+	require.Contains(t, sql, "'绕过验证码'")
+	require.Contains(t, sql, "'批量抓取禁爬'")
+	require.Contains(t, sql, "'自动刷单'")
+	require.Contains(t, sql, "'诈骗群发'")
+	require.NotContains(t, sql, "defaultContentModerationBlockedKeywords")
+	require.NotContains(t, sql, "INSERT INTO settings")
+}

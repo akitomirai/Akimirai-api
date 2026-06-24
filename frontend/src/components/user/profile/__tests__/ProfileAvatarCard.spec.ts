@@ -200,6 +200,26 @@ describe('ProfileAvatarCard', () => {
     expect(wrapper.find('[data-testid="profile-avatar-input"]').exists()).toBe(false)
   })
 
+  it('falls back to QQ display name when username is empty', () => {
+    authStoreState.user = createUser({
+      username: '',
+      email: '123456789@qq.com'
+    })
+
+    const wrapper = mount(ProfileAvatarCard, {
+      props: {
+        user: authStoreState.user
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    expect(wrapper.text()).toContain('QQ 123456789')
+  })
+
   it('compresses an uploaded image that exceeds the 20KB target before saving', async () => {
     installAvatarCompressionMocks()
     const updatedUser = createUser({ avatar_url: 'data:image/webp;base64,Y29tcHJlc3NlZC1hdmF0YXI=' })

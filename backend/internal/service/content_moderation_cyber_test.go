@@ -146,8 +146,7 @@ func TestRecordCyberPolicyEvent_WritesLogWhenEnabled(t *testing.T) {
 	// endpoint
 	require.Equal(t, "/v1/responses", log.Endpoint)
 
-	// violation count >= 1 (side-effects ran)
-	require.GreaterOrEqual(t, log.ViolationCount, 1)
+	require.Equal(t, 0, log.ViolationCount, "default cyber_policy logging must not count toward auto-ban")
 
 	// Error field should also contain the upstream body JSON
 	require.True(t, strings.Contains(log.Error, "cyber_policy") || strings.Contains(log.Error, "flagged"),
@@ -276,7 +275,7 @@ func TestRecordCyberPolicyEvent_ExcludeFromBanCount_SkipsBanJudgment(t *testing.
 	require.False(t, logs[0].AutoBanned)
 }
 
-func TestRecordCyberPolicyEvent_DefaultCountsTowardBan(t *testing.T) {
+func TestRecordCyberPolicyEvent_DefaultOnlyWritesAuditLog(t *testing.T) {
 	repo := &banCountArgsTestRepo{}
 	svc := NewContentModerationService(
 		&contentModerationTestSettingRepo{values: map[string]string{
@@ -294,9 +293,37 @@ func TestRecordCyberPolicyEvent_DefaultCountsTowardBan(t *testing.T) {
 		UpstreamStatus:  400,
 	})
 
-	require.Equal(t, []bool{false}, repo.snapshotCountCalls(),
-		"默认配置必须执行计数查询且不排除 cyber 行")
+	require.Empty(t, repo.snapshotCountCalls(),
+		"default config must not run ban-count judgment for cyber_policy hits")
 	logs := repo.snapshotLogs()
 	require.Len(t, logs, 1)
-	require.GreaterOrEqual(t, logs[0].ViolationCount, 1, "默认路径行为不变（现状回归）")
+	require.Equal(t, 0, logs[0].ViolationCount)
+	require.False(t, logs[0].AutoBanned)
+	require.False(t, logs[0].EmailSent)
+}
+
+func TestRecordCyberPolicyEvent_AutoBanEnabledCountsTowardBan(t *testing.T) {
+	repo := &banCountArgsTestRepo{}
+	svc := NewContentModerationService(
+		&contentModerationTestSettingRepo{values: map[string]string{
+			SettingKeyRiskControlEnabled:      "true",
+			SettingKeyContentModerationConfig: `{"auto_ban_enabled":true}`,
+		}},
+		repo, nil, nil, nil, nil, nil,
+	)
+
+	svc.RecordCyberPolicyEvent(context.Background(), CyberPolicyRecordInput{
+		UserID:          1,
+		UserEmail:       "u@x.com",
+		Model:           "gpt-5",
+		Endpoint:        "/v1/responses",
+		UpstreamMessage: "flagged",
+		UpstreamStatus:  400,
+	})
+
+	require.Equal(t, []bool{false}, repo.snapshotCountCalls(),
+		"explicit auto-ban opt-in must run count query and include cyber rows by default")
+	logs := repo.snapshotLogs()
+	require.Len(t, logs, 1)
+	require.GreaterOrEqual(t, logs[0].ViolationCount, 1)
 }

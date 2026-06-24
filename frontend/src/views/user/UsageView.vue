@@ -314,6 +314,22 @@
             </div>
           </template>
 
+          <template #cell-cache_hit_rate="{ row }">
+            <div v-if="getPerRequestCacheHitRatio(row) !== null" class="min-w-[112px]">
+              <div class="flex items-baseline gap-2">
+                <span class="font-semibold text-sky-600 dark:text-sky-400">{{ getPerRequestCacheHitRatio(row) }}%</span>
+                <span class="text-xs text-gray-400 dark:text-gray-500">{{ formatCacheTokens(row.cache_read_tokens || 0) }}</span>
+              </div>
+              <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-sky-100 dark:bg-sky-950/50">
+                <div
+                  class="h-full rounded-full bg-sky-500 dark:bg-sky-400"
+                  :style="{ width: getPerRequestCacheHitProgressWidth(row) }"
+                ></div>
+              </div>
+            </div>
+            <span v-else class="text-sm text-gray-400 dark:text-gray-500">-</span>
+          </template>
+
           <template #cell-cost="{ row }">
             <div class="flex items-center gap-1.5 text-sm">
               <span class="font-medium text-green-600 dark:text-green-400">
@@ -518,7 +534,7 @@
               <span class="font-medium text-pink-300">${{ tooltipData.image_output_cost.toFixed(6) }}</span>
             </div>
             <!-- Token billing: show unit prices per 1M tokens -->
-            <template v-if="!tooltipData?.billing_mode || tooltipData.billing_mode === BILLING_MODE_TOKEN">
+            <template v-if="!isImageUsage(tooltipData) && (!tooltipData?.billing_mode || tooltipData.billing_mode === BILLING_MODE_TOKEN)">
               <div v-if="tooltipData && tooltipData.input_tokens > 0" class="flex items-center justify-between gap-4">
                 <span class="text-gray-400">{{ t('usage.inputTokenPrice') }}</span>
                 <span class="font-medium text-sky-300">{{ formatTokenPricePerMillion(tooltipData.input_cost, tooltipData.input_tokens) }} {{ t('usage.perMillionTokens') }}</span>
@@ -725,6 +741,7 @@ const columns = computed<Column[]>(() => [
   { key: 'stream', label: t('usage.type'), sortable: false },
   { key: 'billing_mode', label: t('admin.usage.billingMode'), sortable: false },
   { key: 'tokens', label: t('usage.tokens'), sortable: false },
+  { key: 'cache_hit_rate', label: t('usage.cacheHitRate'), sortable: false, class: 'min-w-[128px]' },
   { key: 'cost', label: t('usage.cost'), sortable: false },
   { key: 'first_token', label: t('usage.firstToken'), sortable: false },
   { key: 'duration', label: t('usage.duration'), sortable: false },
@@ -1031,6 +1048,7 @@ const exportToCSV = async () => {
       'Output Tokens',
       'Cache Read Tokens',
       'Cache Creation Tokens',
+      'Cache Hit Rate (%)',
       'Rate Multiplier',
       'Billed Cost',
       'Original Cost',
@@ -1050,6 +1068,7 @@ const exportToCSV = async () => {
         log.output_tokens,
         log.cache_read_tokens,
         log.cache_creation_tokens,
+        getPerRequestCacheHitRatio(log) ?? '',
         log.rate_multiplier,
         (log.actual_cost ?? 0).toFixed(8),
         (log.total_cost ?? 0).toFixed(8),
@@ -1133,6 +1152,11 @@ const getPerRequestCacheHitRatio = (row: UsageLog): number | null => {
   const total = input + read + write
   if (total <= 0) return null
   return parseFloat(((read / total) * 100).toFixed(1))
+}
+
+const getPerRequestCacheHitProgressWidth = (row: UsageLog): string => {
+  const ratio = getPerRequestCacheHitRatio(row)
+  return `${Math.min(100, Math.max(0, ratio ?? 0))}%`
 }
 
 // ── Error Requests Tab ──────────────────────────────────────────────────────

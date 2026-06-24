@@ -194,4 +194,22 @@ describe('ProfileInfoCard', () => {
     expect(wrapper.get('[data-testid="profile-basics-panel"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="profile-auth-bindings-panel"]').exists()).toBe(true)
   })
+
+  it('falls back to QQ display name when username is empty', () => {
+    const wrapper = mount(ProfileInfoCard, {
+      props: {
+        user: createUser({
+          username: '',
+          email: '123456789@qq.com'
+        })
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    expect(wrapper.text()).toContain('QQ 123456789')
+  })
 })

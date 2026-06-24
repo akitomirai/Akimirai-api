@@ -736,6 +736,9 @@ func (a *Account) GetBaseURL() string {
 	}
 	baseURL := a.GetCredential("base_url")
 	if baseURL == "" {
+		if a.Platform == PlatformGrok {
+			return "https://api.x.ai/v1"
+		}
 		return "https://api.anthropic.com"
 	}
 	if a.Platform == PlatformAntigravity {
@@ -1056,6 +1059,10 @@ func (a *Account) IsAnthropic() bool {
 	return a.Platform == PlatformAnthropic
 }
 
+func (a *Account) IsGrok() bool {
+	return a.Platform == PlatformGrok
+}
+
 func (a *Account) IsOpenAIOAuth() bool {
 	return a.IsOpenAI() && a.Type == AccountTypeOAuth
 }
@@ -1065,6 +1072,15 @@ func (a *Account) IsOpenAIApiKey() bool {
 }
 
 func (a *Account) GetOpenAIBaseURL() string {
+	if a.IsGrok() {
+		if a.Type == AccountTypeAPIKey {
+			baseURL := a.GetCredential("base_url")
+			if baseURL != "" {
+				return baseURL
+			}
+		}
+		return "https://api.x.ai/v1"
+	}
 	if !a.IsOpenAI() {
 		return ""
 	}

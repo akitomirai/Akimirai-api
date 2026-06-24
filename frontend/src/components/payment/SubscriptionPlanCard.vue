@@ -82,14 +82,47 @@
 
       <div class="flex-1" />
 
-      <!-- Subscribe Button -->
-      <button
-        type="button"
-        :class="['w-full rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-[0.98]', btnClass]"
-        @click="emit('select', plan)"
+      <div
+        v-if="showBalanceAction"
+        class="mb-3 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs dark:border-dark-600 dark:bg-dark-700/50"
       >
-        {{ isRenewal ? t('payment.renewNow') : t('payment.subscribeNow') }}
-      </button>
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-gray-500 dark:text-dark-400">{{ t('payment.currentBalance') }}</span>
+          <span class="font-semibold text-gray-900 dark:text-white">{{ formatBalanceAmount(balanceAmount) }}</span>
+        </div>
+        <div class="mt-1 flex items-center justify-between gap-3">
+          <span class="text-gray-500 dark:text-dark-400">{{ t('payment.balancePayment') }}</span>
+          <span :class="['font-semibold', balanceStatusClass]">
+            {{ balanceEnough ? t('payment.balanceAvailable') : t('payment.balanceShortfall', { amount: formatBalanceAmount(balanceShortfall) }) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="grid gap-2">
+        <button
+          v-if="showBalanceAction"
+          type="button"
+          :disabled="balanceActionLoading"
+          :class="[
+            'w-full rounded-lg border px-3 py-2 text-sm font-semibold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60',
+            balanceEnough
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-300'
+              : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-300',
+          ]"
+          @click="handleBalanceAction"
+        >
+          {{ balanceActionLoading ? t('common.processing') : balanceEnough ? t('payment.useBalanceSubscribe') : t('payment.rechargeShortfallAction') }}
+        </button>
+
+        <!-- Subscribe Button -->
+        <button
+          type="button"
+          :class="['w-full rounded-lg py-2.5 text-sm font-semibold transition-all active:scale-[0.98]', btnClass]"
+          @click="emit('select', plan)"
+        >
+          {{ showBalanceAction ? t('payment.externalPaymentSubscribe') : isRenewal ? t('payment.renewNow') : t('payment.subscribeNow') }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -110,8 +143,23 @@ import {
   platformLabel,
 } from '@/utils/platformColors'
 
-const props = defineProps<{ plan: SubscriptionPlan; activeSubscriptions?: UserSubscription[] }>()
-const emit = defineEmits<{ select: [plan: SubscriptionPlan] }>()
+const props = withDefaults(defineProps<{
+  plan: SubscriptionPlan
+  activeSubscriptions?: UserSubscription[]
+  balance?: number | null
+  showBalanceAction?: boolean
+  balanceActionLoading?: boolean
+}>(), {
+  activeSubscriptions: () => [],
+  balance: null,
+  showBalanceAction: false,
+  balanceActionLoading: false,
+})
+const emit = defineEmits<{
+  select: [plan: SubscriptionPlan]
+  'balance-subscribe': [plan: SubscriptionPlan]
+  recharge: [plan: SubscriptionPlan]
+}>()
 const { t } = useI18n()
 
 const platform = computed(() => props.plan.group_platform || '')
@@ -159,4 +207,30 @@ const validitySuffix = computed(() => {
   if (u === 'year') return t('payment.perYear')
   return `${props.plan.validity_days}${t('payment.days')}`
 })
+
+const showBalanceAction = computed(() => props.showBalanceAction)
+const balanceAmount = computed(() => Number(props.balance ?? 0))
+const balanceShortfall = computed(() => {
+  const delta = Number(props.plan.price || 0) - balanceAmount.value
+  return Math.max(0, Math.round(delta * 100) / 100)
+})
+const balanceEnough = computed(() => balanceShortfall.value <= 0)
+const balanceStatusClass = computed(() =>
+  balanceEnough.value
+    ? 'text-emerald-600 dark:text-emerald-300'
+    : 'text-amber-600 dark:text-amber-300'
+)
+
+function formatBalanceAmount(value: number): string {
+  return `$${Number(value || 0).toFixed(2)}`
+}
+
+function handleBalanceAction() {
+  if (props.balanceActionLoading) return
+  if (balanceEnough.value) {
+    emit('balance-subscribe', props.plan)
+    return
+  }
+  emit('recharge', props.plan)
+}
 </script>

@@ -1765,7 +1765,7 @@ func (s *adminServiceImpl) GetGroupModelsListCandidates(ctx context.Context, id 
 
 func defaultModelsListCandidateIDs(platform string) []string {
 	switch platform {
-	case PlatformOpenAI:
+	case PlatformOpenAI, PlatformGrok:
 		return openai.DefaultModelIDs()
 	case PlatformGemini:
 		ids := make([]string, 0, len(geminicli.DefaultModels))

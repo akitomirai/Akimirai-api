@@ -60,7 +60,7 @@ func newSettingServiceForPlatformQuotaTest(seed map[string]string) *SettingServi
 	return NewSettingService(repo, &config.Config{})
 }
 
-func TestGetDefaultPlatformQuotas_ReturnsFourPlatforms(t *testing.T) {
+func TestGetDefaultPlatformQuotas_ReturnsAllPlatforms(t *testing.T) {
 	zero := 0.0
 	svc := newSettingServiceForPlatformQuotaTest(map[string]string{
 		// 新 JSON 格式：anthropic daily=10.5, openai monthly=0, gemini/antigravity 无配置
@@ -70,8 +70,8 @@ func TestGetDefaultPlatformQuotas_ReturnsFourPlatforms(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// 必须包含全部 4 个 platform key（补齐契约）
-	for _, platform := range []string{"anthropic", "openai", "gemini", "antigravity"} {
+	// 必须包含全部 5 个 platform key（补齐契约）
+	for _, platform := range []string{"anthropic", "openai", "gemini", "antigravity", "grok"} {
 		if _, ok := got[platform]; !ok {
 			t.Errorf("missing platform key: %q", platform)
 		}
@@ -171,10 +171,10 @@ func TestSystemPlatformQuotas_WriteReadRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// 4-key 补齐契约：无论写了几个 platform，读回必须含全部 4 个
-	for _, p := range []string{"anthropic", "openai", "gemini", "antigravity"} {
+	// 5-key 补齐契约：无论写了几个 platform，读回必须含全部 5 个
+	for _, p := range []string{"anthropic", "openai", "gemini", "antigravity", "grok"} {
 		if _, ok := got[p]; !ok {
-			t.Errorf("4-key contract violated: missing platform %q", p)
+			t.Errorf("5-key contract violated: missing platform %q", p)
 		}
 	}
 	// 写入值正确往返

@@ -469,7 +469,48 @@ func TestAuthService_Register_Success(t *testing.T) {
 	require.Equal(t, 3.5, user.Balance)
 	require.Equal(t, 2, user.Concurrency)
 	require.Len(t, repo.created, 1)
+	require.Empty(t, repo.upsertAvatarArgs)
 	require.True(t, user.CheckPassword("password"))
+}
+
+func TestAuthService_Register_AppliesQQProfileDefaultsForNumericQQEmail(t *testing.T) {
+	repo := &userRepoStub{nextID: 15}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled:                 "true",
+		SettingKeyAuthSourceDefaultEmailGrantOnSignup: "false",
+	}, nil, nil)
+
+	token, user, err := service.Register(context.Background(), "123456789@qq.com", "password")
+	require.NoError(t, err)
+	require.NotEmpty(t, token)
+	require.NotNil(t, user)
+
+	require.Equal(t, int64(15), user.ID)
+	require.Equal(t, "123456789@qq.com", user.Email)
+	require.Equal(t, "QQ 123456789", user.Username)
+	require.Equal(t, "https://q.qlogo.cn/headimg_dl?dst_uin=123456789&spec=640&img_type=jpg", user.AvatarURL)
+	require.Equal(t, "remote_url", user.AvatarSource)
+	require.Len(t, repo.created, 1)
+	require.Equal(t, "QQ 123456789", repo.created[0].Username)
+	require.Equal(t, []int64{15}, repo.upsertAvatarUserIDs)
+	require.Len(t, repo.upsertAvatarArgs, 1)
+	require.Equal(t, "remote_url", repo.upsertAvatarArgs[0].StorageProvider)
+	require.Equal(t, user.AvatarURL, repo.upsertAvatarArgs[0].URL)
+}
+
+func TestAuthService_Register_DoesNotApplyQQProfileDefaultsForNonNumericQQEmail(t *testing.T) {
+	repo := &userRepoStub{nextID: 16}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled:                 "true",
+		SettingKeyAuthSourceDefaultEmailGrantOnSignup: "false",
+	}, nil, nil)
+
+	_, user, err := service.Register(context.Background(), "alice@qq.com", "password")
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	require.Empty(t, user.Username)
+	require.Empty(t, user.AvatarURL)
+	require.Empty(t, repo.upsertAvatarArgs)
 }
 
 func TestAuthService_ValidateToken_ExpiredReturnsClaimsWithError(t *testing.T) {

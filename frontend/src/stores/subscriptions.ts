@@ -6,6 +6,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import subscriptionsAPI from '@/api/subscriptions'
+import type { BalanceSubscriptionPurchaseResponse } from '@/api/subscriptions'
 import type { UserSubscription } from '@/types'
 
 // Cache TTL: 60 seconds
@@ -124,6 +125,13 @@ export const useSubscriptionStore = defineStore('subscriptions', () => {
     lastFetchedAt.value = null
   }
 
+  async function purchaseWithBalance(planId: number): Promise<BalanceSubscriptionPurchaseResponse> {
+    const result = await subscriptionsAPI.purchaseWithBalance({ plan_id: planId })
+    invalidateCache()
+    await fetchActiveSubscriptions(true)
+    return result
+  }
+
   return {
     // State
     activeSubscriptions,
@@ -135,6 +143,7 @@ export const useSubscriptionStore = defineStore('subscriptions', () => {
     startPolling,
     stopPolling,
     clear,
-    invalidateCache
+    invalidateCache,
+    purchaseWithBalance
   }
 })

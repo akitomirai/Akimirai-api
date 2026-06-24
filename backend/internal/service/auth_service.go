@@ -210,8 +210,10 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 	}
 
 	// 创建用户
+	qqProfile, hasQQProfile := deriveQQSignupProfileDefaults(email)
 	user := &User{
 		Email:        email,
+		Username:     qqProfile.Username,
 		PasswordHash: hashedPassword,
 		Role:         RoleUser,
 		Balance:      grantPlan.Balance,
@@ -265,12 +267,49 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 	}
 
 	// 生成token
+	if hasQQProfile {
+		s.applySignupQQAvatar(ctx, user, qqProfile)
+	}
+
 	token, err := s.GenerateToken(user)
 	if err != nil {
 		return "", nil, fmt.Errorf("generate token: %w", err)
 	}
 
 	return token, user, nil
+}
+
+type qqSignupProfileDefaults struct {
+	Username  string
+	AvatarURL string
+}
+
+func deriveQQSignupProfileDefaults(email string) (qqSignupProfileDefaults, bool) {
+	qq, ok := extractQQNumberFromEmail(email)
+	if !ok {
+		return qqSignupProfileDefaults{}, false
+	}
+	return qqSignupProfileDefaults{
+		Username:  "QQ " + qq,
+		AvatarURL: buildQQAvatarURL(qq),
+	}, true
+}
+
+func (s *AuthService) applySignupQQAvatar(ctx context.Context, user *User, defaults qqSignupProfileDefaults) {
+	if s == nil || s.userRepo == nil || user == nil || user.ID <= 0 || strings.TrimSpace(defaults.AvatarURL) == "" {
+		return
+	}
+	avatarInput, err := normalizeUserAvatarInput(defaults.AvatarURL)
+	if err != nil {
+		logger.LegacyPrintf("service.auth", "[Auth] Failed to prepare QQ avatar for user %d: %v", user.ID, err)
+		return
+	}
+	avatar, err := s.userRepo.UpsertUserAvatar(ctx, user.ID, avatarInput)
+	if err != nil {
+		logger.LegacyPrintf("service.auth", "[Auth] Failed to apply QQ avatar for user %d: %v", user.ID, err)
+		return
+	}
+	applyUserAvatar(user, avatar)
 }
 
 // SendVerifyCodeResult 发送验证码返回结果

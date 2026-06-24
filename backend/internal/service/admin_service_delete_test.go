@@ -13,18 +13,21 @@ import (
 )
 
 type userRepoStub struct {
-	user          *User
-	getErr        error
-	createErr     error
-	deleteErr     error
-	exists        bool
-	existsErr     error
-	nextID        int64
-	created       []*User
-	updated       []*User
-	deletedIDs    []int64
-	usersByEmail  map[string]*User
-	getByEmailErr error
+	user                *User
+	getErr              error
+	createErr           error
+	deleteErr           error
+	exists              bool
+	existsErr           error
+	nextID              int64
+	created             []*User
+	updated             []*User
+	deletedIDs          []int64
+	usersByEmail        map[string]*User
+	getByEmailErr       error
+	upsertAvatarErr     error
+	upsertAvatarArgs    []UpsertUserAvatarInput
+	upsertAvatarUserIDs []int64
 }
 
 func (s *userRepoStub) Create(ctx context.Context, user *User) error {
@@ -92,7 +95,27 @@ func (s *userRepoStub) GetUserAvatar(ctx context.Context, userID int64) (*UserAv
 }
 
 func (s *userRepoStub) UpsertUserAvatar(ctx context.Context, userID int64, input UpsertUserAvatarInput) (*UserAvatar, error) {
-	panic("unexpected UpsertUserAvatar call")
+	if s.upsertAvatarErr != nil {
+		return nil, s.upsertAvatarErr
+	}
+	s.upsertAvatarUserIDs = append(s.upsertAvatarUserIDs, userID)
+	s.upsertAvatarArgs = append(s.upsertAvatarArgs, input)
+	avatar := &UserAvatar{
+		StorageProvider: input.StorageProvider,
+		StorageKey:      input.StorageKey,
+		URL:             input.URL,
+		ContentType:     input.ContentType,
+		ByteSize:        input.ByteSize,
+		SHA256:          input.SHA256,
+	}
+	if s.user != nil && s.user.ID == userID {
+		s.user.AvatarURL = avatar.URL
+		s.user.AvatarSource = avatar.StorageProvider
+		s.user.AvatarMIME = avatar.ContentType
+		s.user.AvatarByteSize = avatar.ByteSize
+		s.user.AvatarSHA256 = avatar.SHA256
+	}
+	return avatar, nil
 }
 
 func (s *userRepoStub) DeleteUserAvatar(ctx context.Context, userID int64) error {

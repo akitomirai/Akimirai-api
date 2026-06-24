@@ -18,6 +18,9 @@
               <Icon v-if="selected" name="check" size="sm" class="text-primary-500" :stroke-width="2" />
             </template>
           </Select>
+          <p v-if="!hasSubscriptionGroups" class="mt-1 text-xs leading-5 text-amber-600 dark:text-amber-300">
+            {{ t('payment.admin.noSubscriptionGroupsDialogHint') }}
+          </p>
         </div>
       </div>
 
@@ -70,7 +73,7 @@
     <template #footer>
       <div class="flex justify-end gap-3">
         <button type="button" @click="emit('close')" class="btn btn-secondary">{{ t('common.cancel') }}</button>
-        <button type="submit" form="plan-form" :disabled="saving" class="btn btn-primary">{{ saving ? t('common.saving') : t('common.save') }}</button>
+        <button type="submit" form="plan-form" :disabled="saving || !hasSubscriptionGroups" class="btn btn-primary">{{ saving ? t('common.saving') : t('common.save') }}</button>
       </div>
     </template>
   </BaseDialog>
@@ -123,6 +126,8 @@ const groupOptions = computed(() =>
       platform: g.platform,
     })),
 )
+
+const hasSubscriptionGroups = computed(() => groupOptions.value.length > 0)
 
 const selectedGroupInfo = computed(() => {
   if (!planForm.group_id) return null

@@ -1,0 +1,9 @@
+akimirai.xyz {
+    handle_path /rent-ledger/* {
+        root * /var/www/rent-ledger
+        file_server
+        header Cache-Control "no-store"
+    }
+
+    reverse_proxy localhost:8080
+}

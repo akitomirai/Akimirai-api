@@ -36,6 +36,7 @@ const messages: Record<string, string> = {
   'usage.reasoningEffort': 'Reasoning Effort',
   'usage.type': 'Type',
   'usage.tokens': 'Tokens',
+  'usage.cacheHitRate': 'Cache Hit Rate',
   'usage.cost': 'Cost',
   'usage.firstToken': 'First Token',
   'usage.duration': 'Duration',
@@ -98,6 +99,7 @@ const DataTableStub = {
       <div v-for="row in data" :key="row.request_id">
         <slot name="cell-billing_mode" :row="row" />
         <slot name="cell-tokens" :row="row" />
+        <slot name="cell-cache_hit_rate" :row="row" />
         <slot name="cell-cost" :row="row" />
       </div>
     </div>
@@ -212,6 +214,7 @@ describe('user UsageView tooltip', () => {
     expect(text).toContain('1.00x')
     expect(text).toContain('Billed')
     expect(text).toContain('$0.092883')
+    expect(text).toContain('98.6%')
     expect(text).toContain('$5.0000 / 1M tokens')
     expect(text).toContain('$30.0000 / 1M tokens')
   })

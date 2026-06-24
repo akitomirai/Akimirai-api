@@ -7,6 +7,7 @@ import (
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
+	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
@@ -223,6 +224,18 @@ type CreateOrderRequest struct {
 	IsMobile *bool `json:"is_mobile,omitempty"`
 }
 
+type BalanceSubscriptionRequest struct {
+	PlanID int64 `json:"plan_id" binding:"required"`
+}
+
+type BalanceSubscriptionResponse struct {
+	Subscription  *dto.UserSubscription `json:"subscription"`
+	BalanceBefore float64               `json:"balance_before"`
+	BalanceAfter  float64               `json:"balance_after"`
+	Price         float64               `json:"price"`
+	Shortfall     float64               `json:"shortfall"`
+}
+
 // CreateOrder creates a new payment order.
 // POST /api/v1/payment/orders
 func (h *PaymentHandler) CreateOrder(c *gin.Context) {
@@ -273,6 +286,38 @@ func (h *PaymentHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 	response.Success(c, result)
+}
+
+// PurchaseSubscriptionWithBalance buys a subscription plan with user balance.
+// POST /api/v1/payment/subscriptions/balance
+func (h *PaymentHandler) PurchaseSubscriptionWithBalance(c *gin.Context) {
+	subject, ok := requireAuth(c)
+	if !ok {
+		return
+	}
+
+	var req BalanceSubscriptionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+
+	result, err := h.paymentService.PurchaseSubscriptionWithBalance(c.Request.Context(), service.BalanceSubscriptionPurchaseInput{
+		UserID: subject.UserID,
+		PlanID: req.PlanID,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	response.Success(c, BalanceSubscriptionResponse{
+		Subscription:  dto.UserSubscriptionFromService(result.Subscription),
+		BalanceBefore: result.BalanceBefore,
+		BalanceAfter:  result.BalanceAfter,
+		Price:         result.Price,
+		Shortfall:     result.Shortfall,
+	})
 }
 
 func applyWeChatPaymentResumeClaims(req *CreateOrderRequest, claims *service.WeChatPaymentResumeClaims) error {

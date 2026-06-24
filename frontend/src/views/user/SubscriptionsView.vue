@@ -8,23 +8,68 @@
         ></div>
       </div>
 
-      <!-- Empty State -->
-      <div v-else-if="subscriptions.length === 0" class="card p-12 text-center">
-        <div
-          class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-dark-700"
-        >
-          <Icon name="creditCard" size="xl" class="text-gray-400" />
+      <template v-else>
+        <div class="grid gap-4 md:grid-cols-3">
+          <div class="card p-4">
+            <p class="text-xs font-medium text-gray-400 dark:text-gray-500">{{ t('payment.currentBalance') }}</p>
+            <p class="mt-1 text-xl font-bold text-gray-900 dark:text-white">{{ formatBalanceAmount(currentBalance) }}</p>
+          </div>
+          <div class="card p-4">
+            <p class="text-xs font-medium text-gray-400 dark:text-gray-500">{{ t('payment.availablePlans') }}</p>
+            <p class="mt-1 text-xl font-bold text-gray-900 dark:text-white">{{ plans.length }}</p>
+          </div>
+          <div class="card p-4">
+            <p class="text-xs font-medium text-gray-400 dark:text-gray-500">{{ t('payment.activeSubscription') }}</p>
+            <p class="mt-1 text-xl font-bold text-gray-900 dark:text-white">{{ activeSubscriptionCount }}</p>
+          </div>
         </div>
-        <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-          {{ t('userSubscriptions.noActiveSubscriptions') }}
-        </h3>
-        <p class="text-gray-500 dark:text-dark-400">
-          {{ t('userSubscriptions.noActiveSubscriptionsDesc') }}
-        </p>
-      </div>
 
-      <!-- Subscriptions Grid -->
-      <div v-else class="grid gap-6 lg:grid-cols-2">
+        <section class="space-y-3">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('payment.subscriptionMarketplace') }}</h2>
+            <button class="btn btn-secondary px-3 py-2 text-sm" @click="loadPage">
+              {{ t('common.refresh') }}
+            </button>
+          </div>
+          <div v-if="plans.length === 0" class="card py-12 text-center">
+            <Icon name="gift" size="xl" class="mx-auto mb-3 text-gray-300 dark:text-dark-600" />
+            <p class="text-gray-500 dark:text-gray-400">{{ t('payment.noPlans') }}</p>
+          </div>
+          <div v-else :class="planGridClass">
+            <SubscriptionPlanCard
+              v-for="plan in plans"
+              :key="plan.id"
+              :plan="plan"
+              :active-subscriptions="subscriptions"
+              :balance="currentBalance"
+              :show-balance-action="true"
+              :balance-action-loading="balancePurchasePlanId === plan.id"
+              @select="goExternalSubscribe"
+              @balance-subscribe="handleBalanceSubscribe"
+              @recharge="goRechargeForPlan"
+            />
+          </div>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('userSubscriptions.title') }}</h2>
+
+          <div v-if="subscriptions.length === 0" class="card p-12 text-center">
+            <div
+              class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-dark-700"
+            >
+              <Icon name="creditCard" size="xl" class="text-gray-400" />
+            </div>
+            <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+              {{ t('userSubscriptions.noActiveSubscriptions') }}
+            </h3>
+            <p class="text-gray-500 dark:text-dark-400">
+              {{ t('userSubscriptions.noActiveSubscriptionsDesc') }}
+            </p>
+          </div>
+
+          <!-- Subscriptions Grid -->
+          <div v-else class="grid gap-6 lg:grid-cols-2">
         <div
           v-for="subscription in subscriptions"
           :key="subscription.id"
@@ -223,7 +268,7 @@
               class="flex items-center justify-center rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 py-6 dark:from-emerald-900/20 dark:to-teal-900/20"
             >
               <div class="flex items-center gap-3">
-                <span class="text-4xl text-emerald-600 dark:text-emerald-400">∞</span>
+                <span class="text-4xl text-emerald-600 dark:text-emerald-400">&infin;</span>
                 <div>
                   <p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
                     {{ t('userSubscriptions.unlimited') }}
@@ -236,20 +281,28 @@
             </div>
           </div>
         </div>
-      </div>
+          </div>
+        </section>
+      </template>
     </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
+import { useAuthStore } from '@/stores/auth'
+import { useSubscriptionStore } from '@/stores/subscriptions'
 import subscriptionsAPI from '@/api/subscriptions'
+import { paymentAPI } from '@/api/payment'
+import { extractI18nErrorMessage } from '@/utils/apiError'
 import type { UserSubscription } from '@/types'
+import type { SubscriptionPlan } from '@/types/payment'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
+import SubscriptionPlanCard from '@/components/payment/SubscriptionPlanCard.vue'
 import { formatDateOnly } from '@/utils/format'
 import { platformBorderClass, platformBadgeClass, platformButtonClass, platformLabel } from '@/utils/platformColors'
 import { getRemainingDurationParts, isOneTimeDailyQuota, type RemainingDurationParts } from '@/utils/subscriptionQuota'
@@ -267,19 +320,94 @@ function platformAccentDotClass(p: string): string {
 const { t } = useI18n()
 const router = useRouter()
 const appStore = useAppStore()
+const authStore = useAuthStore()
+const subscriptionStore = useSubscriptionStore()
 
 const subscriptions = ref<UserSubscription[]>([])
+const plans = ref<SubscriptionPlan[]>([])
 const loading = ref(true)
+const balancePurchasePlanId = ref<number | null>(null)
+
+const currentBalance = computed(() => Number(authStore.user?.balance ?? 0))
+const activeSubscriptionCount = computed(() => subscriptions.value.filter(sub => sub.status === 'active').length)
+const planGridClass = computed(() => {
+  const n = plans.value.length
+  if (n <= 2) return 'grid grid-cols-1 gap-5 sm:grid-cols-2'
+  return 'grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3'
+})
 
 async function loadSubscriptions() {
+  subscriptions.value = await subscriptionsAPI.getMySubscriptions()
+}
+
+async function loadPlans() {
+  const response = await paymentAPI.getCheckoutInfo()
+  plans.value = response.data.plans || []
+}
+
+async function loadPage() {
   try {
     loading.value = true
-    subscriptions.value = await subscriptionsAPI.getMySubscriptions()
+    await Promise.all([
+      loadSubscriptions(),
+      loadPlans(),
+      authStore.refreshUser().catch(() => undefined),
+      subscriptionStore.fetchActiveSubscriptions(true).catch(() => []),
+    ])
   } catch (error) {
     console.error('Failed to load subscriptions:', error)
     appStore.showError(t('userSubscriptions.failedToLoad'))
   } finally {
     loading.value = false
+  }
+}
+
+function roundMoney(value: number): number {
+  return Math.round(Number(value || 0) * 100) / 100
+}
+
+function formatBalanceAmount(value: number): string {
+  return `$${roundMoney(value).toFixed(2)}`
+}
+
+function getPlanBalanceShortfall(plan: SubscriptionPlan): number {
+  return Math.max(0, roundMoney(Number(plan.price || 0) - currentBalance.value))
+}
+
+function goExternalSubscribe(plan: SubscriptionPlan) {
+  router.push({ path: '/purchase', query: { tab: 'subscription', group: String(plan.group_id) } })
+}
+
+function goRechargeForPlan(plan: SubscriptionPlan) {
+  const shortfall = getPlanBalanceShortfall(plan)
+  appStore.showWarning(t('payment.balanceInsufficientWithShortfall', { amount: formatBalanceAmount(shortfall) }))
+  router.push({ path: '/purchase', query: { tab: 'recharge' } })
+}
+
+async function handleBalanceSubscribe(plan: SubscriptionPlan) {
+  if (!plan || balancePurchasePlanId.value !== null) return
+  const shortfall = getPlanBalanceShortfall(plan)
+  if (shortfall > 0) {
+    goRechargeForPlan(plan)
+    return
+  }
+
+  balancePurchasePlanId.value = plan.id
+  try {
+    const result = await subscriptionStore.purchaseWithBalance(plan.id)
+    await Promise.all([
+      authStore.refreshUser(),
+      loadSubscriptions(),
+      subscriptionStore.fetchActiveSubscriptions(true),
+    ])
+    appStore.showSuccess(t('payment.balanceSubscribeSuccess', {
+      amount: formatBalanceAmount(result.price),
+      balance: formatBalanceAmount(result.balance_after),
+    }))
+  } catch (error: unknown) {
+    appStore.showError(extractI18nErrorMessage(error, t, 'payment.errors', t('payment.balanceSubscribeFailed')))
+  } finally {
+    balancePurchasePlanId.value = null
   }
 }
 
@@ -366,6 +494,6 @@ function formatResetTime(windowStart: string | null, windowHours: number): strin
 }
 
 onMounted(() => {
-  loadSubscriptions()
+  loadPage()
 })
 </script>

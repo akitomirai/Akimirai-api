@@ -215,9 +215,13 @@ export type OpsOpenAITokenStatsTimeRange = '30m' | '1h' | '1d' | '15d' | '30d'
 export interface OpsOpenAITokenStatsItem {
   model: string
   request_count: number
+  total_input_tokens: number
   avg_tokens_per_sec?: number | null
   avg_first_token_ms?: number | null
   total_output_tokens: number
+  total_cache_creation_tokens: number
+  total_cache_read_tokens: number
+  cache_read_ratio?: number | null
   avg_duration_ms: number
   requests_with_first_token: number
 }

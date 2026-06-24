@@ -35,14 +35,18 @@ func TestOpsRepositoryGetOpenAITokenStats_PaginationMode(t *testing.T) {
 	rows := sqlmock.NewRows([]string{
 		"model",
 		"request_count",
+		"total_input_tokens",
 		"avg_tokens_per_sec",
 		"avg_first_token_ms",
 		"total_output_tokens",
+		"total_cache_creation_tokens",
+		"total_cache_read_tokens",
+		"cache_read_ratio",
 		"avg_duration_ms",
 		"requests_with_first_token",
 	}).
-		AddRow("gpt-4o-mini", int64(20), 21.56, 120.34, int64(3000), int64(850), int64(18)).
-		AddRow("gpt-4.1", int64(20), 10.2, 240.0, int64(2500), int64(900), int64(20))
+		AddRow("gpt-4o-mini", int64(20), int64(12000), 21.56, 120.34, int64(3000), int64(900), int64(4200), 0.35, int64(850), int64(18)).
+		AddRow("gpt-4.1", int64(20), int64(10000), 10.2, 240.0, int64(2500), int64(0), int64(0), 0.0, int64(900), int64(20))
 
 	mock.ExpectQuery(`ORDER BY request_count DESC, model ASC\s+LIMIT \$5 OFFSET \$6`).
 		WithArgs(start, end, groupID, "openai", 10, 10).
@@ -64,6 +68,11 @@ func TestOpsRepositoryGetOpenAITokenStats_PaginationMode(t *testing.T) {
 	require.InDelta(t, 21.56, *resp.Items[0].AvgTokensPerSec, 0.0001)
 	require.NotNil(t, resp.Items[0].AvgFirstTokenMs)
 	require.InDelta(t, 120.34, *resp.Items[0].AvgFirstTokenMs, 0.0001)
+	require.Equal(t, int64(12000), resp.Items[0].TotalInputTokens)
+	require.Equal(t, int64(900), resp.Items[0].TotalCacheCreationTokens)
+	require.Equal(t, int64(4200), resp.Items[0].TotalCacheReadTokens)
+	require.NotNil(t, resp.Items[0].CacheReadRatio)
+	require.InDelta(t, 0.35, *resp.Items[0].CacheReadRatio, 0.0001)
 
 	require.NoError(t, mock.ExpectationsWereMet())
 }
@@ -88,13 +97,17 @@ func TestOpsRepositoryGetOpenAITokenStats_TopNMode(t *testing.T) {
 	rows := sqlmock.NewRows([]string{
 		"model",
 		"request_count",
+		"total_input_tokens",
 		"avg_tokens_per_sec",
 		"avg_first_token_ms",
 		"total_output_tokens",
+		"total_cache_creation_tokens",
+		"total_cache_read_tokens",
+		"cache_read_ratio",
 		"avg_duration_ms",
 		"requests_with_first_token",
 	}).
-		AddRow("gpt-4o", int64(5), nil, nil, int64(0), int64(0), int64(0))
+		AddRow("gpt-4o", int64(5), int64(0), nil, nil, int64(0), int64(0), int64(0), nil, int64(0), int64(0))
 
 	mock.ExpectQuery(`ORDER BY request_count DESC, model ASC\s+LIMIT \$3`).
 		WithArgs(start, end, 5).
@@ -137,9 +150,13 @@ func TestOpsRepositoryGetOpenAITokenStats_EmptyResult(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{
 			"model",
 			"request_count",
+			"total_input_tokens",
 			"avg_tokens_per_sec",
 			"avg_first_token_ms",
 			"total_output_tokens",
+			"total_cache_creation_tokens",
+			"total_cache_read_tokens",
+			"cache_read_ratio",
 			"avg_duration_ms",
 			"requests_with_first_token",
 		}))

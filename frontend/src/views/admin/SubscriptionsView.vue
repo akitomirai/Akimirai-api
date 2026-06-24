@@ -186,14 +186,14 @@
                 <span class="text-sm font-medium text-primary-700 dark:text-primary-300">
                   {{ userColumnMode === 'email'
                     ? (row.user?.email?.charAt(0).toUpperCase() || '?')
-                    : (row.user?.username?.charAt(0).toUpperCase() || '?')
+                    : resolveUserDisplayName(row.user, t('admin.redeem.userPrefix', { id: row.user_id })).charAt(0).toUpperCase()
                   }}
                 </span>
               </div>
               <span class="font-medium text-gray-900 dark:text-white">
                 {{ userColumnMode === 'email'
                   ? (row.user?.email || t('admin.redeem.userPrefix', { id: row.user_id }))
-                  : (row.user?.username || '-')
+                  : resolveUserDisplayName(row.user, '-')
                 }}
               </span>
             </div>
@@ -746,6 +746,7 @@ import type { UserSubscription, Group, GroupPlatform, SubscriptionType } from '@
 import type { SimpleUser } from '@/api/admin/usage'
 import type { Column } from '@/components/common/types'
 import { formatDateOnly } from '@/utils/format'
+import { resolveUserDisplayName } from '@/utils/userDisplay'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'

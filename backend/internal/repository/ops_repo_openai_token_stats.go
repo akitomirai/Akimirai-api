@@ -39,6 +39,7 @@ WITH stats AS (
   SELECT
     ul.model AS model,
     COUNT(*)::bigint AS request_count,
+    COALESCE(SUM(ul.input_tokens), 0)::bigint AS total_input_tokens,
     ROUND(
       AVG(
         CASE
@@ -50,6 +51,15 @@ WITH stats AS (
     )::float8 AS avg_tokens_per_sec,
     ROUND(AVG(ul.first_token_ms)::numeric, 2)::float8 AS avg_first_token_ms,
     COALESCE(SUM(ul.output_tokens), 0)::bigint AS total_output_tokens,
+    COALESCE(SUM(ul.cache_creation_tokens), 0)::bigint AS total_cache_creation_tokens,
+    COALESCE(SUM(ul.cache_read_tokens), 0)::bigint AS total_cache_read_tokens,
+    ROUND(
+      (
+        COALESCE(SUM(ul.cache_read_tokens), 0)::numeric /
+        NULLIF(COALESCE(SUM(ul.input_tokens), 0), 0)
+      ),
+      4
+    )::float8 AS cache_read_ratio,
     COALESCE(ROUND(AVG(ul.duration_ms)::numeric, 0), 0)::bigint AS avg_duration_ms,
     COUNT(CASE WHEN ul.first_token_ms IS NOT NULL THEN 1 END)::bigint AS requests_with_first_token
   FROM usage_logs ul
@@ -69,9 +79,13 @@ WITH stats AS (
 SELECT
   model,
   request_count,
+  total_input_tokens,
   avg_tokens_per_sec,
   avg_first_token_ms,
   total_output_tokens,
+  total_cache_creation_tokens,
+  total_cache_read_tokens,
+  cache_read_ratio,
   avg_duration_ms,
   requests_with_first_token
 FROM stats
@@ -100,12 +114,17 @@ ORDER BY request_count DESC, model ASC`
 		item := &service.OpsOpenAITokenStatsItem{}
 		var avgTPS sql.NullFloat64
 		var avgFirstToken sql.NullFloat64
+		var cacheReadRatio sql.NullFloat64
 		if err := rows.Scan(
 			&item.Model,
 			&item.RequestCount,
+			&item.TotalInputTokens,
 			&avgTPS,
 			&avgFirstToken,
 			&item.TotalOutputTokens,
+			&item.TotalCacheCreationTokens,
+			&item.TotalCacheReadTokens,
+			&cacheReadRatio,
 			&item.AvgDurationMs,
 			&item.RequestsWithFirstToken,
 		); err != nil {
@@ -118,6 +137,10 @@ ORDER BY request_count DESC, model ASC`
 		if avgFirstToken.Valid {
 			v := avgFirstToken.Float64
 			item.AvgFirstTokenMs = &v
+		}
+		if cacheReadRatio.Valid {
+			v := cacheReadRatio.Float64
+			item.CacheReadRatio = &v
 		}
 		items = append(items, item)
 	}

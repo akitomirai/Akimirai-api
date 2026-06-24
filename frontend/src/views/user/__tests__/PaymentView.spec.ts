@@ -14,11 +14,24 @@ const routerResolve = vi.hoisted(() => vi.fn(() => ({ href: '/payment/stripe?moc
 const createOrder = vi.hoisted(() => vi.fn())
 const refreshUser = vi.hoisted(() => vi.fn())
 const fetchActiveSubscriptions = vi.hoisted(() => vi.fn().mockResolvedValue(undefined))
+const purchaseWithBalance = vi.hoisted(() => vi.fn())
 const showError = vi.hoisted(() => vi.fn())
 const showInfo = vi.hoisted(() => vi.fn())
 const showWarning = vi.hoisted(() => vi.fn())
+const showSuccess = vi.hoisted(() => vi.fn())
 const getCheckoutInfo = vi.hoisted(() => vi.fn())
+const getMyOrders = vi.hoisted(() => vi.fn())
 const bridgeInvoke = vi.hoisted(() => vi.fn())
+const subscriptionState = vi.hoisted(() => ({
+  activeSubscriptions: [] as unknown[],
+}))
+const authState = vi.hoisted(() => ({
+  user: {
+    username: 'demo-user',
+    email: 'demo@example.com',
+    balance: 0,
+  },
+}))
 
 vi.mock('vue-router', async () => {
   const actual = await vi.importActual<typeof import('vue-router')>('vue-router')
@@ -45,9 +58,8 @@ vi.mock('vue-i18n', async () => {
 
 vi.mock('@/stores/auth', () => ({
   useAuthStore: () => ({
-    user: {
-      username: 'demo-user',
-      balance: 0,
+    get user() {
+      return authState.user
     },
     refreshUser,
   }),
@@ -61,13 +73,17 @@ vi.mock('@/stores/payment', () => ({
 
 vi.mock('@/stores/subscriptions', () => ({
   useSubscriptionStore: () => ({
-    activeSubscriptions: [],
+    get activeSubscriptions() {
+      return subscriptionState.activeSubscriptions
+    },
     fetchActiveSubscriptions,
+    purchaseWithBalance,
   }),
 }))
 
 vi.mock('@/stores', () => ({
   useAppStore: () => ({
+    showSuccess,
     showError,
     showInfo,
     showWarning,
@@ -77,6 +93,7 @@ vi.mock('@/stores', () => ({
 vi.mock('@/api/payment', () => ({
   paymentAPI: {
     getCheckoutInfo,
+    getMyOrders,
   },
 }))
 
@@ -193,10 +210,23 @@ describe('PaymentView WeChat JSAPI flow', () => {
     createOrder.mockReset()
     refreshUser.mockReset()
     fetchActiveSubscriptions.mockReset().mockResolvedValue(undefined)
+    purchaseWithBalance.mockReset().mockResolvedValue({
+      price: 128,
+      balance_after: 72,
+      balance_before: 200,
+      shortfall: 0,
+      subscription: {},
+    })
     showError.mockReset()
     showInfo.mockReset()
     showWarning.mockReset()
+    showSuccess.mockReset()
     getCheckoutInfo.mockReset().mockResolvedValue(checkoutInfoFixture())
+    getMyOrders.mockReset().mockResolvedValue({ data: { items: [], total: 0, page: 1, page_size: 5 } })
+    subscriptionState.activeSubscriptions = []
+    authState.user.username = 'demo-user'
+    authState.user.email = 'demo@example.com'
+    authState.user.balance = 0
     bridgeInvoke.mockReset()
     window.localStorage.clear()
     ;(window as Window & { WeixinJSBridge?: { invoke: typeof bridgeInvoke } }).WeixinJSBridge = {
@@ -414,5 +444,112 @@ describe('PaymentView WeChat JSAPI flow', () => {
     expect(showWarning).toHaveBeenCalledWith('payment.errors.mobilePaymentFallbackToQr')
     expect(showError).not.toHaveBeenCalled()
     expect(window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)).toContain('weixin://wxpay/bizpayurl?pr=fallback-native')
+  })
+
+  it('uses balance for subscription without creating a provider order', async () => {
+    routeState.query = { tab: 'subscription' }
+    authState.user.balance = 200
+    getCheckoutInfo.mockResolvedValue(checkoutInfoWithPlansFixture())
+    createOrder.mockReset()
+
+    const wrapper = shallowMount(PaymentView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          Teleport: true,
+          Transition: false,
+          SubscriptionPlanCard: {
+            props: ['plan'],
+            emits: ['balance-subscribe', 'recharge', 'select'],
+            template: '<button data-test="balance-buy" @click="$emit(\'balance-subscribe\', plan)">balance</button>',
+          },
+        },
+      },
+    })
+    await flushPromises()
+    await flushPromises()
+
+    const button = wrapper.find('[data-test="balance-buy"]')
+    expect(button.exists()).toBe(true)
+    await button.trigger('click')
+    await flushPromises()
+
+    expect(purchaseWithBalance).toHaveBeenCalledWith(7)
+    expect(refreshUser).toHaveBeenCalled()
+    expect(fetchActiveSubscriptions).toHaveBeenCalledWith(true)
+    expect(showSuccess).toHaveBeenCalledWith(expect.stringContaining('payment.balanceSubscribeSuccess'))
+    expect(createOrder).not.toHaveBeenCalled()
+  })
+
+  it('renders store overview with account balance plans subscriptions and recent orders', async () => {
+    routeState.query = {}
+    authState.user.balance = 42.5
+    subscriptionState.activeSubscriptions = [{ id: 9 }]
+    getCheckoutInfo.mockResolvedValue(checkoutInfoWithPlansFixture())
+    getMyOrders.mockResolvedValue({
+      data: {
+        items: [{
+          id: 1,
+          order_type: 'balance',
+          amount: 10,
+          pay_amount: 10,
+          status: 'COMPLETED',
+          created_at: '2026-06-22T01:00:00Z',
+          payment_type: 'alipay',
+          currency: 'CNY',
+        }],
+        total: 1,
+        page: 1,
+        page_size: 5,
+      },
+    })
+
+    const wrapper = shallowMount(PaymentView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          Icon: true,
+          Teleport: true,
+          Transition: false,
+        },
+      },
+    })
+    await flushPromises()
+    await flushPromises()
+
+    const text = wrapper.text()
+    expect(text).toContain('payment.storeKicker')
+    expect(text).toContain('payment.storeTitle')
+    expect(text).toContain('payment.storeSubtitle')
+    expect(text).toContain('payment.storeSummaryBalance')
+    expect(text).toContain('$42.50')
+    expect(text).toContain('payment.storeSummaryPlans')
+    expect(text).toContain('payment.storeSummaryActive')
+    expect(text).toContain('payment.storeSummaryOrders')
+    expect(text).toContain('payment.tabTopUp')
+    expect(text).toContain('payment.tabSubscribe')
+  })
+
+  it('falls back to QQ display name when username is empty', async () => {
+    routeState.query = {}
+    authState.user.username = ''
+    authState.user.email = '123456789@qq.com'
+    getCheckoutInfo.mockResolvedValue(checkoutInfoWithPlansFixture())
+    getMyOrders.mockResolvedValue({ data: { items: [], total: 0, page: 1, page_size: 5 } })
+
+    const wrapper = shallowMount(PaymentView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          Icon: true,
+          Teleport: true,
+          Transition: false,
+        },
+      },
+    })
+    await flushPromises()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('QQ 123456789')
   })
 })

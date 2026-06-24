@@ -4981,6 +4981,7 @@ func (s *SettingService) GetDefaultPlatformQuotas(ctx context.Context) (map[stri
 		"openai":      {},
 		"gemini":      {},
 		"antigravity": {},
+		"grok":        {},
 	}
 	raw, err := s.settingRepo.GetValue(ctx, SettingKeyDefaultPlatformQuotas)
 	if err != nil || raw == "" {

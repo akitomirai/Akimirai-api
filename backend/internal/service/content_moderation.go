@@ -109,6 +109,274 @@ var contentModerationCategoryOrder = []string{
 	"violence/graphic",
 }
 
+var defaultContentModerationBlockedKeywords = []string{
+	"sql injection exploit",
+	"xss payload",
+	"rce exploit",
+	"remote code execution exploit",
+	"reverse shell payload",
+	"reverse shell script",
+	"write reverse shell",
+	"write webshell",
+	"webshell payload",
+	"privilege escalation exploit",
+	"how to bypass waf",
+	"waf bypass payload",
+	"captcha bypass script",
+	"captcha bypass tool",
+	"solve captcha automatically",
+	"credential stuffing tool",
+	"credential stuffing script",
+	"credential stuffing attack",
+	"password spraying tool",
+	"password spraying script",
+	"password brute force script",
+	"password brute force tool",
+	"how to brute force password",
+	"credential theft tool",
+	"credential theft script",
+	"steal credentials",
+	"unauthorized penetration script",
+	"unauthorized pentest exploit",
+	"penetration attack script",
+	"phishing kit",
+	"write malware",
+	"malware payload",
+	"trojan code",
+	"keylogger code",
+	"credential stealer",
+	"botnet command",
+	"ddos attack",
+	"malware detection evasion",
+	"detection evasion code",
+	"antivirus evasion code",
+	"evade antivirus",
+	"license bypass crack",
+	"bypass license check",
+	"drm bypass crack",
+	"activation bypass crack",
+	"write keygen",
+	"keygen for",
+	"mass signup tool",
+	"mass signup bot",
+	"account farming tool",
+	"account farming bot",
+	"fake review bot",
+	"automated fake review",
+	"scrape at scale from protected sites",
+	"scrape at scale bypassing anti bot",
+	"anti bot bypass script",
+	"anti bot bypass tool",
+	"anti crawler bypass script",
+	"anti crawler bypass tool",
+	"tampermonkey spam bot",
+	"tampermonkey scalping bot",
+	"write jailbreak prompt to bypass",
+	"generate jailbreak prompt to bypass",
+	"help me generate jailbreak prompt",
+	"write prompt to bypass content policy",
+	"generate prompt to bypass content policy",
+	"help me generate prompt to bypass content policy",
+	"bypass risk control script",
+	"write bypass risk control prompt",
+	"generate bypass risk control prompt",
+	"write bypass security policy prompt",
+	"generate bypass security policy prompt",
+	"write bypass safety checks prompt",
+	"generate bypass safety checks prompt",
+	"ios jailbreak bypass",
+	"android root bypass",
+	"doxxing lookup",
+	"harassment campaign",
+	"bulk harassment",
+	"blackmail message",
+	"sql注入脚本",
+	"xss攻击脚本",
+	"rce漏洞利用",
+	"反弹shell脚本",
+	"反弹shell payload",
+	"写反弹shell",
+	"生成反弹shell",
+	"写入webshell",
+	"getshell payload",
+	"getshell脚本",
+	"未授权渗透脚本",
+	"渗透攻击脚本",
+	"内网渗透工具",
+	"批量扫漏洞脚本",
+	"批量扫漏洞工具",
+	"木马免杀",
+	"编写木马",
+	"键盘记录器代码",
+	"编写键盘记录器",
+	"批量撞库",
+	"撞库工具",
+	"密码爆破脚本",
+	"密码爆破工具",
+	"验证码破解脚本",
+	"验证码破解工具",
+	"破解验证码脚本",
+	"破解验证码工具",
+	"绕过验证码脚本",
+	"绕过验证码工具",
+	"绕过滑块脚本",
+	"绕过滑块工具",
+	"绕过waf脚本",
+	"绕过waf payload",
+	"绕过反爬批量抓取脚本",
+	"绕过反爬批量抓取工具",
+	"绕过安全检测脚本",
+	"安全策略绕过脚本",
+	"批量注册脚本",
+	"批量注册工具",
+	"批量养号工具",
+	"批量养号脚本",
+	"自动化批量注册脚本",
+	"自动化批量注册工具",
+	"自动刷单脚本",
+	"自动刷单工具",
+	"自动刷单机器人",
+	"帮我自动刷单",
+	"自动刷量脚本",
+	"自动刷量工具",
+	"帮我自动刷量",
+	"自动控评脚本",
+	"自动控评工具",
+	"自动控评机器人",
+	"批量抓取禁爬脚本",
+	"批量抓取禁爬工具",
+	"帮我批量抓取禁爬",
+	"批量爬取禁爬脚本",
+	"批量爬取禁爬工具",
+	"爬虫绕过反爬脚本",
+	"爬虫绕过反爬工具",
+	"爬虫批量抓取禁爬平台",
+	"帮我人肉搜索",
+	"人肉搜索某人",
+	"人肉搜索对方",
+	"曝光他人隐私",
+	"曝光隐私信息",
+	"公布隐私信息",
+	"生成网暴话术",
+	"批量生成网暴话术",
+	"批量辱骂",
+	"批量恶意辱骂",
+	"生成恶意辱骂",
+	"生成恐吓短信",
+	"群发恐吓短信",
+	"生成勒索信息",
+	"群发勒索信息",
+	"钓鱼群发脚本",
+	"钓鱼群发模板",
+	"批量钓鱼群发",
+	"诈骗群发脚本",
+	"诈骗群发模板",
+	"批量诈骗群发",
+	"授权绕过脚本",
+	"绕过授权校验",
+	"绕过授权检测",
+	"激活破解工具",
+	"破解激活工具",
+	"脱壳破解工具",
+	"逆向破解授权",
+	"逆向破解许可",
+	"编写外挂",
+	"外挂开发",
+	"外挂脚本",
+	"编写作弊器",
+	"作弊器开发",
+	"油猴刷量脚本",
+	"油猴刷单脚本",
+	"油猴抢购脚本",
+	"油猴自动抢购脚本",
+	"油猴批量刷量脚本",
+	"app自动化抢购脚本",
+	"app自动化绕过风控脚本",
+	"网页自动化刷量脚本",
+	"网页自动化刷单脚本",
+	"网页自动化绕过风控脚本",
+	"越狱绕过检测",
+	"越狱绕过限制",
+	"越狱插件破解",
+	"root检测绕过",
+	"绕过风控脚本",
+	"生成绕过内容审计提示词",
+	"编写绕过内容审计提示词",
+	"帮我生成绕过内容审计提示词",
+	"帮我编写绕过内容审计提示词",
+	"帮我生成越狱提示词",
+	"帮我编写越狱提示词",
+	"生成提示词越狱模板",
+	"编写提示词越狱模板",
+	"生成绕过模型安全提示词",
+	"编写绕过模型安全提示词",
+}
+
+var contentModerationOverbroadBlockedKeywords = map[string]struct{}{
+	"security":                        {},
+	"安全":                              {},
+	"pentest":                         {},
+	"penetration test":                {},
+	"渗透":                              {},
+	"渗透测试":                            {},
+	"crawler":                         {},
+	"scraper":                         {},
+	"spider":                          {},
+	"anti crawler bypass":             {},
+	"anti bot bypass":                 {},
+	"爬虫":                              {},
+	"automation":                      {},
+	"automated":                       {},
+	"自动化":                             {},
+	"网页自动化":                           {},
+	"app自动化":                          {},
+	"reverse":                         {},
+	"reverse engineering":             {},
+	"逆向":                              {},
+	"脱壳":                              {},
+	"tampermonkey":                    {},
+	"油猴":                              {},
+	"jailbreak":                       {},
+	"jailbreak prompt":                {},
+	"jailbreak prompt to bypass":      {},
+	"prompt to bypass content policy": {},
+	"bypass content policy prompt":    {},
+	"bypass risk control prompt":      {},
+	"bypass security policy prompt":   {},
+	"bypass safety checks prompt":     {},
+	"越狱":                              {},
+	"绕过验证码":                           {},
+	"破解验证码":                           {},
+	"验证码破解":                           {},
+	"绕过滑块":                            {},
+	"绕过waf":                           {},
+	"绕过反爬":                            {},
+	"绕过安全检测":                          {},
+	"安全策略绕过":                          {},
+	"批量注册":                            {},
+	"批量养号":                            {},
+	"批量抓取":                            {},
+	"批量爬取":                            {},
+	"批量抓取禁爬":                          {},
+	"批量爬取禁爬":                          {},
+	"自动刷单":                            {},
+	"自动刷量":                            {},
+	"自动控评":                            {},
+	"钓鱼群发":                            {},
+	"诈骗群发":                            {},
+	"授权绕过":                            {},
+	"绕过授权":                            {},
+	"激活破解":                            {},
+	"破解激活":                            {},
+	"脱壳破解":                            {},
+	"逆向破解":                            {},
+	"越狱提示词":                           {},
+	"提示词越狱":                           {},
+	"绕过模型安全":                          {},
+	"绕过风控":                            {},
+	"绕过内容审计":                          {},
+}
+
 func ContentModerationDefaultThresholds() map[string]float64 {
 	return map[string]float64{
 		"harassment":             0.98,
@@ -1706,7 +1974,7 @@ func (s *ContentModerationService) sendFlaggedNotificationSideEffects(ctx contex
 			emailSent = true
 		}
 	}
-	if autoBanJustApplied {
+	if cfg.EmailOnHit && autoBanJustApplied {
 		if err := s.sendAccountDisabledEmail(ctx, cfg, log); err != nil {
 			slog.Warn("content_moderation.ban_email_failed", "user_id", *log.UserID, "email", log.UserEmail, "error", err)
 		} else {
@@ -1835,15 +2103,15 @@ func defaultContentModerationConfig() *ContentModerationConfig {
 		QueueSize:            defaultContentModerationQueueSize,
 		BlockStatus:          defaultContentModerationBlockHTTPStatus,
 		BlockMessage:         defaultContentModerationBlockMessage,
-		EmailOnHit:           true,
-		AutoBanEnabled:       true,
+		EmailOnHit:           false,
+		AutoBanEnabled:       false,
 		BanThreshold:         defaultContentModerationBanThreshold,
 		ViolationWindowHours: defaultContentModerationViolationWindowHours,
 		RetryCount:           defaultContentModerationRetryCount,
 		HitRetentionDays:     defaultContentModerationHitRetentionDays,
 		NonHitRetentionDays:  defaultContentModerationNonHitRetentionDays,
 		PreHashCheckEnabled:  false,
-		BlockedKeywords:      []string{},
+		BlockedKeywords:      defaultContentModerationBlockedKeywordList(),
 		KeywordBlockingMode:  ContentModerationKeywordModeKeywordAndAPI,
 		ModelFilter: ContentModerationModelFilter{
 			Type:   ContentModerationModelFilterAll,
@@ -2482,7 +2750,7 @@ func normalizeInt64IDs(ids []int64) []int64 {
 }
 
 func normalizeBlockedKeywords(in []string) []string {
-	if len(in) == 0 {
+	if in == nil {
 		return []string{}
 	}
 	out := make([]string, 0, len(in))
@@ -2494,6 +2762,9 @@ func normalizeBlockedKeywords(in []string) []string {
 		}
 		kw = trimRunes(kw, maxContentModerationBlockedKeywordRunes)
 		key := strings.ToLower(kw)
+		if _, overbroad := contentModerationOverbroadBlockedKeywords[key]; overbroad {
+			continue
+		}
 		if _, ok := seen[key]; ok {
 			continue
 		}
@@ -2504,6 +2775,10 @@ func normalizeBlockedKeywords(in []string) []string {
 		}
 	}
 	return out
+}
+
+func defaultContentModerationBlockedKeywordList() []string {
+	return append([]string(nil), defaultContentModerationBlockedKeywords...)
 }
 
 func normalizeKeywordBlockingMode(mode string) string {
@@ -2723,8 +2998,9 @@ type CyberPolicyRecordInput struct {
 	UpstreamOutTok  int
 }
 
-// RecordCyberPolicyEvent 把一次 cyber_policy 硬阻断写入风控中心日志、计入违规计数、
-// 并给用户发邮件。当前请求已由 gateway 透传给用户；本方法仅做事后记录/通知/计数。
+// RecordCyberPolicyEvent writes an upstream cyber_policy block into the risk log.
+// User-facing side effects stay opt-in: no email and no auto-ban unless the
+// corresponding config switches are enabled.
 // 仅受 risk_control_enabled 总开关约束（不受内容审核 Enabled/Mode/scope/sample 约束）。
 func (s *ContentModerationService) RecordCyberPolicyEvent(ctx context.Context, in CyberPolicyRecordInput) {
 	if s == nil || s.repo == nil {
@@ -2776,7 +3052,7 @@ func (s *ContentModerationService) RecordCyberPolicyEvent(ctx context.Context, i
 	// 开关开时 cyber_policy 不参与封号计数：当次不判定（此处跳过），
 	// 历史行由 CountFlaggedByUserSince 的 excludeCyberPolicy 排除。
 	autoBanned := false
-	if !cfg.CyberPolicyExcludeFromBanCount {
+	if cfg.AutoBanEnabled && !cfg.CyberPolicyExcludeFromBanCount {
 		autoBanned = s.applyFlaggedAccountSideEffects(ctx, cfg, log)
 	}
 	log.EmailSent = false
@@ -2786,7 +3062,7 @@ func (s *ContentModerationService) RecordCyberPolicyEvent(ctx context.Context, i
 		slog.Warn("content_moderation.cyber_create_log_failed", "user_id", in.UserID, "error", err)
 	}
 	emailSent := false
-	if s.emailService != nil && strings.TrimSpace(log.UserEmail) != "" {
+	if cfg.EmailOnHit && s.emailService != nil && strings.TrimSpace(log.UserEmail) != "" {
 		if err := s.sendCyberPolicyEmail(ctx, log); err != nil {
 			slog.Warn("content_moderation.cyber_email_failed", "user_id", in.UserID, "error", err)
 		} else {
