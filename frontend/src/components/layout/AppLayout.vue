@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-dark-950">
+  <div class="min-h-screen bg-white dark:bg-dark-950">
     <!-- Background Decoration -->
-    <div class="pointer-events-none fixed inset-0 bg-mesh-gradient"></div>
+    <div class="pointer-events-none fixed inset-0 bg-transparent-grid"></div>
 
     <!-- Sidebar -->
     <AppSidebar />
@@ -12,7 +12,11 @@
       :class="[sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-64']"
     >
       <!-- Header -->
-      <AppHeader />
+      <AppHeader>
+        <template v-if="$slots['header-title']" #title>
+          <slot name="header-title" />
+        </template>
+      </AppHeader>
 
       <!-- Main Content -->
       <main class="p-4 md:p-6 lg:p-8">

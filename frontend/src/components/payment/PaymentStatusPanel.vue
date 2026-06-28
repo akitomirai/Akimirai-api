@@ -84,6 +84,12 @@
             </div>
           </div>
           <p v-if="scanHint" class="text-center text-sm text-gray-500 dark:text-gray-400">{{ scanHint }}</p>
+          <div v-if="hasDiscount" class="w-full rounded-xl bg-emerald-50 px-4 py-3 text-sm dark:bg-emerald-900/20">
+            <div class="flex justify-between gap-3">
+              <span class="text-emerald-700 dark:text-emerald-300">{{ t('payment.promoCodeApplied', { code: props.promoCode, percent: discountPercentText }) }}</span>
+              <span class="font-semibold text-emerald-800 dark:text-emerald-200">-{{ formatGatewayAmount(props.discountAmount || 0) }}</span>
+            </div>
+          </div>
           <button v-if="payUrl" class="btn btn-secondary text-sm" @click="reopenPopup">
             {{ t('payment.qr.openPayWindow') }}
           </button>
@@ -144,6 +150,9 @@ const props = defineProps<{
   payUrl?: string
   orderType?: string
   currency?: string
+  promoCode?: string
+  discountPercent?: number
+  discountAmount?: number
 }>()
 
 type PaymentOutcome = 'success' | 'cancelled' | 'expired'
@@ -180,6 +189,7 @@ let lastVerifyAt = 0
 
 const VERIFY_RETRY_INTERVAL_MS = 15000
 const VERIFY_RETRY_MAX_ATTEMPTS = 6
+const DEFAULT_PAYMENT_COUNTDOWN_SECONDS = 5 * 60
 
 const isAlipay = computed(() => props.paymentType.includes('alipay'))
 const isWxpay = computed(() => props.paymentType.includes('wxpay'))
@@ -207,6 +217,11 @@ const scanHint = computed(() => {
   if (isWxpay.value) return t('payment.qr.scanWxpayHint')
   return ''
 })
+
+const hasDiscount = computed(() => !!props.promoCode && Number(props.discountAmount || 0) > 0)
+const discountPercentText = computed(() =>
+  Number(props.discountPercent || 0).toFixed(2).replace(/\.?0+$/, '')
+)
 
 const countdownDisplay = computed(() => {
   const m = Math.floor(remainingSeconds.value / 60)
@@ -320,7 +335,7 @@ function cleanup() {
 qrUrl.value = props.qrCode
 verifyAttempts = 0
 lastVerifyAt = 0
-let seconds = 30 * 60
+let seconds = DEFAULT_PAYMENT_COUNTDOWN_SECONDS
 if (props.expiresAt) {
   seconds = Math.floor((new Date(props.expiresAt).getTime() - Date.now()) / 1000)
 }

@@ -47,6 +47,9 @@ export interface PaymentRecoverySnapshot {
   orderType: OrderType | ''
   paymentMode: string
   resumeToken: string
+  promoCode?: string
+  discountPercent?: number
+  discountAmount?: number
   createdAt: number
 }
 
@@ -82,6 +85,7 @@ export interface BuildCreateOrderPayloadInput {
   isWechatBrowser: boolean
   /** When true, Alipay payments always use QR code (passes is_mobile: false to backend) */
   forceQRCode?: boolean
+  promoCode?: string
 }
 
 type CreateOrderFlowResult = CreateOrderResult & {
@@ -136,6 +140,10 @@ export function buildCreateOrderPayload(input: BuildCreateOrderPayloadInput): Cr
   if (normalizedOrigin) {
     payload.return_url = `${normalizedOrigin}/payment/result`
   }
+  const promoCode = (input.promoCode || '').trim().toUpperCase()
+  if (promoCode) {
+    payload.promo_code = promoCode
+  }
 
   return payload
 }
@@ -162,6 +170,9 @@ export function decidePaymentLaunch(
     orderType: context.orderType,
     paymentMode: (result.payment_mode || '').trim(),
     resumeToken: result.resume_token || '',
+    promoCode: result.promo_code || '',
+    discountPercent: result.discount_percent || 0,
+    discountAmount: result.discount_amount || 0,
   }, context.now)
 
   if (visibleMethod === 'airwallex' && baseState.clientSecret && baseState.intentId) {
@@ -279,6 +290,9 @@ export function readPaymentRecoverySnapshot(
       || typeof parsed.payAmount !== 'number'
       || typeof parsed.paymentMode !== 'string'
       || typeof parsed.resumeToken !== 'string'
+      || (parsed.promoCode != null && typeof parsed.promoCode !== 'string')
+      || (parsed.discountPercent != null && typeof parsed.discountPercent !== 'number')
+      || (parsed.discountAmount != null && typeof parsed.discountAmount !== 'number')
       || typeof parsed.createdAt !== 'number'
     ) {
       return null
@@ -310,6 +324,9 @@ export function readPaymentRecoverySnapshot(
       orderType: parsed.orderType === 'subscription' ? 'subscription' : 'balance',
       paymentMode: parsed.paymentMode,
       resumeToken: parsed.resumeToken,
+      promoCode: parsed.promoCode || '',
+      discountPercent: parsed.discountPercent || 0,
+      discountAmount: parsed.discountAmount || 0,
       createdAt: parsed.createdAt,
     }
   } catch {

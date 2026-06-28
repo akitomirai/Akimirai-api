@@ -109,8 +109,15 @@ func (s *FrontendServer) Middleware() gin.HandlerFunc {
 		}
 
 		// Serve static files normally
+		setStaticCacheHeaders(c, cleanPath)
 		s.fileServer.ServeHTTP(c.Writer, c.Request)
 		c.Abort()
+	}
+}
+
+func setStaticCacheHeaders(c *gin.Context, cleanPath string) {
+	if strings.HasPrefix(cleanPath, "assets/") {
+		c.Header("Cache-Control", "public, max-age=31536000, immutable")
 	}
 }
 
@@ -272,6 +279,7 @@ func ServeEmbeddedFrontend() gin.HandlerFunc {
 			if tryServeOverrideFile(c, overrideDir, cleanPath) {
 				return
 			}
+			setStaticCacheHeaders(c, cleanPath)
 			fileServer.ServeHTTP(c.Writer, c.Request)
 			c.Abort()
 			return

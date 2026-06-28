@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PAYMENT_CURRENCY_OPTIONS, PROVIDER_CONFIG_FIELDS } from '@/components/payment/providerConfig'
+import { PAYMENT_CURRENCY_OPTIONS, PROVIDER_CONFIG_FIELDS, PROVIDER_SUPPORTED_TYPES } from '@/components/payment/providerConfig'
 
 function findField(providerKey: string, key: string) {
   const fields = PROVIDER_CONFIG_FIELDS[providerKey] || []
@@ -48,5 +48,18 @@ describe('PROVIDER_CONFIG_FIELDS.stripe', () => {
     expect(currency?.defaultValue).toBe('CNY')
     expect(currency?.hintKey).toBe('admin.settings.payment.field_paymentCurrencyHint')
     expect(currency?.options).toBe(PAYMENT_CURRENCY_OPTIONS)
+  })
+})
+
+describe('PROVIDER_CONFIG_FIELDS.personal_qrcode', () => {
+  it('serves the visible Alipay and WeChat methods', () => {
+    expect(PROVIDER_SUPPORTED_TYPES.personal_qrcode).toEqual(['alipay', 'wxpay'])
+  })
+
+  it('keeps QR payloads visible and notification secret sensitive', () => {
+    expect(findField('personal_qrcode', 'alipayQr')?.sensitive).toBe(false)
+    expect(findField('personal_qrcode', 'wxpayQr')?.sensitive).toBe(false)
+    expect(findField('personal_qrcode', 'notifySecret')?.sensitive).toBe(true)
+    expect(findField('personal_qrcode', 'notifySecret')?.optional).toBe(true)
   })
 })

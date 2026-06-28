@@ -15,6 +15,10 @@ func ptrString[T ~string](v T) *string {
 	return &s
 }
 
+func ptrBool(v bool) *bool {
+	return &v
+}
+
 // groupRepoStubForAdmin 用于测试 AdminService 的 GroupRepository Stub
 type groupRepoStubForAdmin struct {
 	created *Group // 记录 Create 调用的参数
@@ -458,6 +462,31 @@ func TestAdminService_CreateGroup_ClearsMessagesDispatchFieldsForNonOpenAIPlatfo
 	require.Equal(t, OpenAIMessagesDispatchModelConfig{}, repo.created.MessagesDispatchModelConfig)
 }
 
+func TestAdminService_CreateGroup_PreservesMessagesDispatchFieldsForGrok(t *testing.T) {
+	repo := &groupRepoStubForAdmin{}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	group, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
+		Name:                  "grok-group",
+		Description:           "grok compatible",
+		Platform:              PlatformGrok,
+		RateMultiplier:        1.0,
+		AllowMessagesDispatch: true,
+		DefaultMappedModel:    "gpt-5.4",
+		MessagesDispatchModelConfig: OpenAIMessagesDispatchModelConfig{
+			OpusMappedModel: "gpt-5.4",
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.NotNil(t, repo.created)
+	require.True(t, repo.created.AllowMessagesDispatch)
+	require.Equal(t, "gpt-5.4", repo.created.DefaultMappedModel)
+	require.Equal(t, OpenAIMessagesDispatchModelConfig{
+		OpusMappedModel: "gpt-5.4",
+	}, repo.created.MessagesDispatchModelConfig)
+}
+
 func TestAdminService_UpdateGroup_ClearsMessagesDispatchFieldsWhenPlatformChangesAwayFromOpenAI(t *testing.T) {
 	existingGroup := &Group{
 		ID:                    1,
@@ -483,6 +512,198 @@ func TestAdminService_UpdateGroup_ClearsMessagesDispatchFieldsWhenPlatformChange
 	require.False(t, repo.updated.AllowMessagesDispatch)
 	require.Empty(t, repo.updated.DefaultMappedModel)
 	require.Equal(t, OpenAIMessagesDispatchModelConfig{}, repo.updated.MessagesDispatchModelConfig)
+}
+
+func TestAdminService_UpdateGroup_PreservesMessagesDispatchFieldsForGrok(t *testing.T) {
+	existingGroup := &Group{
+		ID:                    1,
+		Name:                  "existing-grok-group",
+		Platform:              PlatformGrok,
+		Status:                StatusActive,
+		AllowMessagesDispatch: true,
+		DefaultMappedModel:    "gpt-5.4",
+		MessagesDispatchModelConfig: OpenAIMessagesDispatchModelConfig{
+			SonnetMappedModel: "gpt-5.3-codex",
+		},
+	}
+	repo := &groupRepoStubForAdmin{getByID: existingGroup}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	group, err := svc.UpdateGroup(context.Background(), 1, &UpdateGroupInput{
+		AllowMessagesDispatch: ptrBool(true),
+		DefaultMappedModel:    ptrString("gpt-5.4"),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.NotNil(t, repo.updated)
+	require.True(t, repo.updated.AllowMessagesDispatch)
+	require.Equal(t, "gpt-5.4", repo.updated.DefaultMappedModel)
+	require.Equal(t, OpenAIMessagesDispatchModelConfig{
+		SonnetMappedModel: "gpt-5.3-codex",
+	}, repo.updated.MessagesDispatchModelConfig)
+}
+
+type accountRepoStubForAdminGroupCopy struct {
+	accounts []*Account
+	called   bool
+	ids      []int64
+}
+
+func (s *accountRepoStubForAdminGroupCopy) Create(context.Context, *Account) error { panic("unexpected Create call") }
+func (s *accountRepoStubForAdminGroupCopy) GetByID(context.Context, int64) (*Account, error) {
+	panic("unexpected GetByID call")
+}
+func (s *accountRepoStubForAdminGroupCopy) GetByIDs(_ context.Context, ids []int64) ([]*Account, error) {
+	s.called = true
+	s.ids = append([]int64{}, ids...)
+	return s.accounts, nil
+}
+func (s *accountRepoStubForAdminGroupCopy) ExistsByID(context.Context, int64) (bool, error) {
+	panic("unexpected ExistsByID call")
+}
+func (s *accountRepoStubForAdminGroupCopy) GetByCRSAccountID(context.Context, string) (*Account, error) {
+	panic("unexpected GetByCRSAccountID call")
+}
+func (s *accountRepoStubForAdminGroupCopy) FindByExtraField(context.Context, string, any) ([]Account, error) {
+	panic("unexpected FindByExtraField call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListCRSAccountIDs(context.Context) (map[string]int64, error) {
+	panic("unexpected ListCRSAccountIDs call")
+}
+func (s *accountRepoStubForAdminGroupCopy) Update(context.Context, *Account) error { panic("unexpected Update call") }
+func (s *accountRepoStubForAdminGroupCopy) Delete(context.Context, int64) error { panic("unexpected Delete call") }
+func (s *accountRepoStubForAdminGroupCopy) List(context.Context, pagination.PaginationParams) ([]Account, *pagination.PaginationResult, error) {
+	panic("unexpected List call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListWithFilters(context.Context, pagination.PaginationParams, string, string, string, int64, string) ([]Account, *pagination.PaginationResult, error) {
+	panic("unexpected ListWithFilters call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListByGroup(context.Context, int64) ([]Account, error) {
+	panic("unexpected ListByGroup call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListActive(context.Context) ([]Account, error) {
+	panic("unexpected ListActive call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListByPlatform(context.Context, string) ([]Account, error) {
+	panic("unexpected ListByPlatform call")
+}
+func (s *accountRepoStubForAdminGroupCopy) UpdateLastUsed(context.Context, int64) error {
+	panic("unexpected UpdateLastUsed call")
+}
+func (s *accountRepoStubForAdminGroupCopy) BatchUpdateLastUsed(context.Context, map[int64]time.Time) error {
+	panic("unexpected BatchUpdateLastUsed call")
+}
+func (s *accountRepoStubForAdminGroupCopy) SetError(context.Context, int64, string) error {
+	panic("unexpected SetError call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ClearError(context.Context, int64) error {
+	panic("unexpected ClearError call")
+}
+func (s *accountRepoStubForAdminGroupCopy) SetSchedulable(context.Context, int64, bool) error {
+	panic("unexpected SetSchedulable call")
+}
+func (s *accountRepoStubForAdminGroupCopy) AutoPauseExpiredAccounts(context.Context, time.Time) (int64, error) {
+	panic("unexpected AutoPauseExpiredAccounts call")
+}
+func (s *accountRepoStubForAdminGroupCopy) BindGroups(context.Context, int64, []int64) error {
+	panic("unexpected BindGroups call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListSchedulable(context.Context) ([]Account, error) {
+	panic("unexpected ListSchedulable call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListSchedulableByGroupID(context.Context, int64) ([]Account, error) {
+	panic("unexpected ListSchedulableByGroupID call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListSchedulableByPlatform(context.Context, string) ([]Account, error) {
+	panic("unexpected ListSchedulableByPlatform call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListSchedulableByGroupIDAndPlatform(context.Context, int64, string) ([]Account, error) {
+	panic("unexpected ListSchedulableByGroupIDAndPlatform call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListSchedulableByPlatforms(context.Context, []string) ([]Account, error) {
+	panic("unexpected ListSchedulableByPlatforms call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListSchedulableByGroupIDAndPlatforms(context.Context, int64, []string) ([]Account, error) {
+	panic("unexpected ListSchedulableByGroupIDAndPlatforms call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListSchedulableUngroupedByPlatform(context.Context, string) ([]Account, error) {
+	panic("unexpected ListSchedulableUngroupedByPlatform call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListSchedulableUngroupedByPlatforms(context.Context, []string) ([]Account, error) {
+	panic("unexpected ListSchedulableUngroupedByPlatforms call")
+}
+func (s *accountRepoStubForAdminGroupCopy) SetRateLimited(context.Context, int64, time.Time) error {
+	panic("unexpected SetRateLimited call")
+}
+func (s *accountRepoStubForAdminGroupCopy) SetModelRateLimit(context.Context, int64, string, time.Time, ...string) error {
+	panic("unexpected SetModelRateLimit call")
+}
+func (s *accountRepoStubForAdminGroupCopy) SetOverloaded(context.Context, int64, time.Time) error {
+	panic("unexpected SetOverloaded call")
+}
+func (s *accountRepoStubForAdminGroupCopy) SetTempUnschedulable(context.Context, int64, time.Time, string) error {
+	panic("unexpected SetTempUnschedulable call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ClearTempUnschedulable(context.Context, int64) error {
+	panic("unexpected ClearTempUnschedulable call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ClearRateLimit(context.Context, int64) error {
+	panic("unexpected ClearRateLimit call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ClearAntigravityQuotaScopes(context.Context, int64) error {
+	panic("unexpected ClearAntigravityQuotaScopes call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ClearModelRateLimits(context.Context, int64) error {
+	panic("unexpected ClearModelRateLimits call")
+}
+func (s *accountRepoStubForAdminGroupCopy) UpdateSessionWindow(context.Context, int64, *time.Time, *time.Time, string) error {
+	panic("unexpected UpdateSessionWindow call")
+}
+func (s *accountRepoStubForAdminGroupCopy) UpdateSessionWindowEnd(context.Context, int64, time.Time) error {
+	panic("unexpected UpdateSessionWindowEnd call")
+}
+func (s *accountRepoStubForAdminGroupCopy) UpdateExtra(context.Context, int64, map[string]any) error {
+	panic("unexpected UpdateExtra call")
+}
+func (s *accountRepoStubForAdminGroupCopy) BulkUpdate(context.Context, []int64, AccountBulkUpdate) (int64, error) {
+	panic("unexpected BulkUpdate call")
+}
+func (s *accountRepoStubForAdminGroupCopy) IncrementQuotaUsed(context.Context, int64, float64) error {
+	panic("unexpected IncrementQuotaUsed call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ResetQuotaUsed(context.Context, int64) error {
+	panic("unexpected ResetQuotaUsed call")
+}
+func (s *accountRepoStubForAdminGroupCopy) RevertProxyFallback(context.Context, int64) error {
+	panic("unexpected RevertProxyFallback call")
+}
+
+func TestAdminService_CreateGroup_FiltersAPIKeyCopiesForGrokWhenRequireOAuthOnly(t *testing.T) {
+	groupRepo := &groupRepoStubForAdmin{}
+	accountRepo := &accountRepoStubForAdminGroupCopy{
+		accounts: []*Account{
+			{ID: 10, Platform: PlatformGrok, Type: AccountTypeAPIKey},
+			{ID: 11, Platform: PlatformGrok, Type: AccountTypeOAuth},
+		},
+	}
+	svc := &adminServiceImpl{groupRepo: groupRepo, accountRepo: accountRepo}
+
+	_, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
+		Name:                  "grok-oauth-only",
+		Description:           "copy accounts should filter api keys",
+		Platform:              PlatformGrok,
+		RateMultiplier:        1.0,
+		RequireOAuthOnly:      true,
+		CopyAccountsFromGroupIDs: []int64{1},
+	})
+	require.NoError(t, err)
+	require.True(t, accountRepo.called)
+	require.Equal(t, []int64{1}, accountRepo.ids)
+	require.NotNil(t, groupRepo.created)
+	groupRepo.created.ID = 99
+	require.True(t, groupRepo.created.RequireOAuthOnly)
+	require.Equal(t, int64(99), groupRepo.bindAccountsGroupID)
+	require.Equal(t, []int64{11}, groupRepo.bindAccountsIDs)
 }
 
 func TestAdminService_ListGroups_WithSearch(t *testing.T) {

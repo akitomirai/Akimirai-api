@@ -65,6 +65,11 @@ func BonusAmount(v float64) predicate.PromoCode {
 	return predicate.PromoCode(sql.FieldEQ(FieldBonusAmount, v))
 }
 
+// DiscountPercent applies equality check predicate on the "discount_percent" field. It's identical to DiscountPercentEQ.
+func DiscountPercent(v float64) predicate.PromoCode {
+	return predicate.PromoCode(sql.FieldEQ(FieldDiscountPercent, v))
+}
+
 // MaxUses applies equality check predicate on the "max_uses" field. It's identical to MaxUsesEQ.
 func MaxUses(v int) predicate.PromoCode {
 	return predicate.PromoCode(sql.FieldEQ(FieldMaxUses, v))
@@ -203,6 +208,46 @@ func BonusAmountLT(v float64) predicate.PromoCode {
 // BonusAmountLTE applies the LTE predicate on the "bonus_amount" field.
 func BonusAmountLTE(v float64) predicate.PromoCode {
 	return predicate.PromoCode(sql.FieldLTE(FieldBonusAmount, v))
+}
+
+// DiscountPercentEQ applies the EQ predicate on the "discount_percent" field.
+func DiscountPercentEQ(v float64) predicate.PromoCode {
+	return predicate.PromoCode(sql.FieldEQ(FieldDiscountPercent, v))
+}
+
+// DiscountPercentNEQ applies the NEQ predicate on the "discount_percent" field.
+func DiscountPercentNEQ(v float64) predicate.PromoCode {
+	return predicate.PromoCode(sql.FieldNEQ(FieldDiscountPercent, v))
+}
+
+// DiscountPercentIn applies the In predicate on the "discount_percent" field.
+func DiscountPercentIn(vs ...float64) predicate.PromoCode {
+	return predicate.PromoCode(sql.FieldIn(FieldDiscountPercent, vs...))
+}
+
+// DiscountPercentNotIn applies the NotIn predicate on the "discount_percent" field.
+func DiscountPercentNotIn(vs ...float64) predicate.PromoCode {
+	return predicate.PromoCode(sql.FieldNotIn(FieldDiscountPercent, vs...))
+}
+
+// DiscountPercentGT applies the GT predicate on the "discount_percent" field.
+func DiscountPercentGT(v float64) predicate.PromoCode {
+	return predicate.PromoCode(sql.FieldGT(FieldDiscountPercent, v))
+}
+
+// DiscountPercentGTE applies the GTE predicate on the "discount_percent" field.
+func DiscountPercentGTE(v float64) predicate.PromoCode {
+	return predicate.PromoCode(sql.FieldGTE(FieldDiscountPercent, v))
+}
+
+// DiscountPercentLT applies the LT predicate on the "discount_percent" field.
+func DiscountPercentLT(v float64) predicate.PromoCode {
+	return predicate.PromoCode(sql.FieldLT(FieldDiscountPercent, v))
+}
+
+// DiscountPercentLTE applies the LTE predicate on the "discount_percent" field.
+func DiscountPercentLTE(v float64) predicate.PromoCode {
+	return predicate.PromoCode(sql.FieldLTE(FieldDiscountPercent, v))
 }
 
 // MaxUsesEQ applies the EQ predicate on the "max_uses" field.

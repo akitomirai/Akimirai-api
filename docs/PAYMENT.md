@@ -22,11 +22,12 @@ Sub2API has a built-in payment system that enables user self-service top-up with
 | Provider | Payment Methods | Description |
 |----------|----------------|-------------|
 | **EasyPay** | Alipay, WeChat Pay | Third-party aggregation via EasyPay protocol |
+| **Personal QR Code** | Alipay, WeChat Pay | Personal Alipay/WeChat collection QR codes with admin manual confirmation; no Android listener required |
 | **Alipay (Direct)** | Desktop QR code, mobile Alipay redirect | Direct integration with Alipay Open Platform, returning desktop QR codes and mobile WAP/app launch links |
 | **WeChat Pay (Direct)** | Native QR, H5, MP/JSAPI Pay | Direct integration with WeChat Pay APIv3 with environment-aware routing |
 | **Stripe** | Card, Alipay, WeChat Pay, Link, etc. | International payments, multi-currency support |
 
-> Alipay/WeChat Pay direct and EasyPay can both exist as backend provider instances, but the frontend always exposes only two visible buttons: `Alipay` and `WeChat Pay`. Admins choose exactly one source for each visible method: direct or EasyPay. Direct channels connect to payment APIs directly with lower fees; EasyPay aggregates through third-party platforms with easier setup.
+> Alipay/WeChat Pay direct, EasyPay, and Personal QR Code can all exist as backend provider instances, but the frontend always exposes only two visible buttons: `Alipay` and `WeChat Pay`. Admins choose exactly one source for each visible method: direct, EasyPay, or Personal QR Code. Direct channels connect to payment APIs directly with lower fees; EasyPay aggregates through third-party platforms with easier setup; Personal QR Code is intended for small-volume manual reconciliation.
 
 > **EasyPay Provider Recommendations**: Both options below are third-party aggregators compatible with the EasyPay protocol. Pick based on the funding channel and settlement currency you need:
 >
@@ -69,8 +70,8 @@ Configure the following in Admin Dashboard **Settings → Payment Settings**:
 
 The current payment UX keeps the frontend method list unified and does not expose provider brands directly:
 
-- **Alipay**: when enabled, this button must be routed to either `Alipay (Direct)` or `EasyPay Alipay`
-- **WeChat Pay**: when enabled, this button must be routed to either `WeChat Pay (Direct)` or `EasyPay WeChat`
+- **Alipay**: when enabled, this button must be routed to `Alipay (Direct)`, `EasyPay Alipay`, or `Personal QR Alipay`
+- **WeChat Pay**: when enabled, this button must be routed to `WeChat Pay (Direct)`, `EasyPay WeChat`, or `Personal QR WeChat`
 - Each visible method can route to only one source at a time
 - If a visible method is enabled without a selected source, the frontend will not expose that method
 
@@ -119,6 +120,20 @@ Compatible with any payment service that implements the EasyPay protocol.
 | **API Base URL** | EasyPay API base address | Yes |
 | **Alipay Channel ID** | Specify Alipay channel (optional) | No |
 | **WeChat Channel ID** | Specify WeChat channel (optional) | No |
+
+### Personal QR Code
+
+The Personal QR Code provider creates normal payment orders using static personal Alipay/WeChat collection QR codes. The first version uses admin manual confirmation as the primary path: after the user scans and pays, an admin checks the Alipay/WeChat bill, then clicks **Confirm Payment** on the admin order.
+
+| Parameter | Description | Required |
+|-----------|-------------|----------|
+| **Alipay QR payload** | QR payload, collection URL, or image URL; required when Alipay is enabled on the instance | Conditional |
+| **WeChat QR payload** | QR payload, collection URL, or image URL; required when WeChat Pay is enabled on the instance | Conditional |
+| **Collection account label** | Reconciliation label, such as account nickname or payee identifier | No |
+| **Notification Secret** | Reserved signing secret for a trusted payment-notification client; optional in the first version | No |
+| **Matching Mode / Amount Window** | Reserved for automatic notification matching; manual confirmation does not depend on it | No |
+
+> Static personal collection QR codes do not naturally carry an order number and cannot prove payer identity to Sub2API by themselves. If you later connect a trusted notification client, only auto-confirm when signature, order number, amount, payment method, and the unique pending order all match; otherwise keep the order for manual review.
 
 ### Alipay (Direct)
 
@@ -198,6 +213,8 @@ When adding a provider, the system auto-generates callback URLs from your site d
 
 > Replace `your-domain.com` with your actual domain. For EasyPay / Alipay / WeChat Pay, the callback URL is auto-filled when adding the provider — no manual configuration needed.
 
+> Personal QR Code does not require a webhook in the first version. Admin manual confirmation is the primary path; signed notification support is reserved.
+
 ### Stripe Webhook Setup
 
 1. Log in to [Stripe Dashboard](https://dashboard.stripe.com/)
@@ -229,12 +246,13 @@ User selects amount and payment method
        ▼
   User completes payment
   ├─ EasyPay     → QR code / H5 redirect
+  ├─ Personal QR → Static Alipay/WeChat collection QR, admin manual confirmation
   ├─ Alipay      → Desktop QR payload (Face-to-Face preferred, Website Pay fallback) / mobile Alipay redirect
   ├─ WeChat Pay  → Desktop Native QR / non-WeChat H5 / in-WeChat JSAPI
   └─ Stripe      → Payment Element (card/Alipay/WeChat/etc.)
        │
        ▼
-  Webhook callback verified → Order PAID
+  Webhook callback verified or admin manually confirms → Order PAID
        │
        ▼
   Auto top-up to user balance → Order COMPLETED
@@ -258,7 +276,14 @@ User selects amount and payment method
 
 - Before marking an order as expired, the background job queries the upstream payment status first
 - If the user has actually paid but the callback was delayed, the system will reconcile automatically
+- Personal QR Code orders cannot be queried upstream automatically; admins must verify the bill and manually confirm within the expiry grace window
 - The background job runs every 60 seconds to check for timed-out orders
+
+### Refunds and Original-Route Refunds
+
+- Direct Alipay, WeChat Pay, Stripe, Airwallex, EasyPay, and other gateway-backed providers use their provider refund capability where available.
+- Personal QR Code has no official merchant refund API in this integration. Admins must first refund through the original Alipay/WeChat transaction, then enter the external refund reference and mark the refund complete in Sub2API.
+- Sub2API records the refund state and performs internal balance/subscription deduction. It cannot perform the external wallet refund on behalf of Alipay or WeChat.
 
 ---
 

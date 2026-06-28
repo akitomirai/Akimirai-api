@@ -17,7 +17,7 @@ export interface DefaultSubscriptionSetting {
 }
 
 // ── 平台限额类型 ──────────────────────────────────────────────────
-export type PlatformType = "anthropic" | "openai" | "gemini" | "antigravity"
+export type PlatformType = "anthropic" | "openai" | "gemini" | "antigravity" | "grok"
 export type QuotaWindowType = "daily" | "weekly" | "monthly"
 
 /** 单平台三档限额；null = 不限制，undefined = 未填（等价 null） */
@@ -30,7 +30,7 @@ export interface PlatformQuotaLimits {
 /** 全平台默认限额 map（key = PlatformType） */
 export type DefaultPlatformQuotasMap = Partial<Record<PlatformType, PlatformQuotaLimits>>
 
-const PLATFORMS: PlatformType[] = ["anthropic", "openai", "gemini", "antigravity"]
+const PLATFORMS: PlatformType[] = ["anthropic", "openai", "gemini", "antigravity", "grok"]
 
 /** 归一化为全 4 平台 × 3 窗口（缺失填 null），供模板非空绑定 */
 export function normalizePlatformQuotasMap(input?: DefaultPlatformQuotasMap | null): DefaultPlatformQuotasMap {
@@ -85,8 +85,10 @@ export type PaymentVisibleMethodSource =
   | ""
   | "official_alipay"
   | "easypay_alipay"
+  | "personal_qrcode_alipay"
   | "official_wxpay"
-  | "easypay_wxpay";
+  | "easypay_wxpay"
+  | "personal_qrcode_wxpay";
 export type WeChatConnectMode = "open" | "mp" | "mobile";
 
 export interface PaymentVisibleMethodSourceOption {
@@ -128,6 +130,11 @@ const PAYMENT_VISIBLE_METHOD_SOURCE_OPTIONS: Record<
       labelZh: "易支付支付宝",
       labelEn: "EasyPay Alipay",
     },
+    {
+      value: "personal_qrcode_alipay",
+      labelZh: "个人码支付宝",
+      labelEn: "Personal QR Alipay",
+    },
   ],
   wxpay: [
     { value: "", labelZh: "未配置", labelEn: "Not configured" },
@@ -140,6 +147,11 @@ const PAYMENT_VISIBLE_METHOD_SOURCE_OPTIONS: Record<
       value: "easypay_wxpay",
       labelZh: "易支付微信",
       labelEn: "EasyPay WeChat Pay",
+    },
+    {
+      value: "personal_qrcode_wxpay",
+      labelZh: "个人码微信",
+      labelEn: "Personal QR WeChat Pay",
     },
   ],
 };
@@ -154,6 +166,10 @@ const PAYMENT_VISIBLE_METHOD_SOURCE_ALIASES: Record<
     official: "official_alipay",
     easypay_alipay: "easypay_alipay",
     easypay: "easypay_alipay",
+    personal_qrcode_alipay: "personal_qrcode_alipay",
+    personal_qrcode: "personal_qrcode_alipay",
+    personal: "personal_qrcode_alipay",
+    personal_qr: "personal_qrcode_alipay",
   },
   wxpay: {
     official_wxpay: "official_wxpay",
@@ -163,6 +179,10 @@ const PAYMENT_VISIBLE_METHOD_SOURCE_ALIASES: Record<
     official: "official_wxpay",
     easypay_wxpay: "easypay_wxpay",
     easypay: "easypay_wxpay",
+    personal_qrcode_wxpay: "personal_qrcode_wxpay",
+    personal_qrcode: "personal_qrcode_wxpay",
+    personal: "personal_qrcode_wxpay",
+    personal_qr: "personal_qrcode_wxpay",
   },
 };
 const WECHAT_CONNECT_MODE_OPTIONS: WeChatConnectModeOption[] = [
@@ -350,6 +370,22 @@ export function deriveWeChatConnectStoredMode(
   if (mobileEnabled) return "mobile";
   if (openEnabled) return "open";
   return normalizeWeChatConnectMode(legacyMode);
+}
+
+export type PrivacyFilterType =
+  | "ip_address"
+  | "email"
+  | "phone"
+  | "id_card"
+  | "bank_card"
+  | "api_key"
+  | "token"
+  | "private_key"
+  | "random_string";
+
+export interface PrivacyFilterConfig {
+  enabled: boolean;
+  types: PrivacyFilterType[];
 }
 
 /**
@@ -564,6 +600,7 @@ export interface SystemSettings {
   antigravity_user_agent_version: string;
   openai_codex_user_agent: string;
   openai_allow_claude_code_codex_plugin: boolean;
+  privacy_filter_config: PrivacyFilterConfig;
   web_search_emulation_enabled?: boolean;
 
   // Payment configuration
@@ -808,6 +845,7 @@ export interface UpdateSettingsRequest {
   antigravity_user_agent_version?: string;
   openai_codex_user_agent?: string;
   openai_allow_claude_code_codex_plugin?: boolean;
+  privacy_filter_config?: PrivacyFilterConfig;
   // Payment configuration
   payment_enabled?: boolean;
   risk_control_enabled?: boolean;

@@ -80,6 +80,12 @@
             </span>
           </template>
 
+          <template #cell-discount_percent="{ value }">
+            <span class="text-sm font-medium text-gray-900 dark:text-white">
+              {{ formatPercent(value) }}
+            </span>
+          </template>
+
           <template #cell-usage="{ row }">
             <span class="text-sm text-gray-600 dark:text-gray-300">
               {{ row.used_count }} / {{ row.max_uses === 0 ? '∞' : row.max_uses }}
@@ -183,7 +189,17 @@
             type="number"
             step="0.01"
             min="0"
-            required
+            class="input"
+          />
+        </div>
+        <div>
+          <label class="input-label">{{ t('admin.promo.discountPercent') }}</label>
+          <input
+            v-model.number="createForm.discount_percent"
+            type="number"
+            step="0.01"
+            min="0"
+            max="99.99"
             class="input"
           />
         </div>
@@ -258,7 +274,17 @@
             type="number"
             step="0.01"
             min="0"
-            required
+            class="input"
+          />
+        </div>
+        <div>
+          <label class="input-label">{{ t('admin.promo.discountPercent') }}</label>
+          <input
+            v-model.number="editForm.discount_percent"
+            type="number"
+            step="0.01"
+            min="0"
+            max="99.99"
             class="input"
           />
         </div>
@@ -451,6 +477,7 @@ const usagesTotal = ref(0)
 const createForm = reactive({
   code: '',
   bonus_amount: 1,
+  discount_percent: 0,
   max_uses: 0,
   expires_at_str: '',
   notes: ''
@@ -459,6 +486,7 @@ const createForm = reactive({
 const editForm = reactive({
   code: '',
   bonus_amount: 0,
+  discount_percent: 0,
   max_uses: 0,
   status: 'active' as 'active' | 'disabled',
   expires_at_str: '',
@@ -480,6 +508,7 @@ const statusOptions = computed(() => [
 const columns = computed<Column[]>(() => [
   { key: 'code', label: t('admin.promo.columns.code') },
   { key: 'bonus_amount', label: t('admin.promo.columns.bonusAmount'), sortable: true },
+  { key: 'discount_percent', label: t('admin.promo.columns.discountPercent'), sortable: true },
   { key: 'usage', label: t('admin.promo.columns.usage') },
   { key: 'status', label: t('admin.promo.columns.status'), sortable: true },
   { key: 'expires_at', label: t('admin.promo.columns.expiresAt'), sortable: true },
@@ -506,6 +535,11 @@ const getStatusLabel = (status: string, row: PromoCode) => {
     return t('admin.promo.statusMaxUsed')
   }
   return status === 'active' ? t('admin.promo.statusActive') : t('admin.promo.statusDisabled')
+}
+
+function formatPercent(value: number | null | undefined): string {
+  const num = Number(value || 0)
+  return num > 0 ? `${num.toFixed(2).replace(/\.?0+$/, '')}%` : '-'
 }
 
 // API calls
@@ -598,6 +632,7 @@ const handleCreate = async () => {
     await adminAPI.promo.create({
       code: createForm.code || undefined,
       bonus_amount: createForm.bonus_amount,
+      discount_percent: createForm.discount_percent,
       max_uses: createForm.max_uses,
       expires_at: createForm.expires_at_str ? Math.floor(new Date(createForm.expires_at_str).getTime() / 1000) : undefined,
       notes: createForm.notes || undefined
@@ -616,6 +651,7 @@ const handleCreate = async () => {
 const resetCreateForm = () => {
   createForm.code = ''
   createForm.bonus_amount = 1
+  createForm.discount_percent = 0
   createForm.max_uses = 0
   createForm.expires_at_str = ''
   createForm.notes = ''
@@ -626,6 +662,7 @@ const handleEdit = (code: PromoCode) => {
   editingCode.value = code
   editForm.code = code.code
   editForm.bonus_amount = code.bonus_amount
+  editForm.discount_percent = code.discount_percent || 0
   editForm.max_uses = code.max_uses
   editForm.status = code.status
   editForm.expires_at_str = code.expires_at ? new Date(code.expires_at).toISOString().slice(0, 16) : ''
@@ -646,6 +683,7 @@ const handleUpdate = async () => {
     await adminAPI.promo.update(editingCode.value.id, {
       code: editForm.code,
       bonus_amount: editForm.bonus_amount,
+      discount_percent: editForm.discount_percent,
       max_uses: editForm.max_uses,
       status: editForm.status,
       expires_at: editForm.expires_at_str ? Math.floor(new Date(editForm.expires_at_str).getTime() / 1000) : 0,

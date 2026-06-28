@@ -45,7 +45,12 @@ func enabledVisibleMethodsForProvider(providerKey, supportedTypes string) []stri
 				break
 			}
 		}
-	case payment.TypeEasyPay:
+	case payment.TypeEasyPay, payment.TypePersonalQR:
+		if strings.TrimSpace(supportedTypes) == "" {
+			addMethod(payment.TypeAlipay)
+			addMethod(payment.TypeWxpay)
+			break
+		}
 		for _, supportedType := range splitTypes(supportedTypes) {
 			addMethod(supportedType)
 		}

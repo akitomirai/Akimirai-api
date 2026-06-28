@@ -30,6 +30,10 @@
               <Icon name="x" size="sm" />
               {{ t('payment.orders.cancel') }}
             </button>
+            <button v-if="canManualConfirmPersonalQRCode(row)" @click="openManualConfirmDialog(row)" class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20">
+              <Icon name="check" size="sm" />
+              {{ t('payment.admin.manualConfirmPayment') }}
+            </button>
             <button v-if="row.status === 'FAILED'" @click="handleRetryOrder(row)" class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20">
               <Icon name="refresh" size="sm" />
               {{ t('payment.admin.retry') }}
@@ -107,6 +111,48 @@
       </div>
     </BaseDialog>
 
+    <BaseDialog :show="showManualConfirmDialog" :title="t('payment.admin.manualConfirmPayment')" width="normal" @close="closeManualConfirmDialog">
+      <form id="manual-confirm-form" class="space-y-4" @submit.prevent="handleManualConfirm">
+        <div class="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
+          {{ t('payment.admin.personalQrConfirmHint') }}
+        </div>
+        <div class="rounded-lg bg-gray-50 p-3 dark:bg-dark-700">
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.orderId') }}</span>
+            <span class="font-mono text-gray-900 dark:text-white">#{{ selectedOrder?.id }}</span>
+          </div>
+          <div class="mt-1 flex justify-between text-sm">
+            <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.payAmount') }}</span>
+            <span class="font-medium text-gray-900 dark:text-white">楼{{ selectedOrder?.pay_amount?.toFixed(2) }}</span>
+          </div>
+        </div>
+        <div>
+          <label class="input-label">{{ t('payment.orders.paymentMethod') }}</label>
+          <Select v-model="manualConfirmForm.method" :options="manualConfirmMethodOptions" class="w-full" />
+        </div>
+        <div>
+          <label class="input-label">{{ t('payment.admin.confirmAmount') }}</label>
+          <input v-model.number="manualConfirmForm.amount" type="number" min="0.01" step="0.01" class="input" required />
+        </div>
+        <div>
+          <label class="input-label">{{ t('payment.admin.receiptReference') }}</label>
+          <input v-model.trim="manualConfirmForm.receipt_id" type="text" class="input" :placeholder="t('payment.admin.receiptReferencePlaceholder')" required />
+        </div>
+        <div>
+          <label class="input-label">{{ t('payment.admin.note') }}</label>
+          <textarea v-model.trim="manualConfirmForm.note" rows="3" class="input" :placeholder="t('payment.admin.manualConfirmNotePlaceholder')"></textarea>
+        </div>
+      </form>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <button type="button" class="btn btn-secondary" @click="closeManualConfirmDialog">{{ t('common.cancel') }}</button>
+          <button type="submit" form="manual-confirm-form" :disabled="manualConfirmSubmitting || !manualConfirmForm.receipt_id || manualConfirmForm.amount <= 0" class="btn btn-primary">
+            {{ manualConfirmSubmitting ? t('common.processing') : t('payment.admin.confirmReceived') }}
+          </button>
+        </div>
+      </template>
+    </BaseDialog>
+
     <AdminRefundDialog :show="showRefundDialog" :order="selectedOrder" :submitting="refundSubmitting" @confirm="handleRefund" @cancel="showRefundDialog = false" />
   </AppLayout>
 </template>
@@ -147,8 +193,16 @@ const orderPagination = reactive({ page: 1, page_size: 20, total: 0 })
 const selectedOrder = ref<PaymentOrder | null>(null)
 const showDetailDialog = ref(false)
 const showRefundDialog = ref(false)
+const showManualConfirmDialog = ref(false)
 const refundSubmitting = ref(false)
+const manualConfirmSubmitting = ref(false)
 const orderAuditLogs = ref<AuditLog[]>([])
+const manualConfirmForm = reactive({
+  amount: 0,
+  method: 'alipay',
+  receipt_id: '',
+  note: '',
+})
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 function debounceLoadOrders() {
@@ -201,6 +255,11 @@ const orderTypeFilterOptions = computed(() => [
   { value: 'subscription', label: t('payment.admin.subscriptionOrder') },
 ])
 
+const manualConfirmMethodOptions = computed(() => [
+  { value: 'alipay', label: t('payment.methods.alipay') },
+  { value: 'wxpay', label: t('payment.methods.wxpay') },
+])
+
 async function showOrderDetail(order: PaymentOrder) {
   selectedOrder.value = order
   orderAuditLogs.value = []
@@ -225,11 +284,48 @@ async function handleRetryOrder(order: PaymentOrder) {
 
 function openRefundDialog(order: PaymentOrder) { selectedOrder.value = order; showRefundDialog.value = true }
 
-async function handleRefund(data: { amount: number; reason: string; deduct_balance: boolean; force: boolean }) {
+function isPersonalQRCodeOrder(order: PaymentOrder | null): boolean {
+  return order?.provider_key === 'personal_qrcode'
+}
+
+function canManualConfirmPersonalQRCode(order: PaymentOrder): boolean {
+  return isPersonalQRCodeOrder(order) && ['PENDING', 'CANCELLED', 'EXPIRED'].includes(order.status)
+}
+
+function openManualConfirmDialog(order: PaymentOrder) {
+  selectedOrder.value = order
+  manualConfirmForm.amount = order.pay_amount || order.amount || 0
+  manualConfirmForm.method = order.payment_type === 'wxpay' ? 'wxpay' : 'alipay'
+  manualConfirmForm.receipt_id = ''
+  manualConfirmForm.note = ''
+  showManualConfirmDialog.value = true
+}
+
+function closeManualConfirmDialog() {
+  showManualConfirmDialog.value = false
+}
+
+async function handleManualConfirm() {
+  if (!selectedOrder.value || manualConfirmForm.amount <= 0 || !manualConfirmForm.receipt_id) return
+  manualConfirmSubmitting.value = true
+  try {
+    await adminPaymentAPI.confirmPersonalQRCodeOrder(selectedOrder.value.id, { ...manualConfirmForm })
+    appStore.showSuccess(t('payment.admin.manualConfirmSuccess'))
+    showManualConfirmDialog.value = false
+    showDetailDialog.value = false
+    await loadOrders()
+  } catch (err: unknown) {
+    appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error')))
+  } finally {
+    manualConfirmSubmitting.value = false
+  }
+}
+
+async function handleRefund(data: { amount: number; reason: string; deduct_balance: boolean; force: boolean; manual_refund_reference?: string }) {
   if (!selectedOrder.value) return
   refundSubmitting.value = true
   try {
-    await adminPaymentAPI.refundOrder(selectedOrder.value.id, { amount: data.amount, reason: data.reason, deduct_balance: data.deduct_balance, force: data.force })
+    await adminPaymentAPI.refundOrder(selectedOrder.value.id, { amount: data.amount, reason: data.reason, deduct_balance: data.deduct_balance, force: data.force, manual_refund_reference: data.manual_refund_reference })
     appStore.showSuccess(t('payment.admin.refundSuccess')); showRefundDialog.value = false; loadOrders()
   } catch (err: unknown) { appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error'))) }
   finally { refundSubmitting.value = false }

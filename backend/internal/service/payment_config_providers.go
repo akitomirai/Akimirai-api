@@ -28,6 +28,22 @@ func (s *PaymentConfigService) validateProviderConfig(providerKey string, config
 	return err
 }
 
+func (s *PaymentConfigService) validateProviderInstanceConfig(providerKey, supportedTypes string, config map[string]string) error {
+	if err := s.validateProviderConfig(providerKey, config); err != nil {
+		return err
+	}
+	if strings.TrimSpace(providerKey) != payment.TypePersonalQR {
+		return nil
+	}
+	if payment.InstanceSupportsType(supportedTypes, payment.TypeAlipay) && strings.TrimSpace(config["alipayQr"]) == "" {
+		return fmt.Errorf("personal_qrcode config missing required key: alipayQr")
+	}
+	if payment.InstanceSupportsType(supportedTypes, payment.TypeWxpay) && strings.TrimSpace(config["wxpayQr"]) == "" {
+		return fmt.Errorf("personal_qrcode config missing required key: wxpayQr")
+	}
+	return nil
+}
+
 // --- Provider Instance CRUD ---
 
 func (s *PaymentConfigService) ListProviderInstances(ctx context.Context) ([]*dbent.PaymentProviderInstance, error) {
@@ -110,11 +126,12 @@ var pendingOrderStatuses = []string{
 // Key matching is case-insensitive. Non-listed keys (e.g. appId, notifyUrl,
 // stripe publishableKey) are returned in plaintext by the admin GET API.
 var providerSensitiveConfigFields = map[string]map[string]struct{}{
-	payment.TypeEasyPay:   {"pkey": {}},
-	payment.TypeAlipay:    {"privatekey": {}, "publickey": {}, "alipaypublickey": {}},
-	payment.TypeWxpay:     {"privatekey": {}, "apiv3key": {}, "publickey": {}},
-	payment.TypeStripe:    {"secretkey": {}, "webhooksecret": {}},
-	payment.TypeAirwallex: {"apikey": {}, "webhooksecret": {}},
+	payment.TypeEasyPay:    {"pkey": {}},
+	payment.TypeAlipay:     {"privatekey": {}, "publickey": {}, "alipaypublickey": {}},
+	payment.TypeWxpay:      {"privatekey": {}, "apiv3key": {}, "publickey": {}},
+	payment.TypeStripe:     {"secretkey": {}, "webhooksecret": {}},
+	payment.TypeAirwallex:  {"apikey": {}, "webhooksecret": {}},
+	payment.TypePersonalQR: {"notifysecret": {}},
 }
 
 // providerPendingOrderProtectedConfigFields lists config keys that cannot be
@@ -122,11 +139,12 @@ var providerSensitiveConfigFields = map[string]map[string]struct{}{
 // all provider identity fields that are snapshotted into orders or used by
 // webhook/refund verification.
 var providerPendingOrderProtectedConfigFields = map[string]map[string]struct{}{
-	payment.TypeEasyPay:   {"pkey": {}, "pid": {}},
-	payment.TypeAlipay:    {"privatekey": {}, "publickey": {}, "alipaypublickey": {}, "appid": {}},
-	payment.TypeWxpay:     {"privatekey": {}, "apiv3key": {}, "publickey": {}, "appid": {}, "mpappid": {}, "mchid": {}, "publickeyid": {}, "certserial": {}},
-	payment.TypeStripe:    {"secretkey": {}, "webhooksecret": {}, "currency": {}},
-	payment.TypeAirwallex: {"clientid": {}, "apikey": {}, "webhooksecret": {}, "apibase": {}, "accountid": {}, "currency": {}},
+	payment.TypeEasyPay:    {"pkey": {}, "pid": {}},
+	payment.TypeAlipay:     {"privatekey": {}, "publickey": {}, "alipaypublickey": {}, "appid": {}},
+	payment.TypeWxpay:      {"privatekey": {}, "apiv3key": {}, "publickey": {}, "appid": {}, "mpappid": {}, "mchid": {}, "publickeyid": {}, "certserial": {}},
+	payment.TypeStripe:     {"secretkey": {}, "webhooksecret": {}, "currency": {}},
+	payment.TypeAirwallex:  {"clientid": {}, "apikey": {}, "webhooksecret": {}, "apibase": {}, "accountid": {}, "currency": {}},
+	payment.TypePersonalQR: {"alipayqr": {}, "wxpayqr": {}, "notifysecret": {}, "matchingmode": {}, "amountwindowcents": {}, "accountname": {}},
 }
 
 func isSensitiveProviderConfigField(providerKey, fieldName string) bool {
@@ -177,7 +195,7 @@ func (s *PaymentConfigService) countPendingOrdersByPlan(ctx context.Context, pla
 }
 
 var validProviderKeys = map[string]bool{
-	payment.TypeEasyPay: true, payment.TypeAlipay: true, payment.TypeWxpay: true, payment.TypeStripe: true, payment.TypeAirwallex: true,
+	payment.TypeEasyPay: true, payment.TypePersonalQR: true, payment.TypeAlipay: true, payment.TypeWxpay: true, payment.TypeStripe: true, payment.TypeAirwallex: true,
 }
 
 func (s *PaymentConfigService) CreateProviderInstance(ctx context.Context, req CreateProviderInstanceRequest) (*dbent.PaymentProviderInstance, error) {
@@ -189,7 +207,7 @@ func (s *PaymentConfigService) CreateProviderInstance(ctx context.Context, req C
 		return nil, err
 	}
 	if req.Enabled {
-		if err := s.validateProviderConfig(req.ProviderKey, req.Config); err != nil {
+		if err := s.validateProviderInstanceConfig(req.ProviderKey, typesStr, req.Config); err != nil {
 			return nil, err
 		}
 	}
@@ -294,7 +312,7 @@ func (s *PaymentConfigService) UpdateProviderInstance(ctx context.Context, id in
 				return nil, fmt.Errorf("decrypt existing config: %w", err)
 			}
 		}
-		if err := s.validateProviderConfig(current.ProviderKey, configToValidate); err != nil {
+		if err := s.validateProviderInstanceConfig(current.ProviderKey, nextSupportedTypes, configToValidate); err != nil {
 			return nil, err
 		}
 	}

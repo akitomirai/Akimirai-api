@@ -132,6 +132,29 @@ describe('PaymentStatusPanel', () => {
     openSpy.mockRestore()
   })
 
+  it('uses a five minute countdown when the API response has no expiry', async () => {
+    pollOrderStatus.mockResolvedValue(orderFactory('PENDING'))
+
+    const wrapper = mount(PaymentStatusPanel, {
+      props: {
+        orderId: 42,
+        qrCode: 'https://pay.example.com/qr/42',
+        expiresAt: '',
+        paymentType: 'wxpay',
+        orderType: 'balance',
+      },
+      global: {
+        stubs: {
+          Icon: true,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('05:00')
+  })
+
   it('actively verifies a stuck pending order and settles it when upstream confirms payment', async () => {
     pollOrderStatus.mockResolvedValue(orderFactory('PENDING'))
     verifyOrder.mockResolvedValue({

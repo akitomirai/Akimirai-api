@@ -64,6 +64,27 @@ func (_u *PromoCodeUpdate) AddBonusAmount(v float64) *PromoCodeUpdate {
 	return _u
 }
 
+// SetDiscountPercent sets the "discount_percent" field.
+func (_u *PromoCodeUpdate) SetDiscountPercent(v float64) *PromoCodeUpdate {
+	_u.mutation.ResetDiscountPercent()
+	_u.mutation.SetDiscountPercent(v)
+	return _u
+}
+
+// SetNillableDiscountPercent sets the "discount_percent" field if the given value is not nil.
+func (_u *PromoCodeUpdate) SetNillableDiscountPercent(v *float64) *PromoCodeUpdate {
+	if v != nil {
+		_u.SetDiscountPercent(*v)
+	}
+	return _u
+}
+
+// AddDiscountPercent adds value to the "discount_percent" field.
+func (_u *PromoCodeUpdate) AddDiscountPercent(v float64) *PromoCodeUpdate {
+	_u.mutation.AddDiscountPercent(v)
+	return _u
+}
+
 // SetMaxUses sets the "max_uses" field.
 func (_u *PromoCodeUpdate) SetMaxUses(v int) *PromoCodeUpdate {
 	_u.mutation.ResetMaxUses()
@@ -279,6 +300,12 @@ func (_u *PromoCodeUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.AddedBonusAmount(); ok {
 		_spec.AddField(promocode.FieldBonusAmount, field.TypeFloat64, value)
 	}
+	if value, ok := _u.mutation.DiscountPercent(); ok {
+		_spec.SetField(promocode.FieldDiscountPercent, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDiscountPercent(); ok {
+		_spec.AddField(promocode.FieldDiscountPercent, field.TypeFloat64, value)
+	}
 	if value, ok := _u.mutation.MaxUses(); ok {
 		_spec.SetField(promocode.FieldMaxUses, field.TypeInt, value)
 	}
@@ -406,6 +433,27 @@ func (_u *PromoCodeUpdateOne) SetNillableBonusAmount(v *float64) *PromoCodeUpdat
 // AddBonusAmount adds value to the "bonus_amount" field.
 func (_u *PromoCodeUpdateOne) AddBonusAmount(v float64) *PromoCodeUpdateOne {
 	_u.mutation.AddBonusAmount(v)
+	return _u
+}
+
+// SetDiscountPercent sets the "discount_percent" field.
+func (_u *PromoCodeUpdateOne) SetDiscountPercent(v float64) *PromoCodeUpdateOne {
+	_u.mutation.ResetDiscountPercent()
+	_u.mutation.SetDiscountPercent(v)
+	return _u
+}
+
+// SetNillableDiscountPercent sets the "discount_percent" field if the given value is not nil.
+func (_u *PromoCodeUpdateOne) SetNillableDiscountPercent(v *float64) *PromoCodeUpdateOne {
+	if v != nil {
+		_u.SetDiscountPercent(*v)
+	}
+	return _u
+}
+
+// AddDiscountPercent adds value to the "discount_percent" field.
+func (_u *PromoCodeUpdateOne) AddDiscountPercent(v float64) *PromoCodeUpdateOne {
+	_u.mutation.AddDiscountPercent(v)
 	return _u
 }
 
@@ -653,6 +701,12 @@ func (_u *PromoCodeUpdateOne) sqlSave(ctx context.Context) (_node *PromoCode, er
 	}
 	if value, ok := _u.mutation.AddedBonusAmount(); ok {
 		_spec.AddField(promocode.FieldBonusAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.DiscountPercent(); ok {
+		_spec.SetField(promocode.FieldDiscountPercent, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDiscountPercent(); ok {
+		_spec.AddField(promocode.FieldDiscountPercent, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.MaxUses(); ok {
 		_spec.SetField(promocode.FieldMaxUses, field.TypeInt, value)

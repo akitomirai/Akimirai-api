@@ -30,6 +30,7 @@ func RegisterPaymentRoutes(
 		authenticated.GET("/plans", paymentHandler.GetPlans)
 		authenticated.GET("/channels", paymentHandler.GetChannels)
 		authenticated.GET("/limits", paymentHandler.GetLimits)
+		authenticated.POST("/promo-code/validate", paymentHandler.ValidatePromoCode)
 		authenticated.POST("/subscriptions/balance", paymentHandler.PurchaseSubscriptionWithBalance)
 
 		orders := authenticated.Group("/orders")
@@ -85,6 +86,7 @@ func RegisterPaymentRoutes(
 			adminOrders.GET("/:id", adminPaymentHandler.GetOrderDetail)
 			adminOrders.POST("/:id/cancel", adminPaymentHandler.CancelOrder)
 			adminOrders.POST("/:id/retry", adminPaymentHandler.RetryFulfillment)
+			adminOrders.POST("/:id/confirm-personal-qrcode", adminPaymentHandler.ConfirmPersonalQRCode)
 			adminOrders.POST("/:id/refund", adminPaymentHandler.ProcessRefund)
 		}
 

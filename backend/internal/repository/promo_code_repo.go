@@ -26,6 +26,7 @@ func (r *promoCodeRepository) Create(ctx context.Context, code *service.PromoCod
 	builder := client.PromoCode.Create().
 		SetCode(code.Code).
 		SetBonusAmount(code.BonusAmount).
+		SetDiscountPercent(code.DiscountPercent).
 		SetMaxUses(code.MaxUses).
 		SetUsedCount(code.UsedCount).
 		SetStatus(code.Status).
@@ -92,6 +93,7 @@ func (r *promoCodeRepository) Update(ctx context.Context, code *service.PromoCod
 	builder := client.PromoCode.UpdateOneID(code.ID).
 		SetCode(code.Code).
 		SetBonusAmount(code.BonusAmount).
+		SetDiscountPercent(code.DiscountPercent).
 		SetMaxUses(code.MaxUses).
 		SetUsedCount(code.UsedCount).
 		SetStatus(code.Status).
@@ -165,6 +167,8 @@ func promoCodeListOrder(params pagination.PaginationParams) []func(*entsql.Selec
 	switch sortBy {
 	case "bonus_amount":
 		field = promocode.FieldBonusAmount
+	case "discount_percent":
+		field = promocode.FieldDiscountPercent
 	case "status":
 		field = promocode.FieldStatus
 	case "expires_at":
@@ -254,16 +258,17 @@ func promoCodeEntityToService(m *dbent.PromoCode) *service.PromoCode {
 		return nil
 	}
 	return &service.PromoCode{
-		ID:          m.ID,
-		Code:        m.Code,
-		BonusAmount: m.BonusAmount,
-		MaxUses:     m.MaxUses,
-		UsedCount:   m.UsedCount,
-		Status:      m.Status,
-		ExpiresAt:   m.ExpiresAt,
-		Notes:       derefString(m.Notes),
-		CreatedAt:   m.CreatedAt,
-		UpdatedAt:   m.UpdatedAt,
+		ID:              m.ID,
+		Code:            m.Code,
+		BonusAmount:     m.BonusAmount,
+		DiscountPercent: m.DiscountPercent,
+		MaxUses:         m.MaxUses,
+		UsedCount:       m.UsedCount,
+		Status:          m.Status,
+		ExpiresAt:       m.ExpiresAt,
+		Notes:           derefString(m.Notes),
+		CreatedAt:       m.CreatedAt,
+		UpdatedAt:       m.UpdatedAt,
 	}
 }
 

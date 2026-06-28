@@ -81,6 +81,48 @@ func (_c *PaymentOrderCreate) SetNillableFeeRate(v *float64) *PaymentOrderCreate
 	return _c
 }
 
+// SetPromoCode sets the "promo_code" field.
+func (_c *PaymentOrderCreate) SetPromoCode(v string) *PaymentOrderCreate {
+	_c.mutation.SetPromoCode(v)
+	return _c
+}
+
+// SetNillablePromoCode sets the "promo_code" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillablePromoCode(v *string) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetPromoCode(*v)
+	}
+	return _c
+}
+
+// SetDiscountPercent sets the "discount_percent" field.
+func (_c *PaymentOrderCreate) SetDiscountPercent(v float64) *PaymentOrderCreate {
+	_c.mutation.SetDiscountPercent(v)
+	return _c
+}
+
+// SetNillableDiscountPercent sets the "discount_percent" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableDiscountPercent(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetDiscountPercent(*v)
+	}
+	return _c
+}
+
+// SetDiscountAmount sets the "discount_amount" field.
+func (_c *PaymentOrderCreate) SetDiscountAmount(v float64) *PaymentOrderCreate {
+	_c.mutation.SetDiscountAmount(v)
+	return _c
+}
+
+// SetNillableDiscountAmount sets the "discount_amount" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableDiscountAmount(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetDiscountAmount(*v)
+	}
+	return _c
+}
+
 // SetRechargeCode sets the "recharge_code" field.
 func (_c *PaymentOrderCreate) SetRechargeCode(v string) *PaymentOrderCreate {
 	_c.mutation.SetRechargeCode(v)
@@ -517,6 +559,14 @@ func (_c *PaymentOrderCreate) defaults() {
 		v := paymentorder.DefaultFeeRate
 		_c.mutation.SetFeeRate(v)
 	}
+	if _, ok := _c.mutation.DiscountPercent(); !ok {
+		v := paymentorder.DefaultDiscountPercent
+		_c.mutation.SetDiscountPercent(v)
+	}
+	if _, ok := _c.mutation.DiscountAmount(); !ok {
+		v := paymentorder.DefaultDiscountAmount
+		_c.mutation.SetDiscountAmount(v)
+	}
 	if _, ok := _c.mutation.OutTradeNo(); !ok {
 		v := paymentorder.DefaultOutTradeNo
 		_c.mutation.SetOutTradeNo(v)
@@ -576,6 +626,17 @@ func (_c *PaymentOrderCreate) check() error {
 	}
 	if _, ok := _c.mutation.FeeRate(); !ok {
 		return &ValidationError{Name: "fee_rate", err: errors.New(`ent: missing required field "PaymentOrder.fee_rate"`)}
+	}
+	if v, ok := _c.mutation.PromoCode(); ok {
+		if err := paymentorder.PromoCodeValidator(v); err != nil {
+			return &ValidationError{Name: "promo_code", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.promo_code": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.DiscountPercent(); !ok {
+		return &ValidationError{Name: "discount_percent", err: errors.New(`ent: missing required field "PaymentOrder.discount_percent"`)}
+	}
+	if _, ok := _c.mutation.DiscountAmount(); !ok {
+		return &ValidationError{Name: "discount_amount", err: errors.New(`ent: missing required field "PaymentOrder.discount_amount"`)}
 	}
 	if _, ok := _c.mutation.RechargeCode(); !ok {
 		return &ValidationError{Name: "recharge_code", err: errors.New(`ent: missing required field "PaymentOrder.recharge_code"`)}
@@ -724,6 +785,18 @@ func (_c *PaymentOrderCreate) createSpec() (*PaymentOrder, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.FeeRate(); ok {
 		_spec.SetField(paymentorder.FieldFeeRate, field.TypeFloat64, value)
 		_node.FeeRate = value
+	}
+	if value, ok := _c.mutation.PromoCode(); ok {
+		_spec.SetField(paymentorder.FieldPromoCode, field.TypeString, value)
+		_node.PromoCode = &value
+	}
+	if value, ok := _c.mutation.DiscountPercent(); ok {
+		_spec.SetField(paymentorder.FieldDiscountPercent, field.TypeFloat64, value)
+		_node.DiscountPercent = value
+	}
+	if value, ok := _c.mutation.DiscountAmount(); ok {
+		_spec.SetField(paymentorder.FieldDiscountAmount, field.TypeFloat64, value)
+		_node.DiscountAmount = value
 	}
 	if value, ok := _c.mutation.RechargeCode(); ok {
 		_spec.SetField(paymentorder.FieldRechargeCode, field.TypeString, value)
@@ -1027,6 +1100,60 @@ func (u *PaymentOrderUpsert) UpdateFeeRate() *PaymentOrderUpsert {
 // AddFeeRate adds v to the "fee_rate" field.
 func (u *PaymentOrderUpsert) AddFeeRate(v float64) *PaymentOrderUpsert {
 	u.Add(paymentorder.FieldFeeRate, v)
+	return u
+}
+
+// SetPromoCode sets the "promo_code" field.
+func (u *PaymentOrderUpsert) SetPromoCode(v string) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldPromoCode, v)
+	return u
+}
+
+// UpdatePromoCode sets the "promo_code" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdatePromoCode() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldPromoCode)
+	return u
+}
+
+// ClearPromoCode clears the value of the "promo_code" field.
+func (u *PaymentOrderUpsert) ClearPromoCode() *PaymentOrderUpsert {
+	u.SetNull(paymentorder.FieldPromoCode)
+	return u
+}
+
+// SetDiscountPercent sets the "discount_percent" field.
+func (u *PaymentOrderUpsert) SetDiscountPercent(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldDiscountPercent, v)
+	return u
+}
+
+// UpdateDiscountPercent sets the "discount_percent" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateDiscountPercent() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldDiscountPercent)
+	return u
+}
+
+// AddDiscountPercent adds v to the "discount_percent" field.
+func (u *PaymentOrderUpsert) AddDiscountPercent(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldDiscountPercent, v)
+	return u
+}
+
+// SetDiscountAmount sets the "discount_amount" field.
+func (u *PaymentOrderUpsert) SetDiscountAmount(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldDiscountAmount, v)
+	return u
+}
+
+// UpdateDiscountAmount sets the "discount_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateDiscountAmount() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldDiscountAmount)
+	return u
+}
+
+// AddDiscountAmount adds v to the "discount_amount" field.
+func (u *PaymentOrderUpsert) AddDiscountAmount(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldDiscountAmount, v)
 	return u
 }
 
@@ -1708,6 +1835,69 @@ func (u *PaymentOrderUpsertOne) AddFeeRate(v float64) *PaymentOrderUpsertOne {
 func (u *PaymentOrderUpsertOne) UpdateFeeRate() *PaymentOrderUpsertOne {
 	return u.Update(func(s *PaymentOrderUpsert) {
 		s.UpdateFeeRate()
+	})
+}
+
+// SetPromoCode sets the "promo_code" field.
+func (u *PaymentOrderUpsertOne) SetPromoCode(v string) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetPromoCode(v)
+	})
+}
+
+// UpdatePromoCode sets the "promo_code" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdatePromoCode() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdatePromoCode()
+	})
+}
+
+// ClearPromoCode clears the value of the "promo_code" field.
+func (u *PaymentOrderUpsertOne) ClearPromoCode() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearPromoCode()
+	})
+}
+
+// SetDiscountPercent sets the "discount_percent" field.
+func (u *PaymentOrderUpsertOne) SetDiscountPercent(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetDiscountPercent(v)
+	})
+}
+
+// AddDiscountPercent adds v to the "discount_percent" field.
+func (u *PaymentOrderUpsertOne) AddDiscountPercent(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddDiscountPercent(v)
+	})
+}
+
+// UpdateDiscountPercent sets the "discount_percent" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateDiscountPercent() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateDiscountPercent()
+	})
+}
+
+// SetDiscountAmount sets the "discount_amount" field.
+func (u *PaymentOrderUpsertOne) SetDiscountAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetDiscountAmount(v)
+	})
+}
+
+// AddDiscountAmount adds v to the "discount_amount" field.
+func (u *PaymentOrderUpsertOne) AddDiscountAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddDiscountAmount(v)
+	})
+}
+
+// UpdateDiscountAmount sets the "discount_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateDiscountAmount() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateDiscountAmount()
 	})
 }
 
@@ -2640,6 +2830,69 @@ func (u *PaymentOrderUpsertBulk) AddFeeRate(v float64) *PaymentOrderUpsertBulk {
 func (u *PaymentOrderUpsertBulk) UpdateFeeRate() *PaymentOrderUpsertBulk {
 	return u.Update(func(s *PaymentOrderUpsert) {
 		s.UpdateFeeRate()
+	})
+}
+
+// SetPromoCode sets the "promo_code" field.
+func (u *PaymentOrderUpsertBulk) SetPromoCode(v string) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetPromoCode(v)
+	})
+}
+
+// UpdatePromoCode sets the "promo_code" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdatePromoCode() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdatePromoCode()
+	})
+}
+
+// ClearPromoCode clears the value of the "promo_code" field.
+func (u *PaymentOrderUpsertBulk) ClearPromoCode() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearPromoCode()
+	})
+}
+
+// SetDiscountPercent sets the "discount_percent" field.
+func (u *PaymentOrderUpsertBulk) SetDiscountPercent(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetDiscountPercent(v)
+	})
+}
+
+// AddDiscountPercent adds v to the "discount_percent" field.
+func (u *PaymentOrderUpsertBulk) AddDiscountPercent(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddDiscountPercent(v)
+	})
+}
+
+// UpdateDiscountPercent sets the "discount_percent" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateDiscountPercent() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateDiscountPercent()
+	})
+}
+
+// SetDiscountAmount sets the "discount_amount" field.
+func (u *PaymentOrderUpsertBulk) SetDiscountAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetDiscountAmount(v)
+	})
+}
+
+// AddDiscountAmount adds v to the "discount_amount" field.
+func (u *PaymentOrderUpsertBulk) AddDiscountAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddDiscountAmount(v)
+	})
+}
+
+// UpdateDiscountAmount sets the "discount_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateDiscountAmount() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateDiscountAmount()
 	})
 }
 

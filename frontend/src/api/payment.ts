@@ -12,6 +12,8 @@ import type {
   CheckoutInfoResponse,
   CreateOrderRequest,
   CreateOrderResult,
+  ValidatePaymentPromoCodeRequest,
+  PaymentPromoCodeQuote,
   PaymentOrder
 } from '@/types/payment'
 import type { BasePaginationResponse } from '@/types'
@@ -45,6 +47,11 @@ export const paymentAPI = {
   /** Create a new payment order */
   createOrder(data: CreateOrderRequest) {
     return apiClient.post<CreateOrderResult>('/payment/orders', data)
+  },
+
+  /** Validate a payment promo code and preview the discounted amount */
+  validatePromoCode(data: ValidatePaymentPromoCodeRequest) {
+    return apiClient.post<PaymentPromoCodeQuote>('/payment/promo-code/validate', data)
   },
 
   /** Get current user's orders */

@@ -1,5 +1,6 @@
 docs/claude-relay-service/
 .codex
+tools/browser_profile_fresh/
 
 # ===================
 # Go 后端

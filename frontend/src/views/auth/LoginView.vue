@@ -3,11 +3,11 @@
     <div class="space-y-6">
       <!-- Title -->
       <div class="text-center">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+        <h2 class="whitespace-nowrap text-[1.05rem] font-bold leading-tight tracking-tight text-gray-900 dark:text-white sm:text-[1.15rem] lg:text-[1.2rem]">
           {{ t('auth.welcomeBack') }}
         </h2>
-        <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
-          {{ t('auth.signInToAccount') }}
+        <p v-if="loginSubtitle" class="mt-2 text-sm text-gray-500 dark:text-dark-400">
+          {{ loginSubtitle }}
         </p>
       </div>
       <!-- Login Form -->
@@ -218,6 +218,7 @@ import { extractI18nErrorMessage } from '@/utils/apiError'
 import { clearAllAffiliateReferralCodes } from '@/utils/oauthAffiliate'
 
 const { t } = useI18n()
+const loginSubtitle = computed(() => t('auth.signInToAccount'))
 const LOGIN_AGREEMENT_STORAGE_KEY = 'sub2api_login_agreement_consent'
 
 // ==================== Router & Stores ====================

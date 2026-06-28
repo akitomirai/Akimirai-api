@@ -164,3 +164,21 @@ func TestSettingService_GetPublicSettings_FallsBackToConfigForWeChatOAuthCapabil
 	require.False(t, settings.WeChatOAuthMPEnabled)
 	require.False(t, settings.WeChatOAuthMobileEnabled)
 }
+
+func TestConfiguredAIPlatformLabelsFromAccounts_DerivesFamiliesFromPlatformAndMappings(t *testing.T) {
+	labels := configuredAIPlatformLabelsFromAccounts([]Account{
+		{
+			Platform: PlatformOpenAI,
+			Credentials: map[string]any{
+				"model_mapping": map[string]any{
+					"glm":      "glm-4.6",
+					"deepseek": "deepseek-chat",
+				},
+			},
+		},
+		{Platform: PlatformAnthropic},
+		{Platform: PlatformGrok},
+	})
+
+	require.Equal(t, []string{"GPT", "Claude", "GLM", "DeepSeek", "Grok"}, labels)
+}

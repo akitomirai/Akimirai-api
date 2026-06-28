@@ -216,6 +216,7 @@ type CreateOrderRequest struct {
 	WechatResumeToken string  `json:"wechat_resume_token"`
 	ReturnURL         string  `json:"return_url"`
 	PaymentSource     string  `json:"payment_source"`
+	PromoCode         string  `json:"promo_code"`
 	OrderType         string  `json:"order_type"`
 	PlanID            int64   `json:"plan_id"`
 	// IsMobile lets the frontend declare its mobile status directly. When
@@ -228,12 +229,47 @@ type BalanceSubscriptionRequest struct {
 	PlanID int64 `json:"plan_id" binding:"required"`
 }
 
+type ValidatePaymentPromoCodeRequest struct {
+	Code        string  `json:"code" binding:"required"`
+	Amount      float64 `json:"amount"`
+	PaymentType string  `json:"payment_type"`
+	OrderType   string  `json:"order_type"`
+	PlanID      int64   `json:"plan_id"`
+}
+
 type BalanceSubscriptionResponse struct {
 	Subscription  *dto.UserSubscription `json:"subscription"`
 	BalanceBefore float64               `json:"balance_before"`
 	BalanceAfter  float64               `json:"balance_after"`
 	Price         float64               `json:"price"`
 	Shortfall     float64               `json:"shortfall"`
+}
+
+// ValidatePromoCode validates a promo code for the current payment selection.
+// POST /api/v1/payment/promo-code/validate
+func (h *PaymentHandler) ValidatePromoCode(c *gin.Context) {
+	if _, ok := requireAuth(c); !ok {
+		return
+	}
+
+	var req ValidatePaymentPromoCodeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+
+	quote, err := h.paymentService.ValidatePaymentPromoCode(c.Request.Context(), service.ValidatePaymentPromoCodeRequest{
+		Code:        req.Code,
+		Amount:      req.Amount,
+		PaymentType: req.PaymentType,
+		OrderType:   req.OrderType,
+		PlanID:      req.PlanID,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, quote)
 }
 
 // CreateOrder creates a new payment order.
@@ -277,6 +313,7 @@ func (h *PaymentHandler) CreateOrder(c *gin.Context) {
 		SrcURL:          c.Request.Referer(),
 		ReturnURL:       req.ReturnURL,
 		PaymentSource:   req.PaymentSource,
+		PromoCode:       req.PromoCode,
 		OrderType:       req.OrderType,
 		PlanID:          req.PlanID,
 		Locale:          c.GetHeader("Accept-Language"),
@@ -354,6 +391,9 @@ func applyWeChatPaymentResumeClaims(req *CreateOrderRequest, claims *service.WeC
 	}
 	if claims.PlanID > 0 {
 		req.PlanID = claims.PlanID
+	}
+	if strings.TrimSpace(claims.PromoCode) != "" {
+		req.PromoCode = claims.PromoCode
 	}
 	return nil
 }
@@ -508,6 +548,9 @@ type PublicOrderResult struct {
 	PayAmount           float64    `json:"pay_amount"`
 	FeeRate             float64    `json:"fee_rate"`
 	Currency            string     `json:"currency"`
+	PromoCode           *string    `json:"promo_code,omitempty"`
+	DiscountPercent     float64    `json:"discount_percent,omitempty"`
+	DiscountAmount      float64    `json:"discount_amount,omitempty"`
 	PaymentType         string     `json:"payment_type"`
 	OrderType           string     `json:"order_type"`
 	Status              string     `json:"status"`
@@ -531,6 +574,9 @@ func buildPublicOrderResult(order *dbent.PaymentOrder) PublicOrderResult {
 		PayAmount:           order.PayAmount,
 		FeeRate:             order.FeeRate,
 		Currency:            service.PaymentOrderCurrency(order),
+		PromoCode:           order.PromoCode,
+		DiscountPercent:     order.DiscountPercent,
+		DiscountAmount:      order.DiscountAmount,
 		PaymentType:         order.PaymentType,
 		OrderType:           order.OrderType,
 		Status:              order.Status,
@@ -611,6 +657,9 @@ type PaymentOrderResult struct {
 	PayAmount           float64    `json:"pay_amount"`
 	FeeRate             float64    `json:"fee_rate"`
 	Currency            string     `json:"currency"`
+	PromoCode           *string    `json:"promo_code,omitempty"`
+	DiscountPercent     float64    `json:"discount_percent,omitempty"`
+	DiscountAmount      float64    `json:"discount_amount,omitempty"`
 	PaymentType         string     `json:"payment_type"`
 	OutTradeNo          string     `json:"out_trade_no"`
 	Status              string     `json:"status"`
@@ -649,6 +698,9 @@ func sanitizePaymentOrderForResponse(order *dbent.PaymentOrder) *PaymentOrderRes
 		PayAmount:           order.PayAmount,
 		FeeRate:             order.FeeRate,
 		Currency:            service.PaymentOrderCurrency(order),
+		PromoCode:           order.PromoCode,
+		DiscountPercent:     order.DiscountPercent,
+		DiscountAmount:      order.DiscountAmount,
 		PaymentType:         order.PaymentType,
 		OutTradeNo:          order.OutTradeNo,
 		Status:              order.Status,

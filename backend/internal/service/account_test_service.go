@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -25,6 +26,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/util/urlvalidator"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/tidwall/gjson"
 )
 
 // sseDataPrefix matches SSE data lines with optional whitespace after colon.
@@ -286,7 +288,7 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 	// Set authentication header
 	if useBearer {
 		req.Header.Set("anthropic-beta", claude.DefaultBetaHeader)
-		req.Header.Set("Authorization", "Bearer "+authToken)
+		req.Header.Set("Cookie", "__Secure-next-auth.session-token="+authToken)
 	} else {
 		req.Header.Set("anthropic-beta", claude.APIKeyBetaHeader)
 		req.Header.Set("x-api-key", authToken)
@@ -519,6 +521,9 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 		if account.Type == "apikey" {
 			return s.testOpenAIImageAPIKey(c, ctx, account, testModelID, imagePrompt)
 		}
+		if account.IsConversationImageGen() {
+			return s.testOpenAIImageConversation(c, ctx, account, testModelID, imagePrompt)
+		}
 		return s.testOpenAIImageOAuth(c, ctx, account, testModelID, imagePrompt)
 	}
 
@@ -584,7 +589,7 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 
 	// Set common headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+authToken)
+	req.Header.Set("Cookie", "__Secure-next-auth.session-token="+authToken)
 
 	// Set OAuth-specific headers for ChatGPT internal API
 	if isOAuth {
@@ -663,7 +668,7 @@ func (s *AccountTestService) testOpenAIChatCompletionsConnection(
 	req = req.WithContext(WithHTTPUpstreamProfile(req.Context(), HTTPUpstreamProfileOpenAI))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "text/event-stream")
-	req.Header.Set("Authorization", "Bearer "+authToken)
+	req.Header.Set("Cookie", "__Secure-next-auth.session-token="+authToken)
 
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {
@@ -745,7 +750,7 @@ func (s *AccountTestService) testOpenAICompactConnection(c *gin.Context, account
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", "Bearer "+authToken)
+	req.Header.Set("Cookie", "__Secure-next-auth.session-token="+authToken)
 	req.Header.Set("OpenAI-Beta", "responses=experimental")
 	req.Header.Set("Originator", "codex_cli_rs")
 	req.Header.Set("User-Agent", codexCLIUserAgent)
@@ -1510,7 +1515,7 @@ func (s *AccountTestService) testOpenAIImageAPIKey(c *gin.Context, ctx context.C
 	}
 	req = req.WithContext(WithHTTPUpstreamProfile(req.Context(), HTTPUpstreamProfileOpenAI))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+authToken)
+	req.Header.Set("Cookie", "__Secure-next-auth.session-token="+authToken)
 
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {
@@ -1599,7 +1604,7 @@ func (s *AccountTestService) testOpenAIImageOAuth(c *gin.Context, ctx context.Co
 	}
 	req = req.WithContext(WithHTTPUpstreamProfile(req.Context(), HTTPUpstreamProfileOpenAI))
 	req.Host = "chatgpt.com"
-	req.Header.Set("Authorization", "Bearer "+authToken)
+	req.Header.Set("Cookie", "__Secure-next-auth.session-token="+authToken)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("OpenAI-Beta", "responses=experimental")
@@ -1657,6 +1662,154 @@ func (s *AccountTestService) testOpenAIImageOAuth(c *gin.Context, ctx context.Co
 			Type:     "image",
 			ImageURL: "data:" + mimeType + ";base64," + item.Result,
 			MimeType: mimeType,
+		})
+	}
+
+	s.sendEvent(c, TestEvent{Type: "test_complete", Success: true})
+	return nil
+}
+
+// testOpenAIImageConversation tests image generation via the ChatGPT web conversation API.
+// Used for free-tier accounts that lack Codex API access.
+func (s *AccountTestService) testOpenAIImageConversation(c *gin.Context, ctx context.Context, account *Account, modelID, prompt string) error {
+	authToken := account.GetOpenAIAccessToken()
+	if authToken == "" {
+		return s.sendErrorAndEnd(c, "No access token available")
+	}
+
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	c.Writer.Header().Set("Cache-Control", "no-cache")
+	c.Writer.Header().Set("Connection", "keep-alive")
+	c.Writer.Header().Set("X-Accel-Buffering", "no")
+	c.Writer.Flush()
+
+	s.sendEvent(c, TestEvent{Type: "test_start", Model: modelID})
+	s.sendEvent(c, TestEvent{Type: "content", Text: "Calling ChatGPT web conversation API...\n"})
+
+	msgID := generateRandomUUID()
+	parentID := generateRandomUUID()
+	convReq := conversationRequest{
+		Action: "next",
+		Messages: []conversationMessage{{
+			ID:     msgID,
+			Author: conversationAuthor{Role: "user"},
+			Content: conversationMessageContent{
+				ContentType: "text",
+				Parts:       []string{prompt},
+			},
+		}},
+		Model:                      "auto",
+		ParentMessageID:            parentID,
+		HistoryAndTrainingDisabled: true,
+		TimezoneOffsetMin:          0,
+		Suggestions:                []string{},
+		ConversationMode:           map[string]string{"kind": "primary_assistant"},
+	}
+
+	bodyBytes, err := json.Marshal(convReq)
+	if err != nil {
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Failed to build conversation request: %s", err.Error()))
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, conversationAPIURL, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return s.sendErrorAndEnd(c, "Failed to create request")
+	}
+	req.Host = "chatgpt.com"
+	req.Header.Set("Cookie", "__Secure-next-auth.session-token="+authToken)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("User-Agent", openAIImageBackendUserAgent)
+		req.Header.Set("Origin", "https://chatgpt.com")
+		req.Header.Set("Referer", "https://chatgpt.com/")
+
+	proxyURL := ""
+	if account.ProxyID != nil && account.Proxy != nil {
+		proxyURL = account.Proxy.URL()
+	}
+	resp, err := s.httpUpstream.Do(req, proxyURL, account.ID, account.Concurrency)
+	if err != nil {
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Conversation API request failed: %s", err.Error()))
+	}
+	defer func() {
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+	}()
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+		message := strings.TrimSpace(extractUpstreamErrorMessage(body))
+		if message == "" {
+			message = fmt.Sprintf("Conversation API returned %d, body=%s", resp.StatusCode, string(body[:min(len(body), 500)]))
+		}
+		return s.sendErrorAndEnd(c, message)
+	}
+
+	// Parse SSE stream for images
+	var (
+		conversationID string
+		imagePointers  []openAIImagePointerInfo
+	)
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(make([]byte, 0, 64*1024), 2*1024*1024)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.HasPrefix(line, "data: ") {
+			continue
+		}
+		raw := strings.TrimPrefix(line, "data: ")
+		if raw == "[DONE]" {
+			break
+		}
+		if conversationID == "" {
+			cid := strings.TrimSpace(gjson.Get(raw, "conversation_id").String())
+			if cid != "" {
+				conversationID = cid
+				s.sendEvent(c, TestEvent{Type: "content", Text: fmt.Sprintf("Conversation created: %s\n", cid)})
+			}
+		}
+		gjson.Get(raw, "message.content.parts").ForEach(func(_, part gjson.Result) bool {
+			assetPointer := strings.TrimSpace(part.Get("asset_pointer").String())
+			if assetPointer != "" {
+				imagePointers = append(imagePointers, openAIImagePointerInfo{Pointer: assetPointer})
+			}
+			ct := strings.TrimSpace(part.Get("content_type").String())
+			if ct == "image_generation" {
+				resultRaw := part.Get("result")
+				ap := strings.TrimSpace(resultRaw.Get("asset_pointer").String())
+				if ap != "" {
+					for _, existing := range imagePointers {
+						if existing.Pointer == ap {
+							return true
+						}
+					}
+					imagePointers = append(imagePointers, openAIImagePointerInfo{Pointer: ap})
+				}
+			}
+			return true
+		})
+	}
+	if err := scanner.Err(); err != nil {
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Conversation SSE error: %s", err.Error()))
+	}
+	if len(imagePointers) == 0 {
+		return s.sendErrorAndEnd(c, "No images generated in conversation response")
+	}
+
+	s.sendEvent(c, TestEvent{Type: "content", Text: fmt.Sprintf("Found %d image(s), downloading...\n", len(imagePointers))})
+
+	headers := resp.Header.Clone()
+	for _, ptr := range imagePointers {
+		imgBytes, err := resolveOpenAIImageBytes(ctx, nil, headers, conversationID, ptr, openAIImageMaxDownloadBytes)
+		if err != nil {
+			s.sendEvent(c, TestEvent{Type: "content", Text: fmt.Sprintf("Download failed: %s\n", err.Error())})
+			continue
+		}
+		mime := "image/png"
+		s.sendEvent(c, TestEvent{
+			Type:     "image",
+			ImageURL: "data:" + mime + ";base64," + base64.StdEncoding.EncodeToString(imgBytes),
+			MimeType: mime,
 		})
 	}
 

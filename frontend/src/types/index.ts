@@ -209,6 +209,7 @@ export interface PublicSettings {
   doc_url: string
   home_content: string
   hide_ccs_import_button: boolean
+  configured_ai_platforms?: string[]
   payment_enabled: boolean
   risk_control_enabled: boolean
   table_default_page_size: number
@@ -1802,6 +1803,7 @@ export interface PromoCode {
   id: number
   code: string
   bonus_amount: number
+  discount_percent: number
   max_uses: number
   used_count: number
   status: 'active' | 'disabled'
@@ -1823,6 +1825,7 @@ export interface PromoCodeUsage {
 export interface CreatePromoCodeRequest {
   code?: string
   bonus_amount: number
+  discount_percent?: number
   max_uses?: number
   expires_at?: number | null
   notes?: string
@@ -1831,6 +1834,7 @@ export interface CreatePromoCodeRequest {
 export interface UpdatePromoCodeRequest {
   code?: string
   bonus_amount?: number
+  discount_percent?: number
   max_uses?: number
   status?: 'active' | 'disabled'
   expires_at?: number | null

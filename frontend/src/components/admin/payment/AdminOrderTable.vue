@@ -103,6 +103,14 @@
             <span class="text-xs">{{ t('payment.orders.cancel') }}</span>
           </button>
           <button
+            v-if="canManualConfirmPersonalQRCode(row)"
+            @click="emit('manualConfirm', row)"
+            class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400"
+          >
+            <Icon name="check" size="sm" />
+            <span class="text-xs">{{ t('payment.admin.manualConfirmPayment') }}</span>
+          </button>
+          <button
             v-if="row.status === 'FAILED'"
             @click="emit('retry', row)"
             class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
@@ -159,6 +167,7 @@ const emit = defineEmits<{
   (e: 'cancel', order: PaymentOrder): void
   (e: 'retry', order: PaymentOrder): void
   (e: 'refund', order: PaymentOrder): void
+  (e: 'manualConfirm', order: PaymentOrder): void
   (e: 'refresh'): void
   (e: 'update:page', page: number): void
   (e: 'update:pageSize', size: number): void
@@ -223,6 +232,10 @@ const orderTypeFilterOptions = computed(() => [
 
 function canRefundRow(order: PaymentOrder): boolean {
   return canRefund(order.status)
+}
+
+function canManualConfirmPersonalQRCode(order: PaymentOrder): boolean {
+  return order.provider_key === 'personal_qrcode' && ['PENDING', 'CANCELLED', 'EXPIRED'].includes(order.status)
 }
 
 function formatDateTime(dateStr: string): string {

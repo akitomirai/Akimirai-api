@@ -754,7 +754,8 @@
           v-if="
             createForm.platform === 'antigravity' ||
             createForm.platform === 'gemini' ||
-            createForm.platform === 'openai'
+            createForm.platform === 'openai' ||
+            createForm.platform === 'grok'
           "
           class="border-t pt-4"
         >
@@ -1062,7 +1063,7 @@
 
         <!-- OpenAI Messages 调度配置（仅 openai 平台） -->
         <div
-          v-if="createForm.platform === 'openai'"
+          v-if="createForm.platform === 'openai' || createForm.platform === 'grok'"
           class="border-t border-gray-200 dark:border-dark-400 pt-4 mt-4"
         >
           <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
@@ -2042,7 +2043,8 @@
           v-if="
             editForm.platform === 'antigravity' ||
             editForm.platform === 'gemini' ||
-            editForm.platform === 'openai'
+            editForm.platform === 'openai' ||
+            editForm.platform === 'grok'
           "
           class="border-t pt-4"
         >
@@ -2346,7 +2348,7 @@
 
         <!-- OpenAI Messages 调度配置（仅 openai 平台） -->
         <div
-          v-if="editForm.platform === 'openai'"
+          v-if="editForm.platform === 'openai' || editForm.platform === 'grok'"
           class="border-t border-gray-200 dark:border-dark-400 pt-4 mt-4"
         >
           <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
@@ -2962,9 +2964,9 @@
                     'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
                     group.platform === 'anthropic'
                       ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                      : group.platform === 'openai'
+                      : group.platform === 'openai' || group.platform === 'grok'
                         ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                        : group.platform === 'antigravity'
+                      : group.platform === 'antigravity'
                           ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
                           : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
                   ]"
@@ -3136,6 +3138,7 @@ const exclusiveOptions = computed(() => [
 const platformOptions = computed(() => [
   { value: "anthropic", label: "Anthropic" },
   { value: "openai", label: "OpenAI" },
+  { value: "grok", label: "Grok (xAI)" },
   { value: "gemini", label: "Gemini" },
   { value: "antigravity", label: "Antigravity" },
 ]);
@@ -3144,6 +3147,7 @@ const platformFilterOptions = computed(() => [
   { value: "", label: t("admin.groups.allPlatforms") },
   { value: "anthropic", label: "Anthropic" },
   { value: "openai", label: "OpenAI" },
+  { value: "grok", label: "Grok (xAI)" },
   { value: "gemini", label: "Gemini" },
   { value: "antigravity", label: "Antigravity" },
 ]);
@@ -3993,7 +3997,7 @@ const handleCreateGroup = async () => {
         createForm.supported_model_scopes,
       ),
       messages_dispatch_model_config:
-        createForm.platform === "openai"
+        createForm.platform === "openai" || createForm.platform === "grok"
           ? messagesDispatchFormStateToConfig({
               allow_messages_dispatch: createForm.allow_messages_dispatch,
               opus_mapped_model: createForm.opus_mapped_model,
@@ -4132,7 +4136,7 @@ const handleUpdateGroup = async () => {
         editForm.supported_model_scopes,
       ),
       messages_dispatch_model_config:
-        editForm.platform === "openai"
+        editForm.platform === "openai" || editForm.platform === "grok"
           ? messagesDispatchFormStateToConfig({
               allow_messages_dispatch: editForm.allow_messages_dispatch,
               opus_mapped_model: editForm.opus_mapped_model,
@@ -4237,10 +4241,10 @@ watch(
     if (!["anthropic", "antigravity"].includes(newVal)) {
       createForm.fallback_group_id_on_invalid_request = null;
     }
-    if (newVal !== "openai") {
+    if (newVal !== "openai" && newVal !== "grok") {
       resetMessagesDispatchFormState(createForm);
     }
-    if (!["openai", "antigravity", "anthropic", "gemini"].includes(newVal)) {
+    if (!["openai", "grok", "antigravity", "anthropic", "gemini"].includes(newVal)) {
       createForm.require_oauth_only = false;
       createForm.require_privacy_set = false;
     }
@@ -4255,10 +4259,10 @@ watch(
     if (!["anthropic", "antigravity"].includes(newVal)) {
       editForm.fallback_group_id_on_invalid_request = null;
     }
-    if (newVal !== "openai") {
+    if (newVal !== "openai" && newVal !== "grok") {
       resetMessagesDispatchFormState(editForm);
     }
-    if (!["openai", "antigravity", "anthropic", "gemini"].includes(newVal)) {
+    if (!["openai", "grok", "antigravity", "anthropic", "gemini"].includes(newVal)) {
       editForm.require_oauth_only = false;
       editForm.require_privacy_set = false;
     }
@@ -4275,7 +4279,7 @@ watch(
     if (!['anthropic', 'antigravity'].includes(newVal)) {
       editForm.fallback_group_id_on_invalid_request = null
     }
-    if (newVal !== 'openai') {
+    if (newVal !== 'openai' && newVal !== 'grok') {
       editForm.allow_messages_dispatch = false
       editForm.default_mapped_model = ''
     }

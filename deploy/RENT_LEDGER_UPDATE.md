@@ -12,6 +12,28 @@ https://akimirai.xyz/rent-ledger/latest.json
 https://akimirai.xyz/rent-ledger/rent-ledger-app.apk
 ```
 
+## Nginx
+
+当前服务器如果由 Nginx 接入 `akimirai.xyz`，在 HTTPS `server` 块里给反向代理 `location /` 前面增加：
+
+```nginx
+location ^~ /rent-ledger/ {
+    root /var/www;
+    try_files $uri =404;
+    add_header Cache-Control "no-store" always;
+    types {
+        application/json json;
+        application/vnd.android.package-archive apk;
+    }
+}
+
+location / {
+    proxy_pass http://127.0.0.1:8080;
+}
+```
+
+这样 `https://akimirai.xyz/rent-ledger/latest.json` 会读取 `/var/www/rent-ledger/latest.json`。
+
 ## Caddy
 
 参考 `deploy/rent-ledger-update.Caddyfile.example`，给 `akimirai.xyz` 增加静态目录：

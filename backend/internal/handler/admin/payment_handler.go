@@ -2,9 +2,11 @@ package admin
 
 import (
 	"strconv"
+	"strings"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
+	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -137,10 +139,46 @@ func sanitizeAdminPaymentOrderForResponse(order *dbent.PaymentOrder) *dbent.Paym
 
 // AdminProcessRefundRequest is the request body for admin refund processing.
 type AdminProcessRefundRequest struct {
-	Amount        float64 `json:"amount"`
-	Reason        string  `json:"reason"`
-	Force         bool    `json:"force"`
-	DeductBalance bool    `json:"deduct_balance"`
+	Amount                float64 `json:"amount"`
+	Reason                string  `json:"reason"`
+	Force                 bool    `json:"force"`
+	DeductBalance         bool    `json:"deduct_balance"`
+	ManualRefundReference string  `json:"manual_refund_reference"`
+}
+
+type AdminConfirmPersonalQRCodeRequest struct {
+	Amount    float64 `json:"amount"`
+	Method    string  `json:"method"`
+	ReceiptID string  `json:"receipt_id"`
+	Note      string  `json:"note"`
+}
+
+// ConfirmPersonalQRCode confirms a personal QR-code payment after admin receipt review.
+// POST /api/v1/admin/payment/orders/:id/confirm-personal-qrcode
+func (h *PaymentHandler) ConfirmPersonalQRCode(c *gin.Context) {
+	orderID, ok := parseIDParam(c, "id")
+	if !ok {
+		return
+	}
+
+	var req AdminConfirmPersonalQRCodeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+
+	order, err := h.paymentService.ConfirmPersonalQRCodePayment(c.Request.Context(), orderID, service.ConfirmPersonalQRCodePaymentRequest{
+		Amount:    req.Amount,
+		Method:    req.Method,
+		ReceiptID: req.ReceiptID,
+		Note:      req.Note,
+		Operator:  adminPaymentOperator(c),
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, sanitizeAdminPaymentOrderForResponse(order))
 }
 
 // ProcessRefund processes a refund for an order (admin).
@@ -157,7 +195,8 @@ func (h *PaymentHandler) ProcessRefund(c *gin.Context) {
 		return
 	}
 
-	plan, earlyResult, err := h.paymentService.PrepareRefund(c.Request.Context(), orderID, req.Amount, req.Reason, req.Force, req.DeductBalance)
+	reason := appendManualRefundReferenceForRequest(req.Reason, req.ManualRefundReference)
+	plan, earlyResult, err := h.paymentService.PrepareRefund(c.Request.Context(), orderID, req.Amount, reason, req.Force, req.DeductBalance)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -166,6 +205,7 @@ func (h *PaymentHandler) ProcessRefund(c *gin.Context) {
 		response.Success(c, earlyResult)
 		return
 	}
+	plan.ManualRefundReference = strings.TrimSpace(req.ManualRefundReference)
 
 	result, err := h.paymentService.ExecuteRefund(c.Request.Context(), plan)
 	if err != nil {
@@ -173,6 +213,25 @@ func (h *PaymentHandler) ProcessRefund(c *gin.Context) {
 		return
 	}
 	response.Success(c, result)
+}
+
+func adminPaymentOperator(c *gin.Context) string {
+	if subject, ok := middleware2.GetAuthSubjectFromContext(c); ok && subject.UserID > 0 {
+		return "admin:" + strconv.FormatInt(subject.UserID, 10)
+	}
+	return "admin"
+}
+
+func appendManualRefundReferenceForRequest(reason, reference string) string {
+	reason = strings.TrimSpace(reason)
+	reference = strings.TrimSpace(reference)
+	if reference == "" {
+		return reason
+	}
+	if reason == "" {
+		return "manual original-route refund reference: " + reference
+	}
+	return reason + "; manual original-route refund reference: " + reference
 }
 
 // --- Subscription Plans ---

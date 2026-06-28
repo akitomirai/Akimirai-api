@@ -32,6 +32,7 @@ export interface CallbackPaths {
 /** Maps provider key → available payment types. */
 export const PROVIDER_SUPPORTED_TYPES: Record<string, string[]> = {
   easypay: ['alipay', 'wxpay'],
+  personal_qrcode: ['alipay', 'wxpay'],
   alipay: ['alipay'],
   wxpay: ['wxpay'],
   stripe: ['card', 'alipay', 'wxpay', 'link'],
@@ -92,6 +93,7 @@ export function getPaymentPopupFeatures(): string {
 /** Webhook paths for each provider (relative to origin). */
 export const WEBHOOK_PATHS: Record<string, string> = {
   easypay: '/api/v1/payment/webhook/easypay',
+  personal_qrcode: '/api/v1/payment/webhook/personal-qrcode',
   alipay: '/api/v1/payment/webhook/alipay',
   wxpay: '/api/v1/payment/webhook/wxpay',
   stripe: '/api/v1/payment/webhook/stripe',
@@ -103,6 +105,7 @@ export const RETURN_PATH = '/payment/result'
 /** Fixed callback paths per provider — displayed as read-only after base URL. */
 export const PROVIDER_CALLBACK_PATHS: Record<string, CallbackPaths> = {
   easypay: { notifyUrl: WEBHOOK_PATHS.easypay, returnUrl: RETURN_PATH },
+  personal_qrcode: {},
   alipay: { notifyUrl: WEBHOOK_PATHS.alipay, returnUrl: RETURN_PATH },
   wxpay: { notifyUrl: WEBHOOK_PATHS.wxpay },
   // stripe: 不需要回调 URL 配置，Webhook 单独配置。
@@ -117,6 +120,17 @@ export const PROVIDER_CONFIG_FIELDS: Record<string, ConfigFieldDef[]> = {
     { key: 'apiBase', label: '', sensitive: false },
     { key: 'cidAlipay', label: '', sensitive: false, optional: true },
     { key: 'cidWxpay', label: '', sensitive: false, optional: true },
+  ],
+  personal_qrcode: [
+    { key: 'alipayQr', label: '', sensitive: false, optional: true, hintKey: 'admin.settings.payment.field_personalQrHint' },
+    { key: 'wxpayQr', label: '', sensitive: false, optional: true, hintKey: 'admin.settings.payment.field_personalQrHint' },
+    { key: 'accountName', label: '', sensitive: false, optional: true, clearable: true },
+    { key: 'notifySecret', label: '', sensitive: true, optional: true },
+    { key: 'matchingMode', label: '', sensitive: false, optional: true, defaultValue: 'order_no', options: [
+      { value: 'order_no', label: 'Order number' },
+      { value: 'amount_window', label: 'Amount window' },
+    ] },
+    { key: 'amountWindowCents', label: '', sensitive: false, optional: true, defaultValue: '0' },
   ],
   alipay: [
     { key: 'appId', label: 'App ID', sensitive: false },

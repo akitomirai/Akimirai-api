@@ -43,6 +43,20 @@ func (_c *PromoCodeCreate) SetNillableBonusAmount(v *float64) *PromoCodeCreate {
 	return _c
 }
 
+// SetDiscountPercent sets the "discount_percent" field.
+func (_c *PromoCodeCreate) SetDiscountPercent(v float64) *PromoCodeCreate {
+	_c.mutation.SetDiscountPercent(v)
+	return _c
+}
+
+// SetNillableDiscountPercent sets the "discount_percent" field if the given value is not nil.
+func (_c *PromoCodeCreate) SetNillableDiscountPercent(v *float64) *PromoCodeCreate {
+	if v != nil {
+		_c.SetDiscountPercent(*v)
+	}
+	return _c
+}
+
 // SetMaxUses sets the "max_uses" field.
 func (_c *PromoCodeCreate) SetMaxUses(v int) *PromoCodeCreate {
 	_c.mutation.SetMaxUses(v)
@@ -195,6 +209,10 @@ func (_c *PromoCodeCreate) defaults() {
 		v := promocode.DefaultBonusAmount
 		_c.mutation.SetBonusAmount(v)
 	}
+	if _, ok := _c.mutation.DiscountPercent(); !ok {
+		v := promocode.DefaultDiscountPercent
+		_c.mutation.SetDiscountPercent(v)
+	}
 	if _, ok := _c.mutation.MaxUses(); !ok {
 		v := promocode.DefaultMaxUses
 		_c.mutation.SetMaxUses(v)
@@ -229,6 +247,9 @@ func (_c *PromoCodeCreate) check() error {
 	}
 	if _, ok := _c.mutation.BonusAmount(); !ok {
 		return &ValidationError{Name: "bonus_amount", err: errors.New(`ent: missing required field "PromoCode.bonus_amount"`)}
+	}
+	if _, ok := _c.mutation.DiscountPercent(); !ok {
+		return &ValidationError{Name: "discount_percent", err: errors.New(`ent: missing required field "PromoCode.discount_percent"`)}
 	}
 	if _, ok := _c.mutation.MaxUses(); !ok {
 		return &ValidationError{Name: "max_uses", err: errors.New(`ent: missing required field "PromoCode.max_uses"`)}
@@ -284,6 +305,10 @@ func (_c *PromoCodeCreate) createSpec() (*PromoCode, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.BonusAmount(); ok {
 		_spec.SetField(promocode.FieldBonusAmount, field.TypeFloat64, value)
 		_node.BonusAmount = value
+	}
+	if value, ok := _c.mutation.DiscountPercent(); ok {
+		_spec.SetField(promocode.FieldDiscountPercent, field.TypeFloat64, value)
+		_node.DiscountPercent = value
 	}
 	if value, ok := _c.mutation.MaxUses(); ok {
 		_spec.SetField(promocode.FieldMaxUses, field.TypeInt, value)
@@ -408,6 +433,24 @@ func (u *PromoCodeUpsert) UpdateBonusAmount() *PromoCodeUpsert {
 // AddBonusAmount adds v to the "bonus_amount" field.
 func (u *PromoCodeUpsert) AddBonusAmount(v float64) *PromoCodeUpsert {
 	u.Add(promocode.FieldBonusAmount, v)
+	return u
+}
+
+// SetDiscountPercent sets the "discount_percent" field.
+func (u *PromoCodeUpsert) SetDiscountPercent(v float64) *PromoCodeUpsert {
+	u.Set(promocode.FieldDiscountPercent, v)
+	return u
+}
+
+// UpdateDiscountPercent sets the "discount_percent" field to the value that was provided on create.
+func (u *PromoCodeUpsert) UpdateDiscountPercent() *PromoCodeUpsert {
+	u.SetExcluded(promocode.FieldDiscountPercent)
+	return u
+}
+
+// AddDiscountPercent adds v to the "discount_percent" field.
+func (u *PromoCodeUpsert) AddDiscountPercent(v float64) *PromoCodeUpsert {
+	u.Add(promocode.FieldDiscountPercent, v)
 	return u
 }
 
@@ -584,6 +627,27 @@ func (u *PromoCodeUpsertOne) AddBonusAmount(v float64) *PromoCodeUpsertOne {
 func (u *PromoCodeUpsertOne) UpdateBonusAmount() *PromoCodeUpsertOne {
 	return u.Update(func(s *PromoCodeUpsert) {
 		s.UpdateBonusAmount()
+	})
+}
+
+// SetDiscountPercent sets the "discount_percent" field.
+func (u *PromoCodeUpsertOne) SetDiscountPercent(v float64) *PromoCodeUpsertOne {
+	return u.Update(func(s *PromoCodeUpsert) {
+		s.SetDiscountPercent(v)
+	})
+}
+
+// AddDiscountPercent adds v to the "discount_percent" field.
+func (u *PromoCodeUpsertOne) AddDiscountPercent(v float64) *PromoCodeUpsertOne {
+	return u.Update(func(s *PromoCodeUpsert) {
+		s.AddDiscountPercent(v)
+	})
+}
+
+// UpdateDiscountPercent sets the "discount_percent" field to the value that was provided on create.
+func (u *PromoCodeUpsertOne) UpdateDiscountPercent() *PromoCodeUpsertOne {
+	return u.Update(func(s *PromoCodeUpsert) {
+		s.UpdateDiscountPercent()
 	})
 }
 
@@ -942,6 +1006,27 @@ func (u *PromoCodeUpsertBulk) AddBonusAmount(v float64) *PromoCodeUpsertBulk {
 func (u *PromoCodeUpsertBulk) UpdateBonusAmount() *PromoCodeUpsertBulk {
 	return u.Update(func(s *PromoCodeUpsert) {
 		s.UpdateBonusAmount()
+	})
+}
+
+// SetDiscountPercent sets the "discount_percent" field.
+func (u *PromoCodeUpsertBulk) SetDiscountPercent(v float64) *PromoCodeUpsertBulk {
+	return u.Update(func(s *PromoCodeUpsert) {
+		s.SetDiscountPercent(v)
+	})
+}
+
+// AddDiscountPercent adds v to the "discount_percent" field.
+func (u *PromoCodeUpsertBulk) AddDiscountPercent(v float64) *PromoCodeUpsertBulk {
+	return u.Update(func(s *PromoCodeUpsert) {
+		s.AddDiscountPercent(v)
+	})
+}
+
+// UpdateDiscountPercent sets the "discount_percent" field to the value that was provided on create.
+func (u *PromoCodeUpsertBulk) UpdateDiscountPercent() *PromoCodeUpsertBulk {
+	return u.Update(func(s *PromoCodeUpsert) {
+		s.UpdateDiscountPercent()
 	})
 }
 

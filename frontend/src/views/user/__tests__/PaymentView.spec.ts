@@ -420,9 +420,10 @@ describe('PaymentView WeChat JSAPI flow', () => {
         out_trade_no: 'sub2_qr_778',
       })
 
-    shallowMount(PaymentView, {
+    const wrapper = shallowMount(PaymentView, {
       global: {
         stubs: {
+          AppLayout: { template: '<div><slot name="header-title" /><slot /></div>' },
           Teleport: true,
           Transition: false,
         },
@@ -444,6 +445,8 @@ describe('PaymentView WeChat JSAPI flow', () => {
     expect(showWarning).toHaveBeenCalledWith('payment.errors.mobilePaymentFallbackToQr')
     expect(showError).not.toHaveBeenCalled()
     expect(window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)).toContain('weixin://wxpay/bizpayurl?pr=fallback-native')
+    expect(wrapper.html()).toContain('payment-status-panel-stub')
+    expect(wrapper.text()).toContain('payment.createOrder')
   })
 
   it('uses balance for subscription without creating a provider order', async () => {
@@ -455,7 +458,7 @@ describe('PaymentView WeChat JSAPI flow', () => {
     const wrapper = shallowMount(PaymentView, {
       global: {
         stubs: {
-          AppLayout: { template: '<div><slot /></div>' },
+          AppLayout: { template: '<div><slot name="header-title" /><slot /></div>' },
           Teleport: true,
           Transition: false,
           SubscriptionPlanCard: {
@@ -481,7 +484,7 @@ describe('PaymentView WeChat JSAPI flow', () => {
     expect(createOrder).not.toHaveBeenCalled()
   })
 
-  it('renders store overview with account balance plans subscriptions and recent orders', async () => {
+  it('renders the compact store page with account balance plans subscriptions and recent orders', async () => {
     routeState.query = {}
     authState.user.balance = 42.5
     subscriptionState.activeSubscriptions = [{ id: 9 }]
@@ -507,7 +510,7 @@ describe('PaymentView WeChat JSAPI flow', () => {
     const wrapper = shallowMount(PaymentView, {
       global: {
         stubs: {
-          AppLayout: { template: '<div><slot /></div>' },
+          AppLayout: { template: '<div><slot name="header-title" /><slot /></div>' },
           Icon: true,
           Teleport: true,
           Transition: false,
@@ -518,14 +521,10 @@ describe('PaymentView WeChat JSAPI flow', () => {
     await flushPromises()
 
     const text = wrapper.text()
-    expect(text).toContain('payment.storeKicker')
-    expect(text).toContain('payment.storeTitle')
     expect(text).toContain('payment.storeSubtitle')
-    expect(text).toContain('payment.storeSummaryBalance')
     expect(text).toContain('$42.50')
-    expect(text).toContain('payment.storeSummaryPlans')
-    expect(text).toContain('payment.storeSummaryActive')
-    expect(text).toContain('payment.storeSummaryOrders')
+    expect(text).toContain('payment.rechargeAccount')
+    expect(text).toContain('payment.recentOrders')
     expect(text).toContain('payment.tabTopUp')
     expect(text).toContain('payment.tabSubscribe')
   })
@@ -540,7 +539,7 @@ describe('PaymentView WeChat JSAPI flow', () => {
     const wrapper = shallowMount(PaymentView, {
       global: {
         stubs: {
-          AppLayout: { template: '<div><slot /></div>' },
+          AppLayout: { template: '<div><slot name="header-title" /><slot /></div>' },
           Icon: true,
           Teleport: true,
           Transition: false,

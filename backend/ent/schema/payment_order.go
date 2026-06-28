@@ -50,6 +50,16 @@ func (PaymentOrder) Fields() []ent.Field {
 		field.Float("fee_rate").
 			SchemaType(map[string]string{dialect.Postgres: "decimal(10,4)"}).
 			Default(0),
+		field.String("promo_code").
+			Optional().
+			Nillable().
+			MaxLen(32),
+		field.Float("discount_percent").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(5,2)"}).
+			Default(0),
+		field.Float("discount_amount").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}).
+			Default(0),
 		field.String("recharge_code").
 			MaxLen(64),
 
@@ -195,5 +205,6 @@ func (PaymentOrder) Indexes() []ent.Index {
 		index.Fields("paid_at"),
 		index.Fields("payment_type", "paid_at"),
 		index.Fields("order_type"),
+		index.Fields("promo_code"),
 	}
 }

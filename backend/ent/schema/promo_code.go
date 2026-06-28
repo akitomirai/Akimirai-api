@@ -41,6 +41,10 @@ func (PromoCode) Fields() []ent.Field {
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,8)"}).
 			Default(0).
 			Comment("赠送余额金额"),
+		field.Float("discount_percent").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(5,2)"}).
+			Default(0).
+			Comment("支付折扣比例，0表示不作为支付折扣码"),
 		field.Int("max_uses").
 			Default(0).
 			Comment("最大使用次数，0表示无限制"),

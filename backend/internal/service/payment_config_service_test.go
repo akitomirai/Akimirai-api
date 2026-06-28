@@ -286,6 +286,7 @@ func TestBuildVisibleMethodSourceAvailability(t *testing.T) {
 	instances := []*dbent.PaymentProviderInstance{
 		{ProviderKey: payment.TypeAlipay, SupportedTypes: "alipay"},
 		{ProviderKey: payment.TypeEasyPay, SupportedTypes: "wxpay_direct, alipay"},
+		{ProviderKey: payment.TypePersonalQR, SupportedTypes: ""},
 		{ProviderKey: payment.TypeWxpay, SupportedTypes: "wxpay_direct"},
 	}
 
@@ -301,6 +302,12 @@ func TestBuildVisibleMethodSourceAvailability(t *testing.T) {
 	}
 	if !got[VisibleMethodSourceEasyPayWechat] {
 		t.Fatalf("expected %q to be available", VisibleMethodSourceEasyPayWechat)
+	}
+	if !got[VisibleMethodSourcePersonalAlipay] {
+		t.Fatalf("expected %q to be available", VisibleMethodSourcePersonalAlipay)
+	}
+	if !got[VisibleMethodSourcePersonalWechat] {
+		t.Fatalf("expected %q to be available", VisibleMethodSourcePersonalWechat)
 	}
 }
 

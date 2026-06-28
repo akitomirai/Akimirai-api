@@ -158,3 +158,15 @@ func TestGetGeminiBaseURL(t *testing.T) {
 		})
 	}
 }
+
+func TestGetOpenAIApiKeySupportsGrok(t *testing.T) {
+	account := Account{
+		Type:        AccountTypeAPIKey,
+		Platform:    PlatformGrok,
+		Credentials: map[string]any{"api_key": "grok-sso-token"},
+	}
+
+	if got := account.GetOpenAIApiKey(); got != "grok-sso-token" {
+		t.Fatalf("GetOpenAIApiKey() = %q, want %q", got, "grok-sso-token")
+	}
+}

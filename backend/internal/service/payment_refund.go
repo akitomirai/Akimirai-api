@@ -323,6 +323,22 @@ func (s *PaymentService) ExecuteRefund(ctx context.Context, p *RefundPlan) (*Ref
 }
 
 func (s *PaymentService) gwRefund(ctx context.Context, p *RefundPlan) error {
+	if paymentOrderUsesProvider(p.Order, payment.TypePersonalQR) {
+		manualRefundReference := strings.TrimSpace(p.ManualRefundReference)
+		if manualRefundReference == "" {
+			return infraerrors.BadRequest("MANUAL_REFUND_REFERENCE_REQUIRED", "manual refund reference is required")
+		}
+		s.writeAuditLog(ctx, p.Order.ID, "REFUND_MANUAL_ORIGINAL_ROUTE_CONFIRMED", "admin", map[string]any{
+			"orderID":               p.Order.ID,
+			"gatewayAmount":         p.GatewayAmount,
+			"refundAmount":          p.RefundAmount,
+			"reason":                p.Reason,
+			"manualRefundReference": manualRefundReference,
+			"detail":                "admin confirmed original-route refund in Alipay/WeChat before marking refunded",
+		})
+		return nil
+	}
+
 	if p.Order.PaymentTradeNo == "" {
 		s.writeAuditLog(ctx, p.Order.ID, "REFUND_NO_TRADE_NO", "admin", map[string]any{"detail": "skipped"})
 		return nil

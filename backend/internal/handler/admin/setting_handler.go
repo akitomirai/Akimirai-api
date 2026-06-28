@@ -262,6 +262,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		AntigravityUserAgentVersion:            settings.AntigravityUserAgentVersion,
 		OpenAICodexUserAgent:                   settings.OpenAICodexUserAgent,
 		OpenAIAllowClaudeCodeCodexPlugin:       settings.OpenAIAllowClaudeCodeCodexPlugin,
+		PrivacyFilterConfig:                    service.NormalizePrivacyFilterConfig(settings.PrivacyFilterConfig),
 		WebSearchEmulationEnabled:              settings.WebSearchEmulationEnabled,
 		PaymentVisibleMethodAlipaySource:       settings.PaymentVisibleMethodAlipaySource,
 		PaymentVisibleMethodWxpaySource:        settings.PaymentVisibleMethodWxpaySource,
@@ -585,17 +586,18 @@ type UpdateSettingsRequest struct {
 	BackendModeEnabled bool `json:"backend_mode_enabled"`
 
 	// Gateway forwarding behavior
-	EnableFingerprintUnification           *bool   `json:"enable_fingerprint_unification"`
-	EnableMetadataPassthrough              *bool   `json:"enable_metadata_passthrough"`
-	EnableCCHSigning                       *bool   `json:"enable_cch_signing"`
-	EnableClaudeOAuthSystemPromptInjection *bool   `json:"enable_claude_oauth_system_prompt_injection"`
-	ClaudeOAuthSystemPrompt                *string `json:"claude_oauth_system_prompt"`
-	ClaudeOAuthSystemPromptBlocks          *string `json:"claude_oauth_system_prompt_blocks"`
-	EnableAnthropicCacheTTL1hInjection     *bool   `json:"enable_anthropic_cache_ttl_1h_injection"`
-	RewriteMessageCacheControl             *bool   `json:"rewrite_message_cache_control"`
-	AntigravityUserAgentVersion            *string `json:"antigravity_user_agent_version"`
-	OpenAICodexUserAgent                   *string `json:"openai_codex_user_agent"`
-	OpenAIAllowClaudeCodeCodexPlugin       *bool   `json:"openai_allow_claude_code_codex_plugin"`
+	EnableFingerprintUnification           *bool                    `json:"enable_fingerprint_unification"`
+	EnableMetadataPassthrough              *bool                    `json:"enable_metadata_passthrough"`
+	EnableCCHSigning                       *bool                    `json:"enable_cch_signing"`
+	EnableClaudeOAuthSystemPromptInjection *bool                    `json:"enable_claude_oauth_system_prompt_injection"`
+	ClaudeOAuthSystemPrompt                *string                  `json:"claude_oauth_system_prompt"`
+	ClaudeOAuthSystemPromptBlocks          *string                  `json:"claude_oauth_system_prompt_blocks"`
+	EnableAnthropicCacheTTL1hInjection     *bool                    `json:"enable_anthropic_cache_ttl_1h_injection"`
+	RewriteMessageCacheControl             *bool                    `json:"rewrite_message_cache_control"`
+	AntigravityUserAgentVersion            *string                  `json:"antigravity_user_agent_version"`
+	OpenAICodexUserAgent                   *string                  `json:"openai_codex_user_agent"`
+	OpenAIAllowClaudeCodeCodexPlugin       *bool                    `json:"openai_allow_claude_code_codex_plugin"`
+	PrivacyFilterConfig                    *dto.PrivacyFilterConfig `json:"privacy_filter_config"`
 
 	// Payment visible method routing
 	PaymentVisibleMethodAlipaySource  *string `json:"payment_visible_method_alipay_source"`
@@ -1709,6 +1711,12 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.OpenAIAllowClaudeCodeCodexPlugin
 		}(),
+		PrivacyFilterConfig: func() service.PrivacyFilterConfig {
+			if req.PrivacyFilterConfig != nil {
+				return service.NormalizePrivacyFilterConfig(*req.PrivacyFilterConfig)
+			}
+			return service.NormalizePrivacyFilterConfig(previousSettings.PrivacyFilterConfig)
+		}(),
 		PaymentVisibleMethodAlipaySource: func() string {
 			if req.PaymentVisibleMethodAlipaySource != nil {
 				return strings.TrimSpace(*req.PaymentVisibleMethodAlipaySource)
@@ -2105,6 +2113,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		PaymentVisibleMethodWxpaySource:        updatedSettings.PaymentVisibleMethodWxpaySource,
 		PaymentVisibleMethodAlipayEnabled:      updatedSettings.PaymentVisibleMethodAlipayEnabled,
 		PaymentVisibleMethodWxpayEnabled:       updatedSettings.PaymentVisibleMethodWxpayEnabled,
+		PrivacyFilterConfig:                    service.NormalizePrivacyFilterConfig(updatedSettings.PrivacyFilterConfig),
 		OpenAIAdvancedSchedulerEnabled:         updatedSettings.OpenAIAdvancedSchedulerEnabled,
 		BalanceLowNotifyEnabled:                updatedSettings.BalanceLowNotifyEnabled,
 		BalanceLowNotifyThreshold:              updatedSettings.BalanceLowNotifyThreshold,

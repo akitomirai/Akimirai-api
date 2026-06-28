@@ -47,6 +47,13 @@
         </div>
       </div>
 
+      <div
+        v-if="isPersonalQRCodeOrder"
+        class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300"
+      >
+        {{ t('payment.admin.personalQrRefundHint') }}
+      </div>
+
       <!-- Deduct Balance -->
       <div>
         <div class="flex items-center gap-2">
@@ -123,6 +130,17 @@
         ></textarea>
       </div>
 
+      <div v-if="isPersonalQRCodeOrder">
+        <label class="input-label">{{ t('payment.admin.manualRefundReference') }}</label>
+        <input
+          v-model.trim="form.manual_refund_reference"
+          type="text"
+          class="input"
+          :placeholder="t('payment.admin.manualRefundReferencePlaceholder')"
+          required
+        />
+      </div>
+
       <!-- Warning -->
       <div
         v-if="warning"
@@ -153,7 +171,7 @@
         <button
           type="submit"
           form="refund-form"
-          :disabled="submitting || form.amount <= 0 || (requireForce && !form.force)"
+          :disabled="submitting || form.amount <= 0 || (requireForce && !form.force) || (isPersonalQRCodeOrder && !form.manual_refund_reference)"
           class="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-dark-800"
         >
           {{ submitting ? t('common.processing') : t('payment.admin.confirmRefund') }}
@@ -182,7 +200,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'confirm', data: { amount: number; reason: string; deduct_balance: boolean; force: boolean }): void
+  (e: 'confirm', data: { amount: number; reason: string; deduct_balance: boolean; force: boolean; manual_refund_reference?: string }): void
   (e: 'cancel'): void
 }>()
 
@@ -191,7 +209,10 @@ const form = reactive({
   reason: '',
   deduct_balance: true,
   force: false,
+  manual_refund_reference: '',
 })
+
+const isPersonalQRCodeOrder = computed(() => props.order?.provider_key === 'personal_qrcode')
 
 // In REFUND_REQUESTED status, refund_amount is the REQUESTED amount, not actually refunded.
 // Only PARTIALLY_REFUNDED / REFUNDED have real refund amounts.
@@ -223,6 +244,7 @@ watch(() => props.show, (val) => {
     form.reason = props.order.refund_request_reason || ''
     form.deduct_balance = true
     form.force = false
+    form.manual_refund_reference = ''
   }
 })
 
@@ -233,6 +255,7 @@ function formatDateTime(dateStr: string): string {
 function handleSubmit() {
   if (form.amount <= 0 || form.amount > maxRefundable.value) return
   if (props.requireForce && !form.force) return
+  if (isPersonalQRCodeOrder.value && !form.manual_refund_reference) return
   emit('confirm', { ...form })
 }
 </script>

@@ -3287,7 +3287,7 @@
                       </tr>
                     </thead>
                     <tbody class="space-y-2">
-                      <tr v-for="p in (['anthropic', 'openai', 'gemini', 'antigravity'] as const)" :key="p" class="align-top">
+                      <tr v-for="p in (['anthropic', 'openai', 'gemini', 'antigravity', 'grok'] as const)" :key="p" class="align-top">
                         <td class="pr-4 py-1">
                           <span class="font-mono text-xs text-gray-700 dark:text-gray-300">{{ p }}</span>
                         </td>
@@ -3622,7 +3622,7 @@
                             </tr>
                           </thead>
                           <tbody>
-                            <tr v-for="p in (['anthropic', 'openai', 'gemini', 'antigravity'] as const)" :key="`${authSource.source}-pq-${p}`" class="align-top">
+                            <tr v-for="p in (['anthropic', 'openai', 'gemini', 'antigravity', 'grok'] as const)" :key="`${authSource.source}-pq-${p}`" class="align-top">
                               <td class="pr-4 py-1">
                                 <span class="font-mono text-xs text-gray-700 dark:text-gray-300">{{ p }}</span>
                               </td>
@@ -4192,6 +4192,63 @@
                 </div>
                 <Toggle v-model="form.openai_allow_claude_code_codex_plugin" />
               </div>
+            </div>
+          </div>
+          <!-- Privacy Filter -->
+          <div class="card">
+            <div
+              class="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+            >
+              <div>
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                  {{ t("admin.settings.privacyFilter.title") }}
+                </h2>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {{ t("admin.settings.privacyFilter.description") }}
+                </p>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {{ t("admin.settings.privacyFilter.noRetention") }}
+                </p>
+              </div>
+              <Toggle v-model="form.privacy_filter_config.enabled" />
+            </div>
+            <div class="grid gap-3 p-6 md:grid-cols-2 xl:grid-cols-3">
+              <button
+                v-for="option in privacyFilterOptions"
+                :key="option.value"
+                type="button"
+                :class="[
+                  'flex min-h-[48px] items-center justify-between gap-3 rounded-lg border px-4 py-3 text-left transition-colors',
+                  isPrivacyFilterTypeSelected(option.value)
+                    ? 'border-primary-200 bg-primary-50 text-primary-800 dark:border-primary-500/40 dark:bg-primary-500/10 dark:text-primary-100'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-200',
+                  !form.privacy_filter_config.enabled && 'opacity-70',
+                ]"
+                :title="option.hint"
+                @click="togglePrivacyFilterType(option.value)"
+              >
+                <span class="flex min-w-0 items-center gap-2">
+                  <span class="truncate text-sm font-medium">
+                    {{ option.label }}
+                  </span>
+                  <span
+                    class="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-current text-[10px] opacity-50"
+                    :title="option.hint"
+                  >
+                    ?
+                  </span>
+                </span>
+                <span
+                  :class="[
+                    'inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs',
+                    isPrivacyFilterTypeSelected(option.value)
+                      ? 'border-primary-500 bg-primary-500 text-white'
+                      : 'border-gray-300 bg-white text-transparent dark:border-dark-500 dark:bg-dark-700',
+                  ]"
+                >
+                  <Icon name="check" size="xs" />
+                </span>
+              </button>
             </div>
           </div>
           <!-- Web Search Emulation -->
@@ -6970,6 +7027,8 @@ import type {
   DefaultSubscriptionSetting,
   DefaultPlatformQuotasMap,
   OpenAIFastPolicyRule,
+  PrivacyFilterConfig,
+  PrivacyFilterType,
   WeChatConnectMode,
   WebSearchEmulationConfig,
   WebSearchProviderConfig,
@@ -7500,6 +7559,56 @@ const claudeOAuthSystemPromptCacheTTLOptions = computed(() => [
   { value: "1h", label: t("admin.settings.gatewayForwarding.cacheTTL1h") },
 ]);
 
+const defaultPrivacyFilterTypes: PrivacyFilterType[] = [
+  "ip_address",
+  "email",
+  "phone",
+  "id_card",
+  "bank_card",
+  "api_key",
+  "token",
+  "private_key",
+  "random_string",
+];
+
+const privacyFilterOptions = computed(() =>
+  defaultPrivacyFilterTypes.map((value) => ({
+    value,
+    label: t(`admin.settings.privacyFilter.types.${value}`),
+    hint: t(`admin.settings.privacyFilter.hints.${value}`),
+  })),
+);
+
+function normalizePrivacyFilterConfig(
+  value?: Partial<PrivacyFilterConfig> | null,
+): PrivacyFilterConfig {
+  const selected = Array.isArray(value?.types)
+    ? value.types.filter((item): item is PrivacyFilterType =>
+        defaultPrivacyFilterTypes.includes(item as PrivacyFilterType),
+      )
+    : [...defaultPrivacyFilterTypes];
+  return {
+    enabled: value?.enabled === true,
+    types: [...new Set(selected)],
+  };
+}
+
+function isPrivacyFilterTypeSelected(type: PrivacyFilterType): boolean {
+  return form.privacy_filter_config.types.includes(type);
+}
+
+function togglePrivacyFilterType(type: PrivacyFilterType): void {
+  const current = new Set(form.privacy_filter_config.types);
+  if (current.has(type)) {
+    current.delete(type);
+  } else {
+    current.add(type);
+  }
+  form.privacy_filter_config.types = defaultPrivacyFilterTypes.filter((item) =>
+    current.has(item),
+  );
+}
+
 function getClaudeOAuthPresetLabel(
   preset: ClaudeOAuthSystemPromptPreset,
 ): string {
@@ -7838,6 +7947,7 @@ const form = reactive<SettingsForm>({
   antigravity_user_agent_version: "",
   openai_codex_user_agent: "",
   openai_allow_claude_code_codex_plugin: false,
+  privacy_filter_config: normalizePrivacyFilterConfig(),
   // 余额、订阅到期与账号限额通知
   balance_low_notify_enabled: false,
   balance_low_notify_threshold: 0,
@@ -8456,6 +8566,9 @@ async function loadSettings() {
         (form as Record<string, unknown>)[key] = value;
       }
     }
+    form.privacy_filter_config = normalizePrivacyFilterConfig(
+      settings.privacy_filter_config,
+    );
     if (!form.claude_oauth_system_prompt_blocks?.trim()) {
       form.claude_oauth_system_prompt_blocks =
         defaultClaudeOAuthSystemPromptBlocks;
@@ -8967,6 +9080,9 @@ async function saveSettings() {
       openai_codex_user_agent:
         form.openai_codex_user_agent?.trim() || "",
       openai_allow_claude_code_codex_plugin: form.openai_allow_claude_code_codex_plugin,
+      privacy_filter_config: normalizePrivacyFilterConfig(
+        form.privacy_filter_config,
+      ),
       // Payment configuration
       payment_enabled: form.payment_enabled,
       risk_control_enabled: form.risk_control_enabled,
@@ -9613,7 +9729,7 @@ function togglePaymentType(type: string) {
 
 async function disableProvidersByType(type: string) {
   const matching = providers.value.filter(
-    (p) => p.provider_key === type && p.enabled,
+    (p) => p.enabled && providerInstanceClaimsPaymentType(p, type),
   );
   for (const p of matching) {
     try {
@@ -9623,6 +9739,13 @@ async function disableProvidersByType(type: string) {
       slog("disable provider failed", p.id, err);
     }
   }
+}
+
+function providerInstanceClaimsPaymentType(provider: ProviderInstance, type: string): boolean {
+  if (type === "alipay" || type === "wxpay") {
+    return getProviderVisibleMethods(provider).includes(type);
+  }
+  return provider.provider_key === type;
 }
 
 function slog(...args: unknown[]) {
@@ -9642,6 +9765,7 @@ const providerDialogRef = ref<InstanceType<
 
 const providerKeyOptions = computed(() => [
   { value: "easypay", label: t("admin.settings.payment.providerEasypay") },
+  { value: "personal_qrcode", label: t("admin.settings.payment.providerPersonalQRCode") },
   { value: "alipay", label: t("admin.settings.payment.providerAlipay") },
   { value: "wxpay", label: t("admin.settings.payment.providerWxpay") },
   { value: "stripe", label: t("admin.settings.payment.providerStripe") },
@@ -9650,8 +9774,20 @@ const providerKeyOptions = computed(() => [
 
 const enabledProviderKeyOptions = computed(() => {
   const enabled = form.payment_enabled_types;
-  return providerKeyOptions.value.filter((opt) => enabled.includes(opt.value));
+  return providerKeyOptions.value.filter((opt) =>
+    providerKeyEnabledByGlobalTypes(opt.value, enabled),
+  );
 });
+
+function providerKeyEnabledByGlobalTypes(providerKey: string, enabledTypes: string[]): boolean {
+  if (enabledTypes.includes(providerKey)) {
+    return true;
+  }
+  if (providerKey === "easypay" || providerKey === "personal_qrcode") {
+    return enabledTypes.includes("alipay") || enabledTypes.includes("wxpay");
+  }
+  return false;
+}
 
 const loadBalanceOptions = computed(() => [
   {
@@ -9727,7 +9863,10 @@ function getProviderVisibleMethods(
         }
       });
     }
-  } else if (provider.provider_key === "easypay") {
+  } else if (
+    provider.provider_key === "easypay" ||
+    provider.provider_key === "personal_qrcode"
+  ) {
     supportedTypes.forEach(addMethod);
   }
 

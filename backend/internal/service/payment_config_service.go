@@ -417,22 +417,29 @@ func pcParseInt(s string, defaultVal int) int {
 func buildVisibleMethodSourceAvailability(instances []*dbent.PaymentProviderInstance) map[string]bool {
 	available := make(map[string]bool, 4)
 	for _, inst := range instances {
-		switch inst.ProviderKey {
-		case payment.TypeAlipay:
-			if inst.SupportedTypes == "" || payment.InstanceSupportsType(inst.SupportedTypes, payment.TypeAlipay) || payment.InstanceSupportsType(inst.SupportedTypes, payment.TypeAlipayDirect) {
-				available[VisibleMethodSourceOfficialAlipay] = true
-			}
-		case payment.TypeWxpay:
-			if inst.SupportedTypes == "" || payment.InstanceSupportsType(inst.SupportedTypes, payment.TypeWxpay) || payment.InstanceSupportsType(inst.SupportedTypes, payment.TypeWxpayDirect) {
-				available[VisibleMethodSourceOfficialWechat] = true
-			}
-		case payment.TypeEasyPay:
-			for _, supportedType := range splitTypes(inst.SupportedTypes) {
-				switch NormalizeVisibleMethod(supportedType) {
+		for _, method := range enabledVisibleMethodsForProvider(inst.ProviderKey, inst.SupportedTypes) {
+			switch strings.TrimSpace(inst.ProviderKey) {
+			case payment.TypeAlipay:
+				if method == payment.TypeAlipay {
+					available[VisibleMethodSourceOfficialAlipay] = true
+				}
+			case payment.TypeWxpay:
+				if method == payment.TypeWxpay {
+					available[VisibleMethodSourceOfficialWechat] = true
+				}
+			case payment.TypeEasyPay:
+				switch method {
 				case payment.TypeAlipay:
 					available[VisibleMethodSourceEasyPayAlipay] = true
 				case payment.TypeWxpay:
 					available[VisibleMethodSourceEasyPayWechat] = true
+				}
+			case payment.TypePersonalQR:
+				switch method {
+				case payment.TypeAlipay:
+					available[VisibleMethodSourcePersonalAlipay] = true
+				case payment.TypeWxpay:
+					available[VisibleMethodSourcePersonalWechat] = true
 				}
 			}
 		}

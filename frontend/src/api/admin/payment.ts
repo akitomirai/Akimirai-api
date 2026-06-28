@@ -103,8 +103,13 @@ export const adminPaymentAPI = {
     return apiClient.post(`/admin/payment/orders/${id}/retry`)
   },
 
+  /** Confirm a personal QR-code payment after manual receipt review */
+  confirmPersonalQRCodeOrder(id: number, data: { amount: number; method: string; receipt_id: string; note?: string }) {
+    return apiClient.post<PaymentOrder>(`/admin/payment/orders/${id}/confirm-personal-qrcode`, data)
+  },
+
   /** Process a refund */
-  refundOrder(id: number, data: { amount: number; reason: string; deduct_balance?: boolean; force?: boolean }) {
+  refundOrder(id: number, data: { amount: number; reason: string; deduct_balance?: boolean; force?: boolean; manual_refund_reference?: string }) {
     return apiClient.post(`/admin/payment/orders/${id}/refund`, data)
   },
 

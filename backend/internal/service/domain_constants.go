@@ -73,7 +73,7 @@ const (
 	AccountTypeUpstream       = domain.AccountTypeUpstream       // 上游透传类型账号（通过 Base URL + API Key 连接上游）
 	AccountTypeBedrock        = domain.AccountTypeBedrock        // AWS Bedrock 类型账号（通过 SigV4 签名或 API Key 连接 Bedrock，由 credentials.auth_mode 区分）
 	AccountTypeServiceAccount = domain.AccountTypeServiceAccount // Google Service Account 类型账号（用于 Vertex AI）
-	AccountTypePassword        = domain.AccountTypePassword        // 邮箱+密码类型账号（用于登录获取 API Key）
+	AccountTypePassword       = domain.AccountTypePassword       // 邮箱+密码类型账号（用于登录获取 API Key）
 )
 
 // Redeem type constants
@@ -445,6 +445,8 @@ const (
 	// SettingKeyOpenAIAllowClaudeCodeCodexPlugin 全局开关：是否额外放行 Claude Code 的 Codex 插件（默认 false）。
 	// 仅在账号 codex_cli_only 开启时生效；开启后无需逐账号配置 codex_cli_only_allowed_clients。
 	SettingKeyOpenAIAllowClaudeCodeCodexPlugin = "openai_allow_claude_code_codex_plugin"
+	// SettingKeyPrivacyFilterConfig stores JSON config for upstream privacy redaction.
+	SettingKeyPrivacyFilterConfig = "privacy_filter_config"
 
 	// 余额不足提醒
 	SettingKeyBalanceLowNotifyEnabled     = "balance_low_notify_enabled"      // 全局开关

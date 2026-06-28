@@ -1067,8 +1067,17 @@ func (a *Account) IsOpenAIOAuth() bool {
 	return a.IsOpenAI() && a.Type == AccountTypeOAuth
 }
 
+// IsConversationImageGen 检测账号是否启用会话模式生图（免费号走网页版 conversation API）
+func (a *Account) IsConversationImageGen() bool {
+	if a == nil || !a.IsOpenAI() || a.Extra == nil {
+		return false
+	}
+	v, ok := a.Extra["conversation_mode"].(bool)
+	return ok && v
+}
+
 func (a *Account) IsOpenAIApiKey() bool {
-	return a.IsOpenAI() && a.Type == AccountTypeAPIKey
+	return (a.IsOpenAI() || a.IsGrok()) && a.Type == AccountTypeAPIKey
 }
 
 func (a *Account) GetOpenAIBaseURL() string {

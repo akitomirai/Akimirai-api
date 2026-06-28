@@ -95,6 +95,13 @@
           {{ t('payment.orders.cancel') }}
         </button>
         <button
+          v-if="canManualConfirmPersonalQRCode(order)"
+          @click="emit('manualConfirm', order)"
+          class="btn btn-sm rounded-md bg-emerald-50 px-3 py-1.5 text-sm text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+        >
+          {{ t('payment.admin.manualConfirmPayment') }}
+        </button>
+        <button
           v-if="order.status === 'FAILED'"
           @click="emit('retry', order)"
           class="btn btn-sm btn-secondary"
@@ -148,10 +155,15 @@ const emit = defineEmits<{
   (e: 'cancel', order: PaymentOrder): void
   (e: 'retry', order: PaymentOrder): void
   (e: 'refund', order: PaymentOrder): void
+  (e: 'manualConfirm', order: PaymentOrder): void
 }>()
 
 function canRefund(order: PaymentOrder): boolean {
   return canRefundStatus(order.status)
+}
+
+function canManualConfirmPersonalQRCode(order: PaymentOrder): boolean {
+  return order.provider_key === 'personal_qrcode' && ['PENDING', 'CANCELLED', 'EXPIRED'].includes(order.status)
 }
 
 function formatDateTime(dateStr: string): string {

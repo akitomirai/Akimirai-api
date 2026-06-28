@@ -789,16 +789,17 @@ func PromoCodeFromService(pc *service.PromoCode) *PromoCode {
 		return nil
 	}
 	return &PromoCode{
-		ID:          pc.ID,
-		Code:        pc.Code,
-		BonusAmount: pc.BonusAmount,
-		MaxUses:     pc.MaxUses,
-		UsedCount:   pc.UsedCount,
-		Status:      pc.Status,
-		ExpiresAt:   pc.ExpiresAt,
-		Notes:       pc.Notes,
-		CreatedAt:   pc.CreatedAt,
-		UpdatedAt:   pc.UpdatedAt,
+		ID:              pc.ID,
+		Code:            pc.Code,
+		BonusAmount:     pc.BonusAmount,
+		DiscountPercent: pc.DiscountPercent,
+		MaxUses:         pc.MaxUses,
+		UsedCount:       pc.UsedCount,
+		Status:          pc.Status,
+		ExpiresAt:       pc.ExpiresAt,
+		Notes:           pc.Notes,
+		CreatedAt:       pc.CreatedAt,
+		UpdatedAt:       pc.UpdatedAt,
 	}
 }
 

@@ -31,8 +31,10 @@ const (
 
 	VisibleMethodSourceOfficialAlipay = "official_alipay"
 	VisibleMethodSourceEasyPayAlipay  = "easypay_alipay"
+	VisibleMethodSourcePersonalAlipay = "personal_qrcode_alipay"
 	VisibleMethodSourceOfficialWechat = "official_wxpay"
 	VisibleMethodSourceEasyPayWechat  = "easypay_wxpay"
+	VisibleMethodSourcePersonalWechat = "personal_qrcode_wxpay"
 
 	wechatPaymentResumeTokenType = "wechat_payment_resume"
 
@@ -61,6 +63,7 @@ type WeChatPaymentResumeClaims struct {
 	Amount      string `json:"amt,omitempty"`
 	OrderType   string `json:"ot,omitempty"`
 	PlanID      int64  `json:"pid,omitempty"`
+	PromoCode   string `json:"pc,omitempty"`
 	RedirectTo  string `json:"rd,omitempty"`
 	Scope       string `json:"scp,omitempty"`
 	IssuedAt    int64  `json:"iat"`
@@ -156,6 +159,8 @@ func NormalizeVisibleMethodSource(method, source string) string {
 			return VisibleMethodSourceOfficialAlipay
 		case VisibleMethodSourceEasyPayAlipay, payment.TypeEasyPay:
 			return VisibleMethodSourceEasyPayAlipay
+		case VisibleMethodSourcePersonalAlipay, payment.TypePersonalQR, "personal", "personal_qr":
+			return VisibleMethodSourcePersonalAlipay
 		}
 	case payment.TypeWxpay:
 		switch strings.TrimSpace(strings.ToLower(source)) {
@@ -163,6 +168,8 @@ func NormalizeVisibleMethodSource(method, source string) string {
 			return VisibleMethodSourceOfficialWechat
 		case VisibleMethodSourceEasyPayWechat, payment.TypeEasyPay:
 			return VisibleMethodSourceEasyPayWechat
+		case VisibleMethodSourcePersonalWechat, payment.TypePersonalQR, "personal", "personal_qr":
+			return VisibleMethodSourcePersonalWechat
 		}
 	}
 	return ""
@@ -174,10 +181,14 @@ func VisibleMethodProviderKeyForSource(method, source string) (string, bool) {
 		return payment.TypeAlipay, NormalizeVisibleMethod(method) == payment.TypeAlipay
 	case VisibleMethodSourceEasyPayAlipay:
 		return payment.TypeEasyPay, NormalizeVisibleMethod(method) == payment.TypeAlipay
+	case VisibleMethodSourcePersonalAlipay:
+		return payment.TypePersonalQR, NormalizeVisibleMethod(method) == payment.TypeAlipay
 	case VisibleMethodSourceOfficialWechat:
 		return payment.TypeWxpay, NormalizeVisibleMethod(method) == payment.TypeWxpay
 	case VisibleMethodSourceEasyPayWechat:
 		return payment.TypeEasyPay, NormalizeVisibleMethod(method) == payment.TypeWxpay
+	case VisibleMethodSourcePersonalWechat:
+		return payment.TypePersonalQR, NormalizeVisibleMethod(method) == payment.TypeWxpay
 	default:
 		return "", false
 	}
@@ -367,6 +378,7 @@ func (s *PaymentResumeService) CreateWeChatPaymentResumeToken(claims WeChatPayme
 		return "", err
 	}
 	claims.OpenID = strings.TrimSpace(claims.OpenID)
+	claims.PromoCode = strings.ToUpper(strings.TrimSpace(claims.PromoCode))
 	if claims.OpenID == "" {
 		return "", fmt.Errorf("wechat payment resume token requires openid")
 	}

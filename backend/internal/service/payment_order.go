@@ -67,7 +67,19 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 			return nil, err
 		}
 	}
-	payAmountStr, payAmount, err := calculateCreateOrderPayAmount(limitAmount, feeRate, methodCurrency)
+	promoDiscount, err := s.resolvePaymentPromoDiscount(ctx, req.PromoCode)
+	if err != nil {
+		return nil, err
+	}
+	appliedDiscount, err := calculatePaymentPromoDiscount(limitAmount, promoDiscount, methodCurrency)
+	if err != nil {
+		return nil, err
+	}
+	payBaseAmount := limitAmount
+	if appliedDiscount != nil {
+		payBaseAmount = appliedDiscount.BaseAmount
+	}
+	payAmountStr, payAmount, err := calculateCreateOrderPayAmount(payBaseAmount, feeRate, methodCurrency)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +95,15 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 		selectedCurrency = paymentProviderConfigCurrency(sel.ProviderKey, sel.Config)
 	}
 	if selectedCurrency != methodCurrency {
-		payAmountStr, payAmount, err = calculateCreateOrderPayAmount(limitAmount, feeRate, selectedCurrency)
+		appliedDiscount, err = calculatePaymentPromoDiscount(limitAmount, promoDiscount, selectedCurrency)
+		if err != nil {
+			return nil, err
+		}
+		payBaseAmount = limitAmount
+		if appliedDiscount != nil {
+			payBaseAmount = appliedDiscount.BaseAmount
+		}
+		payAmountStr, payAmount, err = calculateCreateOrderPayAmount(payBaseAmount, feeRate, selectedCurrency)
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +118,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	if oauthResp != nil {
 		return oauthResp, nil
 	}
-	order, err := s.createOrderInTx(ctx, req, user, plan, cfg, orderAmount, limitAmount, feeRate, payAmount, sel)
+	order, err := s.createOrderInTx(ctx, req, user, plan, cfg, orderAmount, limitAmount, feeRate, payAmount, appliedDiscount, sel)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +167,18 @@ func (s *PaymentService) validateSubOrder(ctx context.Context, req CreateOrderRe
 	return plan, nil
 }
 
-func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, cfg *PaymentConfig, orderAmount, limitAmount, feeRate, payAmount float64, sel *payment.InstanceSelection) (*dbent.PaymentOrder, error) {
+func paymentOrderTimeoutMinutes(cfg *PaymentConfig, sel *payment.InstanceSelection) int {
+	tm := defaultOrderTimeoutMin
+	if cfg != nil && cfg.OrderTimeoutMin > 0 {
+		tm = cfg.OrderTimeoutMin
+	}
+	if sel != nil && strings.TrimSpace(sel.ProviderKey) == payment.TypePersonalQR {
+		return personalQRCodeOrderTimeoutMin
+	}
+	return tm
+}
+
+func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, cfg *PaymentConfig, orderAmount, limitAmount, feeRate, payAmount float64, discount *calculatedPaymentPromoDiscount, sel *payment.InstanceSelection) (*dbent.PaymentOrder, error) {
 	tx, err := s.entClient.Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("begin transaction: %w", err)
@@ -159,10 +190,7 @@ func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderReq
 	if err := s.checkDailyLimit(ctx, tx, req.UserID, limitAmount, cfg.DailyLimit); err != nil {
 		return nil, err
 	}
-	tm := cfg.OrderTimeoutMin
-	if tm <= 0 {
-		tm = defaultOrderTimeoutMin
-	}
+	tm := paymentOrderTimeoutMinutes(cfg, sel)
 	exp := time.Now().Add(time.Duration(tm) * time.Minute)
 	outTradeNo, err := s.allocateOutTradeNo(ctx, tx)
 	if err != nil {
@@ -200,6 +228,11 @@ func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderReq
 	}
 	if selectedProviderKey != "" {
 		b.SetProviderKey(selectedProviderKey)
+	}
+	if discount != nil {
+		b.SetPromoCode(discount.Code).
+			SetDiscountPercent(discount.Percent).
+			SetDiscountAmount(discount.DiscountAmount)
 	}
 	if providerSnapshot != nil {
 		b.SetProviderSnapshot(providerSnapshot)
@@ -293,6 +326,12 @@ func buildPaymentOrderProviderSnapshot(sel *payment.InstanceSelection, req Creat
 		if merchantID := strings.TrimSpace(sel.Config["pid"]); merchantID != "" {
 			snapshot["merchant_id"] = merchantID
 		}
+	}
+	if providerKey == payment.TypePersonalQR {
+		if accountName := strings.TrimSpace(sel.Config["accountName"]); accountName != "" {
+			snapshot["merchant_id"] = accountName
+		}
+		snapshot["currency"] = payment.DefaultPaymentCurrency
 	}
 	if providerKey == payment.TypeStripe {
 		snapshot["currency"] = paymentProviderConfigCurrency(providerKey, sel.Config)
@@ -463,12 +502,15 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 		return nil, fmt.Errorf("update order with payment details: %w", err)
 	}
 	s.writeAuditLog(ctx, order.ID, "ORDER_CREATED", fmt.Sprintf("user:%d", req.UserID), map[string]any{
-		"paymentAmount":  req.Amount,
-		"creditedAmount": order.Amount,
-		"payAmount":      order.PayAmount,
-		"paymentType":    req.PaymentType,
-		"orderType":      req.OrderType,
-		"paymentSource":  NormalizePaymentSource(req.PaymentSource),
+		"paymentAmount":   req.Amount,
+		"creditedAmount":  order.Amount,
+		"payAmount":       order.PayAmount,
+		"promoCode":       psStringValue(order.PromoCode),
+		"discountPercent": order.DiscountPercent,
+		"discountAmount":  order.DiscountAmount,
+		"paymentType":     req.PaymentType,
+		"orderType":       req.OrderType,
+		"paymentSource":   NormalizePaymentSource(req.PaymentSource),
 	})
 	resultType := pr.ResultType
 	if resultType == "" {
@@ -678,26 +720,29 @@ func classifyCreatePaymentError(req CreateOrderRequest, providerKey string, err 
 
 func buildCreateOrderResponse(order *dbent.PaymentOrder, req CreateOrderRequest, payAmount float64, sel *payment.InstanceSelection, pr *payment.CreatePaymentResponse, resultType payment.CreatePaymentResultType) *CreateOrderResponse {
 	return &CreateOrderResponse{
-		OrderID:      order.ID,
-		Amount:       order.Amount,
-		PayAmount:    payAmount,
-		FeeRate:      order.FeeRate,
-		Status:       OrderStatusPending,
-		ResultType:   resultType,
-		PaymentType:  req.PaymentType,
-		OutTradeNo:   order.OutTradeNo,
-		PayURL:       pr.PayURL,
-		QRCode:       pr.QRCode,
-		ClientSecret: pr.ClientSecret,
-		IntentID:     pr.IntentID,
-		Currency:     pr.Currency,
-		CountryCode:  pr.CountryCode,
-		PaymentEnv:   pr.PaymentEnv,
-		OAuth:        pr.OAuth,
-		JSAPI:        pr.JSAPI,
-		JSAPIPayload: pr.JSAPI,
-		ExpiresAt:    order.ExpiresAt,
-		PaymentMode:  sel.PaymentMode,
+		OrderID:         order.ID,
+		Amount:          order.Amount,
+		PayAmount:       payAmount,
+		FeeRate:         order.FeeRate,
+		PromoCode:       psStringValue(order.PromoCode),
+		DiscountPercent: order.DiscountPercent,
+		DiscountAmount:  order.DiscountAmount,
+		Status:          OrderStatusPending,
+		ResultType:      resultType,
+		PaymentType:     req.PaymentType,
+		OutTradeNo:      order.OutTradeNo,
+		PayURL:          pr.PayURL,
+		QRCode:          pr.QRCode,
+		ClientSecret:    pr.ClientSecret,
+		IntentID:        pr.IntentID,
+		Currency:        pr.Currency,
+		CountryCode:     pr.CountryCode,
+		PaymentEnv:      pr.PaymentEnv,
+		OAuth:           pr.OAuth,
+		JSAPI:           pr.JSAPI,
+		JSAPIPayload:    pr.JSAPI,
+		ExpiresAt:       order.ExpiresAt,
+		PaymentMode:     sel.PaymentMode,
 	}
 }
 
@@ -716,6 +761,9 @@ func buildWeChatPaymentOAuthStartURL(req CreateOrderRequest, scope string) (stri
 	}
 	if req.PlanID > 0 {
 		q.Set("plan_id", strconv.FormatInt(req.PlanID, 10))
+	}
+	if promoCode := strings.ToUpper(strings.TrimSpace(req.PromoCode)); promoCode != "" {
+		q.Set("promo_code", promoCode)
 	}
 	if scope = strings.TrimSpace(scope); scope != "" {
 		q.Set("scope", scope)

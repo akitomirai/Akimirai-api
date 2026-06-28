@@ -5,6 +5,7 @@ package web
 import (
 	"bytes"
 	"context"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -540,6 +541,29 @@ func TestFrontendServer_Middleware(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Header().Get("Content-Type"), "image/png")
+	})
+
+	t.Run("sets_long_cache_for_hashed_assets", func(t *testing.T) {
+		provider := &mockSettingsProvider{
+			settings: map[string]string{"test": "value"},
+		}
+
+		server, err := NewFrontendServer(provider)
+		require.NoError(t, err)
+
+		router := gin.New()
+		router.Use(server.Middleware())
+
+		matches, err := fs.Glob(server.distFS, "assets/*")
+		require.NoError(t, err)
+		require.NotEmpty(t, matches)
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/"+matches[0], nil)
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "public, max-age=31536000, immutable", w.Header().Get("Cache-Control"))
 	})
 }
 

@@ -20,6 +20,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/Wei-Shaw/sub2api/internal/util/privacyfilter"
 	"github.com/imroc/req/v3"
 	"golang.org/x/sync/singleflight"
 )
@@ -121,6 +122,15 @@ const gatewayForwardingCacheTTL = 60 * time.Second
 const gatewayForwardingErrorTTL = 5 * time.Second
 const gatewayForwardingDBTimeout = 5 * time.Second
 
+type cachedPrivacyFilterConfig struct {
+	config    privacyfilter.Config
+	expiresAt int64 // unix nano
+}
+
+const privacyFilterConfigCacheTTL = 60 * time.Second
+const privacyFilterConfigErrorTTL = 5 * time.Second
+const privacyFilterConfigDBTimeout = 5 * time.Second
+
 // cachedAntigravityUserAgentVersion 缓存 Antigravity UA 版本号（进程内缓存，60s TTL）
 type cachedAntigravityUserAgentVersion struct {
 	version   string
@@ -191,6 +201,7 @@ type WebSearchManagerBuilder func(cfg *WebSearchEmulationConfig, proxyURLs map[i
 type SettingService struct {
 	settingRepo                 SettingRepository
 	defaultSubGroupReader       DefaultSubscriptionGroupReader
+	accountRepo                 AccountRepository
 	proxyRepo                   ProxyRepository // for resolving websearch provider proxy URLs
 	cfg                         *config.Config
 	onUpdate                    func() // Callback when settings are updated (for cache invalidation)
@@ -202,6 +213,8 @@ type SettingService struct {
 	openAICodexUASF             singleflight.Group
 	openAIAllowCodexPluginCache atomic.Value // *cachedOpenAIAllowCodexPlugin
 	openAIAllowCodexPluginSF    singleflight.Group
+	privacyFilterConfigCache    atomic.Value // *cachedPrivacyFilterConfig
+	privacyFilterConfigSF       singleflight.Group
 
 	cyberSessionBlockRuntimeCache atomic.Value // *cachedCyberSessionBlockRuntime
 	cyberSessionBlockRuntimeSF    singleflight.Group
@@ -456,6 +469,14 @@ func marshalLoginAgreementDocuments(docs []LoginAgreementDocument) (string, erro
 	return string(b), nil
 }
 
+func mustMarshalPrivacyFilterConfig(config PrivacyFilterConfig) string {
+	b, err := json.Marshal(NormalizePrivacyFilterConfig(config))
+	if err != nil {
+		return `{"enabled":false,"types":[]}`
+	}
+	return string(b)
+}
+
 func buildLoginAgreementRevision(updatedAt string, docs []LoginAgreementDocument) string {
 	normalized := normalizeLoginAgreementDocuments(docs)
 	payload, err := json.Marshal(struct {
@@ -672,6 +693,11 @@ func (s *SettingService) SetDefaultSubscriptionGroupReader(reader DefaultSubscri
 // SetProxyRepository injects a proxy repo for resolving websearch provider proxy URLs.
 func (s *SettingService) SetProxyRepository(repo ProxyRepository) {
 	s.proxyRepo = repo
+}
+
+// SetAccountRepository injects account access for public model-platform summaries.
+func (s *SettingService) SetAccountRepository(repo AccountRepository) {
+	s.accountRepo = repo
 }
 
 func (s *SettingService) LoadAPIKeyACLTrustForwardedIPSetting(ctx context.Context) error {
@@ -917,6 +943,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		DocURL:                           settings[SettingKeyDocURL],
 		HomeContent:                      settings[SettingKeyHomeContent],
 		HideCcsImportButton:              settings[SettingKeyHideCcsImportButton] == "true",
+		ConfiguredAIPlatforms:            s.GetConfiguredAIPlatformLabels(ctx),
 		PurchaseSubscriptionEnabled:      settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
 		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
 		TableDefaultPageSize:             tableDefaultPageSize,
@@ -951,6 +978,174 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 
 		AllowUserViewErrorRequests: settings[SettingKeyAllowUserViewErrorRequests] == "true",
 	}, nil
+}
+
+// GetConfiguredAIPlatformLabels returns user-facing model-family labels derived
+// from currently schedulable accounts and their model mappings.
+func (s *SettingService) GetConfiguredAIPlatformLabels(ctx context.Context) []string {
+	if s == nil || s.accountRepo == nil {
+		return []string{}
+	}
+	accounts, err := s.accountRepo.ListSchedulable(ctx)
+	if err != nil {
+		slog.Warn("failed to list schedulable accounts for public platform summary", "error", err)
+		return []string{}
+	}
+	return configuredAIPlatformLabelsFromAccounts(accounts)
+}
+
+func configuredAIPlatformLabelsFromAccounts(accounts []Account) []string {
+	seen := make(map[string]struct{})
+	for i := range accounts {
+		account := &accounts[i]
+		if label := modelFamilyLabelForPlatform(account.Platform); label != "" {
+			seen[label] = struct{}{}
+		}
+		for requested, mapped := range account.GetModelMapping() {
+			if label := modelFamilyLabelForModel(requested); label != "" {
+				seen[label] = struct{}{}
+			}
+			if label := modelFamilyLabelForModel(mapped); label != "" {
+				seen[label] = struct{}{}
+			}
+		}
+		for requested, mapped := range account.GetCompactModelMapping() {
+			if label := modelFamilyLabelForModel(requested); label != "" {
+				seen[label] = struct{}{}
+			}
+			if label := modelFamilyLabelForModel(mapped); label != "" {
+				seen[label] = struct{}{}
+			}
+		}
+	}
+
+	if len(seen) == 0 {
+		return []string{}
+	}
+	labels := make([]string, 0, len(seen))
+	for label := range seen {
+		labels = append(labels, label)
+	}
+	sort.Slice(labels, func(i, j int) bool {
+		left, right := modelFamilyLabelPriority(labels[i]), modelFamilyLabelPriority(labels[j])
+		if left != right {
+			return left < right
+		}
+		return labels[i] < labels[j]
+	})
+	return labels
+}
+
+func modelFamilyLabelForPlatform(platform string) string {
+	switch strings.ToLower(strings.TrimSpace(platform)) {
+	case PlatformOpenAI, "openai-compatible":
+		return "GPT"
+	case PlatformAnthropic, "claude":
+		return "Claude"
+	case PlatformGemini, "google":
+		return "Gemini"
+	case PlatformGrok, "xai", "x-ai":
+		return "Grok"
+	case PlatformAntigravity:
+		return "Claude"
+	case "zhipu", "glm", "bigmodel":
+		return "GLM"
+	case "deepseek":
+		return "DeepSeek"
+	case "qwen", "dashscope", "aliyun":
+		return "Qwen"
+	case "moonshot", "kimi":
+		return "Kimi"
+	default:
+		return ""
+	}
+}
+
+func modelFamilyLabelForModel(model string) string {
+	normalized := strings.ToLower(strings.TrimSpace(model))
+	normalized = strings.TrimPrefix(normalized, "models/")
+	if normalized == "" {
+		return ""
+	}
+	switch {
+	case strings.HasPrefix(normalized, "gpt-"),
+		strings.HasPrefix(normalized, "o1"),
+		strings.HasPrefix(normalized, "o3"),
+		strings.HasPrefix(normalized, "o4"),
+		strings.HasPrefix(normalized, "o5"),
+		strings.HasPrefix(normalized, "codex"):
+		return "GPT"
+	case strings.HasPrefix(normalized, "claude-"),
+		strings.Contains(normalized, ".claude-"):
+		return "Claude"
+	case strings.HasPrefix(normalized, "gemini-"):
+		return "Gemini"
+	case strings.HasPrefix(normalized, "glm-"),
+		strings.HasPrefix(normalized, "chatglm"),
+		strings.HasPrefix(normalized, "cogview"),
+		strings.HasPrefix(normalized, "cogvideo"):
+		return "GLM"
+	case strings.HasPrefix(normalized, "deepseek-"):
+		return "DeepSeek"
+	case strings.HasPrefix(normalized, "grok-"):
+		return "Grok"
+	case strings.HasPrefix(normalized, "qwen"),
+		strings.HasPrefix(normalized, "qwq-"):
+		return "Qwen"
+	case strings.HasPrefix(normalized, "kimi-"),
+		strings.HasPrefix(normalized, "moonshot-"):
+		return "Kimi"
+	case strings.HasPrefix(normalized, "doubao-"):
+		return "Doubao"
+	case strings.HasPrefix(normalized, "llama-"),
+		strings.HasPrefix(normalized, "codellama-"):
+		return "Llama"
+	case strings.HasPrefix(normalized, "mistral-"),
+		strings.HasPrefix(normalized, "codestral-"),
+		strings.HasPrefix(normalized, "pixtral-"),
+		strings.HasPrefix(normalized, "open-mistral-"),
+		strings.HasPrefix(normalized, "open-mixtral-"):
+		return "Mistral"
+	case strings.HasPrefix(normalized, "yi-"):
+		return "Yi"
+	case strings.HasPrefix(normalized, "abab"):
+		return "MiniMax"
+	default:
+		return ""
+	}
+}
+
+func modelFamilyLabelPriority(label string) int {
+	switch label {
+	case "GPT":
+		return 0
+	case "Claude":
+		return 1
+	case "Gemini":
+		return 2
+	case "GLM":
+		return 3
+	case "DeepSeek":
+		return 4
+	case "Grok":
+		return 5
+	case "Qwen":
+		return 6
+	case "Kimi":
+		return 7
+	case "Doubao":
+		return 8
+	case "Llama":
+		return 9
+	case "Mistral":
+		return 10
+	case "Yi":
+		return 11
+	case "MiniMax":
+		return 12
+	default:
+		return 100
+	}
 }
 
 // channelMonitorIntervalMin / channelMonitorIntervalMax bound the default interval
@@ -1231,6 +1426,7 @@ type PublicSettingsInjectionPayload struct {
 	DocURL                           string                   `json:"doc_url"`
 	HomeContent                      string                   `json:"home_content"`
 	HideCcsImportButton              bool                     `json:"hide_ccs_import_button"`
+	ConfiguredAIPlatforms            []string                 `json:"configured_ai_platforms"`
 	PurchaseSubscriptionEnabled      bool                     `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL          string                   `json:"purchase_subscription_url"`
 	TableDefaultPageSize             int                      `json:"table_default_page_size"`
@@ -1297,6 +1493,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		DocURL:                           settings.DocURL,
 		HomeContent:                      settings.HomeContent,
 		HideCcsImportButton:              settings.HideCcsImportButton,
+		ConfiguredAIPlatforms:            settings.ConfiguredAIPlatforms,
 		PurchaseSubscriptionEnabled:      settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:          settings.PurchaseSubscriptionURL,
 		TableDefaultPageSize:             settings.TableDefaultPageSize,
@@ -1985,6 +2182,14 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	// Backend Mode
 	updates[SettingKeyBackendModeEnabled] = strconv.FormatBool(settings.BackendModeEnabled)
 
+	privacyFilterConfig := privacyfilter.NormalizeConfig(settings.PrivacyFilterConfig)
+	settings.PrivacyFilterConfig = privacyFilterConfig
+	privacyFilterConfigJSON, err := json.Marshal(privacyFilterConfig)
+	if err != nil {
+		return nil, fmt.Errorf("marshal privacy filter config: %w", err)
+	}
+	updates[SettingKeyPrivacyFilterConfig] = string(privacyFilterConfigJSON)
+
 	// Gateway forwarding behavior
 	updates[SettingKeyEnableFingerprintUnification] = strconv.FormatBool(settings.EnableFingerprintUnification)
 	updates[SettingKeyEnableMetadataPassthrough] = strconv.FormatBool(settings.EnableMetadataPassthrough)
@@ -2118,6 +2323,11 @@ func (s *SettingService) refreshCachedSettings(settings *SystemSettings) {
 	backendModeCache.Store(&cachedBackendMode{
 		value:     settings.BackendModeEnabled,
 		expiresAt: time.Now().Add(backendModeCacheTTL).UnixNano(),
+	})
+	s.privacyFilterConfigSF.Forget("privacy_filter_config")
+	s.privacyFilterConfigCache.Store(&cachedPrivacyFilterConfig{
+		config:    privacyfilter.NormalizeConfig(settings.PrivacyFilterConfig),
+		expiresAt: time.Now().Add(privacyFilterConfigCacheTTL).UnixNano(),
 	})
 	gatewayForwardingSF.Forget("gateway_forwarding")
 	gatewayForwardingCache.Store(&cachedGatewayForwardingSettings{
@@ -2461,6 +2671,60 @@ func (s *SettingService) IsRewriteMessageCacheControlEnabled(ctx context.Context
 func (s *SettingService) GetClaudeOAuthSystemPromptInjectionSettings(ctx context.Context) (enabled bool, prompt string, blocks string) {
 	result := s.getGatewayForwardingSettingsCached(ctx)
 	return result.claudeOAuthSystemPromptInjection, result.claudeOAuthSystemPrompt, result.claudeOAuthSystemPromptBlocks
+}
+
+func (s *SettingService) GetPrivacyFilterConfig(ctx context.Context) PrivacyFilterConfig {
+	fallback := DefaultPrivacyFilterConfig()
+	if s == nil || s.settingRepo == nil {
+		return fallback
+	}
+	if cached, ok := s.privacyFilterConfigCache.Load().(*cachedPrivacyFilterConfig); ok && cached != nil {
+		if time.Now().UnixNano() < cached.expiresAt {
+			return cached.config
+		}
+	}
+
+	result, _, _ := s.privacyFilterConfigSF.Do("privacy_filter_config", func() (any, error) {
+		if cached, ok := s.privacyFilterConfigCache.Load().(*cachedPrivacyFilterConfig); ok && cached != nil {
+			if time.Now().UnixNano() < cached.expiresAt {
+				return cached.config, nil
+			}
+		}
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		dbCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), privacyFilterConfigDBTimeout)
+		defer cancel()
+
+		raw, err := s.settingRepo.GetValue(dbCtx, SettingKeyPrivacyFilterConfig)
+		if err != nil {
+			if errors.Is(err, ErrSettingNotFound) {
+				s.privacyFilterConfigCache.Store(&cachedPrivacyFilterConfig{
+					config:    fallback,
+					expiresAt: time.Now().Add(privacyFilterConfigCacheTTL).UnixNano(),
+				})
+				return fallback, nil
+			}
+			slog.Warn("failed to get privacy filter config", "error", err)
+			s.privacyFilterConfigCache.Store(&cachedPrivacyFilterConfig{
+				config:    fallback,
+				expiresAt: time.Now().Add(privacyFilterConfigErrorTTL).UnixNano(),
+			})
+			return fallback, nil
+		}
+
+		config := ParsePrivacyFilterConfig(raw)
+		s.privacyFilterConfigCache.Store(&cachedPrivacyFilterConfig{
+			config:    config,
+			expiresAt: time.Now().Add(privacyFilterConfigCacheTTL).UnixNano(),
+		})
+		return config, nil
+	})
+
+	if config, ok := result.(PrivacyFilterConfig); ok {
+		return config
+	}
+	return fallback
 }
 
 // IsEmailVerifyEnabled 检查是否开启邮件验证
@@ -2949,6 +3213,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 
 		// 分组隔离（默认不允许未分组 Key 调度）
 		SettingKeyAllowUngroupedKeyScheduling:        "false",
+		SettingKeyPrivacyFilterConfig:                mustMarshalPrivacyFilterConfig(DefaultPrivacyFilterConfig()),
 		SettingKeyEnableAnthropicCacheTTL1hInjection: "false",
 		SettingKeyRewriteMessageCacheControl:         strconv.FormatBool(s.defaultRewriteMessageCacheControl()),
 		SettingKeyAntigravityUserAgentVersion:        "",
@@ -3015,6 +3280,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		CustomMenuItems:                  settings[SettingKeyCustomMenuItems],
 		CustomEndpoints:                  settings[SettingKeyCustomEndpoints],
 		BackendModeEnabled:               settings[SettingKeyBackendModeEnabled] == "true",
+		PrivacyFilterConfig:              ParsePrivacyFilterConfig(settings[SettingKeyPrivacyFilterConfig]),
 	}
 	result.TableDefaultPageSize, result.TablePageSizeOptions = parseTablePreferences(
 		settings[SettingKeyTableDefaultPageSize],

@@ -18,7 +18,7 @@ export type OrderStatus =
   | 'REFUNDED'
   | 'REFUND_FAILED'
 
-export type PaymentType = 'alipay' | 'wxpay' | 'alipay_direct' | 'wxpay_direct' | 'stripe' | 'easypay' | 'airwallex'
+export type PaymentType = 'alipay' | 'wxpay' | 'alipay_direct' | 'wxpay_direct' | 'stripe' | 'easypay' | 'personal_qrcode' | 'airwallex'
 
 export type OrderType = 'balance' | 'subscription'
 
@@ -82,6 +82,9 @@ export interface PaymentOrder {
   pay_amount: number
   currency?: string
   fee_rate: number
+  promo_code?: string
+  discount_percent?: number
+  discount_amount?: number
   payment_type: string
   out_trade_no: string
   status: OrderStatus
@@ -97,6 +100,7 @@ export interface PaymentOrder {
   refund_request_reason?: string
   plan_id?: number
   provider_instance_id?: string
+  provider_key?: string
 }
 
 // ==================== Plans & Channels ====================
@@ -160,9 +164,25 @@ export interface CreateOrderRequest {
   plan_id?: number
   return_url?: string
   payment_source?: string
+  promo_code?: string
   openid?: string
   wechat_resume_token?: string
   is_mobile?: boolean
+}
+
+export interface ValidatePaymentPromoCodeRequest {
+  code: string
+  amount: number
+  payment_type: string
+  order_type: OrderType
+  plan_id?: number
+}
+
+export interface PaymentPromoCodeQuote {
+  code: string
+  discount_percent: number
+  discount_amount: number
+  discounted_amount: number
 }
 
 export type CreateOrderResultType = 'order_created' | 'oauth_required' | 'jsapi_ready'
@@ -197,6 +217,9 @@ export interface CreateOrderResult {
   payment_env?: string
   pay_amount: number
   fee_rate: number
+  promo_code?: string
+  discount_percent?: number
+  discount_amount?: number
   expires_at: string
   result_type?: CreateOrderResultType
   payment_type?: string

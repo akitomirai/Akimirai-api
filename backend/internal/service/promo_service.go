@@ -20,6 +20,7 @@ var (
 	ErrPromoCodeMaxUsed     = infraerrors.BadRequest("PROMO_CODE_MAX_USED", "promo code has reached maximum uses")
 	ErrPromoCodeAlreadyUsed = infraerrors.Conflict("PROMO_CODE_ALREADY_USED", "you have already used this promo code")
 	ErrPromoCodeInvalid     = infraerrors.BadRequest("PROMO_CODE_INVALID", "invalid promo code")
+	ErrPromoCodeNoDiscount  = infraerrors.BadRequest("PROMO_CODE_NO_PAYMENT_DISCOUNT", "promo code has no payment discount")
 )
 
 // PromoService 优惠码服务
@@ -64,6 +65,9 @@ func (s *PromoService) ValidatePromoCode(ctx context.Context, code string) (*Pro
 
 	if err := s.validatePromoCodeStatus(promoCode); err != nil {
 		return nil, err
+	}
+	if promoCode.BonusAmount <= 0 {
+		return nil, ErrPromoCodeInvalid
 	}
 
 	return promoCode, nil
@@ -112,6 +116,9 @@ func (s *PromoService) ApplyPromoCode(ctx context.Context, userID int64, code st
 	// 在事务中验证优惠码状态
 	if err := s.validatePromoCodeStatus(promoCode); err != nil {
 		return err
+	}
+	if promoCode.BonusAmount <= 0 {
+		return ErrPromoCodeInvalid
 	}
 
 	// 在事务中检查用户是否已使用过此优惠码
@@ -189,15 +196,19 @@ func (s *PromoService) Create(ctx context.Context, input *CreatePromoCodeInput) 
 			return nil, err
 		}
 	}
+	if input.BonusAmount <= 0 && input.DiscountPercent <= 0 {
+		return nil, ErrPromoCodeInvalid
+	}
 
 	promoCode := &PromoCode{
-		Code:        strings.ToUpper(code),
-		BonusAmount: input.BonusAmount,
-		MaxUses:     input.MaxUses,
-		UsedCount:   0,
-		Status:      PromoCodeStatusActive,
-		ExpiresAt:   input.ExpiresAt,
-		Notes:       input.Notes,
+		Code:            strings.ToUpper(code),
+		BonusAmount:     input.BonusAmount,
+		DiscountPercent: input.DiscountPercent,
+		MaxUses:         input.MaxUses,
+		UsedCount:       0,
+		Status:          PromoCodeStatusActive,
+		ExpiresAt:       input.ExpiresAt,
+		Notes:           input.Notes,
 	}
 
 	if err := s.promoRepo.Create(ctx, promoCode); err != nil {
@@ -228,6 +239,9 @@ func (s *PromoService) Update(ctx context.Context, id int64, input *UpdatePromoC
 	}
 	if input.BonusAmount != nil {
 		promoCode.BonusAmount = *input.BonusAmount
+	}
+	if input.DiscountPercent != nil {
+		promoCode.DiscountPercent = *input.DiscountPercent
 	}
 	if input.MaxUses != nil {
 		promoCode.MaxUses = *input.MaxUses

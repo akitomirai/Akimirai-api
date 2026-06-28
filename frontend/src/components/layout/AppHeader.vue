@@ -12,12 +12,14 @@
         </button>
 
         <div class="hidden lg:block">
-          <h1 class="text-lg font-semibold text-gray-900 dark:text-white">
-            {{ pageTitle }}
-          </h1>
-          <p v-if="pageDescription" class="text-xs text-gray-500 dark:text-dark-400">
-            {{ pageDescription }}
-          </p>
+          <slot name="title">
+            <h1 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ pageTitle }}
+            </h1>
+            <p v-if="pageDescription" class="text-xs text-gray-500 dark:text-dark-400">
+              {{ pageDescription }}
+            </p>
+          </slot>
         </div>
       </div>
 
