@@ -18,6 +18,7 @@ type UserErrorRequest struct {
 	Model           string    `json:"model"`
 	InboundEndpoint string    `json:"inbound_endpoint"`
 	StatusCode      int       `json:"status_code"`
+	RequestID       string    `json:"request_id"`
 	Category        string    `json:"category"`
 	Platform        string    `json:"platform"`
 	Message         string    `json:"message"`
@@ -253,12 +254,17 @@ func ToUserErrorRequest(e *OpsErrorLog) *UserErrorRequest {
 		model = e.Model
 	}
 	descriptor := UserErrorDescriptorForLog(e)
+	requestID := strings.TrimSpace(e.RequestID)
+	if requestID == "" {
+		requestID = strings.TrimSpace(e.ClientRequestID)
+	}
 	return &UserErrorRequest{
 		ID:              e.ID,
 		CreatedAt:       e.CreatedAt,
 		Model:           model,
 		InboundEndpoint: e.InboundEndpoint,
 		StatusCode:      e.StatusCode,
+		RequestID:       requestID,
 		Category:        MapUserErrorCategory(e.Phase, e.Type),
 		Platform:        e.Platform,
 		Message:         e.Message,

@@ -197,6 +197,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/quick-start',
+    name: 'QuickStart',
+    component: () => import('@/views/user/QuickStartView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Quick Start',
+      titleKey: 'quickStart.title',
+      descriptionKey: 'quickStart.description'
+    }
+  },
+  {
     path: '/usage',
     name: 'Usage',
     component: () => import('@/views/user/UsageView.vue'),

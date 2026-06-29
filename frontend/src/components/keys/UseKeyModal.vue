@@ -6,6 +6,36 @@
     @close="emit('close')"
   >
     <div class="space-y-4">
+      <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">
+              {{ t('keys.useKeyModal.immediateCopyNotice') }}
+            </p>
+            <dl class="mt-3 grid gap-2 text-xs text-amber-700 dark:text-amber-300 sm:grid-cols-2">
+              <div>
+                <dt class="font-medium">{{ t('keys.useKeyModal.keyName') }}</dt>
+                <dd class="mt-1 break-all font-mono">{{ keyName || '-' }}</dd>
+              </div>
+              <div>
+                <dt class="font-medium">{{ t('keys.useKeyModal.keyPrefix') }}</dt>
+                <dd class="mt-1 break-all font-mono">{{ maskedKey }}</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button class="btn btn-sm btn-primary" type="button" @click="copySecret">
+              <Icon name="copy" size="sm" />
+              {{ t('keys.useKeyModal.copyApiKey') }}
+            </button>
+            <button class="btn btn-sm btn-secondary" type="button" @click="copyBaseUrl">
+              <Icon name="copy" size="sm" />
+              {{ t('keys.useKeyModal.copyBaseUrl') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- No Group Assigned Warning -->
       <div v-if="!platform" class="flex items-start gap-3 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
         <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -121,7 +151,21 @@
     </div>
 
     <template #footer>
-      <div class="flex justify-end">
+      <div class="flex flex-wrap justify-end gap-2">
+        <button
+          @click="goTo('/quick-start')"
+          class="btn btn-primary"
+        >
+          <Icon name="book" size="sm" />
+          {{ t('keys.useKeyModal.nextQuickStart') }}
+        </button>
+        <button
+          @click="goTo('/usage')"
+          class="btn btn-secondary"
+        >
+          <Icon name="chart" size="sm" />
+          {{ t('keys.useKeyModal.viewUsage') }}
+        </button>
         <button
           @click="emit('close')"
           class="btn btn-secondary"
@@ -136,15 +180,19 @@
 <script setup lang="ts">
 import { ref, computed, h, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useClipboard } from '@/composables/useClipboard'
+import { getBrowserOriginFallback, normalizeOpenAIBaseUrl } from '@/utils/quickStart'
 import type { GroupPlatform } from '@/types'
 
 interface Props {
   show: boolean
   apiKey: string
   baseUrl: string
+  keyName?: string
+  keyPrefix?: string
   platform: GroupPlatform | null
   allowMessagesDispatch?: boolean
 }
@@ -170,11 +218,19 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
+const router = useRouter()
 const { copyToClipboard: clipboardCopy } = useClipboard()
 
 const copiedIndex = ref<number | null>(null)
 const activeTab = ref<string>('unix')
 const activeClientTab = ref<string>('claude')
+const openAIBaseUrl = computed(() => normalizeOpenAIBaseUrl(props.baseUrl, getBrowserOriginFallback()))
+const maskedKey = computed(() => {
+  const prefix = props.keyPrefix?.trim()
+  if (prefix) return `${prefix}********`
+  if (props.apiKey.length <= 12) return '********'
+  return `${props.apiKey.slice(0, 8)}********${props.apiKey.slice(-4)}`
+})
 
 // Reset tabs when platform changes
 const defaultClientTab = computed(() => {
@@ -418,9 +474,9 @@ const currentFiles = computed((): FileConfig[] => {
         return generateAnthropicFiles(baseUrl, apiKey)
       }
       if (activeClientTab.value === 'codex-ws') {
-        return generateOpenAIWsFiles(baseUrl, apiKey)
+        return generateOpenAIWsFiles(apiBase, apiKey)
       }
-      return generateOpenAIFiles(baseUrl, apiKey)
+      return generateOpenAIFiles(apiBase, apiKey)
     case 'gemini':
       return [generateGeminiCliContent(baseUrl, apiKey)]
     case 'antigravity':
@@ -1076,5 +1132,13 @@ const copyContent = async (content: string, index: number) => {
       copiedIndex.value = null
     }, 2000)
   }
+}
+
+const copySecret = () => clipboardCopy(props.apiKey, t('keys.copied'))
+const copyBaseUrl = () => clipboardCopy(openAIBaseUrl.value, t('keys.copied'))
+
+const goTo = (path: string) => {
+  emit('close')
+  router.push(path)
 }
 </script>

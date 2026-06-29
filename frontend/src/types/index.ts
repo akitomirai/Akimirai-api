@@ -1628,6 +1628,7 @@ export interface UserErrorRequest {
   model: string
   inbound_endpoint: string
   status_code: number
+  request_id?: string
   category: string
   platform: string
   message: string

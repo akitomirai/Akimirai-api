@@ -2,21 +2,69 @@ import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 
+const copyToClipboardMock = vi.hoisted(() => vi.fn().mockResolvedValue(true))
+const routerPushMock = vi.hoisted(() => vi.fn())
+
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => key
   })
 }))
 
+vi.mock('vue-router', () => ({
+  useRouter: () => ({
+    push: routerPushMock
+  })
+}))
+
 vi.mock('@/composables/useClipboard', () => ({
   useClipboard: () => ({
-    copyToClipboard: vi.fn().mockResolvedValue(true)
+    copyToClipboard: copyToClipboardMock
   })
 }))
 
 import UseKeyModal from '../UseKeyModal.vue'
 
 describe('UseKeyModal', () => {
+  it('renders the one-time key copy guidance with masked prefix and copy actions', async () => {
+    const wrapper = mount(UseKeyModal, {
+      props: {
+        show: true,
+        apiKey: 'sk-test-placeholder',
+        baseUrl: 'https://example.com',
+        keyName: 'prod-key',
+        keyPrefix: 'sk-test',
+        platform: 'openai'
+      },
+      global: {
+        stubs: {
+          BaseDialog: {
+            template: '<div><slot /><slot name="footer" /></div>'
+          },
+          Icon: {
+            template: '<span />'
+          }
+        }
+      }
+    })
+
+    const text = wrapper.text()
+    expect(text).toContain('keys.useKeyModal.immediateCopyNotice')
+    expect(text).toContain('prod-key')
+    expect(text).toContain('sk-test********')
+    const codeBlocks = wrapper.findAll('pre code').map((code) => code.text()).join('\n\n')
+    expect(codeBlocks).toContain('base_url = "https://example.com/v1"')
+    expect(codeBlocks).not.toContain('/v1/v1')
+
+    const copyKeyButton = wrapper.findAll('button').find((button) =>
+      button.text().includes('keys.useKeyModal.copyApiKey')
+    )
+    expect(copyKeyButton).toBeDefined()
+    await copyKeyButton!.trigger('click')
+
+    expect(copyToClipboardMock).toHaveBeenCalledWith('sk-test-placeholder', 'keys.copied')
+  })
+
   it('renders GPT-5.5 and goals feature in OpenAI Codex config', () => {
     const wrapper = mount(UseKeyModal, {
       props: {

@@ -48,6 +48,11 @@
           <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.errorCode') }}</span>
           <p class="mt-0.5 font-mono text-xs text-gray-900 dark:text-dark-100">{{ detail.error_code }}</p>
         </div>
+        <!-- Request ID -->
+        <div v-if="detail.request_id">
+          <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.requestId') }}</span>
+          <p class="mt-0.5 font-mono text-xs text-gray-900 dark:text-dark-100">{{ detail.request_id }}</p>
+        </div>
         <!-- Platform -->
         <div>
           <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.platform') }}</span>

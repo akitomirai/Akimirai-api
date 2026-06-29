@@ -664,6 +664,7 @@
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { usageAPI, keysAPI } from '@/api'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -703,6 +704,7 @@ import {
 } from '@/utils/imageUsage'
 
 const { t } = useI18n()
+const route = useRoute()
 const appStore = useAppStore()
 
 let abortController: AbortController | null = null
@@ -1209,5 +1211,8 @@ onMounted(() => {
   loadApiKeys()
   loadUsageLogs()
   loadUsageStats()
+  if (route?.query?.tab === 'errors' && errorViewEnabled.value) {
+    switchToErrors()
+  }
 })
 </script>

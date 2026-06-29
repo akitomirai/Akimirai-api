@@ -101,6 +101,7 @@ func TestToUserErrorRequest_RedactsSensitiveFields(t *testing.T) {
 		RequestedModel:  "rm",
 		InboundEndpoint: "/v1/chat/completions",
 		StatusCode:      429,
+		RequestID:       "req-user-error-1",
 		Platform:        "openai",
 		Phase:           "request",
 		Type:            "rate_limit_error",
@@ -120,6 +121,9 @@ func TestToUserErrorRequest_RedactsSensitiveFields(t *testing.T) {
 	}
 	if out.StatusCode != 429 || out.InboundEndpoint != "/v1/chat/completions" || out.Platform != "openai" {
 		t.Errorf("basic fields wrong: %+v", out)
+	}
+	if out.RequestID != "req-user-error-1" {
+		t.Errorf("want request_id=req-user-error-1, got %q", out.RequestID)
 	}
 	if out.Message != "rate limit exceeded" {
 		t.Errorf("want message=%q, got %q", "rate limit exceeded", out.Message)
