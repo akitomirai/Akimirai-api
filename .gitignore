@@ -132,6 +132,10 @@ docs/*
 !docs/PAYMENT.md
 !docs/PAYMENT_CN.md
 !docs/ADMIN_PAYMENT_INTEGRATION_API.md
+!docs/product-commercialization-audit.md
+!docs/production-readiness-checklist.md
+!docs/p0-2-production-readiness-report.md
+!docs/p1-commercial-user-flow-report.md
 !docs/legal/
 !docs/legal/*.md
 .serena/

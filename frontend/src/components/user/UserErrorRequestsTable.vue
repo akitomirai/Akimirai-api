@@ -48,7 +48,7 @@
             <th class="px-4 py-2 text-left">{{ t('usage.errors.endpoint') }}</th>
             <th class="px-4 py-2 text-left">{{ t('usage.errors.status') }}</th>
             <th class="px-4 py-2 text-left">{{ t('usage.errors.category') }}</th>
-            <th class="px-4 py-2 text-left">{{ t('usage.errors.message') }}</th>
+            <th class="px-4 py-2 text-left">{{ t('usage.errors.explanation') }}</th>
             <th class="px-4 py-2 text-left">{{ t('usage.errors.platform') }}</th>
             <th class="px-4 py-2 text-left">{{ t('usage.errors.time') }}</th>
           </tr>
@@ -71,7 +71,42 @@
             <td class="px-4 py-2">{{ row.inbound_endpoint || '-' }}</td>
             <td class="px-4 py-2"><span class="badge" :class="statusClass(row.status_code)">{{ row.status_code || '-' }}</span></td>
             <td class="px-4 py-2">{{ t('usage.errors.categories.' + row.category) }}</td>
-            <td class="px-4 py-2 max-w-[280px] truncate" :title="row.message">{{ row.message || '-' }}</td>
+            <td class="px-4 py-2 max-w-[360px]">
+              <div class="space-y-1">
+                <p class="break-words text-gray-900 dark:text-dark-100" :title="row.explanation || row.message">
+                  {{ row.explanation || row.message || '-' }}
+                </p>
+                <p
+                  v-if="row.suggestion"
+                  class="break-words text-xs text-gray-500 dark:text-dark-400"
+                  :title="row.suggestion"
+                >
+                  {{ row.suggestion }}
+                </p>
+                <div class="flex flex-wrap gap-1">
+                  <span
+                    :class="[
+                      'inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-tight',
+                      row.retryable
+                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300'
+                        : 'bg-gray-100 text-gray-500 dark:bg-dark-700 dark:text-dark-400',
+                    ]"
+                  >
+                    {{ row.retryable ? t('usage.errors.retryable') : t('usage.errors.notRetryable') }}
+                  </span>
+                  <span
+                    :class="[
+                      'inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium leading-tight',
+                      row.charged
+                        ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300'
+                        : 'bg-gray-100 text-gray-500 dark:bg-dark-700 dark:text-dark-400',
+                    ]"
+                  >
+                    {{ row.charged ? t('usage.errors.charged') : t('usage.errors.notCharged') }}
+                  </span>
+                </div>
+              </div>
+            </td>
             <td class="px-4 py-2">{{ row.platform || '-' }}</td>
             <td class="px-4 py-2">{{ formatDateTime(row.created_at) }}</td>
           </tr>

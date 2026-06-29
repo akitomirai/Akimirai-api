@@ -2,7 +2,17 @@ import { getConfiguredTableDefaultPageSize, normalizeTablePageSize } from '@/uti
 
 const STORAGE_KEY = 'table-page-size'
 
+const hasInjectedTableDefaultPageSize = (): boolean => {
+  if (typeof window === 'undefined') return false
+  const config = window.__APP_CONFIG__
+  return !!config && Object.prototype.hasOwnProperty.call(config, 'table_default_page_size')
+}
+
 export function getPersistedPageSize(fallback = getConfiguredTableDefaultPageSize()): number {
+  if (hasInjectedTableDefaultPageSize()) {
+    return normalizeTablePageSize(getConfiguredTableDefaultPageSize())
+  }
+
   if (typeof window !== 'undefined') {
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY)

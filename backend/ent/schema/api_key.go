@@ -38,6 +38,16 @@ func (APIKey) Fields() []ent.Field {
 			MaxLen(128).
 			NotEmpty().
 			Unique(),
+		field.String("key_hash").
+			MaxLen(96).
+			Optional().
+			Nillable().
+			Comment("Versioned hash of the API key secret; new keys should not store plaintext in key"),
+		field.String("key_prefix").
+			MaxLen(32).
+			Optional().
+			Nillable().
+			Comment("Non-secret prefix used for display and troubleshooting"),
 		field.String("name").
 			MaxLen(100).
 			NotEmpty(),
@@ -141,6 +151,10 @@ func (APIKey) Indexes() []ent.Index {
 		index.Fields("status"),
 		index.Fields("deleted_at"),
 		index.Fields("last_used_at"),
+		index.Fields("key_hash").
+			Unique().
+			Annotations(entsql.IndexWhere("key_hash IS NOT NULL AND key_hash <> ''")),
+		index.Fields("key_prefix"),
 		// Index for quota queries
 		index.Fields("quota", "quota_used"),
 		index.Fields("expires_at"),

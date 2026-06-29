@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -48,7 +49,7 @@ func TestIsSensitiveKey_TokenBudgetKeysNotRedacted(t *testing.T) {
 func TestSanitizeAndTrimJSONPayload_PreservesTokenBudgetFields(t *testing.T) {
 	t.Parallel()
 
-	raw := []byte(`{"model":"claude-3","max_tokens":123,"thinking":{"type":"enabled","budget_tokens":456},"access_token":"abc","messages":[{"role":"user","content":"hi"}]}`)
+	raw := []byte(`{"model":"claude-3","max_tokens":123,"thinking":{"type":"enabled","budget_tokens":456},"access_token":"abc","messages":[{"role":"user","content":"hi"}],"prompt":"draw a secret cat"}`)
 	out, _, _ := sanitizeAndTrimJSONPayload(raw, 10*1024)
 	if out == "" {
 		t.Fatalf("expected non-empty sanitized output")
@@ -74,6 +75,24 @@ func TestSanitizeAndTrimJSONPayload_PreservesTokenBudgetFields(t *testing.T) {
 	if got := decoded["access_token"]; got != "[REDACTED]" {
 		t.Fatalf("expected access_token to be redacted, got %#v", got)
 	}
+	if got := decoded["messages"]; got != "[REDACTED]" {
+		t.Fatalf("expected messages to be redacted, got %#v", got)
+	}
+	if got := decoded["prompt"]; got != "[REDACTED]" {
+		t.Fatalf("expected prompt to be redacted, got %#v", got)
+	}
+	if out == string(raw) || containsAny(out, `"content":"hi"`, "draw a secret cat", `"access_token":"abc"`) {
+		t.Fatalf("expected sensitive payload to be absent, got %s", out)
+	}
+}
+
+func TestSanitizeErrorBodyForStorage_RedactsNonJSONPayload(t *testing.T) {
+	t.Parallel()
+
+	out, _ := sanitizeErrorBodyForStorage("prompt=draw-a-cat access_token=secret cookie=session-id", 4096)
+	if containsAny(out, "draw-a-cat", "secret", "session-id") {
+		t.Fatalf("expected non-json body redacted, got %q", out)
+	}
 }
 
 func TestShrinkToEssentials_IncludesThinking(t *testing.T) {
@@ -96,4 +115,13 @@ func TestShrinkToEssentials_IncludesThinking(t *testing.T) {
 	if _, ok := out["thinking"]; !ok {
 		t.Fatalf("expected thinking to be included in essentials: %#v", out)
 	}
+}
+
+func containsAny(s string, needles ...string) bool {
+	for _, needle := range needles {
+		if needle != "" && strings.Contains(s, needle) {
+			return true
+		}
+	}
+	return false
 }

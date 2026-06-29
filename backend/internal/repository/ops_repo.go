@@ -610,7 +610,7 @@ func (r *opsRepository) LookupDeletedKeyAudit(ctx context.Context, key string) (
 	err := r.db.QueryRowContext(ctx, `
 		SELECT user_id, key_name
 		FROM deleted_api_key_audits
-		WHERE key = $1
+		WHERE key = $1 OR key_hash = $1
 		ORDER BY deleted_at DESC, id DESC
 		LIMIT 1`, key).Scan(&res.UserID, &res.KeyName)
 	if err != nil {

@@ -174,13 +174,42 @@ func (h *APIKeyHandler) Create(c *gin.Context) {
 		svcReq.RateLimit7d = *req.RateLimit7d
 	}
 
-	executeUserIdempotentJSON(c, "user.api_keys.create", req, service.DefaultWriteIdempotencyTTL(), func(ctx context.Context) (any, error) {
+	executeUserIdempotentJSONWithStoredResponseSanitizer(c, "user.api_keys.create", req, service.DefaultWriteIdempotencyTTL(), sanitizeAPIKeyCreateStoredResponse, func(ctx context.Context) (any, error) {
 		key, err := h.apiKeyService.Create(ctx, subject.UserID, svcReq)
 		if err != nil {
 			return nil, err
 		}
 		return dto.APIKeyFromService(key), nil
 	})
+}
+
+func sanitizeAPIKeyCreateStoredResponse(data any) any {
+	switch v := data.(type) {
+	case *dto.APIKey:
+		if v == nil {
+			return v
+		}
+		out := *v
+		out.Key = service.MaskAPIKey(out.KeyPrefix, out.Key)
+		out.KeyVisibleOnce = false
+		return &out
+	case dto.APIKey:
+		v.Key = service.MaskAPIKey(v.KeyPrefix, v.Key)
+		v.KeyVisibleOnce = false
+		return v
+	case map[string]any:
+		out := make(map[string]any, len(v))
+		for key, value := range v {
+			out[key] = value
+		}
+		key, _ := out["key"].(string)
+		prefix, _ := out["key_prefix"].(string)
+		out["key"] = service.MaskAPIKey(prefix, key)
+		out["key_visible_once"] = false
+		return out
+	default:
+		return data
+	}
 }
 
 // Update handles updating an API key

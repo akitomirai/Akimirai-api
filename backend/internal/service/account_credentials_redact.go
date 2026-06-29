@@ -4,12 +4,13 @@ package service
 // dto 层做响应脱敏、service 层做更新合并都引用此清单——新增凭证类型时务必同步。
 var SensitiveCredentialKeys = []string{
 	// OAuth
-	"access_token", "refresh_token", "id_token",
+	"access_token", "accesstoken", "refresh_token", "refreshtoken", "id_token", "idtoken",
+	"client_secret", "clientsecret",
 	// API Key 类
-	"api_key", "session_key", "cookie",
+	"api_key", "apikey", "x_api_key", "session_key", "sessionkey", "session_token", "sessiontoken", "session_cookie", "cookie",
 	// 云服务凭据
 	"aws_secret_access_key", "aws_session_token",
-	"service_account_json", "service_account", "private_key",
+	"service_account_json", "serviceaccountjson", "service_account", "serviceaccount", "private_key", "privatekey",
 }
 
 var sensitiveCredentialKeySet = func() map[string]struct{} {

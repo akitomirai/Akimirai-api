@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -105,8 +103,15 @@ func (s *APIKeyService) StartAuthCacheInvalidationSubscriber(ctx context.Context
 }
 
 func (s *APIKeyService) authCacheKey(key string) string {
-	sum := sha256.Sum256([]byte(key))
-	return hex.EncodeToString(sum[:])
+	if digest, ok := apiKeyHashCacheKey(key); ok {
+		return digest
+	}
+	if hash := s.hashAPIKey(key); hash != "" {
+		if digest, ok := apiKeyHashCacheKey(hash); ok {
+			return digest
+		}
+	}
+	return ""
 }
 
 func (s *APIKeyService) getAuthCacheEntry(ctx context.Context, cacheKey string) (*APIKeyAuthCacheEntry, bool) {
@@ -164,7 +169,7 @@ func (s *APIKeyService) deleteAuthCache(ctx context.Context, cacheKey string) {
 }
 
 func (s *APIKeyService) loadAuthCacheEntry(ctx context.Context, key, cacheKey string) (*APIKeyAuthCacheEntry, error) {
-	apiKey, err := s.apiKeyRepo.GetByKeyForAuth(ctx, key)
+	apiKey, err := s.getByRawKeyForAuth(ctx, key)
 	if err != nil {
 		if errors.Is(err, ErrAPIKeyNotFound) {
 			entry := &APIKeyAuthCacheEntry{NotFound: true}
@@ -175,7 +180,6 @@ func (s *APIKeyService) loadAuthCacheEntry(ctx context.Context, key, cacheKey st
 		}
 		return nil, fmt.Errorf("get api key: %w", err)
 	}
-	apiKey.Key = key
 	snapshot := s.snapshotFromAPIKey(ctx, apiKey)
 	if snapshot == nil {
 		return nil, fmt.Errorf("get api key: %w", ErrAPIKeyNotFound)

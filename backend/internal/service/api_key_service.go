@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"html"
 	"strconv"
@@ -80,6 +81,10 @@ type APIKeyRepository interface {
 	IncrementRateLimitUsage(ctx context.Context, id int64, cost float64) error
 	ResetRateLimitWindows(ctx context.Context, id int64) error
 	GetRateLimitData(ctx context.Context, id int64) (*APIKeyRateLimitData, error)
+}
+
+type APIKeyHashBackfillRepository interface {
+	SetKeyHashAndPrefix(ctx context.Context, id int64, keyHash, keyPrefix string) error
 }
 
 // APIKeyRateLimitData holds rate limit usage and window state for an API key.
@@ -378,9 +383,15 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 		}
 
 		// 检查Key是否已存在
-		exists, err := s.apiKeyRepo.ExistsByKey(ctx, *req.CustomKey)
+		exists, err := s.apiKeyRepo.ExistsByKey(ctx, s.hashAPIKey(*req.CustomKey))
 		if err != nil {
 			return nil, fmt.Errorf("check key exists: %w", err)
+		}
+		if !exists {
+			exists, err = s.apiKeyRepo.ExistsByKey(ctx, *req.CustomKey)
+			if err != nil {
+				return nil, fmt.Errorf("check legacy key exists: %w", err)
+			}
 		}
 		if exists {
 			// Key已存在，增加错误计数
@@ -399,9 +410,16 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 	}
 
 	// 创建API Key记录
+	rawKey := key
+	keyHash := s.hashAPIKey(rawKey)
+	keyPrefix := apiKeyDisplayPrefix(rawKey)
+	storageKey := apiKeyStoragePlaceholder(keyHash, keyPrefix)
+
 	apiKey := &APIKey{
 		UserID:      userID,
-		Key:         key,
+		Key:         storageKey,
+		KeyHash:     keyHash,
+		KeyPrefix:   keyPrefix,
 		Name:        html.EscapeString(req.Name),
 		GroupID:     req.GroupID,
 		Status:      StatusActive,
@@ -424,6 +442,8 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 		return nil, fmt.Errorf("create api key: %w", err)
 	}
 
+	apiKey.Key = rawKey
+	apiKey.KeyVisibleOnce = true
 	s.InvalidateAuthCacheByKey(ctx, apiKey.Key)
 	s.compileAPIKeyIPRules(apiKey)
 
@@ -504,13 +524,51 @@ func (s *APIKeyService) GetByKey(ctx context.Context, key string) (*APIKey, erro
 		}
 	}
 
-	apiKey, err := s.apiKeyRepo.GetByKeyForAuth(ctx, key)
+	apiKey, err := s.getByRawKeyForAuth(ctx, key)
 	if err != nil {
 		return nil, fmt.Errorf("get api key: %w", err)
 	}
-	apiKey.Key = key
 	s.compileAPIKeyIPRules(apiKey)
 	return apiKey, nil
+}
+
+func (s *APIKeyService) getByRawKeyForAuth(ctx context.Context, key string) (*APIKey, error) {
+	hash := s.hashAPIKey(key)
+	if hash != "" {
+		apiKey, err := s.apiKeyRepo.GetByKeyForAuth(ctx, hash)
+		if err == nil {
+			apiKey.Key = key
+			apiKey.KeyHash = hash
+			if apiKey.KeyPrefix == "" {
+				apiKey.KeyPrefix = apiKeyDisplayPrefix(key)
+			}
+			return apiKey, nil
+		}
+		if !errors.Is(err, ErrAPIKeyNotFound) {
+			return nil, err
+		}
+	}
+	apiKey, err := s.apiKeyRepo.GetByKeyForAuth(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	apiKey.Key = key
+	if apiKey.KeyPrefix == "" {
+		apiKey.KeyPrefix = apiKeyDisplayPrefix(key)
+	}
+	if apiKey.KeyHash == "" && hash != "" {
+		apiKey.KeyHash = hash
+		s.setKeyHashAndPrefix(ctx, apiKey.ID, hash, apiKey.KeyPrefix)
+	}
+	return apiKey, nil
+}
+
+func (s *APIKeyService) setKeyHashAndPrefix(ctx context.Context, id int64, keyHash, keyPrefix string) {
+	repo, ok := s.apiKeyRepo.(APIKeyHashBackfillRepository)
+	if !ok || repo == nil {
+		return
+	}
+	_ = repo.SetKeyHashAndPrefix(ctx, id, keyHash, keyPrefix)
 }
 
 // Update 更新API Key
@@ -649,6 +707,15 @@ func (s *APIKeyService) Delete(ctx context.Context, id int64, userID int64) erro
 	// 验证当前用户是否为该 API Key 的所有者
 	if ownerID != userID {
 		return ErrInsufficientPerms
+	}
+
+	if key != "" && !IsAPIKeyHash(key) {
+		hash := s.hashAPIKey(key)
+		prefix := apiKeyDisplayPrefix(key)
+		if hash != "" {
+			s.setKeyHashAndPrefix(ctx, id, hash, prefix)
+			key = hash
+		}
 	}
 
 	// 事务内:写审计 + 软删除(tombstone)。

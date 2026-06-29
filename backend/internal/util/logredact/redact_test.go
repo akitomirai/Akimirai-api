@@ -67,6 +67,19 @@ func TestRedactText_DefaultPathDoesNotUseExtraCache(t *testing.T) {
 	}
 }
 
+func TestRedactText_AIPayloadKeys(t *testing.T) {
+	in := `{"prompt":"draw a cat","messages":[{"content":"hello"}],"revised_prompt":"cat astronaut","model":"gpt-image"}`
+	out := RedactText(in)
+	for _, leaked := range []string{"draw a cat", "hello", "cat astronaut"} {
+		if strings.Contains(out, leaked) {
+			t.Fatalf("expected AI payload %q redacted, got %q", leaked, out)
+		}
+	}
+	if !strings.Contains(out, `"model":"gpt-image"`) {
+		t.Fatalf("expected non-sensitive model preserved, got %q", out)
+	}
+}
+
 func clearExtraTextPatternCache() {
 	extraTextPatternCache.Range(func(key, value any) bool {
 		extraTextPatternCache.Delete(key)

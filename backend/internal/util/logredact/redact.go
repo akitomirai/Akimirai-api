@@ -18,8 +18,20 @@ var defaultSensitiveKeys = map[string]struct{}{
 	"access_token":       {},
 	"refresh_token":      {},
 	"id_token":           {},
+	"api_key":            {},
+	"apikey":             {},
 	"client_secret":      {},
+	"cookie":             {},
+	"private_key":        {},
 	"password":           {},
+	"prompt":             {},
+	"messages":           {},
+	"contents":           {},
+	"content":            {},
+	"input":              {},
+	"text":               {},
+	"revised_prompt":     {},
+	"instructions":       {},
 }
 
 var defaultSensitiveKeyList = []string{
@@ -29,8 +41,20 @@ var defaultSensitiveKeyList = []string{
 	"access_token",
 	"refresh_token",
 	"id_token",
+	"api_key",
+	"apikey",
 	"client_secret",
+	"cookie",
+	"private_key",
 	"password",
+	"prompt",
+	"messages",
+	"contents",
+	"content",
+	"input",
+	"text",
+	"revised_prompt",
+	"instructions",
 }
 
 type textRedactPatterns struct {

@@ -49,6 +49,47 @@
       </template>
 
       <template #table>
+        <div class="mb-4 border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-800">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                {{ t('keys.integrationExamples.title') }}
+              </h3>
+              <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">
+                {{ t('keys.integrationExamples.subtitle') }}
+              </p>
+            </div>
+            <button
+              type="button"
+              class="btn btn-secondary text-xs"
+              :title="t('keys.integrationExamples.copyBaseUrl')"
+              @click="copyIntegrationBaseUrl"
+            >
+              <Icon name="clipboard" size="sm" />
+              {{ integrationOpenAIBaseUrl }}
+            </button>
+          </div>
+          <div class="mt-4 grid gap-3 lg:grid-cols-2">
+            <div
+              v-for="example in integrationExamples"
+              :key="example.id"
+              class="border border-gray-100 bg-gray-50 p-3 dark:border-dark-700 dark:bg-dark-900"
+            >
+              <div class="mb-2 flex items-center justify-between gap-2">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ example.title }}</span>
+                <button
+                  type="button"
+                  class="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700 dark:hover:text-dark-200"
+                  :title="t('keys.integrationExamples.copyExample')"
+                  @click="copyIntegrationExample(example)"
+                >
+                  <Icon name="clipboard" size="sm" />
+                </button>
+              </div>
+              <pre class="max-h-40 overflow-auto whitespace-pre-wrap break-all text-xs leading-5 text-gray-700 dark:text-dark-200">{{ example.body }}</pre>
+            </div>
+          </div>
+        </div>
         <DataTable
           :columns="columns"
           :data="apiKeys"
@@ -61,17 +102,20 @@
           <template #cell-key="{ value, row }">
             <div class="flex items-center gap-2">
               <code class="code text-xs">
-                {{ maskApiKey(value) }}
+                {{ displayApiKey(row, value) }}
               </code>
               <button
-                @click="copyToClipboard(value, row.id)"
+                @click="copyApiKey(row)"
                 class="rounded-lg p-1 transition-colors hover:bg-gray-100 dark:hover:bg-dark-700"
+                :disabled="!canRevealApiKey(row)"
                 :class="
                   copiedKeyId === row.id
                     ? 'text-green-500'
+                    : !canRevealApiKey(row)
+                    ? 'cursor-not-allowed text-gray-300 dark:text-dark-500'
                     : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                 "
-                :title="copiedKeyId === row.id ? t('keys.copied') : t('keys.copyToClipboard')"
+                :title="copiedKeyId === row.id ? t('keys.copied') : apiKeySecretActionTitle(row)"
               >
                 <Icon
                   v-if="copiedKeyId === row.id"
@@ -314,7 +358,14 @@
               <!-- Use Key Button -->
               <button
                 @click="openUseKeyModal(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
+                :disabled="!canRevealApiKey(row)"
+                :title="canRevealApiKey(row) ? t('keys.useKey') : t('keys.keyShownOnce')"
+                :class="[
+                  'flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-colors',
+                  canRevealApiKey(row)
+                    ? 'text-gray-500 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400'
+                    : 'cursor-not-allowed text-gray-300 dark:text-dark-500'
+                ]"
               >
                 <Icon name="terminal" size="sm" />
                 <span class="text-xs">{{ t('keys.useKey') }}</span>
@@ -323,7 +374,14 @@
               <button
                 v-if="!publicSettings?.hide_ccs_import_button"
                 @click="importToCcswitch(row)"
-                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
+                :disabled="!canRevealApiKey(row)"
+                :title="canRevealApiKey(row) ? t('keys.importToCcSwitch') : t('keys.keyShownOnce')"
+                :class="[
+                  'flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-colors',
+                  canRevealApiKey(row)
+                    ? 'text-gray-500 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400'
+                    : 'cursor-not-allowed text-gray-300 dark:text-dark-500'
+                ]"
               >
                 <Icon name="upload" size="sm" />
                 <span class="text-xs">{{ t('keys.importToCcSwitch') }}</span>
@@ -842,7 +900,7 @@
       </form>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <button @click="closeModals" type="button" class="btn btn-secondary">
+          <button @click="() => closeModals()" type="button" class="btn btn-secondary">
             {{ t('common.cancel') }}
           </button>
           <button
@@ -1072,7 +1130,6 @@ import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import type { Column } from '@/components/common/types'
 import type { BatchApiKeyUsageStats } from '@/api/usage'
 import { formatDateTime } from '@/utils/format'
-import { maskApiKey } from '@/utils/maskApiKey'
 import {
   buildCcSwitchImportDeeplink,
   type CcSwitchClientType
@@ -1093,6 +1150,12 @@ interface GroupOption {
   userRate: number | null
   subscriptionType: SubscriptionType
   platform: GroupPlatform
+}
+
+interface IntegrationExample {
+  id: string
+  title: string
+  body: string
 }
 
 const appStore = useAppStore()
@@ -1153,6 +1216,84 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const dropdownPosition = ref<{ top?: number; bottom?: number; left: number } | null>(null)
 const groupButtonRefs = ref<Map<number, HTMLElement>>(new Map())
 let abortController: AbortController | null = null
+
+const integrationBaseUrl = computed(() => {
+  const configured = publicSettings.value?.api_base_url?.trim()
+  const fallback = typeof window === 'undefined' ? '' : window.location.origin
+  return (configured || fallback).replace(/\/+$/, '')
+})
+const integrationOpenAIBaseUrl = computed(() => `${integrationBaseUrl.value}/v1`)
+const integrationApiKeyPlaceholder = 'sk-your-api-key'
+const integrationModelPlaceholder = 'gpt-4o-mini'
+const integrationExamples = computed<IntegrationExample[]>(() => {
+  const baseURL = integrationOpenAIBaseUrl.value
+  const apiKey = integrationApiKeyPlaceholder
+  const model = integrationModelPlaceholder
+
+  return [
+    {
+      id: 'openai-sdk',
+      title: 'OpenAI SDK',
+      body: [
+        "import OpenAI from 'openai'",
+        '',
+        'const client = new OpenAI({',
+        `  baseURL: '${baseURL}',`,
+        `  apiKey: '${apiKey}',`,
+        '})',
+        '',
+        'const response = await client.chat.completions.create({',
+        `  model: '${model}',`,
+        "  messages: [{ role: 'user', content: 'Hello' }],",
+        '})'
+      ].join('\n')
+    },
+    {
+      id: 'codex',
+      title: 'Codex',
+      body: [
+        '[model_providers.sub2api]',
+        'name = "Sub2API"',
+        `base_url = "${baseURL}"`,
+        'wire_api = "chat"',
+        'env_key = "OPENAI_API_KEY"',
+        '',
+        'model_provider = "sub2api"',
+        `model = "${model}"`,
+        '',
+        `# OPENAI_API_KEY=${apiKey}`
+      ].join('\n')
+    },
+    {
+      id: 'cursor',
+      title: 'Cursor',
+      body: [
+        'Provider: OpenAI Compatible',
+        `Base URL: ${baseURL}`,
+        `API Key: ${apiKey}`,
+        `Model: ${model}`
+      ].join('\n')
+    },
+    {
+      id: 'cherry-studio',
+      title: 'Cherry Studio',
+      body: [
+        'Provider: OpenAI Compatible',
+        `API Host: ${baseURL}`,
+        `API Key: ${apiKey}`,
+        `Model: ${model}`
+      ].join('\n')
+    }
+  ]
+})
+
+const copyIntegrationBaseUrl = async () => {
+  await clipboardCopy(integrationOpenAIBaseUrl.value, t('keys.integrationExamples.copied'))
+}
+
+const copyIntegrationExample = async (example: IntegrationExample) => {
+  await clipboardCopy(example.body, t('keys.integrationExamples.copied'))
+}
 
 // Get the currently selected key for group change
 const selectedKeyForGroup = computed(() => {
@@ -1265,10 +1406,25 @@ const filteredGroupOptions = computed(() => {
   })
 })
 
-const copyToClipboard = async (text: string, keyId: number) => {
-  const success = await clipboardCopy(text, t('keys.copied'))
+const canRevealApiKey = (key: ApiKey | null | undefined) => key?.key_visible_once === true && !!key.key
+
+const displayApiKey = (key: ApiKey, fallback = '') => {
+  const value = key.key || fallback
+  if (canRevealApiKey(key)) return value
+  return value || (key.key_prefix ? `${key.key_prefix}...` : '')
+}
+
+const apiKeySecretActionTitle = (key: ApiKey | null | undefined) =>
+  canRevealApiKey(key) ? t('keys.copyToClipboard') : t('keys.keyShownOnce')
+
+const copyApiKey = async (key: ApiKey) => {
+  if (!canRevealApiKey(key)) {
+    appStore.showError(t('keys.keyShownOnce'))
+    return
+  }
+  const success = await clipboardCopy(key.key, t('keys.copied'))
   if (success) {
-    copiedKeyId.value = keyId
+    copiedKeyId.value = key.id
     setTimeout(() => {
       copiedKeyId.value = null
     }, 800)
@@ -1360,6 +1516,10 @@ const loadPublicSettings = async () => {
 }
 
 const openUseKeyModal = (key: ApiKey) => {
+  if (!canRevealApiKey(key)) {
+    appStore.showError(t('keys.keyShownOnce'))
+    return
+  }
   selectedKey.value = key
   showUseKeyModal.value = true
 }
@@ -1557,7 +1717,7 @@ const handleSubmit = async () => {
       appStore.showSuccess(t('keys.keyUpdatedSuccess'))
     } else {
       const customKey = formData.value.use_custom_key ? formData.value.custom_key : undefined
-      await keysAPI.create(
+      const createdKey = await keysAPI.create(
         formData.value.name,
         formData.value.group_id,
         customKey,
@@ -1568,12 +1728,14 @@ const handleSubmit = async () => {
         rateLimitData
       )
       appStore.showSuccess(t('keys.keyCreatedSuccess'))
+      selectedKey.value = createdKey
+      showUseKeyModal.value = canRevealApiKey(createdKey)
       // Only advance tour if active, on submit step, and creation succeeded
       if (onboardingStore.isCurrentStep('[data-tour="key-form-submit"]')) {
         onboardingStore.nextStep(500)
       }
     }
-    closeModals()
+    closeModals({ preserveSelectedKey: showUseKeyModal.value })
     loadApiKeys()
   } catch (error: any) {
     const errorMsg = error.response?.data?.detail || t('keys.failedToSave')
@@ -1604,10 +1766,12 @@ const handleDelete = async () => {
   }
 }
 
-const closeModals = () => {
+const closeModals = (options?: { preserveSelectedKey?: boolean }) => {
   showCreateModal.value = false
   showEditModal.value = false
-  selectedKey.value = null
+  if (!options?.preserveSelectedKey) {
+    selectedKey.value = null
+  }
   formData.value = {
     name: '',
     group_id: null,
@@ -1691,6 +1855,10 @@ const resetRateLimitUsage = async () => {
 }
 
 const importToCcswitch = (row: ApiKey) => {
+  if (!canRevealApiKey(row)) {
+    appStore.showError(t('keys.keyShownOnce'))
+    return
+  }
   const platform = row.group?.platform || 'anthropic'
 
   // For antigravity platform, show client selection dialog

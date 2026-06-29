@@ -42,8 +42,9 @@ import (
 //   - sql: 原生 SQL 执行器，用于复杂查询和批量操作
 //   - schedulerCache: 调度器缓存，用于在账号状态变更时同步快照
 type accountRepository struct {
-	client *dbent.Client // Ent ORM 客户端
-	sql    sqlExecutor   // 原生 SQL 执行接口
+	client              *dbent.Client // Ent ORM 客户端
+	sql                 sqlExecutor   // 原生 SQL 执行接口
+	credentialEncryptor service.SecretEncryptor
 	// schedulerCache 用于在账号状态变更时主动同步快照到缓存，
 	// 确保粘性会话能及时感知账号不可用状态。
 	// Used to proactively sync account snapshot to cache when status changes,
@@ -68,19 +69,32 @@ const postgresParameterBatchSize = 50000
 
 // NewAccountRepository 创建账户仓储实例。
 // 这是对外暴露的构造函数，返回接口类型以便于依赖注入。
-func NewAccountRepository(client *dbent.Client, sqlDB *sql.DB, schedulerCache service.SchedulerCache) service.AccountRepository {
-	return newAccountRepositoryWithSQL(client, sqlDB, schedulerCache)
+func NewAccountRepository(client *dbent.Client, sqlDB *sql.DB, schedulerCache service.SchedulerCache, credentialEncryptor service.SecretEncryptor) service.AccountRepository {
+	return newAccountRepositoryWithSQL(client, sqlDB, schedulerCache, credentialEncryptor)
 }
 
 // newAccountRepositoryWithSQL 是内部构造函数，支持依赖注入 SQL 执行器。
 // 这种设计便于单元测试时注入 mock 对象。
-func newAccountRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor, schedulerCache service.SchedulerCache) *accountRepository {
-	return &accountRepository{client: client, sql: sqlq, schedulerCache: schedulerCache}
+func newAccountRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor, schedulerCache service.SchedulerCache, credentialEncryptors ...service.SecretEncryptor) *accountRepository {
+	var credentialEncryptor service.SecretEncryptor
+	if len(credentialEncryptors) > 0 {
+		credentialEncryptor = credentialEncryptors[0]
+	}
+	return &accountRepository{
+		client:              client,
+		sql:                 sqlq,
+		schedulerCache:      schedulerCache,
+		credentialEncryptor: credentialEncryptor,
+	}
 }
 
 func (r *accountRepository) Create(ctx context.Context, account *service.Account) error {
 	if account == nil {
 		return service.ErrAccountNilInput
+	}
+	credentials, err := r.credentialsForStorage(account.Credentials)
+	if err != nil {
+		return err
 	}
 
 	builder := r.client.Account.Create().
@@ -88,7 +102,7 @@ func (r *accountRepository) Create(ctx context.Context, account *service.Account
 		SetNillableNotes(account.Notes).
 		SetPlatform(account.Platform).
 		SetType(account.Type).
-		SetCredentials(normalizeJSONMap(account.Credentials)).
+		SetCredentials(normalizeJSONMap(credentials)).
 		SetExtra(normalizeJSONMap(account.Extra)).
 		SetConcurrency(account.Concurrency).
 		SetPriority(account.Priority).
@@ -210,7 +224,10 @@ func (r *accountRepository) GetByIDs(ctx context.Context, ids []int64) ([]*servi
 
 	outByID := make(map[int64]*service.Account, len(entAccounts))
 	for _, entAcc := range entAccounts {
-		out := accountEntityToService(entAcc)
+		out, err := r.accountEntityToService(entAcc)
+		if err != nil {
+			return nil, err
+		}
 		if out == nil {
 			continue
 		}
@@ -323,13 +340,17 @@ func (r *accountRepository) Update(ctx context.Context, account *service.Account
 	if account.Status == service.StatusError {
 		schedulable = false
 	}
+	credentials, err := r.credentialsForStorage(account.Credentials)
+	if err != nil {
+		return err
+	}
 
 	builder := r.client.Account.UpdateOneID(account.ID).
 		SetName(account.Name).
 		SetNillableNotes(account.Notes).
 		SetPlatform(account.Platform).
 		SetType(account.Type).
-		SetCredentials(normalizeJSONMap(account.Credentials)).
+		SetCredentials(normalizeJSONMap(credentials)).
 		SetExtra(normalizeJSONMap(account.Extra)).
 		SetConcurrency(account.Concurrency).
 		SetPriority(account.Priority).
@@ -411,8 +432,12 @@ func (r *accountRepository) Update(ctx context.Context, account *service.Account
 }
 
 func (r *accountRepository) UpdateCredentials(ctx context.Context, id int64, credentials map[string]any) error {
-	_, err := r.client.Account.UpdateOneID(id).
-		SetCredentials(normalizeJSONMap(credentials)).
+	storedCredentials, err := r.credentialsForStorage(credentials)
+	if err != nil {
+		return err
+	}
+	_, err = r.client.Account.UpdateOneID(id).
+		SetCredentials(normalizeJSONMap(storedCredentials)).
 		Save(ctx)
 	if err != nil {
 		return translatePersistenceError(err, service.ErrAccountNotFound, nil)
@@ -1526,7 +1551,11 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 	}
 	// JSONB 需要合并而非覆盖，使用 raw SQL 保持旧行为。
 	if len(updates.Credentials) > 0 {
-		payload, err := json.Marshal(updates.Credentials)
+		credentials, err := r.credentialsForStorage(updates.Credentials)
+		if err != nil {
+			return 0, err
+		}
+		payload, err := json.Marshal(credentials)
 		if err != nil {
 			return 0, err
 		}
@@ -1676,7 +1705,10 @@ func (r *accountRepository) accountsToService(ctx context.Context, accounts []*d
 
 	outAccounts := make([]service.Account, 0, len(accounts))
 	for _, acc := range accounts {
-		out := accountEntityToService(acc)
+		out, err := r.accountEntityToService(acc)
+		if err != nil {
+			return nil, err
+		}
 		if out == nil {
 			continue
 		}

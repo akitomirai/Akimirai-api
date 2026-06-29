@@ -25,6 +25,47 @@ type apiKeyRepository struct {
 	sql    sqlExecutor
 }
 
+func nilIfEmpty(value string) *string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	return &value
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func firstNonEmptyStringPtr(values ...*string) string {
+	for _, value := range values {
+		if value != nil && strings.TrimSpace(*value) != "" {
+			return *value
+		}
+	}
+	return ""
+}
+
+func apiKeyLookupPredicate(value string) func(*entsql.Selector) {
+	value = strings.TrimSpace(value)
+	if service.IsAPIKeyHash(value) {
+		return apikey.KeyHashEQ(value)
+	}
+	return apikey.KeyEQ(value)
+}
+
+func apiKeyPreferredCacheKey(m *dbent.APIKey) string {
+	if m == nil {
+		return ""
+	}
+	return firstNonEmptyString(firstNonEmptyStringPtr(m.KeyHash), m.Key)
+}
+
 func NewAPIKeyRepository(client *dbent.Client, sqlDB *sql.DB) service.APIKeyRepository {
 	return newAPIKeyRepositoryWithSQL(client, sqlDB)
 }
@@ -42,6 +83,8 @@ func (r *apiKeyRepository) Create(ctx context.Context, key *service.APIKey) erro
 	builder := r.client.APIKey.Create().
 		SetUserID(key.UserID).
 		SetKey(key.Key).
+		SetNillableKeyHash(nilIfEmpty(key.KeyHash)).
+		SetNillableKeyPrefix(nilIfEmpty(key.KeyPrefix)).
 		SetName(key.Name).
 		SetStatus(key.Status).
 		SetNillableGroupID(key.GroupID).
@@ -93,7 +136,7 @@ func (r *apiKeyRepository) GetByID(ctx context.Context, id int64) (*service.APIK
 func (r *apiKeyRepository) GetKeyAndOwnerID(ctx context.Context, id int64) (string, int64, error) {
 	m, err := r.activeQuery().
 		Where(apikey.IDEQ(id)).
-		Select(apikey.FieldKey, apikey.FieldUserID).
+		Select(apikey.FieldKey, apikey.FieldKeyHash, apikey.FieldUserID).
 		Only(ctx)
 	if err != nil {
 		if dbent.IsNotFound(err) {
@@ -101,12 +144,15 @@ func (r *apiKeyRepository) GetKeyAndOwnerID(ctx context.Context, id int64) (stri
 		}
 		return "", 0, err
 	}
+	if keyHash := firstNonEmptyStringPtr(m.KeyHash); keyHash != "" {
+		return keyHash, m.UserID, nil
+	}
 	return m.Key, m.UserID, nil
 }
 
 func (r *apiKeyRepository) GetByKey(ctx context.Context, key string) (*service.APIKey, error) {
 	m, err := r.activeQuery().
-		Where(apikey.KeyEQ(key)).
+		Where(apiKeyLookupPredicate(key)).
 		WithUser(func(q *dbent.UserQuery) {
 			q.WithAllowedGroups(func(gq *dbent.GroupQuery) {
 				gq.Select(group.FieldID)
@@ -125,10 +171,13 @@ func (r *apiKeyRepository) GetByKey(ctx context.Context, key string) (*service.A
 
 func (r *apiKeyRepository) GetByKeyForAuth(ctx context.Context, key string) (*service.APIKey, error) {
 	m, err := r.activeQuery().
-		Where(apikey.KeyEQ(key)).
+		Where(apiKeyLookupPredicate(key)).
 		Select(
 			apikey.FieldID,
 			apikey.FieldUserID,
+			apikey.FieldKey,
+			apikey.FieldKeyHash,
+			apikey.FieldKeyPrefix,
 			apikey.FieldGroupID,
 			apikey.FieldName,
 			apikey.FieldStatus,
@@ -204,6 +253,23 @@ func (r *apiKeyRepository) GetByKeyForAuth(ctx context.Context, key string) (*se
 		return nil, err
 	}
 	return apiKeyEntityToService(m), nil
+}
+
+func (r *apiKeyRepository) SetKeyHashAndPrefix(ctx context.Context, id int64, keyHash, keyPrefix string) error {
+	keyHash = strings.TrimSpace(keyHash)
+	keyPrefix = strings.TrimSpace(keyPrefix)
+	if id <= 0 || keyHash == "" {
+		return nil
+	}
+	builder := r.client.APIKey.Update().
+		Where(apikey.IDEQ(id), apikey.DeletedAtIsNil(), apikey.Or(apikey.KeyHashIsNil(), apikey.KeyHashEQ(""))).
+		SetKeyHash(keyHash).
+		SetUpdatedAt(time.Now())
+	if keyPrefix != "" {
+		builder.SetKeyPrefix(keyPrefix)
+	}
+	_, err := builder.Save(ctx)
+	return err
 }
 
 func (r *apiKeyRepository) Update(ctx context.Context, key *service.APIKey) error {
@@ -314,7 +380,7 @@ func (r *apiKeyRepository) Delete(ctx context.Context, id int64) error {
 }
 
 // DeleteWithAudit 在同一事务内:
-//  1. 把(明文 key、所有者、key 名称)写入 deleted_api_key_audits;
+//  1. 把(key_hash/key_prefix 或 legacy 明文 key、所有者、key 名称)写入 deleted_api_key_audits;
 //  2. 软删除该 key(tombstone 覆盖 key 列以释放唯一约束)。
 //
 // 保证"被删除的 key 一定能反查到所有者"。事务模式与 group_repo.DeleteCascade 一致。
@@ -348,8 +414,15 @@ func (r *apiKeyRepository) DeleteWithAudit(ctx context.Context, id int64) error 
 func (r *apiKeyRepository) deleteWithAudit(ctx context.Context, exec *dbent.Client, id int64, tombstoneKey string) error {
 	// 1. 审计:数据源即 api_keys 当前行;WHERE deleted_at IS NULL 保证只对未删除行写一次。
 	if _, err := exec.ExecContext(ctx, `
-		INSERT INTO deleted_api_key_audits (key, api_key_id, user_id, key_name, deleted_at)
-		SELECT key, id, user_id, name, NOW()
+		INSERT INTO deleted_api_key_audits (key, key_hash, key_prefix, api_key_id, user_id, key_name, deleted_at)
+		SELECT
+			CASE WHEN COALESCE(key_hash, '') <> '' THEN COALESCE(key_prefix, '') ELSE key END,
+			COALESCE(key_hash, ''),
+			COALESCE(key_prefix, ''),
+			id,
+			user_id,
+			name,
+			NOW()
 		FROM api_keys
 		WHERE id = $1 AND deleted_at IS NULL`, id); err != nil {
 		return err
@@ -450,7 +523,7 @@ func (r *apiKeyRepository) CountByUserID(ctx context.Context, userID int64) (int
 }
 
 func (r *apiKeyRepository) ExistsByKey(ctx context.Context, key string) (bool, error) {
-	count, err := r.activeQuery().Where(apikey.KeyEQ(key)).Count(ctx)
+	count, err := r.activeQuery().Where(apiKeyLookupPredicate(key)).Count(ctx)
 	return count > 0, err
 }
 
@@ -558,23 +631,35 @@ func (r *apiKeyRepository) CountByGroupID(ctx context.Context, groupID int64) (i
 }
 
 func (r *apiKeyRepository) ListKeysByUserID(ctx context.Context, userID int64) ([]string, error) {
-	keys, err := r.activeQuery().
+	rows, err := r.activeQuery().
 		Where(apikey.UserIDEQ(userID)).
-		Select(apikey.FieldKey).
-		Strings(ctx)
+		Select(apikey.FieldKey, apikey.FieldKeyHash).
+		All(ctx)
 	if err != nil {
 		return nil, err
+	}
+	keys := make([]string, 0, len(rows))
+	for _, row := range rows {
+		if value := apiKeyPreferredCacheKey(row); value != "" {
+			keys = append(keys, value)
+		}
 	}
 	return keys, nil
 }
 
 func (r *apiKeyRepository) ListKeysByGroupID(ctx context.Context, groupID int64) ([]string, error) {
-	keys, err := r.activeQuery().
+	rows, err := r.activeQuery().
 		Where(apikey.GroupIDEQ(groupID)).
-		Select(apikey.FieldKey).
-		Strings(ctx)
+		Select(apikey.FieldKey, apikey.FieldKeyHash).
+		All(ctx)
 	if err != nil {
 		return nil, err
+	}
+	keys := make([]string, 0, len(rows))
+	for _, row := range rows {
+		if value := apiKeyPreferredCacheKey(row); value != "" {
+			keys = append(keys, value)
+		}
 	}
 	return keys, nil
 }
@@ -607,7 +692,7 @@ func (r *apiKeyRepository) IncrementQuotaUsedAndGetState(ctx context.Context, id
 			END,
 			updated_at = NOW()
 		WHERE id = $3 AND deleted_at IS NULL
-		RETURNING quota_used, quota, key, status
+		RETURNING quota_used, quota, COALESCE(NULLIF(key_hash, ''), key), status
 	`
 
 	state := &service.APIKeyQuotaUsageState{}
@@ -700,7 +785,9 @@ func apiKeyEntityToService(m *dbent.APIKey) *service.APIKey {
 	out := &service.APIKey{
 		ID:            m.ID,
 		UserID:        m.UserID,
-		Key:           m.Key,
+		Key:           firstNonEmptyString(firstNonEmptyStringPtr(m.KeyHash), m.Key),
+		KeyHash:       firstNonEmptyStringPtr(m.KeyHash),
+		KeyPrefix:     firstNonEmptyStringPtr(m.KeyPrefix),
 		Name:          m.Name,
 		Status:        m.Status,
 		IPWhitelist:   m.IPWhitelist,

@@ -43,6 +43,11 @@
           <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.category') }}</span>
           <p class="mt-0.5 text-gray-900 dark:text-dark-100">{{ t('usage.errors.categories.' + detail.category) }}</p>
         </div>
+        <!-- Error code -->
+        <div v-if="detail.error_code">
+          <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.errorCode') }}</span>
+          <p class="mt-0.5 font-mono text-xs text-gray-900 dark:text-dark-100">{{ detail.error_code }}</p>
+        </div>
         <!-- Platform -->
         <div>
           <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.platform') }}</span>
@@ -55,10 +60,45 @@
         </div>
       </div>
 
+      <div class="flex flex-wrap gap-2">
+        <span
+          :class="[
+            'inline-flex items-center rounded px-2 py-1 text-xs font-medium',
+            detail.retryable
+              ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300'
+              : 'bg-gray-100 text-gray-500 dark:bg-dark-700 dark:text-dark-400',
+          ]"
+        >
+          {{ detail.retryable ? t('usage.errors.retryable') : t('usage.errors.notRetryable') }}
+        </span>
+        <span
+          :class="[
+            'inline-flex items-center rounded px-2 py-1 text-xs font-medium',
+            detail.charged
+              ? 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300'
+              : 'bg-gray-100 text-gray-500 dark:bg-dark-700 dark:text-dark-400',
+          ]"
+        >
+          {{ detail.charged ? t('usage.errors.charged') : t('usage.errors.notCharged') }}
+        </span>
+      </div>
+
       <!-- Message -->
       <div v-if="detail.message">
         <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.message') }}</span>
         <p class="mt-0.5 text-gray-900 dark:text-dark-100 break-all">{{ detail.message }}</p>
+      </div>
+
+      <!-- Explanation -->
+      <div v-if="detail.explanation">
+        <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.explanation') }}</span>
+        <p class="mt-0.5 text-gray-900 dark:text-dark-100">{{ detail.explanation }}</p>
+      </div>
+
+      <!-- Suggestion -->
+      <div v-if="detail.suggestion">
+        <span class="font-medium text-gray-500 dark:text-dark-400">{{ t('usage.errors.suggestion') }}</span>
+        <p class="mt-0.5 text-gray-900 dark:text-dark-100">{{ detail.suggestion }}</p>
       </div>
 
       <!-- Error Body -->

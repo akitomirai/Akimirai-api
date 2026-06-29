@@ -20,11 +20,40 @@ func TestMapUserErrorCategory(t *testing.T) {
 		{"upstream", "upstream_error", "upstream"},
 		{"network", "api_error", "upstream"},
 		{"internal", "api_error", "internal"},
+		{"request", "cyber_policy_session_blocked", "cyber"},
 		{"weird", "weird", "other"},
 	}
 	for _, c := range cases {
 		if got := MapUserErrorCategory(c.phase, c.etype); got != c.want {
 			t.Errorf("MapUserErrorCategory(%q,%q)=%q want %q", c.phase, c.etype, got, c.want)
+		}
+	}
+}
+
+func TestUserErrorDescriptorsAreComplete(t *testing.T) {
+	required := []UserErrorCode{
+		UserErrorCodeAuthInvalidKey,
+		UserErrorCodeBalanceInsufficient,
+		UserErrorCodeQuotaExceeded,
+		UserErrorCodeModelDisabled,
+		UserErrorCodeNoAvailableChannel,
+		UserErrorCodeUpstreamAuthFailed,
+		UserErrorCodeUpstreamRateLimited,
+		UserErrorCodeUpstreamTimeout,
+		UserErrorCodeUpstream5xx,
+		UserErrorCodeStreamInterrupted,
+		UserErrorCodeRequestInvalid,
+		UserErrorCodePrivacyBlocked,
+		UserErrorCodeContentBlocked,
+	}
+
+	for _, code := range required {
+		desc := UserErrorDescriptorForCode(code)
+		if desc.Code != code {
+			t.Fatalf("descriptor code mismatch: got %q want %q", desc.Code, code)
+		}
+		if desc.UserMessage == "" || desc.AdminHint == "" || desc.Suggestion == "" || desc.HTTPStatus == 0 {
+			t.Fatalf("descriptor %q incomplete: %+v", code, desc)
 		}
 	}
 }
@@ -95,6 +124,24 @@ func TestToUserErrorRequest_RedactsSensitiveFields(t *testing.T) {
 	if out.Message != "rate limit exceeded" {
 		t.Errorf("want message=%q, got %q", "rate limit exceeded", out.Message)
 	}
+	if out.ErrorCode != string(UserErrorCodeQuotaExceeded) {
+		t.Errorf("want error_code=%q, got %q", UserErrorCodeQuotaExceeded, out.ErrorCode)
+	}
+	if out.Explanation == "" {
+		t.Error("expected non-empty explanation")
+	}
+	if out.Suggestion == "" {
+		t.Error("expected non-empty suggestion")
+	}
+	if !out.Retryable {
+		t.Error("expected retryable=true for rate limit")
+	}
+	if out.Charged {
+		t.Error("expected charged=false for rate limit")
+	}
+	if out.HTTPStatus != 429 {
+		t.Errorf("want http_status=429, got %d", out.HTTPStatus)
+	}
 	if out.KeyName != "my-key" {
 		t.Errorf("want key_name=my-key, got %q", out.KeyName)
 	}
@@ -157,6 +204,81 @@ func TestToUserErrorRequestDetail_WhitelistAndRedacts(t *testing.T) {
 		if strings.Contains(raw, forbidden) {
 			t.Errorf("sensitive field %q leaked in JSON output: %s", forbidden, raw)
 		}
+	}
+	if strings.Contains(raw, "admin_hint") {
+		t.Errorf("admin hint must not be exposed in user JSON: %s", raw)
+	}
+}
+
+func TestClassifyUserErrorCode_CommonCodes(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		in   *OpsErrorLog
+		want UserErrorCode
+	}{
+		{name: "auth", in: &OpsErrorLog{Phase: "auth", Type: "authentication_error", StatusCode: 401}, want: UserErrorCodeAuthInvalidKey},
+		{name: "balance", in: &OpsErrorLog{Phase: "request", Type: "billing_error", StatusCode: 403, Message: "insufficient balance"}, want: UserErrorCodeBalanceInsufficient},
+		{name: "quota", in: &OpsErrorLog{Phase: "request", Type: "subscription_error", StatusCode: 429}, want: UserErrorCodeQuotaExceeded},
+		{name: "model disabled", in: &OpsErrorLog{Phase: "request", Type: "invalid_request_error", StatusCode: 400, Message: "model not enabled"}, want: UserErrorCodeModelDisabled},
+		{name: "no channel", in: &OpsErrorLog{Phase: "routing", Type: "api_error", StatusCode: 503}, want: UserErrorCodeNoAvailableChannel},
+		{name: "upstream auth", in: &OpsErrorLog{Phase: "upstream", Type: "api_error", StatusCode: 401}, want: UserErrorCodeUpstreamAuthFailed},
+		{name: "upstream rate", in: &OpsErrorLog{Phase: "upstream", Type: "api_error", StatusCode: 429}, want: UserErrorCodeUpstreamRateLimited},
+		{name: "upstream timeout", in: &OpsErrorLog{Phase: "upstream", Type: "api_error", StatusCode: 504}, want: UserErrorCodeUpstreamTimeout},
+		{name: "upstream 5xx", in: &OpsErrorLog{Phase: "upstream", Type: "api_error", StatusCode: 502}, want: UserErrorCodeUpstream5xx},
+		{name: "stream", in: &OpsErrorLog{Phase: "upstream", Type: "api_error", StatusCode: 502, Stream: true, Message: "unexpected EOF"}, want: UserErrorCodeStreamInterrupted},
+		{name: "invalid", in: &OpsErrorLog{Phase: "request", Type: "invalid_request_error", StatusCode: 400}, want: UserErrorCodeRequestInvalid},
+		{name: "privacy", in: &OpsErrorLog{Phase: "request", Type: "cyber_policy", StatusCode: 403, Message: "privacy filter blocked pii"}, want: UserErrorCodePrivacyBlocked},
+		{name: "content", in: &OpsErrorLog{Phase: "request", Type: "cyber_policy", StatusCode: 403, Message: "blocked"}, want: UserErrorCodeContentBlocked},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := ClassifyUserErrorCode(tc.in); got != tc.want {
+				t.Fatalf("ClassifyUserErrorCode()=%q want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestExplainUserError_CommonOperationalCases(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		in   *OpsErrorLog
+		want string
+	}{
+		{
+			name: "upstream auth",
+			in:   &OpsErrorLog{Phase: "upstream", Type: "upstream_error", StatusCode: 401},
+			want: "credentials",
+		},
+		{
+			name: "upstream rate limit",
+			in:   &OpsErrorLog{Phase: "upstream", Type: "rate_limit_error", StatusCode: 429},
+			want: "rate-limited",
+		},
+		{
+			name: "stream interrupted",
+			in:   &OpsErrorLog{Phase: "upstream", Type: "api_error", StatusCode: 502, Stream: true, Message: "unexpected EOF while reading stream"},
+			want: "stream",
+		},
+		{
+			name: "no healthy account",
+			in:   &OpsErrorLog{Phase: "routing", Type: "api_error", StatusCode: 503},
+			want: "No healthy upstream account",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := ExplainUserError(tc.in)
+			if !strings.Contains(got, tc.want) {
+				t.Fatalf("ExplainUserError()=%q, want substring %q", got, tc.want)
+			}
+		})
 	}
 }
 

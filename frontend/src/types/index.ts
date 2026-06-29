@@ -567,6 +567,8 @@ export interface ApiKey {
   id: number
   user_id: number
   key: string
+  key_prefix?: string
+  key_visible_once?: boolean
   name: string
   group_id: number | null
   status: 'active' | 'inactive' | 'quota_exhausted' | 'expired'
@@ -1629,6 +1631,12 @@ export interface UserErrorRequest {
   category: string
   platform: string
   message: string
+  error_code: string
+  explanation: string
+  suggestion: string
+  retryable: boolean
+  charged: boolean
+  http_status: number
   key_name: string
   key_deleted: boolean
 }

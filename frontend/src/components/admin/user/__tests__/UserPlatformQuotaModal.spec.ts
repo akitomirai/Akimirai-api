@@ -86,6 +86,7 @@ describe('UserPlatformQuotaModal', () => {
     expect(html).toContain('openai')
     expect(html).toContain('gemini')
     expect(html).toContain('antigravity')
+    expect(html).toContain('grok')
   })
 
   it('已有数据正确填充 limit input', async () => {
@@ -98,7 +99,7 @@ describe('UserPlatformQuotaModal', () => {
     const w = await mountAndOpen()
     const inputs = w.findAll('input[type=number]')
     // 4 platforms × 3 windows = 12 inputs
-    expect(inputs.length).toBe(12)
+    expect(inputs.length).toBe(15)
     // 第一个 input 是 anthropic.daily = 10
     expect((inputs[0].element as HTMLInputElement).value).toBe('10')
   })
@@ -120,7 +121,7 @@ describe('UserPlatformQuotaModal', () => {
     expect(apiMocks.updatePlatformQuotas).toHaveBeenCalledTimes(1)
     const [uid, payload] = apiMocks.updatePlatformQuotas.mock.calls[0]
     expect(uid).toBe(99)
-    expect(payload).toHaveLength(4) // 4 platforms always submitted
+    expect(payload).toHaveLength(5)
     const openai = payload.find((p: any) => p.platform === 'openai')
     expect(openai.weekly_limit_usd).toBe(20)
   })

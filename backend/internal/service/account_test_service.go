@@ -1515,7 +1515,7 @@ func (s *AccountTestService) testOpenAIImageAPIKey(c *gin.Context, ctx context.C
 	}
 	req = req.WithContext(WithHTTPUpstreamProfile(req.Context(), HTTPUpstreamProfileOpenAI))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cookie", "__Secure-next-auth.session-token="+authToken)
+	req.Header.Set("Authorization", "Bearer "+authToken)
 
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {
@@ -1720,8 +1720,8 @@ func (s *AccountTestService) testOpenAIImageConversation(c *gin.Context, ctx con
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("User-Agent", openAIImageBackendUserAgent)
-		req.Header.Set("Origin", "https://chatgpt.com")
-		req.Header.Set("Referer", "https://chatgpt.com/")
+	req.Header.Set("Origin", "https://chatgpt.com")
+	req.Header.Set("Referer", "https://chatgpt.com/")
 
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {

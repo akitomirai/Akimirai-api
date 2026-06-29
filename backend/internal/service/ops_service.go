@@ -11,6 +11,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/Wei-Shaw/sub2api/internal/util/logredact"
 )
 
 var ErrOpsDisabled = infraerrors.NotFound("OPS_DISABLED", "Ops monitoring is disabled")
@@ -429,6 +430,11 @@ func (s *OpsService) LookupDeletedKeyAudit(ctx context.Context, key string) (*De
 	if s.opsRepo == nil {
 		return nil, nil
 	}
+	if hash := HashAPIKeyWithConfig(key, s.cfg); hash != "" && hash != strings.TrimSpace(key) {
+		if res, err := s.opsRepo.LookupDeletedKeyAudit(ctx, hash); err != nil || res != nil {
+			return res, err
+		}
+	}
 	return s.opsRepo.LookupDeletedKeyAudit(ctx, key)
 }
 
@@ -600,6 +606,24 @@ func isSensitiveKey(key string) bool {
 		return true
 	}
 
+	// AI request/response payload fields can contain raw prompts, user data,
+	// tool inputs, image prompts, or generated content. Keep structural fields
+	// such as model/stream/tokens, but redact the natural-language payload.
+	switch k {
+	case "prompt",
+		"messages",
+		"contents",
+		"content",
+		"input",
+		"text",
+		"revised_prompt",
+		"instructions",
+		"system",
+		"tool_calls",
+		"function_call":
+		return true
+	}
+
 	// Suffix matches.
 	for _, suffix := range []string{
 		"_secret",
@@ -767,9 +791,39 @@ func sanitizeErrorBodyForStorage(raw string, maxBytes int) (sanitized string, tr
 		return out, trunc
 	}
 
-	// Non-JSON: best-effort truncate.
+	raw = logredact.RedactText(raw, opsLogExtraSensitiveKeys()...)
+
+	// Non-JSON: best-effort redact + truncate.
 	if maxBytes > 0 && len(raw) > maxBytes {
 		return truncateString(raw, maxBytes), true
 	}
 	return raw, false
+}
+
+func opsLogExtraSensitiveKeys() []string {
+	return []string{
+		"authorization",
+		"proxy-authorization",
+		"x-api-key",
+		"api_key",
+		"apikey",
+		"session_key",
+		"session_token",
+		"cookie",
+		"aws_secret_access_key",
+		"aws_session_token",
+		"service_account_json",
+		"service_account",
+		"private_key",
+		"prompt",
+		"messages",
+		"contents",
+		"content",
+		"input",
+		"text",
+		"revised_prompt",
+		"instructions",
+		"tool_calls",
+		"function_call",
+	}
 }
