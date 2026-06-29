@@ -25,6 +25,9 @@
           :error-view-enabled="errorViewEnabled"
           :base-url="baseUrl"
           :recommended-model="recommendedModel"
+          :available-model-count="availableModelCount"
+          :models-loading="loadingModels"
+          :models-error="modelsError"
           :payment-enabled="paymentEnabled"
         />
 
@@ -78,8 +81,10 @@ import UserDashboardCommercialPath from '@/components/user/dashboard/UserDashboa
 import { useAppStore, useAuthStore } from '@/stores'
 import { keysAPI } from '@/api/keys'
 import { usageAPI, type UserDashboardStats as UserStatsType } from '@/api/usage'
+import userChannelsAPI from '@/api/channels'
 import { getMyPlatformQuotas } from '@/api/user'
 import { getBrowserOriginFallback, normalizeOpenAIBaseUrl } from '@/utils/quickStart'
+import { deriveModelCatalog, pickRecommendedCatalogModel, type ModelCatalogItem } from '@/utils/modelCatalog'
 import type { ApiKey, ModelStat, PlatformQuotaItem, TrendDataPoint, UsageLog, UserErrorRequest } from '@/types'
 
 const { t } = useI18n()
@@ -93,9 +98,11 @@ const loadingUsage = ref(false)
 const loadingCharts = ref(false)
 const loadingApiKeys = ref(false)
 const loadingErrors = ref(false)
+const loadingModels = ref(false)
 const dashboardError = ref(false)
 const apiKeysError = ref(false)
 const errorsError = ref(false)
+const modelsError = ref(false)
 
 const trendData = ref<TrendDataPoint[]>([])
 const modelStats = ref<ModelStat[]>([])
@@ -103,6 +110,7 @@ const recentUsage = ref<UsageLog[]>([])
 const apiKeys = ref<ApiKey[]>([])
 const recentErrors = ref<UserErrorRequest[]>([])
 const platformQuotas = ref<PlatformQuotaItem[] | null>(null)
+const availableModels = ref<ModelCatalogItem[]>([])
 
 const formatLocalDate = (d: Date) => d.toISOString().split('T')[0]
 const startDate = ref(formatLocalDate(new Date(Date.now() - 6 * 86400000)))
@@ -119,7 +127,8 @@ const errorViewEnabled = computed(() => appStore.cachedPublicSettings?.allow_use
 const baseUrl = computed(() =>
   normalizeOpenAIBaseUrl(appStore.cachedPublicSettings?.api_base_url, getBrowserOriginFallback())
 )
-const recommendedModel = computed(() => modelStats.value[0]?.model || '')
+const recommendedModel = computed(() => pickRecommendedCatalogModel(availableModels.value)?.id || '')
+const availableModelCount = computed(() => availableModels.value.length)
 
 const loadStats = async () => {
   loading.value = true
@@ -212,6 +221,21 @@ const loadRecentErrors = async () => {
   }
 }
 
+const loadAvailableModels = async () => {
+  loadingModels.value = true
+  modelsError.value = false
+  try {
+    const channels = await userChannelsAPI.getAvailable()
+    availableModels.value = deriveModelCatalog(channels)
+  } catch (error) {
+    console.error('Failed to load available models:', error instanceof Error ? error.message : error)
+    modelsError.value = true
+    availableModels.value = []
+  } finally {
+    loadingModels.value = false
+  }
+}
+
 const loadPublicSettingsAndErrors = async () => {
   try {
     await appStore.fetchPublicSettings()
@@ -236,6 +260,7 @@ const refreshAll = () => {
   loadCharts()
   loadRecent()
   loadApiKeys()
+  loadAvailableModels()
   loadPlatformQuotas()
   loadPublicSettingsAndErrors()
 }

@@ -108,13 +108,32 @@
         </div>
         <div class="rounded-lg border border-gray-200 p-3 dark:border-dark-700">
           <p class="text-xs font-medium uppercase text-gray-500 dark:text-dark-400">Model</p>
-          <code class="mt-2 block truncate rounded bg-gray-50 px-2 py-1.5 font-mono text-xs text-gray-900 dark:bg-dark-800 dark:text-dark-100">
-            {{ recommendedModel || '<MODEL_NAME>' }}
-          </code>
+          <div class="mt-2 flex items-center gap-2">
+            <code class="min-w-0 flex-1 truncate rounded bg-gray-50 px-2 py-1.5 font-mono text-xs text-gray-900 dark:bg-dark-800 dark:text-dark-100">
+              {{ recommendedModel || '<MODEL_NAME>' }}
+            </code>
+            <button
+              v-if="recommendedModel"
+              class="btn btn-sm btn-secondary"
+              type="button"
+              @click="copyRecommendedModel"
+            >
+              <Icon name="copy" size="sm" />
+              {{ t('dashboard.commercial.copyModel', 'Copy model') }}
+            </button>
+          </div>
+          <p class="mt-2 text-xs text-gray-500 dark:text-dark-400">
+            <span v-if="modelsLoading">{{ t('common.loading') }}</span>
+            <span v-else-if="modelsError">{{ t('dashboard.commercial.modelsLoadFailed', 'Failed to load available models') }}</span>
+            <span v-else-if="availableModelCount > 0">
+              {{ availableModelsCountLabel }}
+            </span>
+            <span v-else>{{ t('dashboard.commercial.noAvailableModels', 'No available model data') }}</span>
+          </p>
         </div>
       </div>
       <div class="mt-4 flex flex-wrap gap-2">
-        <router-link class="btn btn-sm btn-primary" to="/quick-start">
+        <router-link class="btn btn-sm btn-primary" :to="quickStartTo">
           <Icon name="book" size="sm" />
           {{ t('dashboard.commercial.viewQuickStart') }}
         </router-link>
@@ -207,6 +226,15 @@
           <p v-if="error.suggestion" class="mt-1 text-xs text-gray-500 dark:text-dark-400">
             {{ error.suggestion }}
           </p>
+          <div
+            v-if="isModelAvailabilityErrorCode(error.error_code)"
+            class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200"
+          >
+            <p>{{ t('dashboard.commercial.modelAvailabilityErrorHint', 'This failure may be caused by a disabled model or no available channel. Try switching to a currently available model.') }}</p>
+            <router-link class="mt-2 inline-flex text-primary-700 hover:text-primary-800 dark:text-primary-300" to="/available-channels">
+              {{ t('dashboard.commercial.viewAvailableModels', 'View available models') }}
+            </router-link>
+          </div>
           <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-dark-400">
             <span>{{ t('dashboard.commercial.requestId') }}: <span class="font-mono">{{ error.request_id || '-' }}</span></span>
             <span>{{ formatDateTime(error.created_at) }}</span>
@@ -226,6 +254,7 @@ import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import { useClipboard } from '@/composables/useClipboard'
 import { formatDateTime } from '@/utils/format'
+import { isModelAvailabilityErrorCode } from '@/utils/modelCatalog'
 import type { UserDashboardStats as UserStatsType } from '@/api/usage'
 import type { ApiKey, UserErrorRequest } from '@/types'
 
@@ -241,6 +270,9 @@ const props = defineProps<{
   errorViewEnabled: boolean
   baseUrl: string
   recommendedModel: string
+  availableModelCount: number
+  modelsLoading: boolean
+  modelsError: boolean
   paymentEnabled: boolean
 }>()
 
@@ -260,6 +292,14 @@ const lastUsedAt = computed(() => {
     .filter((value): value is string => !!value)
     .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] || ''
 })
+const quickStartTo = computed(() => (
+  props.recommendedModel
+    ? { path: '/quick-start', query: { model: props.recommendedModel } }
+    : '/quick-start'
+))
+const availableModelsCountLabel = computed(() =>
+  t('dashboard.commercial.availableModelsCount', `${props.availableModelCount} available models`)
+)
 
 function formatMoney(value: number): string {
   return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 }).format(value)
@@ -271,5 +311,10 @@ function formatNumber(value: number): string {
 
 function copyBaseUrl() {
   copyToClipboard(props.baseUrl)
+}
+
+function copyRecommendedModel() {
+  if (!props.recommendedModel) return
+  copyToClipboard(props.recommendedModel)
 }
 </script>

@@ -1,50 +1,59 @@
 <template>
   <AppLayout>
-    <TablePageLayout>
-      <template #filters>
-        <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-          <div class="flex flex-1 flex-wrap items-center gap-3">
-            <div class="relative w-full sm:w-80">
-              <Icon
-                name="search"
-                size="md"
-                class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-              />
-              <input
-                v-model="searchQuery"
-                type="text"
-                :placeholder="t('availableChannels.searchPlaceholder')"
-                class="input pl-10"
-              />
+    <div class="space-y-6">
+      <ModelCatalogPanel
+        :items="modelCatalogItems"
+        :loading="loading"
+        :error="loadError"
+        @retry="loadChannels"
+      />
+
+      <TablePageLayout>
+        <template #filters>
+          <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+            <div class="flex flex-1 flex-wrap items-center gap-3">
+              <div class="relative w-full sm:w-80">
+                <Icon
+                  name="search"
+                  size="md"
+                  class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                />
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  :placeholder="t('availableChannels.searchPlaceholder')"
+                  class="input pl-10"
+                />
+              </div>
+            </div>
+
+            <div class="flex w-full flex-shrink-0 flex-wrap items-center justify-end gap-3 lg:w-auto">
+              <button
+                @click="loadChannels"
+                :disabled="loading"
+                class="btn btn-secondary"
+                :title="t('common.refresh', 'Refresh')"
+              >
+                <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
+              </button>
             </div>
           </div>
+        </template>
 
-          <div class="flex w-full flex-shrink-0 flex-wrap items-center justify-end gap-3 lg:w-auto">
-            <button
-              @click="loadChannels"
-              :disabled="loading"
-              class="btn btn-secondary"
-              :title="t('common.refresh', 'Refresh')"
-            >
-              <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
-            </button>
-          </div>
-        </div>
-      </template>
-
-      <template #table>
-        <AvailableChannelsTable
-          :columns="columnLabels"
-          :rows="filteredChannels"
-          :loading="loading"
-          :user-group-rates="userGroupRates"
-          pricing-key-prefix="availableChannels.pricing"
-          :no-pricing-label="t('availableChannels.noPricing')"
-          :no-models-label="t('availableChannels.noModels')"
-          :empty-label="t('availableChannels.empty')"
-        />
-      </template>
-    </TablePageLayout>
+        <template #table>
+          <AvailableChannelsTable
+            :columns="columnLabels"
+            :rows="filteredChannels"
+            :loading="loading"
+            :user-group-rates="userGroupRates"
+            pricing-key-prefix="availableChannels.pricing"
+            :no-pricing-label="t('availableChannels.noPricing')"
+            :no-models-label="t('availableChannels.noModels')"
+            :empty-label="loadError ? t('availableChannels.loadFailed', 'Failed to load available channels') : t('availableChannels.empty')"
+          />
+        </template>
+      </TablePageLayout>
+    </div>
   </AppLayout>
 </template>
 
@@ -55,10 +64,12 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import AvailableChannelsTable from '@/components/channels/AvailableChannelsTable.vue'
+import ModelCatalogPanel from '@/components/channels/ModelCatalogPanel.vue'
 import userChannelsAPI, { type UserAvailableChannel } from '@/api/channels'
 import userGroupsAPI from '@/api/groups'
 import { useAppStore } from '@/stores/app'
 import { extractApiErrorMessage } from '@/utils/apiError'
+import { deriveModelCatalog } from '@/utils/modelCatalog'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -66,6 +77,7 @@ const appStore = useAppStore()
 const channels = ref<UserAvailableChannel[]>([])
 const userGroupRates = ref<Record<number, number>>({})
 const loading = ref(false)
+const loadError = ref(false)
 const searchQuery = ref('')
 
 const columnLabels = computed(() => ({
@@ -102,8 +114,11 @@ const filteredChannels = computed(() => {
     .filter((ch): ch is UserAvailableChannel => ch !== null)
 })
 
+const modelCatalogItems = computed(() => deriveModelCatalog(filteredChannels.value, userGroupRates.value))
+
 async function loadChannels() {
   loading.value = true
+  loadError.value = false
   try {
     // 渠道列表和用户专属倍率并发拉取。专属倍率失败不阻塞渠道展示——
     // 失败时只是无法渲染专属倍率角标，降级为仅显示默认倍率。
@@ -117,6 +132,8 @@ async function loadChannels() {
     channels.value = list
     userGroupRates.value = rates
   } catch (err: unknown) {
+    loadError.value = true
+    channels.value = []
     appStore.showError(extractApiErrorMessage(err, t('common.error')))
   } finally {
     loading.value = false

@@ -49,7 +49,7 @@ export function buildQuickStartExamples(options: QuickStartExampleOptions): Quic
       '  -d \'{',
       `    "model": "${model}",`,
       '    "messages": [',
-      '      { "role": "user", "content": "Hello" }',
+      '      { "role": "user", "content": "<USER_MESSAGE>" }',
       '    ]',
       "  }'"
     ].join('\n'),
@@ -63,7 +63,7 @@ export function buildQuickStartExamples(options: QuickStartExampleOptions): Quic
       '',
       'const response = await client.chat.completions.create({',
       `  model: '${model}',`,
-      "  messages: [{ role: 'user', content: 'Hello' }]",
+      "  messages: [{ role: 'user', content: '<USER_MESSAGE>' }]",
       '})',
       '',
       'console.log(response.choices[0]?.message?.content)'

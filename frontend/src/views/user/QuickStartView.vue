@@ -15,6 +15,10 @@
             </p>
           </div>
           <div class="flex flex-wrap gap-2">
+            <router-link class="btn btn-secondary" to="/available-channels">
+              <Icon name="server" size="sm" />
+              {{ t('quickStart.viewModels') }}
+            </router-link>
             <router-link class="btn btn-secondary" to="/keys">
               <Icon name="key" size="sm" />
               {{ t('quickStart.createKey') }}
@@ -35,9 +39,15 @@
         </div>
 
         <div v-else class="mt-6">
+          <div
+            v-if="queryModelHint"
+            class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200"
+          >
+            {{ queryModelHint }}
+          </div>
           <QuickStartExamples
             :base-url="baseUrl"
-            :model="recommendedModel"
+            :model="selectedModel"
           />
         </div>
       </div>
@@ -48,35 +58,58 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Icon from '@/components/icons/Icon.vue'
 import QuickStartExamples from '@/components/user/quickstart/QuickStartExamples.vue'
 import { useAppStore } from '@/stores'
-import { usageAPI } from '@/api/usage'
+import userChannelsAPI from '@/api/channels'
 import { getBrowserOriginFallback, normalizeOpenAIBaseUrl } from '@/utils/quickStart'
-import type { ModelStat } from '@/types'
+import {
+  deriveModelCatalog,
+  selectQuickStartCatalogModel,
+  type ModelCatalogItem,
+} from '@/utils/modelCatalog'
 
 const { t } = useI18n()
+const route = useRoute()
 const appStore = useAppStore()
 
 const loading = ref(false)
 const loadError = ref(false)
-const modelStats = ref<ModelStat[]>([])
+const modelCatalog = ref<ModelCatalogItem[]>([])
 
 const baseUrl = computed(() =>
   normalizeOpenAIBaseUrl(appStore.cachedPublicSettings?.api_base_url, getBrowserOriginFallback())
 )
 
-const recommendedModel = computed(() => modelStats.value[0]?.model || '')
+const quickStartSelection = computed(() => selectQuickStartCatalogModel(modelCatalog.value, route.query.model))
+
+const selectedModel = computed(() => quickStartSelection.value.selected?.id || '')
+
+const queryModelHint = computed(() => {
+  const selection = quickStartSelection.value
+  if (!selection.requested || !selection.usedFallback) return ''
+  if (selectedModel.value) {
+    return t(
+      'quickStart.modelFallbackHint',
+      `Requested model ${selection.requested} is not currently available. Examples now use ${selectedModel.value}.`
+    )
+  }
+  return t(
+    'quickStart.modelUnavailableHint',
+    `Requested model ${selection.requested} is not currently available. Choose a model from the model list.`
+  )
+})
 
 async function loadData() {
   loading.value = true
   loadError.value = false
   try {
     await appStore.fetchPublicSettings()
-    const models = await usageAPI.getDashboardModels()
-    modelStats.value = models.models || []
+    const channels = await userChannelsAPI.getAvailable()
+    modelCatalog.value = deriveModelCatalog(channels)
   } catch (error) {
     console.error('[QuickStartView] failed to load quick start data:', error)
     loadError.value = true

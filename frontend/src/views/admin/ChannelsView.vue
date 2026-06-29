@@ -435,6 +435,9 @@
                   </button>
                 </div>
               </div>
+              <p class="mb-2 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+                {{ t('admin.channels.form.userFacingStatusHint', 'User model status is derived from enabled channels, visible groups, and configured model pricing. Keep pricing rules accurate so users can choose models safely.') }}
+              </p>
               <div
                 v-if="section.model_pricing.length === 0"
                 class="rounded border border-dashed border-gray-300 p-2 text-center text-xs text-gray-400 dark:border-dark-500"

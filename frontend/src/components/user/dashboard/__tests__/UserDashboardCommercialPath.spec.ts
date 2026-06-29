@@ -12,7 +12,9 @@ vi.mock('vue-i18n', () => ({
     }
   }),
   useI18n: () => ({
-    t: (key: string, params?: Record<string, unknown>) => {
+    t: (key: string, paramsOrFallback?: Record<string, unknown> | string) => {
+      if (typeof paramsOrFallback === 'string') return paramsOrFallback
+      const params = paramsOrFallback
       if (params?.time) return `${key} ${params.time}`
       return key
     }
@@ -93,6 +95,9 @@ const mountComponent = (props = {}) => mount(UserDashboardCommercialPath, {
     errorViewEnabled: true,
     baseUrl: 'https://example.com/v1',
     recommendedModel: 'gpt-test',
+    availableModelCount: 3,
+    modelsLoading: false,
+    modelsError: false,
     paymentEnabled: true,
     ...props
   },
@@ -123,6 +128,7 @@ describe('UserDashboardCommercialPath', () => {
     expect(text).toContain('dashboard.commercial.quickStartTitle')
     expect(text).toContain('https://example.com/v1')
     expect(text).toContain('gpt-test')
+    expect(text).toContain('3 available models')
     expect(text).toContain('dashboard.commercial.paymentTitle')
     expect(text).toContain('dashboard.commercial.recharge')
   })
@@ -139,6 +145,23 @@ describe('UserDashboardCommercialPath', () => {
     expect(text).not.toContain('sk-test-placeholder')
     expect(text).not.toContain('private_key')
     expect(text).not.toContain('cookie')
+  })
+
+  it('links model availability errors back to available models', () => {
+    const wrapper = mountComponent({
+      recentErrors: [
+        {
+          ...recentErrors[0],
+          error_code: 'NO_AVAILABLE_CHANNEL',
+          explanation: 'No channel',
+          suggestion: 'Switch model',
+        }
+      ]
+    })
+    const text = wrapper.text()
+
+    expect(text).toContain('This failure may be caused by a disabled model or no available channel')
+    expect(text).toContain('View available models')
   })
 
   it('uses empty states instead of fabricated values when data is missing', () => {

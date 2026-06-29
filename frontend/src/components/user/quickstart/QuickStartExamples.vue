@@ -24,6 +24,10 @@
           <code class="min-w-0 flex-1 truncate rounded bg-gray-50 px-2 py-1.5 font-mono text-xs text-gray-900 dark:bg-dark-800 dark:text-dark-100">
             {{ examples.model }}
           </code>
+          <button class="btn btn-sm btn-secondary" type="button" @click="copy('model', examples.model)">
+            <Icon name="copy" size="sm" />
+            {{ copiedKey === 'model' ? t('common.copied') : t('common.copy') }}
+          </button>
           <router-link class="btn btn-sm btn-secondary" to="/available-channels">
             <Icon name="externalLink" size="sm" />
             {{ t('quickStart.viewModels') }}
@@ -135,6 +139,11 @@ const commonErrors = computed(() => [
   { code: '429', text: t('quickStart.errors.429') },
   { code: '502', text: t('quickStart.errors.502') },
   { code: '503', text: t('quickStart.errors.503') },
+  { code: 'MODEL_DISABLED', text: t('quickStart.errors.MODEL_DISABLED') },
+  { code: 'NO_AVAILABLE_CHANNEL', text: t('quickStart.errors.NO_AVAILABLE_CHANNEL') },
+  { code: 'UPSTREAM_RATE_LIMITED', text: t('quickStart.errors.UPSTREAM_RATE_LIMITED') },
+  { code: 'UPSTREAM_5XX', text: t('quickStart.errors.UPSTREAM_5XX') },
+  { code: 'REQUEST_FORMAT_INVALID', text: t('quickStart.errors.REQUEST_FORMAT_INVALID') },
   { code: 'stream disconnected', text: t('quickStart.errors.streamDisconnected') },
 ])
 
