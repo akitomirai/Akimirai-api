@@ -2,19 +2,19 @@
 
 ## Choose A Model
 
-Users can open `/available-channels` to see the model catalog derived from real available channel data.
+Users can open `/available-channels` to see the model catalog returned by the authenticated backend catalog endpoint.
 
 Each model row shows:
 
 - model id to use in the `model` parameter
 - platform
-- user-visible availability
-- effective multiplier range from visible groups
+- user-visible availability and status reason
+- effective multiplier from visible groups
 - visible channel/group source
 - copy model action
 - Quick Start action
 
-No fake model, fake health, fake channel count, or fake availability is shown. If the platform has no visible model data, the page shows an empty state.
+No fake model, fake health, fake channel count, or fake availability is shown. If the catalog endpoint has no visible model data, the page shows an empty state.
 
 ## Quick Start From A Model
 
@@ -24,7 +24,7 @@ The model catalog links to:
 /quick-start?model=<MODEL_NAME>
 ```
 
-Quick Start validates the query model against the real available model list:
+Quick Start validates the query model against `/api/v1/user/models/catalog`:
 
 - If available, examples use that model.
 - If missing or unavailable, examples fall back to a recommended available model and show a warning.

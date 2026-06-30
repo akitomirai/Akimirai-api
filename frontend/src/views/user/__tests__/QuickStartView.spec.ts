@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import QuickStartView from '../QuickStartView.vue'
 import userChannelsAPI from '@/api/channels'
 import { useAppStore } from '@/stores'
-import type { UserAvailableChannel } from '@/api/channels'
+import type { UserModelCatalogItem } from '@/api/channels'
 
 vi.mock('vue-i18n', () => ({
   createI18n: () => ({
@@ -31,7 +31,8 @@ vi.mock('@/stores', () => ({
 
 vi.mock('@/api/channels', () => ({
   default: {
-    getAvailable: vi.fn()
+    getAvailable: vi.fn(),
+    getModelCatalog: vi.fn(),
   }
 }))
 
@@ -41,32 +42,38 @@ vi.mock('@/composables/useClipboard', () => ({
   })
 }))
 
-const channels: UserAvailableChannel[] = [
+const catalog: UserModelCatalogItem[] = [
   {
-    name: 'safe-channel',
-    description: '',
-    platforms: [
+    id: 'openai:gpt-available',
+    display_name: 'gpt-available',
+    model_id: 'gpt-available',
+    provider: 'openai',
+    family: 'GPT',
+    status: 'available',
+    status_reason: '当前有可用渠道',
+    billing_multiplier: 1,
+    billing_description: '1x',
+    supports_streaming: true,
+    supports_vision: false,
+    supports_tools: true,
+    supports_json: true,
+    context_window: 128000,
+    recommended_use: null,
+    available_channel_count: 1,
+    quick_start_url: '/quick-start?model=gpt-available',
+    updated_at: null,
+    channels: ['safe-channel'],
+    groups: [
       {
+        id: 1,
+        name: 'Pro',
         platform: 'openai',
-        groups: [
-          {
-            id: 1,
-            name: 'Pro',
-            platform: 'openai',
-            subscription_type: 'standard',
-            rate_multiplier: 1,
-            is_exclusive: false,
-          },
-        ],
-        supported_models: [
-          {
-            name: 'gpt-available',
-            platform: 'openai',
-            pricing: null,
-          },
-        ],
+        subscription_type: 'standard',
+        rate_multiplier: 1,
+        is_exclusive: false,
       },
     ],
+    pricing: null,
   },
 ]
 
@@ -76,7 +83,7 @@ const mountComponent = async (query: Record<string, string> = {}) => {
     cachedPublicSettings: { api_base_url: 'https://example.com', payment_enabled: true },
     fetchPublicSettings: vi.fn().mockResolvedValue(undefined),
   } as unknown as ReturnType<typeof useAppStore>)
-  vi.mocked(userChannelsAPI.getAvailable).mockResolvedValue(channels)
+  vi.mocked(userChannelsAPI.getModelCatalog).mockResolvedValue(catalog)
 
   const wrapper = mount(QuickStartView, {
     global: {

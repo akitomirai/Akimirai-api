@@ -67,8 +67,8 @@ import { useAppStore } from '@/stores'
 import userChannelsAPI from '@/api/channels'
 import { getBrowserOriginFallback, normalizeOpenAIBaseUrl } from '@/utils/quickStart'
 import {
-  deriveModelCatalog,
   selectQuickStartCatalogModel,
+  toModelCatalogItems,
   type ModelCatalogItem,
 } from '@/utils/modelCatalog'
 
@@ -108,8 +108,8 @@ async function loadData() {
   loadError.value = false
   try {
     await appStore.fetchPublicSettings()
-    const channels = await userChannelsAPI.getAvailable()
-    modelCatalog.value = deriveModelCatalog(channels)
+    const catalog = await userChannelsAPI.getModelCatalog()
+    modelCatalog.value = toModelCatalogItems(catalog)
   } catch (error) {
     console.error('[QuickStartView] failed to load quick start data:', error)
     loadError.value = true

@@ -1,61 +1,80 @@
 import { describe, expect, it } from 'vitest'
 import {
   deriveModelAvailabilityStatus,
-  deriveModelCatalog,
   findCatalogModel,
   formatMultiplierRange,
   isModelAvailabilityErrorCode,
   selectQuickStartCatalogModel,
+  toModelCatalogItems,
 } from '../modelCatalog'
-import type { UserAvailableChannel } from '@/api/channels'
+import type { UserModelCatalogItem } from '@/api/channels'
 
-const channels: UserAvailableChannel[] = [
+const catalogPayload: UserModelCatalogItem[] = [
   {
-    name: 'safe-visible-channel',
-    description: 'visible',
-    platforms: [
+    id: 'openai:gpt-test-model',
+    display_name: 'GPT test model',
+    model_id: 'gpt-test-model',
+    provider: 'openai',
+    family: 'GPT',
+    status: 'available',
+    status_reason: '当前有可用渠道',
+    billing_multiplier: 1.5,
+    billing_description: '1.5x',
+    supports_streaming: true,
+    supports_vision: false,
+    supports_tools: true,
+    supports_json: true,
+    context_window: 128000,
+    recommended_use: null,
+    available_channel_count: 2,
+    quick_start_url: '/quick-start?model=gpt-test-model',
+    updated_at: '2026-06-30T01:00:00Z',
+    channels: ['safe-visible-channel'],
+    groups: [
       {
+        id: 10,
+        name: 'Pro',
         platform: 'openai',
-        groups: [
-          {
-            id: 10,
-            name: 'Pro',
-            platform: 'openai',
-            subscription_type: 'standard',
-            rate_multiplier: 1.2,
-            is_exclusive: false,
-          },
-        ],
-        supported_models: [
-          {
-            name: 'gpt-test-model',
-            platform: 'openai',
-            pricing: {
-              billing_mode: 'token',
-              input_price: 0.000001,
-              output_price: 0.000002,
-              cache_write_price: null,
-              cache_read_price: null,
-              image_output_price: null,
-              per_request_price: null,
-              intervals: [],
-            },
-          },
-        ],
+        subscription_type: 'standard',
+        rate_multiplier: 1.5,
+        is_exclusive: false,
       },
     ],
+    pricing: {
+      billing_mode: 'token',
+      input_price: 0.000001,
+      output_price: 0.000002,
+      cache_write_price: null,
+      cache_read_price: null,
+      image_output_price: null,
+      per_request_price: null,
+      intervals: [],
+    },
   },
 ]
 
 describe('modelCatalog', () => {
-  it('derives available models and effective multipliers from user-visible channels', () => {
-    const catalog = deriveModelCatalog(channels, { 10: 1.5 })
+  it('maps backend catalog DTOs without deriving fake availability', () => {
+    const catalog = toModelCatalogItems(catalogPayload)
 
     expect(catalog).toHaveLength(1)
-    expect(catalog[0].id).toBe('gpt-test-model')
-    expect(catalog[0].status).toBe('available')
-    expect(catalog[0].platform).toBe('openai')
-    expect(catalog[0].channelNames).toEqual(['safe-visible-channel'])
+    expect(catalog[0]).toMatchObject({
+      id: 'gpt-test-model',
+      modelId: 'gpt-test-model',
+      displayName: 'GPT test model',
+      status: 'available',
+      provider: 'openai',
+      platform: 'openai',
+      family: 'GPT',
+      billingMultiplier: 1.5,
+      availableChannelCount: 2,
+      supportsStreaming: true,
+      supportsVision: false,
+      supportsTools: true,
+      supportsJson: true,
+      contextWindow: 128000,
+      channelNames: ['safe-visible-channel'],
+    })
     expect(formatMultiplierRange(catalog[0])).toBe('1.5x')
   })
 
@@ -79,7 +98,7 @@ describe('modelCatalog', () => {
       hasAvailableChannel: false,
       hasModelConfig: true,
       hasSufficientData: true,
-    })).toBe('temporarily_unavailable')
+    })).toBe('unavailable')
 
     expect(deriveModelAvailabilityStatus({
       hasSufficientData: false,
@@ -87,7 +106,7 @@ describe('modelCatalog', () => {
   })
 
   it('selects the requested Quick Start model only when it is available', () => {
-    const catalog = deriveModelCatalog(channels)
+    const catalog = toModelCatalogItems(catalogPayload)
 
     expect(findCatalogModel(catalog, 'GPT-TEST-MODEL')?.id).toBe('gpt-test-model')
     expect(selectQuickStartCatalogModel(catalog, 'gpt-test-model')).toMatchObject({
@@ -103,28 +122,18 @@ describe('modelCatalog', () => {
   })
 
   it('does not copy sensitive extra payload fields into catalog items', () => {
-    const unsafeChannels = [
+    const unsafePayload = [
       {
-        ...channels[0],
+        ...catalogPayload[0],
         upstream_token: 'token-should-not-render',
         cookie: 'cookie-should-not-render',
         private_key: 'private-key-should-not-render',
         prompt: 'prompt-should-not-render',
-        platforms: [
-          {
-            ...channels[0].platforms[0],
-            supported_models: [
-              {
-                ...channels[0].platforms[0].supported_models[0],
-                api_key: 'sk-test-placeholder',
-              },
-            ],
-          },
-        ],
+        api_key: 'sk-test-placeholder',
       },
-    ] as unknown as UserAvailableChannel[]
+    ] as unknown as UserModelCatalogItem[]
 
-    const serialized = JSON.stringify(deriveModelCatalog(unsafeChannels))
+    const serialized = JSON.stringify(toModelCatalogItems(unsafePayload))
 
     expect(serialized).not.toContain('token-should-not-render')
     expect(serialized).not.toContain('cookie-should-not-render')

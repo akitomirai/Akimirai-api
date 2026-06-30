@@ -63,6 +63,32 @@ export interface UserAvailableChannel {
   platforms: UserChannelPlatformSection[]
 }
 
+export type UserModelAvailabilityStatus = 'available' | 'maintenance' | 'unavailable' | 'unknown'
+
+export interface UserModelCatalogItem {
+  id: string
+  display_name: string
+  model_id: string
+  provider: string
+  family: string | null
+  status: UserModelAvailabilityStatus
+  status_reason: string
+  billing_multiplier: number | null
+  billing_description: string
+  supports_streaming: boolean | null
+  supports_vision: boolean | null
+  supports_tools: boolean | null
+  supports_json: boolean | null
+  context_window: number | null
+  recommended_use: string | null
+  available_channel_count: number
+  quick_start_url: string
+  updated_at: string | null
+  channels: string[]
+  groups: UserAvailableGroup[]
+  pricing: UserSupportedModelPricing | null
+}
+
 /** 列出当前用户可见的「可用渠道」（与 /groups/available 保持一致，返回平数组）。 */
 export async function getAvailable(options?: { signal?: AbortSignal }): Promise<UserAvailableChannel[]> {
   const { data } = await apiClient.get<UserAvailableChannel[]>('/channels/available', {
@@ -71,6 +97,13 @@ export async function getAvailable(options?: { signal?: AbortSignal }): Promise<
   return data
 }
 
-export const userChannelsAPI = { getAvailable }
+export async function getModelCatalog(options?: { signal?: AbortSignal }): Promise<UserModelCatalogItem[]> {
+  const { data } = await apiClient.get<UserModelCatalogItem[]>('/user/models/catalog', {
+    signal: options?.signal
+  })
+  return data
+}
+
+export const userChannelsAPI = { getAvailable, getModelCatalog }
 
 export default userChannelsAPI

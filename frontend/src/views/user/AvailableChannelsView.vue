@@ -69,12 +69,13 @@ import userChannelsAPI, { type UserAvailableChannel } from '@/api/channels'
 import userGroupsAPI from '@/api/groups'
 import { useAppStore } from '@/stores/app'
 import { extractApiErrorMessage } from '@/utils/apiError'
-import { deriveModelCatalog } from '@/utils/modelCatalog'
+import { toModelCatalogItems, type ModelCatalogItem } from '@/utils/modelCatalog'
 
 const { t } = useI18n()
 const appStore = useAppStore()
 
 const channels = ref<UserAvailableChannel[]>([])
+const modelCatalog = ref<ModelCatalogItem[]>([])
 const userGroupRates = ref<Record<number, number>>({})
 const loading = ref(false)
 const loadError = ref(false)
@@ -114,26 +115,37 @@ const filteredChannels = computed(() => {
     .filter((ch): ch is UserAvailableChannel => ch !== null)
 })
 
-const modelCatalogItems = computed(() => deriveModelCatalog(filteredChannels.value, userGroupRates.value))
+const modelCatalogItems = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return modelCatalog.value
+  return modelCatalog.value.filter((item) =>
+    item.id.toLowerCase().includes(q) ||
+    item.displayName.toLowerCase().includes(q) ||
+    item.provider.toLowerCase().includes(q) ||
+    item.channelNames.some((name) => name.toLowerCase().includes(q)) ||
+    item.groups.some((group) => group.name.toLowerCase().includes(q))
+  )
+})
 
 async function loadChannels() {
   loading.value = true
   loadError.value = false
   try {
-    // 渠道列表和用户专属倍率并发拉取。专属倍率失败不阻塞渠道展示——
-    // 失败时只是无法渲染专属倍率角标，降级为仅显示默认倍率。
-    const [list, rates] = await Promise.all([
+    const [list, catalog, rates] = await Promise.all([
       userChannelsAPI.getAvailable(),
+      userChannelsAPI.getModelCatalog(),
       userGroupsAPI.getUserGroupRates().catch((err: unknown) => {
         console.error('Failed to load user group rates:', err)
         return {} as Record<number, number>
       }),
     ])
     channels.value = list
+    modelCatalog.value = toModelCatalogItems(catalog)
     userGroupRates.value = rates
   } catch (err: unknown) {
     loadError.value = true
     channels.value = []
+    modelCatalog.value = []
     appStore.showError(extractApiErrorMessage(err, t('common.error')))
   } finally {
     loading.value = false

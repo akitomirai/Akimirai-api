@@ -64,7 +64,7 @@
         <tbody>
           <tr
             v-for="item in items"
-            :key="`${item.platform}-${item.id}`"
+            :key="`${item.provider}-${item.id}`"
             class="border-b border-gray-100 last:border-b-0 dark:border-dark-800"
           >
             <td class="px-3 py-3 align-top">
@@ -72,18 +72,21 @@
                 {{ item.id }}
               </code>
               <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">
-                {{ t('availableChannels.modelCatalog.streamingUnknown', 'Streaming support is not declared by this data source.') }}
+                {{ capabilitySummary(item) }}
               </p>
             </td>
             <td class="px-3 py-3 align-top">
               <span class="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium" :class="statusClass(item.status)">
                 {{ statusLabel(item.status) }}
               </span>
+              <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">
+                {{ item.statusReason || '-' }}
+              </p>
             </td>
             <td class="px-3 py-3 align-top">
-              <span class="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium uppercase" :class="platformBadgeClass(item.platform)">
-                <PlatformIcon :platform="item.platform as GroupPlatform" size="xs" />
-                {{ item.platform }}
+              <span class="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium uppercase" :class="platformBadgeClass(item.provider)">
+                <PlatformIcon :platform="item.provider as GroupPlatform" size="xs" />
+                {{ item.provider }}
               </span>
             </td>
             <td class="px-3 py-3 align-top">
@@ -98,7 +101,7 @@
                   {{ item.channelNames.join(', ') || '-' }}
                 </p>
                 <p class="truncate text-xs text-gray-500 dark:text-dark-400">
-                  {{ item.groups.map((group) => group.name).join(', ') || '-' }}
+                  {{ sourceSummary(item) }}
                 </p>
               </div>
             </td>
@@ -108,7 +111,7 @@
                   <Icon name="copy" size="sm" />
                   {{ copiedModel === item.id ? t('common.copied', 'Copied') : t('common.copy', 'Copy') }}
                 </button>
-                <router-link class="btn btn-sm btn-primary" :to="{ path: '/quick-start', query: { model: item.id } }">
+                <router-link class="btn btn-sm btn-primary" :to="quickStartLink(item)">
                   <Icon name="externalLink" size="sm" />
                   {{ t('availableChannels.modelCatalog.useModel', 'Use') }}
                 </router-link>
@@ -156,8 +159,8 @@ function statusLabel(status: ModelAvailabilityStatus): string {
       return t('availableChannels.modelCatalog.status.available', 'Available')
     case 'maintenance':
       return t('availableChannels.modelCatalog.status.maintenance', 'Maintenance')
-    case 'temporarily_unavailable':
-      return t('availableChannels.modelCatalog.status.temporarilyUnavailable', 'Temporarily unavailable')
+    case 'unavailable':
+      return t('availableChannels.modelCatalog.status.unavailable', 'Unavailable')
     default:
       return t('availableChannels.modelCatalog.status.unknown', 'Unknown')
   }
@@ -169,7 +172,7 @@ function statusClass(status: ModelAvailabilityStatus): string {
       return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
     case 'maintenance':
       return 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
-    case 'temporarily_unavailable':
+    case 'unavailable':
       return 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
     default:
       return 'bg-gray-100 text-gray-600 dark:bg-dark-700 dark:text-dark-300'
@@ -177,10 +180,41 @@ function statusClass(status: ModelAvailabilityStatus): string {
 }
 
 function pricingLabel(item: ModelCatalogItem): string {
+  if (item.billingDescription) {
+    return item.billingDescription
+  }
   if (!item.pricing) {
     return t('availableChannels.modelCatalog.noPricing', 'No model pricing details')
   }
   return t('availableChannels.modelCatalog.pricingAvailable', 'Pricing details available')
+}
+
+function capabilitySummary(item: ModelCatalogItem): string {
+  const parts = [
+    item.family,
+    item.contextWindow ? `${item.contextWindow} context` : null,
+    capabilityLabel('stream', item.supportsStreaming),
+    capabilityLabel('vision', item.supportsVision),
+    capabilityLabel('tools', item.supportsTools),
+    capabilityLabel('json', item.supportsJson),
+  ].filter(Boolean)
+  return parts.join(' / ') || t('availableChannels.modelCatalog.capabilityUnknown', 'Capabilities not declared')
+}
+
+function capabilityLabel(name: string, supported: boolean | null): string | null {
+  if (supported == null) return null
+  return supported ? name : `${name}: no`
+}
+
+function sourceSummary(item: ModelCatalogItem): string {
+  const groupNames = item.groups.map((group) => group.name).join(', ')
+  const count = `${item.availableChannelCount} available channel(s)`
+  return groupNames ? `${groupNames} / ${count}` : count
+}
+
+function quickStartLink(item: ModelCatalogItem) {
+  if (item.quickStartUrl) return item.quickStartUrl
+  return { path: '/quick-start', query: { model: item.id } }
 }
 
 async function copyModel(modelId: string) {

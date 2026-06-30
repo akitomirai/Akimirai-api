@@ -10,6 +10,16 @@ Use the OpenAI-compatible Base URL with exactly one `/v1` suffix:
 
 Avoid both missing `/v1` and duplicate `/v1/v1`.
 
+## Model
+
+Use the `model` value copied from `/available-channels`, or from `GET /api/v1/user/models/catalog` in authenticated UI flows:
+
+```text
+<MODEL_NAME>
+```
+
+Do not infer availability from a static list. If the selected model becomes unavailable, choose another available model from the catalog.
+
 ## curl
 
 ```bash

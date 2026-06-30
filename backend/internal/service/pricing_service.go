@@ -73,6 +73,12 @@ type LiteLLMModelPricing struct {
 	SupportsPromptCaching               bool    `json:"supports_prompt_caching"`
 	OutputCostPerImage                  float64 `json:"output_cost_per_image"`       // 图片生成模型每张图片价格
 	OutputCostPerImageToken             float64 `json:"output_cost_per_image_token"` // 图片输出 token 价格
+	MaxInputTokens                      *int    `json:"max_input_tokens,omitempty"`
+	SupportsNativeStreaming             *bool   `json:"supports_native_streaming,omitempty"`
+	SupportsFunctionCalling             *bool   `json:"supports_function_calling,omitempty"`
+	SupportsToolChoice                  *bool   `json:"supports_tool_choice,omitempty"`
+	SupportsResponseSchema              *bool   `json:"supports_response_schema,omitempty"`
+	SupportsVision                      *bool   `json:"supports_vision,omitempty"`
 }
 
 // PricingRemoteClient 远程价格数据获取接口
@@ -97,6 +103,12 @@ type LiteLLMRawEntry struct {
 	SupportsPromptCaching               bool     `json:"supports_prompt_caching"`
 	OutputCostPerImage                  *float64 `json:"output_cost_per_image"`
 	OutputCostPerImageToken             *float64 `json:"output_cost_per_image_token"`
+	MaxInputTokens                      *int     `json:"max_input_tokens"`
+	SupportsNativeStreaming             *bool    `json:"supports_native_streaming"`
+	SupportsFunctionCalling             *bool    `json:"supports_function_calling"`
+	SupportsToolChoice                  *bool    `json:"supports_tool_choice"`
+	SupportsResponseSchema              *bool    `json:"supports_response_schema"`
+	SupportsVision                      *bool    `json:"supports_vision"`
 }
 
 // PricingService 动态价格服务
@@ -414,6 +426,24 @@ func (s *PricingService) parsePricingData(body []byte) (map[string]*LiteLLMModel
 		if entry.OutputCostPerImageToken != nil {
 			pricing.OutputCostPerImageToken = *entry.OutputCostPerImageToken
 		}
+		if entry.MaxInputTokens != nil {
+			pricing.MaxInputTokens = entry.MaxInputTokens
+		}
+		if entry.SupportsNativeStreaming != nil {
+			pricing.SupportsNativeStreaming = entry.SupportsNativeStreaming
+		}
+		if entry.SupportsFunctionCalling != nil {
+			pricing.SupportsFunctionCalling = entry.SupportsFunctionCalling
+		}
+		if entry.SupportsToolChoice != nil {
+			pricing.SupportsToolChoice = entry.SupportsToolChoice
+		}
+		if entry.SupportsResponseSchema != nil {
+			pricing.SupportsResponseSchema = entry.SupportsResponseSchema
+		}
+		if entry.SupportsVision != nil {
+			pricing.SupportsVision = entry.SupportsVision
+		}
 
 		result[modelName] = pricing
 	}
@@ -575,6 +605,15 @@ func (s *PricingService) GetModelPricing(modelName string) *LiteLLMModelPricing 
 	}
 
 	return nil
+}
+
+// GetModelCapabilityMetadata returns non-billing metadata from the pricing catalog.
+// It intentionally reuses the same lookup rules as GetModelPricing.
+func (s *PricingService) GetModelCapabilityMetadata(modelName string) *LiteLLMModelPricing {
+	if s == nil {
+		return nil
+	}
+	return s.GetModelPricing(modelName)
 }
 
 func (s *PricingService) buildModelLookupCandidates(modelLower string) []string {

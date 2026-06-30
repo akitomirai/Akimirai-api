@@ -84,7 +84,7 @@ import { usageAPI, type UserDashboardStats as UserStatsType } from '@/api/usage'
 import userChannelsAPI from '@/api/channels'
 import { getMyPlatformQuotas } from '@/api/user'
 import { getBrowserOriginFallback, normalizeOpenAIBaseUrl } from '@/utils/quickStart'
-import { deriveModelCatalog, pickRecommendedCatalogModel, type ModelCatalogItem } from '@/utils/modelCatalog'
+import { pickRecommendedCatalogModel, toModelCatalogItems, type ModelCatalogItem } from '@/utils/modelCatalog'
 import type { ApiKey, ModelStat, PlatformQuotaItem, TrendDataPoint, UsageLog, UserErrorRequest } from '@/types'
 
 const { t } = useI18n()
@@ -225,8 +225,8 @@ const loadAvailableModels = async () => {
   loadingModels.value = true
   modelsError.value = false
   try {
-    const channels = await userChannelsAPI.getAvailable()
-    availableModels.value = deriveModelCatalog(channels)
+    const catalog = await userChannelsAPI.getModelCatalog()
+    availableModels.value = toModelCatalogItems(catalog)
   } catch (error) {
     console.error('Failed to load available models:', error instanceof Error ? error.message : error)
     modelsError.value = true

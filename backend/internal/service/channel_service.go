@@ -991,6 +991,22 @@ func detectConflicts(entries []modelEntry, platform, errCode, label string) erro
 	return nil
 }
 
+// ListAll returns all channels for user-facing aggregation and admin-free read paths.
+// The result is cloned so callers can safely mutate the returned slice.
+func (s *ChannelService) ListAll(ctx context.Context) ([]Channel, error) {
+	channels, err := s.repo.ListAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list all channels: %w", err)
+	}
+	out := make([]Channel, len(channels))
+	for i := range channels {
+		if cloned := channels[i].Clone(); cloned != nil {
+			out[i] = *cloned
+		}
+	}
+	return out, nil
+}
+
 // --- Input types ---
 
 // CreateChannelInput 创建渠道输入

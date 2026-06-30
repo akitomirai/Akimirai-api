@@ -18,8 +18,17 @@ vi.mock('@/composables/useClipboard', () => ({
 const item: ModelCatalogItem = {
   id: 'gpt-test-model',
   displayName: 'gpt-test-model',
+  modelId: 'gpt-test-model',
+  provider: 'openai',
   platform: 'openai',
+  family: 'GPT',
   status: 'available',
+  statusReason: '当前有可用渠道',
+  billingMultiplier: 1.2,
+  billingDescription: '1.2x',
+  availableChannelCount: 1,
+  quickStartUrl: '/quick-start?model=gpt-test-model',
+  updatedAt: '2026-06-30T01:00:00Z',
   channelNames: ['safe-channel'],
   groups: [
     {
@@ -33,7 +42,12 @@ const item: ModelCatalogItem = {
     },
   ],
   pricing: null,
-  supportsStreaming: 'unknown',
+  supportsStreaming: true,
+  supportsVision: false,
+  supportsTools: true,
+  supportsJson: true,
+  contextWindow: 128000,
+  recommendedUse: null,
 }
 
 const mountComponent = (props = {}) => mount(ModelCatalogPanel, {

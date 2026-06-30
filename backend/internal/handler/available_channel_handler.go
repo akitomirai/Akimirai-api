@@ -1,7 +1,11 @@
 package handler
 
 import (
+	"fmt"
+	"net/url"
 	"sort"
+	"strings"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
@@ -23,6 +27,7 @@ import (
 type AvailableChannelHandler struct {
 	channelService *service.ChannelService
 	apiKeyService  *service.APIKeyService
+	pricingService *service.PricingService
 	settingService *service.SettingService
 }
 
@@ -30,11 +35,13 @@ type AvailableChannelHandler struct {
 func NewAvailableChannelHandler(
 	channelService *service.ChannelService,
 	apiKeyService *service.APIKeyService,
+	pricingService *service.PricingService,
 	settingService *service.SettingService,
 ) *AvailableChannelHandler {
 	return &AvailableChannelHandler{
 		channelService: channelService,
 		apiKeyService:  apiKeyService,
+		pricingService: pricingService,
 		settingService: settingService,
 	}
 }
@@ -280,4 +287,454 @@ func toUserPricing(p *service.ChannelModelPricing) *userSupportedModelPricing {
 		PerRequestPrice:  p.PerRequestPrice,
 		Intervals:        intervals,
 	}
+}
+
+type userModelCatalogItem struct {
+	ID                    string                     `json:"id"`
+	DisplayName           string                     `json:"display_name"`
+	ModelID               string                     `json:"model_id"`
+	Provider              string                     `json:"provider"`
+	Family                *string                    `json:"family"`
+	Status                string                     `json:"status"`
+	StatusReason          string                     `json:"status_reason"`
+	BillingMultiplier     *float64                   `json:"billing_multiplier"`
+	BillingDescription    string                     `json:"billing_description"`
+	SupportsStreaming     *bool                      `json:"supports_streaming"`
+	SupportsVision        *bool                      `json:"supports_vision"`
+	SupportsTools         *bool                      `json:"supports_tools"`
+	SupportsJSON          *bool                      `json:"supports_json"`
+	ContextWindow         *int                       `json:"context_window"`
+	RecommendedUse        *string                    `json:"recommended_use"`
+	AvailableChannelCount int                        `json:"available_channel_count"`
+	QuickStartURL         string                     `json:"quick_start_url"`
+	UpdatedAt             *time.Time                 `json:"updated_at"`
+	Channels              []string                   `json:"channels"`
+	Groups                []userAvailableGroup       `json:"groups"`
+	Pricing               *userSupportedModelPricing `json:"pricing"`
+}
+
+type catalogAccumulator struct {
+	item                  userModelCatalogItem
+	channelNames          map[string]struct{}
+	groupIDs              map[int64]struct{}
+	multipliers           []float64
+	activeVisibleCount    int
+	nonActiveVisibleCount int
+	configuredOnlyCount   int
+	updatedAt             *time.Time
+}
+
+// Catalog lists the current user's model catalog as an aggregated, user-safe DTO.
+// GET /api/v1/user/models/catalog
+func (h *AvailableChannelHandler) Catalog(c *gin.Context) {
+	subject, ok := middleware.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	if !h.featureEnabled(c) {
+		response.Success(c, []userModelCatalogItem{})
+		return
+	}
+
+	userGroups, err := h.apiKeyService.GetAvailableGroups(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	userGroupRates, err := h.apiKeyService.GetUserGroupRates(c.Request.Context(), subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	groupRefs := toAvailableGroupRefs(userGroups)
+	allowedGroupIDs := make(map[int64]struct{}, len(groupRefs))
+	for _, group := range groupRefs {
+		allowedGroupIDs[group.ID] = struct{}{}
+	}
+
+	channels, err := h.channelService.ListAll(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	items := h.buildModelCatalog(channels, groupRefs, allowedGroupIDs, userGroupRates)
+	response.Success(c, items)
+}
+
+func (h *AvailableChannelHandler) buildModelCatalog(
+	channels []service.Channel,
+	groupRefs []service.AvailableGroupRef,
+	allowedGroupIDs map[int64]struct{},
+	userGroupRates map[int64]float64,
+) []userModelCatalogItem {
+	byGroupID := make(map[int64]service.AvailableGroupRef, len(groupRefs))
+	for _, group := range groupRefs {
+		byGroupID[group.ID] = group
+	}
+
+	accs := make(map[string]*catalogAccumulator)
+	for i := range channels {
+		ch := channels[i]
+		visibleGroups := visibleGroupsForChannel(ch.GroupIDs, byGroupID, allowedGroupIDs)
+		if len(visibleGroups) == 0 {
+			continue
+		}
+		visiblePlatforms := platformsForGroups(visibleGroups)
+		if len(visiblePlatforms) == 0 {
+			continue
+		}
+
+		supportedModels := ch.SupportedModels()
+		for j := range supportedModels {
+			model := supportedModels[j]
+			if _, ok := visiblePlatforms[model.Platform]; !ok {
+				continue
+			}
+			acc := h.catalogAccumulatorFor(accs, model.Platform, model.Name)
+			if ch.Name != "" {
+				acc.channelNames[ch.Name] = struct{}{}
+			}
+			if acc.item.Pricing == nil && model.Pricing != nil {
+				acc.item.Pricing = toUserPricing(model.Pricing)
+			}
+			acc.addGroups(visibleGroups, model.Platform, userGroupRates)
+			acc.updatedAt = latestTime(acc.updatedAt, ch.UpdatedAt)
+			switch ch.Status {
+			case service.StatusActive:
+				acc.activeVisibleCount++
+			default:
+				acc.nonActiveVisibleCount++
+			}
+			h.applyCatalogMetadata(&acc.item, model.Name)
+		}
+
+		for _, model := range configuredModelsWithoutSupported(ch, supportedModels, visiblePlatforms) {
+			acc := h.catalogAccumulatorFor(accs, model.Platform, model.Name)
+			acc.configuredOnlyCount++
+			acc.addGroups(visibleGroups, model.Platform, userGroupRates)
+			acc.updatedAt = latestTime(acc.updatedAt, ch.UpdatedAt)
+			h.applyCatalogMetadata(&acc.item, model.Name)
+		}
+	}
+
+	out := make([]userModelCatalogItem, 0, len(accs))
+	for _, acc := range accs {
+		acc.finalize()
+		out = append(out, acc.item)
+	}
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].Provider != out[j].Provider {
+			return out[i].Provider < out[j].Provider
+		}
+		return strings.ToLower(out[i].ModelID) < strings.ToLower(out[j].ModelID)
+	})
+	return out
+}
+
+func (h *AvailableChannelHandler) catalogAccumulatorFor(
+	accs map[string]*catalogAccumulator,
+	provider string,
+	modelID string,
+) *catalogAccumulator {
+	provider = strings.TrimSpace(provider)
+	modelID = strings.TrimSpace(modelID)
+	key := strings.ToLower(provider) + "\x00" + strings.ToLower(modelID)
+	if acc, ok := accs[key]; ok {
+		return acc
+	}
+	item := userModelCatalogItem{
+		ID:            provider + ":" + modelID,
+		DisplayName:   modelID,
+		ModelID:       modelID,
+		Provider:      provider,
+		Status:        "unknown",
+		StatusReason:  "数据不足，暂无法判断",
+		QuickStartURL: "/quick-start?model=" + url.QueryEscape(modelID),
+		Channels:      []string{},
+		Groups:        []userAvailableGroup{},
+	}
+	if family := modelFamilyLabel(provider, modelID); family != "" {
+		item.Family = &family
+	}
+	acc := &catalogAccumulator{
+		item:         item,
+		channelNames: make(map[string]struct{}),
+		groupIDs:     make(map[int64]struct{}),
+	}
+	accs[key] = acc
+	return acc
+}
+
+func (h *AvailableChannelHandler) applyCatalogMetadata(item *userModelCatalogItem, modelID string) {
+	if item == nil || h.pricingService == nil {
+		return
+	}
+	pricing := h.pricingService.GetModelCapabilityMetadata(modelID)
+	if pricing == nil {
+		return
+	}
+	if item.ContextWindow == nil && pricing.MaxInputTokens != nil {
+		item.ContextWindow = pricing.MaxInputTokens
+	}
+	if item.SupportsStreaming == nil && pricing.SupportsNativeStreaming != nil {
+		item.SupportsStreaming = pricing.SupportsNativeStreaming
+	}
+	if item.SupportsVision == nil && pricing.SupportsVision != nil {
+		item.SupportsVision = pricing.SupportsVision
+	}
+	if item.SupportsTools == nil {
+		item.SupportsTools = boolOr(pricing.SupportsFunctionCalling, pricing.SupportsToolChoice)
+	}
+	if item.SupportsJSON == nil && pricing.SupportsResponseSchema != nil {
+		item.SupportsJSON = pricing.SupportsResponseSchema
+	}
+}
+
+func (a *catalogAccumulator) addGroups(
+	groups []service.AvailableGroupRef,
+	platform string,
+	userGroupRates map[int64]float64,
+) {
+	for _, group := range groups {
+		if group.Platform != platform {
+			continue
+		}
+		if _, ok := a.groupIDs[group.ID]; ok {
+			continue
+		}
+		a.groupIDs[group.ID] = struct{}{}
+		rate := group.RateMultiplier
+		if override, ok := userGroupRates[group.ID]; ok {
+			rate = override
+		}
+		if rate >= 0 {
+			a.multipliers = append(a.multipliers, rate)
+		}
+		a.item.Groups = append(a.item.Groups, userAvailableGroup{
+			ID:               group.ID,
+			Name:             group.Name,
+			Platform:         group.Platform,
+			SubscriptionType: group.SubscriptionType,
+			RateMultiplier:   rate,
+			IsExclusive:      group.IsExclusive,
+		})
+	}
+}
+
+func (a *catalogAccumulator) finalize() {
+	a.item.AvailableChannelCount = a.activeVisibleCount
+	a.item.Channels = sortedStringKeys(a.channelNames)
+	a.item.UpdatedAt = a.updatedAt
+	a.item.BillingMultiplier = minFloatPtr(a.multipliers)
+	a.item.BillingDescription = billingDescription(a.multipliers)
+	switch {
+	case a.activeVisibleCount > 0:
+		a.item.Status = "available"
+		a.item.StatusReason = "当前有可用渠道"
+	case a.nonActiveVisibleCount > 0:
+		a.item.Status = "maintenance"
+		a.item.StatusReason = "相关渠道处于维护或停用状态"
+	case a.configuredOnlyCount > 0:
+		a.item.Status = "unavailable"
+		a.item.StatusReason = "当前没有可用渠道"
+	default:
+		a.item.Status = "unknown"
+		a.item.StatusReason = "数据不足，暂无法判断"
+	}
+}
+
+func toAvailableGroupRefs(groups []service.Group) []service.AvailableGroupRef {
+	out := make([]service.AvailableGroupRef, 0, len(groups))
+	for _, group := range groups {
+		out = append(out, service.AvailableGroupRef{
+			ID:               group.ID,
+			Name:             group.Name,
+			Platform:         group.Platform,
+			SubscriptionType: group.SubscriptionType,
+			RateMultiplier:   group.RateMultiplier,
+			IsExclusive:      group.IsExclusive,
+		})
+	}
+	return out
+}
+
+func visibleGroupsForChannel(
+	groupIDs []int64,
+	byGroupID map[int64]service.AvailableGroupRef,
+	allowed map[int64]struct{},
+) []service.AvailableGroupRef {
+	out := make([]service.AvailableGroupRef, 0, len(groupIDs))
+	for _, groupID := range groupIDs {
+		if _, ok := allowed[groupID]; !ok {
+			continue
+		}
+		if group, ok := byGroupID[groupID]; ok {
+			out = append(out, group)
+		}
+	}
+	return out
+}
+
+func platformsForGroups(groups []service.AvailableGroupRef) map[string]struct{} {
+	out := make(map[string]struct{}, len(groups))
+	for _, group := range groups {
+		if group.Platform != "" {
+			out[group.Platform] = struct{}{}
+		}
+	}
+	return out
+}
+
+func configuredModelsWithoutSupported(
+	ch service.Channel,
+	supported []service.SupportedModel,
+	visiblePlatforms map[string]struct{},
+) []service.SupportedModel {
+	seen := make(map[string]struct{}, len(supported))
+	for _, model := range supported {
+		seen[strings.ToLower(model.Platform)+"\x00"+strings.ToLower(model.Name)] = struct{}{}
+	}
+	out := make([]service.SupportedModel, 0)
+	for _, pricing := range ch.ModelPricing {
+		if _, ok := visiblePlatforms[pricing.Platform]; !ok {
+			continue
+		}
+		for _, modelName := range pricing.Models {
+			if _, wildcard := splitUserCatalogWildcard(modelName); wildcard {
+				continue
+			}
+			key := strings.ToLower(pricing.Platform) + "\x00" + strings.ToLower(modelName)
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			pricingCopy := pricing.Clone()
+			out = append(out, service.SupportedModel{Name: modelName, Platform: pricing.Platform, Pricing: &pricingCopy})
+		}
+	}
+	return out
+}
+
+func splitUserCatalogWildcard(model string) (string, bool) {
+	return strings.TrimSuffix(model, "*"), strings.HasSuffix(model, "*")
+}
+
+func modelFamilyLabel(provider, modelID string) string {
+	normalized := strings.ToLower(strings.TrimSpace(modelID))
+	normalized = strings.TrimPrefix(normalized, "models/")
+	switch {
+	case strings.HasPrefix(normalized, "gpt-"),
+		strings.HasPrefix(normalized, "o1"),
+		strings.HasPrefix(normalized, "o3"),
+		strings.HasPrefix(normalized, "o4"),
+		strings.HasPrefix(normalized, "o5"),
+		strings.HasPrefix(normalized, "codex"):
+		return "GPT"
+	case strings.HasPrefix(normalized, "claude-"),
+		strings.Contains(normalized, ".claude-"):
+		return "Claude"
+	case strings.HasPrefix(normalized, "gemini-"):
+		return "Gemini"
+	case strings.HasPrefix(normalized, "glm-"),
+		strings.HasPrefix(normalized, "chatglm"),
+		strings.HasPrefix(normalized, "cogview"),
+		strings.HasPrefix(normalized, "cogvideo"):
+		return "GLM"
+	case strings.HasPrefix(normalized, "deepseek-"):
+		return "DeepSeek"
+	case strings.HasPrefix(normalized, "grok-"):
+		return "Grok"
+	case strings.HasPrefix(normalized, "qwen"),
+		strings.HasPrefix(normalized, "qwq-"):
+		return "Qwen"
+	case strings.HasPrefix(normalized, "kimi-"),
+		strings.HasPrefix(normalized, "moonshot-"):
+		return "Kimi"
+	}
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case service.PlatformOpenAI, "openai-compatible":
+		return "GPT"
+	case service.PlatformAnthropic, "claude", service.PlatformAntigravity:
+		return "Claude"
+	case service.PlatformGemini, "google":
+		return "Gemini"
+	case service.PlatformGrok, "xai", "x-ai":
+		return "Grok"
+	default:
+		return ""
+	}
+}
+
+func boolOr(values ...*bool) *bool {
+	hasValue := false
+	out := false
+	for _, value := range values {
+		if value == nil {
+			continue
+		}
+		hasValue = true
+		out = out || *value
+	}
+	if !hasValue {
+		return nil
+	}
+	return &out
+}
+
+func sortedStringKeys(values map[string]struct{}) []string {
+	out := make([]string, 0, len(values))
+	for value := range values {
+		out = append(out, value)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func latestTime(current *time.Time, next time.Time) *time.Time {
+	if next.IsZero() {
+		return current
+	}
+	if current == nil || next.After(*current) {
+		t := next
+		return &t
+	}
+	return current
+}
+
+func minFloatPtr(values []float64) *float64 {
+	if len(values) == 0 {
+		return nil
+	}
+	min := values[0]
+	for _, value := range values[1:] {
+		if value < min {
+			min = value
+		}
+	}
+	return &min
+}
+
+func billingDescription(values []float64) string {
+	if len(values) == 0 {
+		return "暂无可展示的倍率数据"
+	}
+	min, max := values[0], values[0]
+	for _, value := range values[1:] {
+		if value < min {
+			min = value
+		}
+		if value > max {
+			max = value
+		}
+	}
+	if min == max {
+		return fmt.Sprintf("当前可用路径倍率为 %sx", formatCatalogMultiplier(min))
+	}
+	return fmt.Sprintf("当前可用路径倍率范围为 %sx - %sx", formatCatalogMultiplier(min), formatCatalogMultiplier(max))
+}
+
+func formatCatalogMultiplier(value float64) string {
+	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", value), "0"), ".")
 }

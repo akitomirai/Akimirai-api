@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
@@ -154,4 +155,86 @@ func TestBuildPlatformSections_GroupsByPlatform(t *testing.T) {
 	require.Equal(t, int64(2), sections[0].Groups[0].ID)
 	require.Len(t, sections[0].SupportedModels, 1)
 	require.Equal(t, "claude-sonnet-4-6", sections[0].SupportedModels[0].Name)
+}
+
+func TestBuildModelCatalog_AggregatesUserSafeMetadata(t *testing.T) {
+	inputPrice := 0.000001
+	outputPrice := 0.000002
+	now := time.Date(2026, 6, 30, 9, 30, 0, 0, time.UTC)
+	h := &AvailableChannelHandler{}
+	groups := []service.AvailableGroupRef{
+		{ID: 10, Name: "Pro", Platform: "openai", SubscriptionType: service.SubscriptionTypeStandard, RateMultiplier: 1.2},
+	}
+	channels := []service.Channel{
+		{
+			Name:      "active-safe-channel",
+			Status:    service.StatusActive,
+			UpdatedAt: now,
+			GroupIDs:  []int64{10},
+			ModelPricing: []service.ChannelModelPricing{
+				{
+					Platform:    "openai",
+					Models:      []string{"gpt-test-model"},
+					BillingMode: service.BillingModeToken,
+					InputPrice:  &inputPrice,
+					OutputPrice: &outputPrice,
+				},
+			},
+		},
+		{
+			Name:      "disabled-safe-channel",
+			Status:    service.StatusDisabled,
+			UpdatedAt: now.Add(-time.Hour),
+			GroupIDs:  []int64{10},
+			ModelPricing: []service.ChannelModelPricing{
+				{
+					Platform:    "openai",
+					Models:      []string{"gpt-maintenance-model"},
+					BillingMode: service.BillingModeToken,
+				},
+			},
+		},
+	}
+
+	items := h.buildModelCatalog(channels, groups, map[int64]struct{}{10: {}}, map[int64]float64{10: 1.5})
+
+	require.Len(t, items, 2)
+	byModel := make(map[string]userModelCatalogItem, len(items))
+	for _, item := range items {
+		byModel[item.ModelID] = item
+	}
+	available := byModel["gpt-test-model"]
+	require.Equal(t, "gpt-test-model", available.ModelID)
+	require.Equal(t, "openai", available.Provider)
+	require.Equal(t, "available", available.Status)
+	require.Equal(t, 1, available.AvailableChannelCount)
+	require.NotNil(t, available.BillingMultiplier)
+	require.Equal(t, 1.5, *available.BillingMultiplier)
+	require.Equal(t, []string{"active-safe-channel"}, available.Channels)
+	require.Len(t, available.Groups, 1)
+	require.Equal(t, 1.5, available.Groups[0].RateMultiplier)
+	require.NotNil(t, available.Pricing)
+	require.Equal(t, string(service.BillingModeToken), available.Pricing.BillingMode)
+	require.Equal(t, "/quick-start?model=gpt-test-model", available.QuickStartURL)
+
+	maintenance := byModel["gpt-maintenance-model"]
+	require.Equal(t, "gpt-maintenance-model", maintenance.ModelID)
+	require.Equal(t, "maintenance", maintenance.Status)
+	require.Equal(t, 0, maintenance.AvailableChannelCount)
+	require.Equal(t, []string{"disabled-safe-channel"}, maintenance.Channels)
+
+	raw, err := json.Marshal(items)
+	require.NoError(t, err)
+	serialized := string(raw)
+	for _, forbidden := range []string{
+		"billing_model_source",
+		"restrict_models",
+		"api_key",
+		"upstream_token",
+		"cookie",
+		"private_key",
+		"prompt",
+	} {
+		require.NotContains(t, serialized, forbidden)
+	}
 }
