@@ -16,6 +16,15 @@ Each model row shows:
 
 No fake model, fake health, fake channel count, or fake availability is shown. If the catalog endpoint has no visible model data, the page shows an empty state.
 
+## Model Status
+
+- `available`: this model currently has at least one user-visible active channel.
+- `maintenance`: related configuration is visible, but the related path is not active.
+- `unavailable`: real configuration exists, but there is no currently available user-visible path.
+- `unknown`: the system does not have enough reliable data to claim availability.
+
+When a model is not available, copy another `model` value from `/available-channels` and retry the request. Do not guess model availability from a static list.
+
 ## Quick Start From A Model
 
 The model catalog links to:

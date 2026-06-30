@@ -20,6 +20,8 @@ Use the `model` value copied from `/available-channels`, or from `GET /api/v1/us
 
 Do not infer availability from a static list. If the selected model becomes unavailable, choose another available model from the catalog.
 
+Quick Start examples update when a user opens `/quick-start?model=<MODEL_NAME>` from the model catalog. If the requested model is not available, Quick Start falls back to an available catalog model when one exists.
+
 ## curl
 
 ```bash

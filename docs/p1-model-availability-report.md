@@ -71,6 +71,7 @@ The endpoint supports all four status values, but real responses only show state
 - `docs/p1-model-availability-report.md`
 - `docs/user-onboarding-flow.md`
 - `docs/api-client-examples.md`
+- `docs/admin-operations-guide.md`
 
 ## Migrations
 
@@ -80,14 +81,16 @@ The endpoint supports all four status values, but real responses only show state
 
 - `git diff --check`: passed, with line-ending warnings for tracked docs only.
 - `go test ./...`: passed.
-- `go build -o $env:TEMP\sub2api-p1-3b-final.exe ./cmd/server`: passed.
+- `go build -o $env:TEMP\sub2api-p1-3b-followup.exe ./cmd/server`: passed.
 - `node_modules\.bin\vue-tsc.cmd --noEmit --pretty false`: passed.
 - `node_modules\.bin\eslint.cmd . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts`: passed.
 - Key Vitest:
   `node_modules\.bin\vitest.cmd run src/utils/__tests__/modelCatalog.spec.ts src/components/channels/__tests__/ModelCatalogPanel.spec.ts src/views/user/__tests__/QuickStartView.spec.ts`: passed, 3 files / 10 tests.
 - Full Vitest: `node_modules\.bin\vitest.cmd run`: passed, 122 files / 757 tests.
 - `node_modules\.bin\vite.cmd build`: passed, with existing dynamic-import and chunk-size warnings.
-- Docs ignore check: the three docs files match `.gitignore:131 docs/*`, but they are already tracked by Git.
+- Follow-up targeted backend unit command:
+  `go test -tags unit ./internal/handler -run "Test(UserModelCatalog|BuildModelCatalog|CatalogAccumulator|UserAvailableChannel|FilterUserVisibleGroups|ToUserSupportedModels|BuildPlatformSections)" -count=1`: passed.
+- Docs ignore check: tracked docs match `.gitignore:131 docs/*`; new docs must be explicitly added with `git add -f`.
 - Migration check: no migration files were added or changed.
 
 ## Security Checks

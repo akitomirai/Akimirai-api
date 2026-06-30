@@ -28,6 +28,18 @@ func TestUserAvailableChannel_Unauthenticated401(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
+func TestUserModelCatalog_Unauthenticated401(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := &AvailableChannelHandler{}
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/user/models/catalog", nil)
+
+	h.Catalog(c)
+
+	require.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
 func TestFilterUserVisibleGroups_IntersectionOnly(t *testing.T) {
 	// 渠道挂在 {g1, g2, g3}，用户只允许 {g1, g3} —— 响应必须仅含 g1/g3。
 	groups := []service.AvailableGroupRef{
@@ -230,11 +242,53 @@ func TestBuildModelCatalog_AggregatesUserSafeMetadata(t *testing.T) {
 		"billing_model_source",
 		"restrict_models",
 		"api_key",
+		"access_token",
+		"refresh_token",
 		"upstream_token",
 		"cookie",
 		"private_key",
+		"service_account",
 		"prompt",
 	} {
 		require.NotContains(t, serialized, forbidden)
+	}
+}
+
+func TestBuildModelCatalog_EmptyDataIsSafe(t *testing.T) {
+	h := &AvailableChannelHandler{}
+
+	items := h.buildModelCatalog(nil, nil, nil, nil)
+
+	require.Empty(t, items)
+}
+
+func TestCatalogAccumulator_FinalizeStatusRules(t *testing.T) {
+	cases := []struct {
+		name            string
+		activeCount     int
+		nonActiveCount  int
+		configuredCount int
+		want            string
+	}{
+		{name: "enabled model with available channel", activeCount: 1, want: "available"},
+		{name: "disabled related channel", nonActiveCount: 1, want: "maintenance"},
+		{name: "enabled model without available channel", configuredCount: 1, want: "unavailable"},
+		{name: "insufficient data", want: "unknown"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			acc := catalogAccumulator{
+				item:                  userModelCatalogItem{},
+				activeVisibleCount:    tc.activeCount,
+				nonActiveVisibleCount: tc.nonActiveCount,
+				configuredOnlyCount:   tc.configuredCount,
+			}
+
+			acc.finalize()
+
+			require.Equal(t, tc.want, acc.item.Status)
+			require.NotEmpty(t, acc.item.StatusReason)
+		})
 	}
 }
