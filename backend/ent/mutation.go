@@ -24,6 +24,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
+	"github.com/Wei-Shaw/sub2api/ent/externalfulfillmentsku"
+	"github.com/Wei-Shaw/sub2api/ent/externalorderfulfillment"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
@@ -72,6 +74,8 @@ const (
 	TypeChannelMonitorHistory         = "ChannelMonitorHistory"
 	TypeChannelMonitorRequestTemplate = "ChannelMonitorRequestTemplate"
 	TypeErrorPassthroughRule          = "ErrorPassthroughRule"
+	TypeExternalFulfillmentSKU        = "ExternalFulfillmentSKU"
+	TypeExternalOrderFulfillment      = "ExternalOrderFulfillment"
 	TypeGroup                         = "Group"
 	TypeIdempotencyRecord             = "IdempotencyRecord"
 	TypeIdentityAdoptionDecision      = "IdentityAdoptionDecision"
@@ -15187,6 +15191,3306 @@ func (m *ErrorPassthroughRuleMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ErrorPassthroughRuleMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown ErrorPassthroughRule edge %s", name)
+}
+
+// ExternalFulfillmentSKUMutation represents an operation that mutates the ExternalFulfillmentSKU nodes in the graph.
+type ExternalFulfillmentSKUMutation struct {
+	config
+	op                 Op
+	typ                string
+	id                 *int64
+	platform           *string
+	sku_code           *string
+	name               *string
+	amount             *float64
+	addamount          *float64
+	currency           *string
+	redeem_type        *string
+	redeem_value       *float64
+	addredeem_value    *float64
+	group_id           *int64
+	addgroup_id        *int64
+	validity_days      *int
+	addvalidity_days   *int
+	expires_in_days    *int
+	addexpires_in_days *int
+	manual_url         *string
+	delivery_template  *string
+	enabled            *bool
+	created_at         *time.Time
+	updated_at         *time.Time
+	clearedFields      map[string]struct{}
+	done               bool
+	oldValue           func(context.Context) (*ExternalFulfillmentSKU, error)
+	predicates         []predicate.ExternalFulfillmentSKU
+}
+
+var _ ent.Mutation = (*ExternalFulfillmentSKUMutation)(nil)
+
+// externalfulfillmentskuOption allows management of the mutation configuration using functional options.
+type externalfulfillmentskuOption func(*ExternalFulfillmentSKUMutation)
+
+// newExternalFulfillmentSKUMutation creates new mutation for the ExternalFulfillmentSKU entity.
+func newExternalFulfillmentSKUMutation(c config, op Op, opts ...externalfulfillmentskuOption) *ExternalFulfillmentSKUMutation {
+	m := &ExternalFulfillmentSKUMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeExternalFulfillmentSKU,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withExternalFulfillmentSKUID sets the ID field of the mutation.
+func withExternalFulfillmentSKUID(id int64) externalfulfillmentskuOption {
+	return func(m *ExternalFulfillmentSKUMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ExternalFulfillmentSKU
+		)
+		m.oldValue = func(ctx context.Context) (*ExternalFulfillmentSKU, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ExternalFulfillmentSKU.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withExternalFulfillmentSKU sets the old ExternalFulfillmentSKU of the mutation.
+func withExternalFulfillmentSKU(node *ExternalFulfillmentSKU) externalfulfillmentskuOption {
+	return func(m *ExternalFulfillmentSKUMutation) {
+		m.oldValue = func(context.Context) (*ExternalFulfillmentSKU, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ExternalFulfillmentSKUMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ExternalFulfillmentSKUMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ExternalFulfillmentSKUMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ExternalFulfillmentSKUMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ExternalFulfillmentSKU.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetPlatform sets the "platform" field.
+func (m *ExternalFulfillmentSKUMutation) SetPlatform(s string) {
+	m.platform = &s
+}
+
+// Platform returns the value of the "platform" field in the mutation.
+func (m *ExternalFulfillmentSKUMutation) Platform() (r string, exists bool) {
+	v := m.platform
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlatform returns the old "platform" field's value of the ExternalFulfillmentSKU entity.
+// If the ExternalFulfillmentSKU object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalFulfillmentSKUMutation) OldPlatform(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlatform is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlatform requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlatform: %w", err)
+	}
+	return oldValue.Platform, nil
+}
+
+// ResetPlatform resets all changes to the "platform" field.
+func (m *ExternalFulfillmentSKUMutation) ResetPlatform() {
+	m.platform = nil
+}
+
+// SetSkuCode sets the "sku_code" field.
+func (m *ExternalFulfillmentSKUMutation) SetSkuCode(s string) {
+	m.sku_code = &s
+}
+
+// SkuCode returns the value of the "sku_code" field in the mutation.
+func (m *ExternalFulfillmentSKUMutation) SkuCode() (r string, exists bool) {
+	v := m.sku_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSkuCode returns the old "sku_code" field's value of the ExternalFulfillmentSKU entity.
+// If the ExternalFulfillmentSKU object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalFulfillmentSKUMutation) OldSkuCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSkuCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSkuCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSkuCode: %w", err)
+	}
+	return oldValue.SkuCode, nil
+}
+
+// ResetSkuCode resets all changes to the "sku_code" field.
+func (m *ExternalFulfillmentSKUMutation) ResetSkuCode() {
+	m.sku_code = nil
+}
+
+// SetName sets the "name" field.
+func (m *ExternalFulfillmentSKUMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *ExternalFulfillmentSKUMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the ExternalFulfillmentSKU entity.
+// If the ExternalFulfillmentSKU object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalFulfillmentSKUMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *ExternalFulfillmentSKUMutation) ResetName() {
+	m.name = nil
+}
+
+// SetAmount sets the "amount" field.
+func (m *ExternalFulfillmentSKUMutation) SetAmount(f float64) {
+	m.amount = &f
+	m.addamount = nil
+}
+
+// Amount returns the value of the "amount" field in the mutation.
+func (m *ExternalFulfillmentSKUMutation) Amount() (r float64, exists bool) {
+	v := m.amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAmount returns the old "amount" field's value of the ExternalFulfillmentSKU entity.
+// If the ExternalFulfillmentSKU object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalFulfillmentSKUMutation) OldAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAmount: %w", err)
+	}
+	return oldValue.Amount, nil
+}
+
+// AddAmount adds f to the "amount" field.
+func (m *ExternalFulfillmentSKUMutation) AddAmount(f float64) {
+	if m.addamount != nil {
+		*m.addamount += f
+	} else {
+		m.addamount = &f
+	}
+}
+
+// AddedAmount returns the value that was added to the "amount" field in this mutation.
+func (m *ExternalFulfillmentSKUMutation) AddedAmount() (r float64, exists bool) {
+	v := m.addamount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAmount resets all changes to the "amount" field.
+func (m *ExternalFulfillmentSKUMutation) ResetAmount() {
+	m.amount = nil
+	m.addamount = nil
+}
+
+// SetCurrency sets the "currency" field.
+func (m *ExternalFulfillmentSKUMutation) SetCurrency(s string) {
+	m.currency = &s
+}
+
+// Currency returns the value of the "currency" field in the mutation.
+func (m *ExternalFulfillmentSKUMutation) Currency() (r string, exists bool) {
+	v := m.currency
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCurrency returns the old "currency" field's value of the ExternalFulfillmentSKU entity.
+// If the ExternalFulfillmentSKU object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalFulfillmentSKUMutation) OldCurrency(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCurrency is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCurrency requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCurrency: %w", err)
+	}
+	return oldValue.Currency, nil
+}
+
+// ResetCurrency resets all changes to the "currency" field.
+func (m *ExternalFulfillmentSKUMutation) ResetCurrency() {
+	m.currency = nil
+}
+
+// SetRedeemType sets the "redeem_type" field.
+func (m *ExternalFulfillmentSKUMutation) SetRedeemType(s string) {
+	m.redeem_type = &s
+}
+
+// RedeemType returns the value of the "redeem_type" field in the mutation.
+func (m *ExternalFulfillmentSKUMutation) RedeemType() (r string, exists bool) {
+	v := m.redeem_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRedeemType returns the old "redeem_type" field's value of the ExternalFulfillmentSKU entity.
+// If the ExternalFulfillmentSKU object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalFulfillmentSKUMutation) OldRedeemType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRedeemType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRedeemType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRedeemType: %w", err)
+	}
+	return oldValue.RedeemType, nil
+}
+
+// ResetRedeemType resets all changes to the "redeem_type" field.
+func (m *ExternalFulfillmentSKUMutation) ResetRedeemType() {
+	m.redeem_type = nil
+}
+
+// SetRedeemValue sets the "redeem_value" field.
+func (m *ExternalFulfillmentSKUMutation) SetRedeemValue(f float64) {
+	m.redeem_value = &f
+	m.addredeem_value = nil
+}
+
+// RedeemValue returns the value of the "redeem_value" field in the mutation.
+func (m *ExternalFulfillmentSKUMutation) RedeemValue() (r float64, exists bool) {
+	v := m.redeem_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRedeemValue returns the old "redeem_value" field's value of the ExternalFulfillmentSKU entity.
+// If the ExternalFulfillmentSKU object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalFulfillmentSKUMutation) OldRedeemValue(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRedeemValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRedeemValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRedeemValue: %w", err)
+	}
+	return oldValue.RedeemValue, nil
+}
+
+// AddRedeemValue adds f to the "redeem_value" field.
+func (m *ExternalFulfillmentSKUMutation) AddRedeemValue(f float64) {
+	if m.addredeem_value != nil {
+		*m.addredeem_value += f
+	} else {
+		m.addredeem_value = &f
+	}
+}
+
+// AddedRedeemValue returns the value that was added to the "redeem_value" field in this mutation.
+func (m *ExternalFulfillmentSKUMutation) AddedRedeemValue() (r float64, exists bool) {
+	v := m.addredeem_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRedeemValue resets all changes to the "redeem_value" field.
+func (m *ExternalFulfillmentSKUMutation) ResetRedeemValue() {
+	m.redeem_value = nil
+	m.addredeem_value = nil
+}
+
+// SetGroupID sets the "group_id" field.
+func (m *ExternalFulfillmentSKUMutation) SetGroupID(i int64) {
+	m.group_id = &i
+	m.addgroup_id = nil
+}
+
+// GroupID returns the value of the "group_id" field in the mutation.
+func (m *ExternalFulfillmentSKUMutation) GroupID() (r int64, exists bool) {
+	v := m.group_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGroupID returns the old "group_id" field's value of the ExternalFulfillmentSKU entity.
+// If the ExternalFulfillmentSKU object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalFulfillmentSKUMutation) OldGroupID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGroupID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGroupID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGroupID: %w", err)
+	}
+	return oldValue.GroupID, nil
+}
+
+// AddGroupID adds i to the "group_id" field.
+func (m *ExternalFulfillmentSKUMutation) AddGroupID(i int64) {
+	if m.addgroup_id != nil {
+		*m.addgroup_id += i
+	} else {
+		m.addgroup_id = &i
+	}
+}
+
+// AddedGroupID returns the value that was added to the "group_id" field in this mutation.
+func (m *ExternalFulfillmentSKUMutation) AddedGroupID() (r int64, exists bool) {
+	v := m.addgroup_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearGroupID clears the value of the "group_id" field.
+func (m *ExternalFulfillmentSKUMutation) ClearGroupID() {
+	m.group_id = nil
+	m.addgroup_id = nil
+	m.clearedFields[externalfulfillmentsku.FieldGroupID] = struct{}{}
+}
+
+// GroupIDCleared returns if the "group_id" field was cleared in this mutation.
+func (m *ExternalFulfillmentSKUMutation) GroupIDCleared() bool {
+	_, ok := m.clearedFields[externalfulfillmentsku.FieldGroupID]
+	return ok
+}
+
+// ResetGroupID resets all changes to the "group_id" field.
+func (m *ExternalFulfillmentSKUMutation) ResetGroupID() {
+	m.group_id = nil
+	m.addgroup_id = nil
+	delete(m.clearedFields, externalfulfillmentsku.FieldGroupID)
+}
+
+// SetValidityDays sets the "validity_days" field.
+func (m *ExternalFulfillmentSKUMutation) SetValidityDays(i int) {
+	m.validity_days = &i
+	m.addvalidity_days = nil
+}
+
+// ValidityDays returns the value of the "validity_days" field in the mutation.
+func (m *ExternalFulfillmentSKUMutation) ValidityDays() (r int, exists bool) {
+	v := m.validity_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValidityDays returns the old "validity_days" field's value of the ExternalFulfillmentSKU entity.
+// If the ExternalFulfillmentSKU object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalFulfillmentSKUMutation) OldValidityDays(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValidityDays is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValidityDays requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValidityDays: %w", err)
+	}
+	return oldValue.ValidityDays, nil
+}
+
+// AddValidityDays adds i to the "validity_days" field.
+func (m *ExternalFulfillmentSKUMutation) AddValidityDays(i int) {
+	if m.addvalidity_days != nil {
+		*m.addvalidity_days += i
+	} else {
+		m.addvalidity_days = &i
+	}
+}
+
+// AddedValidityDays returns the value that was added to the "validity_days" field in this mutation.
+func (m *ExternalFulfillmentSKUMutation) AddedValidityDays() (r int, exists bool) {
+	v := m.addvalidity_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetValidityDays resets all changes to the "validity_days" field.
+func (m *ExternalFulfillmentSKUMutation) ResetValidityDays() {
+	m.validity_days = nil
+	m.addvalidity_days = nil
+}
+
+// SetExpiresInDays sets the "expires_in_days" field.
+func (m *ExternalFulfillmentSKUMutation) SetExpiresInDays(i int) {
+	m.expires_in_days = &i
+	m.addexpires_in_days = nil
+}
+
+// ExpiresInDays returns the value of the "expires_in_days" field in the mutation.
+func (m *ExternalFulfillmentSKUMutation) ExpiresInDays() (r int, exists bool) {
+	v := m.expires_in_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresInDays returns the old "expires_in_days" field's value of the ExternalFulfillmentSKU entity.
+// If the ExternalFulfillmentSKU object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalFulfillmentSKUMutation) OldExpiresInDays(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresInDays is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresInDays requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresInDays: %w", err)
+	}
+	return oldValue.ExpiresInDays, nil
+}
+
+// AddExpiresInDays adds i to the "expires_in_days" field.
+func (m *ExternalFulfillmentSKUMutation) AddExpiresInDays(i int) {
+	if m.addexpires_in_days != nil {
+		*m.addexpires_in_days += i
+	} else {
+		m.addexpires_in_days = &i
+	}
+}
+
+// AddedExpiresInDays returns the value that was added to the "expires_in_days" field in this mutation.
+func (m *ExternalFulfillmentSKUMutation) AddedExpiresInDays() (r int, exists bool) {
+	v := m.addexpires_in_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearExpiresInDays clears the value of the "expires_in_days" field.
+func (m *ExternalFulfillmentSKUMutation) ClearExpiresInDays() {
+	m.expires_in_days = nil
+	m.addexpires_in_days = nil
+	m.clearedFields[externalfulfillmentsku.FieldExpiresInDays] = struct{}{}
+}
+
+// ExpiresInDaysCleared returns if the "expires_in_days" field was cleared in this mutation.
+func (m *ExternalFulfillmentSKUMutation) ExpiresInDaysCleared() bool {
+	_, ok := m.clearedFields[externalfulfillmentsku.FieldExpiresInDays]
+	return ok
+}
+
+// ResetExpiresInDays resets all changes to the "expires_in_days" field.
+func (m *ExternalFulfillmentSKUMutation) ResetExpiresInDays() {
+	m.expires_in_days = nil
+	m.addexpires_in_days = nil
+	delete(m.clearedFields, externalfulfillmentsku.FieldExpiresInDays)
+}
+
+// SetManualURL sets the "manual_url" field.
+func (m *ExternalFulfillmentSKUMutation) SetManualURL(s string) {
+	m.manual_url = &s
+}
+
+// ManualURL returns the value of the "manual_url" field in the mutation.
+func (m *ExternalFulfillmentSKUMutation) ManualURL() (r string, exists bool) {
+	v := m.manual_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldManualURL returns the old "manual_url" field's value of the ExternalFulfillmentSKU entity.
+// If the ExternalFulfillmentSKU object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalFulfillmentSKUMutation) OldManualURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldManualURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldManualURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldManualURL: %w", err)
+	}
+	return oldValue.ManualURL, nil
+}
+
+// ClearManualURL clears the value of the "manual_url" field.
+func (m *ExternalFulfillmentSKUMutation) ClearManualURL() {
+	m.manual_url = nil
+	m.clearedFields[externalfulfillmentsku.FieldManualURL] = struct{}{}
+}
+
+// ManualURLCleared returns if the "manual_url" field was cleared in this mutation.
+func (m *ExternalFulfillmentSKUMutation) ManualURLCleared() bool {
+	_, ok := m.clearedFields[externalfulfillmentsku.FieldManualURL]
+	return ok
+}
+
+// ResetManualURL resets all changes to the "manual_url" field.
+func (m *ExternalFulfillmentSKUMutation) ResetManualURL() {
+	m.manual_url = nil
+	delete(m.clearedFields, externalfulfillmentsku.FieldManualURL)
+}
+
+// SetDeliveryTemplate sets the "delivery_template" field.
+func (m *ExternalFulfillmentSKUMutation) SetDeliveryTemplate(s string) {
+	m.delivery_template = &s
+}
+
+// DeliveryTemplate returns the value of the "delivery_template" field in the mutation.
+func (m *ExternalFulfillmentSKUMutation) DeliveryTemplate() (r string, exists bool) {
+	v := m.delivery_template
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeliveryTemplate returns the old "delivery_template" field's value of the ExternalFulfillmentSKU entity.
+// If the ExternalFulfillmentSKU object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalFulfillmentSKUMutation) OldDeliveryTemplate(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeliveryTemplate is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeliveryTemplate requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeliveryTemplate: %w", err)
+	}
+	return oldValue.DeliveryTemplate, nil
+}
+
+// ClearDeliveryTemplate clears the value of the "delivery_template" field.
+func (m *ExternalFulfillmentSKUMutation) ClearDeliveryTemplate() {
+	m.delivery_template = nil
+	m.clearedFields[externalfulfillmentsku.FieldDeliveryTemplate] = struct{}{}
+}
+
+// DeliveryTemplateCleared returns if the "delivery_template" field was cleared in this mutation.
+func (m *ExternalFulfillmentSKUMutation) DeliveryTemplateCleared() bool {
+	_, ok := m.clearedFields[externalfulfillmentsku.FieldDeliveryTemplate]
+	return ok
+}
+
+// ResetDeliveryTemplate resets all changes to the "delivery_template" field.
+func (m *ExternalFulfillmentSKUMutation) ResetDeliveryTemplate() {
+	m.delivery_template = nil
+	delete(m.clearedFields, externalfulfillmentsku.FieldDeliveryTemplate)
+}
+
+// SetEnabled sets the "enabled" field.
+func (m *ExternalFulfillmentSKUMutation) SetEnabled(b bool) {
+	m.enabled = &b
+}
+
+// Enabled returns the value of the "enabled" field in the mutation.
+func (m *ExternalFulfillmentSKUMutation) Enabled() (r bool, exists bool) {
+	v := m.enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnabled returns the old "enabled" field's value of the ExternalFulfillmentSKU entity.
+// If the ExternalFulfillmentSKU object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalFulfillmentSKUMutation) OldEnabled(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnabled: %w", err)
+	}
+	return oldValue.Enabled, nil
+}
+
+// ResetEnabled resets all changes to the "enabled" field.
+func (m *ExternalFulfillmentSKUMutation) ResetEnabled() {
+	m.enabled = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ExternalFulfillmentSKUMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ExternalFulfillmentSKUMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ExternalFulfillmentSKU entity.
+// If the ExternalFulfillmentSKU object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalFulfillmentSKUMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ExternalFulfillmentSKUMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ExternalFulfillmentSKUMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ExternalFulfillmentSKUMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ExternalFulfillmentSKU entity.
+// If the ExternalFulfillmentSKU object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalFulfillmentSKUMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ExternalFulfillmentSKUMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// Where appends a list predicates to the ExternalFulfillmentSKUMutation builder.
+func (m *ExternalFulfillmentSKUMutation) Where(ps ...predicate.ExternalFulfillmentSKU) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ExternalFulfillmentSKUMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ExternalFulfillmentSKUMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ExternalFulfillmentSKU, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ExternalFulfillmentSKUMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ExternalFulfillmentSKUMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ExternalFulfillmentSKU).
+func (m *ExternalFulfillmentSKUMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ExternalFulfillmentSKUMutation) Fields() []string {
+	fields := make([]string, 0, 15)
+	if m.platform != nil {
+		fields = append(fields, externalfulfillmentsku.FieldPlatform)
+	}
+	if m.sku_code != nil {
+		fields = append(fields, externalfulfillmentsku.FieldSkuCode)
+	}
+	if m.name != nil {
+		fields = append(fields, externalfulfillmentsku.FieldName)
+	}
+	if m.amount != nil {
+		fields = append(fields, externalfulfillmentsku.FieldAmount)
+	}
+	if m.currency != nil {
+		fields = append(fields, externalfulfillmentsku.FieldCurrency)
+	}
+	if m.redeem_type != nil {
+		fields = append(fields, externalfulfillmentsku.FieldRedeemType)
+	}
+	if m.redeem_value != nil {
+		fields = append(fields, externalfulfillmentsku.FieldRedeemValue)
+	}
+	if m.group_id != nil {
+		fields = append(fields, externalfulfillmentsku.FieldGroupID)
+	}
+	if m.validity_days != nil {
+		fields = append(fields, externalfulfillmentsku.FieldValidityDays)
+	}
+	if m.expires_in_days != nil {
+		fields = append(fields, externalfulfillmentsku.FieldExpiresInDays)
+	}
+	if m.manual_url != nil {
+		fields = append(fields, externalfulfillmentsku.FieldManualURL)
+	}
+	if m.delivery_template != nil {
+		fields = append(fields, externalfulfillmentsku.FieldDeliveryTemplate)
+	}
+	if m.enabled != nil {
+		fields = append(fields, externalfulfillmentsku.FieldEnabled)
+	}
+	if m.created_at != nil {
+		fields = append(fields, externalfulfillmentsku.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, externalfulfillmentsku.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ExternalFulfillmentSKUMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case externalfulfillmentsku.FieldPlatform:
+		return m.Platform()
+	case externalfulfillmentsku.FieldSkuCode:
+		return m.SkuCode()
+	case externalfulfillmentsku.FieldName:
+		return m.Name()
+	case externalfulfillmentsku.FieldAmount:
+		return m.Amount()
+	case externalfulfillmentsku.FieldCurrency:
+		return m.Currency()
+	case externalfulfillmentsku.FieldRedeemType:
+		return m.RedeemType()
+	case externalfulfillmentsku.FieldRedeemValue:
+		return m.RedeemValue()
+	case externalfulfillmentsku.FieldGroupID:
+		return m.GroupID()
+	case externalfulfillmentsku.FieldValidityDays:
+		return m.ValidityDays()
+	case externalfulfillmentsku.FieldExpiresInDays:
+		return m.ExpiresInDays()
+	case externalfulfillmentsku.FieldManualURL:
+		return m.ManualURL()
+	case externalfulfillmentsku.FieldDeliveryTemplate:
+		return m.DeliveryTemplate()
+	case externalfulfillmentsku.FieldEnabled:
+		return m.Enabled()
+	case externalfulfillmentsku.FieldCreatedAt:
+		return m.CreatedAt()
+	case externalfulfillmentsku.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ExternalFulfillmentSKUMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case externalfulfillmentsku.FieldPlatform:
+		return m.OldPlatform(ctx)
+	case externalfulfillmentsku.FieldSkuCode:
+		return m.OldSkuCode(ctx)
+	case externalfulfillmentsku.FieldName:
+		return m.OldName(ctx)
+	case externalfulfillmentsku.FieldAmount:
+		return m.OldAmount(ctx)
+	case externalfulfillmentsku.FieldCurrency:
+		return m.OldCurrency(ctx)
+	case externalfulfillmentsku.FieldRedeemType:
+		return m.OldRedeemType(ctx)
+	case externalfulfillmentsku.FieldRedeemValue:
+		return m.OldRedeemValue(ctx)
+	case externalfulfillmentsku.FieldGroupID:
+		return m.OldGroupID(ctx)
+	case externalfulfillmentsku.FieldValidityDays:
+		return m.OldValidityDays(ctx)
+	case externalfulfillmentsku.FieldExpiresInDays:
+		return m.OldExpiresInDays(ctx)
+	case externalfulfillmentsku.FieldManualURL:
+		return m.OldManualURL(ctx)
+	case externalfulfillmentsku.FieldDeliveryTemplate:
+		return m.OldDeliveryTemplate(ctx)
+	case externalfulfillmentsku.FieldEnabled:
+		return m.OldEnabled(ctx)
+	case externalfulfillmentsku.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case externalfulfillmentsku.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown ExternalFulfillmentSKU field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ExternalFulfillmentSKUMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case externalfulfillmentsku.FieldPlatform:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlatform(v)
+		return nil
+	case externalfulfillmentsku.FieldSkuCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSkuCode(v)
+		return nil
+	case externalfulfillmentsku.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case externalfulfillmentsku.FieldAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAmount(v)
+		return nil
+	case externalfulfillmentsku.FieldCurrency:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCurrency(v)
+		return nil
+	case externalfulfillmentsku.FieldRedeemType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRedeemType(v)
+		return nil
+	case externalfulfillmentsku.FieldRedeemValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRedeemValue(v)
+		return nil
+	case externalfulfillmentsku.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGroupID(v)
+		return nil
+	case externalfulfillmentsku.FieldValidityDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValidityDays(v)
+		return nil
+	case externalfulfillmentsku.FieldExpiresInDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresInDays(v)
+		return nil
+	case externalfulfillmentsku.FieldManualURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetManualURL(v)
+		return nil
+	case externalfulfillmentsku.FieldDeliveryTemplate:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeliveryTemplate(v)
+		return nil
+	case externalfulfillmentsku.FieldEnabled:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnabled(v)
+		return nil
+	case externalfulfillmentsku.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case externalfulfillmentsku.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ExternalFulfillmentSKU field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ExternalFulfillmentSKUMutation) AddedFields() []string {
+	var fields []string
+	if m.addamount != nil {
+		fields = append(fields, externalfulfillmentsku.FieldAmount)
+	}
+	if m.addredeem_value != nil {
+		fields = append(fields, externalfulfillmentsku.FieldRedeemValue)
+	}
+	if m.addgroup_id != nil {
+		fields = append(fields, externalfulfillmentsku.FieldGroupID)
+	}
+	if m.addvalidity_days != nil {
+		fields = append(fields, externalfulfillmentsku.FieldValidityDays)
+	}
+	if m.addexpires_in_days != nil {
+		fields = append(fields, externalfulfillmentsku.FieldExpiresInDays)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ExternalFulfillmentSKUMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case externalfulfillmentsku.FieldAmount:
+		return m.AddedAmount()
+	case externalfulfillmentsku.FieldRedeemValue:
+		return m.AddedRedeemValue()
+	case externalfulfillmentsku.FieldGroupID:
+		return m.AddedGroupID()
+	case externalfulfillmentsku.FieldValidityDays:
+		return m.AddedValidityDays()
+	case externalfulfillmentsku.FieldExpiresInDays:
+		return m.AddedExpiresInDays()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ExternalFulfillmentSKUMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case externalfulfillmentsku.FieldAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAmount(v)
+		return nil
+	case externalfulfillmentsku.FieldRedeemValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRedeemValue(v)
+		return nil
+	case externalfulfillmentsku.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddGroupID(v)
+		return nil
+	case externalfulfillmentsku.FieldValidityDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddValidityDays(v)
+		return nil
+	case externalfulfillmentsku.FieldExpiresInDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddExpiresInDays(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ExternalFulfillmentSKU numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ExternalFulfillmentSKUMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(externalfulfillmentsku.FieldGroupID) {
+		fields = append(fields, externalfulfillmentsku.FieldGroupID)
+	}
+	if m.FieldCleared(externalfulfillmentsku.FieldExpiresInDays) {
+		fields = append(fields, externalfulfillmentsku.FieldExpiresInDays)
+	}
+	if m.FieldCleared(externalfulfillmentsku.FieldManualURL) {
+		fields = append(fields, externalfulfillmentsku.FieldManualURL)
+	}
+	if m.FieldCleared(externalfulfillmentsku.FieldDeliveryTemplate) {
+		fields = append(fields, externalfulfillmentsku.FieldDeliveryTemplate)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ExternalFulfillmentSKUMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ExternalFulfillmentSKUMutation) ClearField(name string) error {
+	switch name {
+	case externalfulfillmentsku.FieldGroupID:
+		m.ClearGroupID()
+		return nil
+	case externalfulfillmentsku.FieldExpiresInDays:
+		m.ClearExpiresInDays()
+		return nil
+	case externalfulfillmentsku.FieldManualURL:
+		m.ClearManualURL()
+		return nil
+	case externalfulfillmentsku.FieldDeliveryTemplate:
+		m.ClearDeliveryTemplate()
+		return nil
+	}
+	return fmt.Errorf("unknown ExternalFulfillmentSKU nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ExternalFulfillmentSKUMutation) ResetField(name string) error {
+	switch name {
+	case externalfulfillmentsku.FieldPlatform:
+		m.ResetPlatform()
+		return nil
+	case externalfulfillmentsku.FieldSkuCode:
+		m.ResetSkuCode()
+		return nil
+	case externalfulfillmentsku.FieldName:
+		m.ResetName()
+		return nil
+	case externalfulfillmentsku.FieldAmount:
+		m.ResetAmount()
+		return nil
+	case externalfulfillmentsku.FieldCurrency:
+		m.ResetCurrency()
+		return nil
+	case externalfulfillmentsku.FieldRedeemType:
+		m.ResetRedeemType()
+		return nil
+	case externalfulfillmentsku.FieldRedeemValue:
+		m.ResetRedeemValue()
+		return nil
+	case externalfulfillmentsku.FieldGroupID:
+		m.ResetGroupID()
+		return nil
+	case externalfulfillmentsku.FieldValidityDays:
+		m.ResetValidityDays()
+		return nil
+	case externalfulfillmentsku.FieldExpiresInDays:
+		m.ResetExpiresInDays()
+		return nil
+	case externalfulfillmentsku.FieldManualURL:
+		m.ResetManualURL()
+		return nil
+	case externalfulfillmentsku.FieldDeliveryTemplate:
+		m.ResetDeliveryTemplate()
+		return nil
+	case externalfulfillmentsku.FieldEnabled:
+		m.ResetEnabled()
+		return nil
+	case externalfulfillmentsku.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case externalfulfillmentsku.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ExternalFulfillmentSKU field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ExternalFulfillmentSKUMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ExternalFulfillmentSKUMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ExternalFulfillmentSKUMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ExternalFulfillmentSKUMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ExternalFulfillmentSKUMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ExternalFulfillmentSKUMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ExternalFulfillmentSKUMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown ExternalFulfillmentSKU unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ExternalFulfillmentSKUMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown ExternalFulfillmentSKU edge %s", name)
+}
+
+// ExternalOrderFulfillmentMutation represents an operation that mutates the ExternalOrderFulfillment nodes in the graph.
+type ExternalOrderFulfillmentMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *int64
+	platform          *string
+	platform_order_id *string
+	buyer_ref         *string
+	sku_code          *string
+	sku_name          *string
+	amount            *float64
+	addamount         *float64
+	currency          *string
+	redeem_code_id    *int64
+	addredeem_code_id *int64
+	redeem_code       *string
+	redeem_type       *string
+	redeem_value      *float64
+	addredeem_value   *float64
+	group_id          *int64
+	addgroup_id       *int64
+	validity_days     *int
+	addvalidity_days  *int
+	expires_at        *time.Time
+	manual_url        *string
+	delivery_message  *string
+	status            *string
+	notify_status     *string
+	fail_reason       *string
+	operator          *string
+	delivered_at      *time.Time
+	notified_at       *time.Time
+	created_at        *time.Time
+	updated_at        *time.Time
+	clearedFields     map[string]struct{}
+	done              bool
+	oldValue          func(context.Context) (*ExternalOrderFulfillment, error)
+	predicates        []predicate.ExternalOrderFulfillment
+}
+
+var _ ent.Mutation = (*ExternalOrderFulfillmentMutation)(nil)
+
+// externalorderfulfillmentOption allows management of the mutation configuration using functional options.
+type externalorderfulfillmentOption func(*ExternalOrderFulfillmentMutation)
+
+// newExternalOrderFulfillmentMutation creates new mutation for the ExternalOrderFulfillment entity.
+func newExternalOrderFulfillmentMutation(c config, op Op, opts ...externalorderfulfillmentOption) *ExternalOrderFulfillmentMutation {
+	m := &ExternalOrderFulfillmentMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeExternalOrderFulfillment,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withExternalOrderFulfillmentID sets the ID field of the mutation.
+func withExternalOrderFulfillmentID(id int64) externalorderfulfillmentOption {
+	return func(m *ExternalOrderFulfillmentMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ExternalOrderFulfillment
+		)
+		m.oldValue = func(ctx context.Context) (*ExternalOrderFulfillment, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ExternalOrderFulfillment.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withExternalOrderFulfillment sets the old ExternalOrderFulfillment of the mutation.
+func withExternalOrderFulfillment(node *ExternalOrderFulfillment) externalorderfulfillmentOption {
+	return func(m *ExternalOrderFulfillmentMutation) {
+		m.oldValue = func(context.Context) (*ExternalOrderFulfillment, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ExternalOrderFulfillmentMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ExternalOrderFulfillmentMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ExternalOrderFulfillmentMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ExternalOrderFulfillmentMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ExternalOrderFulfillment.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetPlatform sets the "platform" field.
+func (m *ExternalOrderFulfillmentMutation) SetPlatform(s string) {
+	m.platform = &s
+}
+
+// Platform returns the value of the "platform" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) Platform() (r string, exists bool) {
+	v := m.platform
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlatform returns the old "platform" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldPlatform(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlatform is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlatform requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlatform: %w", err)
+	}
+	return oldValue.Platform, nil
+}
+
+// ResetPlatform resets all changes to the "platform" field.
+func (m *ExternalOrderFulfillmentMutation) ResetPlatform() {
+	m.platform = nil
+}
+
+// SetPlatformOrderID sets the "platform_order_id" field.
+func (m *ExternalOrderFulfillmentMutation) SetPlatformOrderID(s string) {
+	m.platform_order_id = &s
+}
+
+// PlatformOrderID returns the value of the "platform_order_id" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) PlatformOrderID() (r string, exists bool) {
+	v := m.platform_order_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlatformOrderID returns the old "platform_order_id" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldPlatformOrderID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlatformOrderID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlatformOrderID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlatformOrderID: %w", err)
+	}
+	return oldValue.PlatformOrderID, nil
+}
+
+// ResetPlatformOrderID resets all changes to the "platform_order_id" field.
+func (m *ExternalOrderFulfillmentMutation) ResetPlatformOrderID() {
+	m.platform_order_id = nil
+}
+
+// SetBuyerRef sets the "buyer_ref" field.
+func (m *ExternalOrderFulfillmentMutation) SetBuyerRef(s string) {
+	m.buyer_ref = &s
+}
+
+// BuyerRef returns the value of the "buyer_ref" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) BuyerRef() (r string, exists bool) {
+	v := m.buyer_ref
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBuyerRef returns the old "buyer_ref" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldBuyerRef(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBuyerRef is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBuyerRef requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBuyerRef: %w", err)
+	}
+	return oldValue.BuyerRef, nil
+}
+
+// ClearBuyerRef clears the value of the "buyer_ref" field.
+func (m *ExternalOrderFulfillmentMutation) ClearBuyerRef() {
+	m.buyer_ref = nil
+	m.clearedFields[externalorderfulfillment.FieldBuyerRef] = struct{}{}
+}
+
+// BuyerRefCleared returns if the "buyer_ref" field was cleared in this mutation.
+func (m *ExternalOrderFulfillmentMutation) BuyerRefCleared() bool {
+	_, ok := m.clearedFields[externalorderfulfillment.FieldBuyerRef]
+	return ok
+}
+
+// ResetBuyerRef resets all changes to the "buyer_ref" field.
+func (m *ExternalOrderFulfillmentMutation) ResetBuyerRef() {
+	m.buyer_ref = nil
+	delete(m.clearedFields, externalorderfulfillment.FieldBuyerRef)
+}
+
+// SetSkuCode sets the "sku_code" field.
+func (m *ExternalOrderFulfillmentMutation) SetSkuCode(s string) {
+	m.sku_code = &s
+}
+
+// SkuCode returns the value of the "sku_code" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) SkuCode() (r string, exists bool) {
+	v := m.sku_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSkuCode returns the old "sku_code" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldSkuCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSkuCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSkuCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSkuCode: %w", err)
+	}
+	return oldValue.SkuCode, nil
+}
+
+// ResetSkuCode resets all changes to the "sku_code" field.
+func (m *ExternalOrderFulfillmentMutation) ResetSkuCode() {
+	m.sku_code = nil
+}
+
+// SetSkuName sets the "sku_name" field.
+func (m *ExternalOrderFulfillmentMutation) SetSkuName(s string) {
+	m.sku_name = &s
+}
+
+// SkuName returns the value of the "sku_name" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) SkuName() (r string, exists bool) {
+	v := m.sku_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSkuName returns the old "sku_name" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldSkuName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSkuName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSkuName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSkuName: %w", err)
+	}
+	return oldValue.SkuName, nil
+}
+
+// ClearSkuName clears the value of the "sku_name" field.
+func (m *ExternalOrderFulfillmentMutation) ClearSkuName() {
+	m.sku_name = nil
+	m.clearedFields[externalorderfulfillment.FieldSkuName] = struct{}{}
+}
+
+// SkuNameCleared returns if the "sku_name" field was cleared in this mutation.
+func (m *ExternalOrderFulfillmentMutation) SkuNameCleared() bool {
+	_, ok := m.clearedFields[externalorderfulfillment.FieldSkuName]
+	return ok
+}
+
+// ResetSkuName resets all changes to the "sku_name" field.
+func (m *ExternalOrderFulfillmentMutation) ResetSkuName() {
+	m.sku_name = nil
+	delete(m.clearedFields, externalorderfulfillment.FieldSkuName)
+}
+
+// SetAmount sets the "amount" field.
+func (m *ExternalOrderFulfillmentMutation) SetAmount(f float64) {
+	m.amount = &f
+	m.addamount = nil
+}
+
+// Amount returns the value of the "amount" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) Amount() (r float64, exists bool) {
+	v := m.amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAmount returns the old "amount" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAmount: %w", err)
+	}
+	return oldValue.Amount, nil
+}
+
+// AddAmount adds f to the "amount" field.
+func (m *ExternalOrderFulfillmentMutation) AddAmount(f float64) {
+	if m.addamount != nil {
+		*m.addamount += f
+	} else {
+		m.addamount = &f
+	}
+}
+
+// AddedAmount returns the value that was added to the "amount" field in this mutation.
+func (m *ExternalOrderFulfillmentMutation) AddedAmount() (r float64, exists bool) {
+	v := m.addamount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAmount resets all changes to the "amount" field.
+func (m *ExternalOrderFulfillmentMutation) ResetAmount() {
+	m.amount = nil
+	m.addamount = nil
+}
+
+// SetCurrency sets the "currency" field.
+func (m *ExternalOrderFulfillmentMutation) SetCurrency(s string) {
+	m.currency = &s
+}
+
+// Currency returns the value of the "currency" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) Currency() (r string, exists bool) {
+	v := m.currency
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCurrency returns the old "currency" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldCurrency(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCurrency is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCurrency requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCurrency: %w", err)
+	}
+	return oldValue.Currency, nil
+}
+
+// ResetCurrency resets all changes to the "currency" field.
+func (m *ExternalOrderFulfillmentMutation) ResetCurrency() {
+	m.currency = nil
+}
+
+// SetRedeemCodeID sets the "redeem_code_id" field.
+func (m *ExternalOrderFulfillmentMutation) SetRedeemCodeID(i int64) {
+	m.redeem_code_id = &i
+	m.addredeem_code_id = nil
+}
+
+// RedeemCodeID returns the value of the "redeem_code_id" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) RedeemCodeID() (r int64, exists bool) {
+	v := m.redeem_code_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRedeemCodeID returns the old "redeem_code_id" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldRedeemCodeID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRedeemCodeID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRedeemCodeID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRedeemCodeID: %w", err)
+	}
+	return oldValue.RedeemCodeID, nil
+}
+
+// AddRedeemCodeID adds i to the "redeem_code_id" field.
+func (m *ExternalOrderFulfillmentMutation) AddRedeemCodeID(i int64) {
+	if m.addredeem_code_id != nil {
+		*m.addredeem_code_id += i
+	} else {
+		m.addredeem_code_id = &i
+	}
+}
+
+// AddedRedeemCodeID returns the value that was added to the "redeem_code_id" field in this mutation.
+func (m *ExternalOrderFulfillmentMutation) AddedRedeemCodeID() (r int64, exists bool) {
+	v := m.addredeem_code_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRedeemCodeID clears the value of the "redeem_code_id" field.
+func (m *ExternalOrderFulfillmentMutation) ClearRedeemCodeID() {
+	m.redeem_code_id = nil
+	m.addredeem_code_id = nil
+	m.clearedFields[externalorderfulfillment.FieldRedeemCodeID] = struct{}{}
+}
+
+// RedeemCodeIDCleared returns if the "redeem_code_id" field was cleared in this mutation.
+func (m *ExternalOrderFulfillmentMutation) RedeemCodeIDCleared() bool {
+	_, ok := m.clearedFields[externalorderfulfillment.FieldRedeemCodeID]
+	return ok
+}
+
+// ResetRedeemCodeID resets all changes to the "redeem_code_id" field.
+func (m *ExternalOrderFulfillmentMutation) ResetRedeemCodeID() {
+	m.redeem_code_id = nil
+	m.addredeem_code_id = nil
+	delete(m.clearedFields, externalorderfulfillment.FieldRedeemCodeID)
+}
+
+// SetRedeemCode sets the "redeem_code" field.
+func (m *ExternalOrderFulfillmentMutation) SetRedeemCode(s string) {
+	m.redeem_code = &s
+}
+
+// RedeemCode returns the value of the "redeem_code" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) RedeemCode() (r string, exists bool) {
+	v := m.redeem_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRedeemCode returns the old "redeem_code" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldRedeemCode(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRedeemCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRedeemCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRedeemCode: %w", err)
+	}
+	return oldValue.RedeemCode, nil
+}
+
+// ClearRedeemCode clears the value of the "redeem_code" field.
+func (m *ExternalOrderFulfillmentMutation) ClearRedeemCode() {
+	m.redeem_code = nil
+	m.clearedFields[externalorderfulfillment.FieldRedeemCode] = struct{}{}
+}
+
+// RedeemCodeCleared returns if the "redeem_code" field was cleared in this mutation.
+func (m *ExternalOrderFulfillmentMutation) RedeemCodeCleared() bool {
+	_, ok := m.clearedFields[externalorderfulfillment.FieldRedeemCode]
+	return ok
+}
+
+// ResetRedeemCode resets all changes to the "redeem_code" field.
+func (m *ExternalOrderFulfillmentMutation) ResetRedeemCode() {
+	m.redeem_code = nil
+	delete(m.clearedFields, externalorderfulfillment.FieldRedeemCode)
+}
+
+// SetRedeemType sets the "redeem_type" field.
+func (m *ExternalOrderFulfillmentMutation) SetRedeemType(s string) {
+	m.redeem_type = &s
+}
+
+// RedeemType returns the value of the "redeem_type" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) RedeemType() (r string, exists bool) {
+	v := m.redeem_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRedeemType returns the old "redeem_type" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldRedeemType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRedeemType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRedeemType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRedeemType: %w", err)
+	}
+	return oldValue.RedeemType, nil
+}
+
+// ResetRedeemType resets all changes to the "redeem_type" field.
+func (m *ExternalOrderFulfillmentMutation) ResetRedeemType() {
+	m.redeem_type = nil
+}
+
+// SetRedeemValue sets the "redeem_value" field.
+func (m *ExternalOrderFulfillmentMutation) SetRedeemValue(f float64) {
+	m.redeem_value = &f
+	m.addredeem_value = nil
+}
+
+// RedeemValue returns the value of the "redeem_value" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) RedeemValue() (r float64, exists bool) {
+	v := m.redeem_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRedeemValue returns the old "redeem_value" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldRedeemValue(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRedeemValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRedeemValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRedeemValue: %w", err)
+	}
+	return oldValue.RedeemValue, nil
+}
+
+// AddRedeemValue adds f to the "redeem_value" field.
+func (m *ExternalOrderFulfillmentMutation) AddRedeemValue(f float64) {
+	if m.addredeem_value != nil {
+		*m.addredeem_value += f
+	} else {
+		m.addredeem_value = &f
+	}
+}
+
+// AddedRedeemValue returns the value that was added to the "redeem_value" field in this mutation.
+func (m *ExternalOrderFulfillmentMutation) AddedRedeemValue() (r float64, exists bool) {
+	v := m.addredeem_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRedeemValue resets all changes to the "redeem_value" field.
+func (m *ExternalOrderFulfillmentMutation) ResetRedeemValue() {
+	m.redeem_value = nil
+	m.addredeem_value = nil
+}
+
+// SetGroupID sets the "group_id" field.
+func (m *ExternalOrderFulfillmentMutation) SetGroupID(i int64) {
+	m.group_id = &i
+	m.addgroup_id = nil
+}
+
+// GroupID returns the value of the "group_id" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) GroupID() (r int64, exists bool) {
+	v := m.group_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGroupID returns the old "group_id" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldGroupID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGroupID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGroupID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGroupID: %w", err)
+	}
+	return oldValue.GroupID, nil
+}
+
+// AddGroupID adds i to the "group_id" field.
+func (m *ExternalOrderFulfillmentMutation) AddGroupID(i int64) {
+	if m.addgroup_id != nil {
+		*m.addgroup_id += i
+	} else {
+		m.addgroup_id = &i
+	}
+}
+
+// AddedGroupID returns the value that was added to the "group_id" field in this mutation.
+func (m *ExternalOrderFulfillmentMutation) AddedGroupID() (r int64, exists bool) {
+	v := m.addgroup_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearGroupID clears the value of the "group_id" field.
+func (m *ExternalOrderFulfillmentMutation) ClearGroupID() {
+	m.group_id = nil
+	m.addgroup_id = nil
+	m.clearedFields[externalorderfulfillment.FieldGroupID] = struct{}{}
+}
+
+// GroupIDCleared returns if the "group_id" field was cleared in this mutation.
+func (m *ExternalOrderFulfillmentMutation) GroupIDCleared() bool {
+	_, ok := m.clearedFields[externalorderfulfillment.FieldGroupID]
+	return ok
+}
+
+// ResetGroupID resets all changes to the "group_id" field.
+func (m *ExternalOrderFulfillmentMutation) ResetGroupID() {
+	m.group_id = nil
+	m.addgroup_id = nil
+	delete(m.clearedFields, externalorderfulfillment.FieldGroupID)
+}
+
+// SetValidityDays sets the "validity_days" field.
+func (m *ExternalOrderFulfillmentMutation) SetValidityDays(i int) {
+	m.validity_days = &i
+	m.addvalidity_days = nil
+}
+
+// ValidityDays returns the value of the "validity_days" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) ValidityDays() (r int, exists bool) {
+	v := m.validity_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValidityDays returns the old "validity_days" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldValidityDays(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValidityDays is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValidityDays requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValidityDays: %w", err)
+	}
+	return oldValue.ValidityDays, nil
+}
+
+// AddValidityDays adds i to the "validity_days" field.
+func (m *ExternalOrderFulfillmentMutation) AddValidityDays(i int) {
+	if m.addvalidity_days != nil {
+		*m.addvalidity_days += i
+	} else {
+		m.addvalidity_days = &i
+	}
+}
+
+// AddedValidityDays returns the value that was added to the "validity_days" field in this mutation.
+func (m *ExternalOrderFulfillmentMutation) AddedValidityDays() (r int, exists bool) {
+	v := m.addvalidity_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetValidityDays resets all changes to the "validity_days" field.
+func (m *ExternalOrderFulfillmentMutation) ResetValidityDays() {
+	m.validity_days = nil
+	m.addvalidity_days = nil
+}
+
+// SetExpiresAt sets the "expires_at" field.
+func (m *ExternalOrderFulfillmentMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldExpiresAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (m *ExternalOrderFulfillmentMutation) ClearExpiresAt() {
+	m.expires_at = nil
+	m.clearedFields[externalorderfulfillment.FieldExpiresAt] = struct{}{}
+}
+
+// ExpiresAtCleared returns if the "expires_at" field was cleared in this mutation.
+func (m *ExternalOrderFulfillmentMutation) ExpiresAtCleared() bool {
+	_, ok := m.clearedFields[externalorderfulfillment.FieldExpiresAt]
+	return ok
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *ExternalOrderFulfillmentMutation) ResetExpiresAt() {
+	m.expires_at = nil
+	delete(m.clearedFields, externalorderfulfillment.FieldExpiresAt)
+}
+
+// SetManualURL sets the "manual_url" field.
+func (m *ExternalOrderFulfillmentMutation) SetManualURL(s string) {
+	m.manual_url = &s
+}
+
+// ManualURL returns the value of the "manual_url" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) ManualURL() (r string, exists bool) {
+	v := m.manual_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldManualURL returns the old "manual_url" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldManualURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldManualURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldManualURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldManualURL: %w", err)
+	}
+	return oldValue.ManualURL, nil
+}
+
+// ClearManualURL clears the value of the "manual_url" field.
+func (m *ExternalOrderFulfillmentMutation) ClearManualURL() {
+	m.manual_url = nil
+	m.clearedFields[externalorderfulfillment.FieldManualURL] = struct{}{}
+}
+
+// ManualURLCleared returns if the "manual_url" field was cleared in this mutation.
+func (m *ExternalOrderFulfillmentMutation) ManualURLCleared() bool {
+	_, ok := m.clearedFields[externalorderfulfillment.FieldManualURL]
+	return ok
+}
+
+// ResetManualURL resets all changes to the "manual_url" field.
+func (m *ExternalOrderFulfillmentMutation) ResetManualURL() {
+	m.manual_url = nil
+	delete(m.clearedFields, externalorderfulfillment.FieldManualURL)
+}
+
+// SetDeliveryMessage sets the "delivery_message" field.
+func (m *ExternalOrderFulfillmentMutation) SetDeliveryMessage(s string) {
+	m.delivery_message = &s
+}
+
+// DeliveryMessage returns the value of the "delivery_message" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) DeliveryMessage() (r string, exists bool) {
+	v := m.delivery_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeliveryMessage returns the old "delivery_message" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldDeliveryMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeliveryMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeliveryMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeliveryMessage: %w", err)
+	}
+	return oldValue.DeliveryMessage, nil
+}
+
+// ClearDeliveryMessage clears the value of the "delivery_message" field.
+func (m *ExternalOrderFulfillmentMutation) ClearDeliveryMessage() {
+	m.delivery_message = nil
+	m.clearedFields[externalorderfulfillment.FieldDeliveryMessage] = struct{}{}
+}
+
+// DeliveryMessageCleared returns if the "delivery_message" field was cleared in this mutation.
+func (m *ExternalOrderFulfillmentMutation) DeliveryMessageCleared() bool {
+	_, ok := m.clearedFields[externalorderfulfillment.FieldDeliveryMessage]
+	return ok
+}
+
+// ResetDeliveryMessage resets all changes to the "delivery_message" field.
+func (m *ExternalOrderFulfillmentMutation) ResetDeliveryMessage() {
+	m.delivery_message = nil
+	delete(m.clearedFields, externalorderfulfillment.FieldDeliveryMessage)
+}
+
+// SetStatus sets the "status" field.
+func (m *ExternalOrderFulfillmentMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *ExternalOrderFulfillmentMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetNotifyStatus sets the "notify_status" field.
+func (m *ExternalOrderFulfillmentMutation) SetNotifyStatus(s string) {
+	m.notify_status = &s
+}
+
+// NotifyStatus returns the value of the "notify_status" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) NotifyStatus() (r string, exists bool) {
+	v := m.notify_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNotifyStatus returns the old "notify_status" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldNotifyStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNotifyStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNotifyStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNotifyStatus: %w", err)
+	}
+	return oldValue.NotifyStatus, nil
+}
+
+// ResetNotifyStatus resets all changes to the "notify_status" field.
+func (m *ExternalOrderFulfillmentMutation) ResetNotifyStatus() {
+	m.notify_status = nil
+}
+
+// SetFailReason sets the "fail_reason" field.
+func (m *ExternalOrderFulfillmentMutation) SetFailReason(s string) {
+	m.fail_reason = &s
+}
+
+// FailReason returns the value of the "fail_reason" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) FailReason() (r string, exists bool) {
+	v := m.fail_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFailReason returns the old "fail_reason" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldFailReason(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFailReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFailReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFailReason: %w", err)
+	}
+	return oldValue.FailReason, nil
+}
+
+// ClearFailReason clears the value of the "fail_reason" field.
+func (m *ExternalOrderFulfillmentMutation) ClearFailReason() {
+	m.fail_reason = nil
+	m.clearedFields[externalorderfulfillment.FieldFailReason] = struct{}{}
+}
+
+// FailReasonCleared returns if the "fail_reason" field was cleared in this mutation.
+func (m *ExternalOrderFulfillmentMutation) FailReasonCleared() bool {
+	_, ok := m.clearedFields[externalorderfulfillment.FieldFailReason]
+	return ok
+}
+
+// ResetFailReason resets all changes to the "fail_reason" field.
+func (m *ExternalOrderFulfillmentMutation) ResetFailReason() {
+	m.fail_reason = nil
+	delete(m.clearedFields, externalorderfulfillment.FieldFailReason)
+}
+
+// SetOperator sets the "operator" field.
+func (m *ExternalOrderFulfillmentMutation) SetOperator(s string) {
+	m.operator = &s
+}
+
+// Operator returns the value of the "operator" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) Operator() (r string, exists bool) {
+	v := m.operator
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOperator returns the old "operator" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldOperator(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOperator is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOperator requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOperator: %w", err)
+	}
+	return oldValue.Operator, nil
+}
+
+// ClearOperator clears the value of the "operator" field.
+func (m *ExternalOrderFulfillmentMutation) ClearOperator() {
+	m.operator = nil
+	m.clearedFields[externalorderfulfillment.FieldOperator] = struct{}{}
+}
+
+// OperatorCleared returns if the "operator" field was cleared in this mutation.
+func (m *ExternalOrderFulfillmentMutation) OperatorCleared() bool {
+	_, ok := m.clearedFields[externalorderfulfillment.FieldOperator]
+	return ok
+}
+
+// ResetOperator resets all changes to the "operator" field.
+func (m *ExternalOrderFulfillmentMutation) ResetOperator() {
+	m.operator = nil
+	delete(m.clearedFields, externalorderfulfillment.FieldOperator)
+}
+
+// SetDeliveredAt sets the "delivered_at" field.
+func (m *ExternalOrderFulfillmentMutation) SetDeliveredAt(t time.Time) {
+	m.delivered_at = &t
+}
+
+// DeliveredAt returns the value of the "delivered_at" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) DeliveredAt() (r time.Time, exists bool) {
+	v := m.delivered_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeliveredAt returns the old "delivered_at" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldDeliveredAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeliveredAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeliveredAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeliveredAt: %w", err)
+	}
+	return oldValue.DeliveredAt, nil
+}
+
+// ClearDeliveredAt clears the value of the "delivered_at" field.
+func (m *ExternalOrderFulfillmentMutation) ClearDeliveredAt() {
+	m.delivered_at = nil
+	m.clearedFields[externalorderfulfillment.FieldDeliveredAt] = struct{}{}
+}
+
+// DeliveredAtCleared returns if the "delivered_at" field was cleared in this mutation.
+func (m *ExternalOrderFulfillmentMutation) DeliveredAtCleared() bool {
+	_, ok := m.clearedFields[externalorderfulfillment.FieldDeliveredAt]
+	return ok
+}
+
+// ResetDeliveredAt resets all changes to the "delivered_at" field.
+func (m *ExternalOrderFulfillmentMutation) ResetDeliveredAt() {
+	m.delivered_at = nil
+	delete(m.clearedFields, externalorderfulfillment.FieldDeliveredAt)
+}
+
+// SetNotifiedAt sets the "notified_at" field.
+func (m *ExternalOrderFulfillmentMutation) SetNotifiedAt(t time.Time) {
+	m.notified_at = &t
+}
+
+// NotifiedAt returns the value of the "notified_at" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) NotifiedAt() (r time.Time, exists bool) {
+	v := m.notified_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNotifiedAt returns the old "notified_at" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldNotifiedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNotifiedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNotifiedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNotifiedAt: %w", err)
+	}
+	return oldValue.NotifiedAt, nil
+}
+
+// ClearNotifiedAt clears the value of the "notified_at" field.
+func (m *ExternalOrderFulfillmentMutation) ClearNotifiedAt() {
+	m.notified_at = nil
+	m.clearedFields[externalorderfulfillment.FieldNotifiedAt] = struct{}{}
+}
+
+// NotifiedAtCleared returns if the "notified_at" field was cleared in this mutation.
+func (m *ExternalOrderFulfillmentMutation) NotifiedAtCleared() bool {
+	_, ok := m.clearedFields[externalorderfulfillment.FieldNotifiedAt]
+	return ok
+}
+
+// ResetNotifiedAt resets all changes to the "notified_at" field.
+func (m *ExternalOrderFulfillmentMutation) ResetNotifiedAt() {
+	m.notified_at = nil
+	delete(m.clearedFields, externalorderfulfillment.FieldNotifiedAt)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ExternalOrderFulfillmentMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ExternalOrderFulfillmentMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ExternalOrderFulfillmentMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ExternalOrderFulfillmentMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ExternalOrderFulfillment entity.
+// If the ExternalOrderFulfillment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExternalOrderFulfillmentMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ExternalOrderFulfillmentMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// Where appends a list predicates to the ExternalOrderFulfillmentMutation builder.
+func (m *ExternalOrderFulfillmentMutation) Where(ps ...predicate.ExternalOrderFulfillment) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ExternalOrderFulfillmentMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ExternalOrderFulfillmentMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ExternalOrderFulfillment, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ExternalOrderFulfillmentMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ExternalOrderFulfillmentMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ExternalOrderFulfillment).
+func (m *ExternalOrderFulfillmentMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ExternalOrderFulfillmentMutation) Fields() []string {
+	fields := make([]string, 0, 24)
+	if m.platform != nil {
+		fields = append(fields, externalorderfulfillment.FieldPlatform)
+	}
+	if m.platform_order_id != nil {
+		fields = append(fields, externalorderfulfillment.FieldPlatformOrderID)
+	}
+	if m.buyer_ref != nil {
+		fields = append(fields, externalorderfulfillment.FieldBuyerRef)
+	}
+	if m.sku_code != nil {
+		fields = append(fields, externalorderfulfillment.FieldSkuCode)
+	}
+	if m.sku_name != nil {
+		fields = append(fields, externalorderfulfillment.FieldSkuName)
+	}
+	if m.amount != nil {
+		fields = append(fields, externalorderfulfillment.FieldAmount)
+	}
+	if m.currency != nil {
+		fields = append(fields, externalorderfulfillment.FieldCurrency)
+	}
+	if m.redeem_code_id != nil {
+		fields = append(fields, externalorderfulfillment.FieldRedeemCodeID)
+	}
+	if m.redeem_code != nil {
+		fields = append(fields, externalorderfulfillment.FieldRedeemCode)
+	}
+	if m.redeem_type != nil {
+		fields = append(fields, externalorderfulfillment.FieldRedeemType)
+	}
+	if m.redeem_value != nil {
+		fields = append(fields, externalorderfulfillment.FieldRedeemValue)
+	}
+	if m.group_id != nil {
+		fields = append(fields, externalorderfulfillment.FieldGroupID)
+	}
+	if m.validity_days != nil {
+		fields = append(fields, externalorderfulfillment.FieldValidityDays)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, externalorderfulfillment.FieldExpiresAt)
+	}
+	if m.manual_url != nil {
+		fields = append(fields, externalorderfulfillment.FieldManualURL)
+	}
+	if m.delivery_message != nil {
+		fields = append(fields, externalorderfulfillment.FieldDeliveryMessage)
+	}
+	if m.status != nil {
+		fields = append(fields, externalorderfulfillment.FieldStatus)
+	}
+	if m.notify_status != nil {
+		fields = append(fields, externalorderfulfillment.FieldNotifyStatus)
+	}
+	if m.fail_reason != nil {
+		fields = append(fields, externalorderfulfillment.FieldFailReason)
+	}
+	if m.operator != nil {
+		fields = append(fields, externalorderfulfillment.FieldOperator)
+	}
+	if m.delivered_at != nil {
+		fields = append(fields, externalorderfulfillment.FieldDeliveredAt)
+	}
+	if m.notified_at != nil {
+		fields = append(fields, externalorderfulfillment.FieldNotifiedAt)
+	}
+	if m.created_at != nil {
+		fields = append(fields, externalorderfulfillment.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, externalorderfulfillment.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ExternalOrderFulfillmentMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case externalorderfulfillment.FieldPlatform:
+		return m.Platform()
+	case externalorderfulfillment.FieldPlatformOrderID:
+		return m.PlatformOrderID()
+	case externalorderfulfillment.FieldBuyerRef:
+		return m.BuyerRef()
+	case externalorderfulfillment.FieldSkuCode:
+		return m.SkuCode()
+	case externalorderfulfillment.FieldSkuName:
+		return m.SkuName()
+	case externalorderfulfillment.FieldAmount:
+		return m.Amount()
+	case externalorderfulfillment.FieldCurrency:
+		return m.Currency()
+	case externalorderfulfillment.FieldRedeemCodeID:
+		return m.RedeemCodeID()
+	case externalorderfulfillment.FieldRedeemCode:
+		return m.RedeemCode()
+	case externalorderfulfillment.FieldRedeemType:
+		return m.RedeemType()
+	case externalorderfulfillment.FieldRedeemValue:
+		return m.RedeemValue()
+	case externalorderfulfillment.FieldGroupID:
+		return m.GroupID()
+	case externalorderfulfillment.FieldValidityDays:
+		return m.ValidityDays()
+	case externalorderfulfillment.FieldExpiresAt:
+		return m.ExpiresAt()
+	case externalorderfulfillment.FieldManualURL:
+		return m.ManualURL()
+	case externalorderfulfillment.FieldDeliveryMessage:
+		return m.DeliveryMessage()
+	case externalorderfulfillment.FieldStatus:
+		return m.Status()
+	case externalorderfulfillment.FieldNotifyStatus:
+		return m.NotifyStatus()
+	case externalorderfulfillment.FieldFailReason:
+		return m.FailReason()
+	case externalorderfulfillment.FieldOperator:
+		return m.Operator()
+	case externalorderfulfillment.FieldDeliveredAt:
+		return m.DeliveredAt()
+	case externalorderfulfillment.FieldNotifiedAt:
+		return m.NotifiedAt()
+	case externalorderfulfillment.FieldCreatedAt:
+		return m.CreatedAt()
+	case externalorderfulfillment.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ExternalOrderFulfillmentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case externalorderfulfillment.FieldPlatform:
+		return m.OldPlatform(ctx)
+	case externalorderfulfillment.FieldPlatformOrderID:
+		return m.OldPlatformOrderID(ctx)
+	case externalorderfulfillment.FieldBuyerRef:
+		return m.OldBuyerRef(ctx)
+	case externalorderfulfillment.FieldSkuCode:
+		return m.OldSkuCode(ctx)
+	case externalorderfulfillment.FieldSkuName:
+		return m.OldSkuName(ctx)
+	case externalorderfulfillment.FieldAmount:
+		return m.OldAmount(ctx)
+	case externalorderfulfillment.FieldCurrency:
+		return m.OldCurrency(ctx)
+	case externalorderfulfillment.FieldRedeemCodeID:
+		return m.OldRedeemCodeID(ctx)
+	case externalorderfulfillment.FieldRedeemCode:
+		return m.OldRedeemCode(ctx)
+	case externalorderfulfillment.FieldRedeemType:
+		return m.OldRedeemType(ctx)
+	case externalorderfulfillment.FieldRedeemValue:
+		return m.OldRedeemValue(ctx)
+	case externalorderfulfillment.FieldGroupID:
+		return m.OldGroupID(ctx)
+	case externalorderfulfillment.FieldValidityDays:
+		return m.OldValidityDays(ctx)
+	case externalorderfulfillment.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
+	case externalorderfulfillment.FieldManualURL:
+		return m.OldManualURL(ctx)
+	case externalorderfulfillment.FieldDeliveryMessage:
+		return m.OldDeliveryMessage(ctx)
+	case externalorderfulfillment.FieldStatus:
+		return m.OldStatus(ctx)
+	case externalorderfulfillment.FieldNotifyStatus:
+		return m.OldNotifyStatus(ctx)
+	case externalorderfulfillment.FieldFailReason:
+		return m.OldFailReason(ctx)
+	case externalorderfulfillment.FieldOperator:
+		return m.OldOperator(ctx)
+	case externalorderfulfillment.FieldDeliveredAt:
+		return m.OldDeliveredAt(ctx)
+	case externalorderfulfillment.FieldNotifiedAt:
+		return m.OldNotifiedAt(ctx)
+	case externalorderfulfillment.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case externalorderfulfillment.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown ExternalOrderFulfillment field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ExternalOrderFulfillmentMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case externalorderfulfillment.FieldPlatform:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlatform(v)
+		return nil
+	case externalorderfulfillment.FieldPlatformOrderID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlatformOrderID(v)
+		return nil
+	case externalorderfulfillment.FieldBuyerRef:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBuyerRef(v)
+		return nil
+	case externalorderfulfillment.FieldSkuCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSkuCode(v)
+		return nil
+	case externalorderfulfillment.FieldSkuName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSkuName(v)
+		return nil
+	case externalorderfulfillment.FieldAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAmount(v)
+		return nil
+	case externalorderfulfillment.FieldCurrency:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCurrency(v)
+		return nil
+	case externalorderfulfillment.FieldRedeemCodeID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRedeemCodeID(v)
+		return nil
+	case externalorderfulfillment.FieldRedeemCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRedeemCode(v)
+		return nil
+	case externalorderfulfillment.FieldRedeemType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRedeemType(v)
+		return nil
+	case externalorderfulfillment.FieldRedeemValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRedeemValue(v)
+		return nil
+	case externalorderfulfillment.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGroupID(v)
+		return nil
+	case externalorderfulfillment.FieldValidityDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValidityDays(v)
+		return nil
+	case externalorderfulfillment.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
+	case externalorderfulfillment.FieldManualURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetManualURL(v)
+		return nil
+	case externalorderfulfillment.FieldDeliveryMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeliveryMessage(v)
+		return nil
+	case externalorderfulfillment.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case externalorderfulfillment.FieldNotifyStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNotifyStatus(v)
+		return nil
+	case externalorderfulfillment.FieldFailReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFailReason(v)
+		return nil
+	case externalorderfulfillment.FieldOperator:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOperator(v)
+		return nil
+	case externalorderfulfillment.FieldDeliveredAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeliveredAt(v)
+		return nil
+	case externalorderfulfillment.FieldNotifiedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNotifiedAt(v)
+		return nil
+	case externalorderfulfillment.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case externalorderfulfillment.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ExternalOrderFulfillment field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ExternalOrderFulfillmentMutation) AddedFields() []string {
+	var fields []string
+	if m.addamount != nil {
+		fields = append(fields, externalorderfulfillment.FieldAmount)
+	}
+	if m.addredeem_code_id != nil {
+		fields = append(fields, externalorderfulfillment.FieldRedeemCodeID)
+	}
+	if m.addredeem_value != nil {
+		fields = append(fields, externalorderfulfillment.FieldRedeemValue)
+	}
+	if m.addgroup_id != nil {
+		fields = append(fields, externalorderfulfillment.FieldGroupID)
+	}
+	if m.addvalidity_days != nil {
+		fields = append(fields, externalorderfulfillment.FieldValidityDays)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ExternalOrderFulfillmentMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case externalorderfulfillment.FieldAmount:
+		return m.AddedAmount()
+	case externalorderfulfillment.FieldRedeemCodeID:
+		return m.AddedRedeemCodeID()
+	case externalorderfulfillment.FieldRedeemValue:
+		return m.AddedRedeemValue()
+	case externalorderfulfillment.FieldGroupID:
+		return m.AddedGroupID()
+	case externalorderfulfillment.FieldValidityDays:
+		return m.AddedValidityDays()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ExternalOrderFulfillmentMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case externalorderfulfillment.FieldAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAmount(v)
+		return nil
+	case externalorderfulfillment.FieldRedeemCodeID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRedeemCodeID(v)
+		return nil
+	case externalorderfulfillment.FieldRedeemValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRedeemValue(v)
+		return nil
+	case externalorderfulfillment.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddGroupID(v)
+		return nil
+	case externalorderfulfillment.FieldValidityDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddValidityDays(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ExternalOrderFulfillment numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ExternalOrderFulfillmentMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(externalorderfulfillment.FieldBuyerRef) {
+		fields = append(fields, externalorderfulfillment.FieldBuyerRef)
+	}
+	if m.FieldCleared(externalorderfulfillment.FieldSkuName) {
+		fields = append(fields, externalorderfulfillment.FieldSkuName)
+	}
+	if m.FieldCleared(externalorderfulfillment.FieldRedeemCodeID) {
+		fields = append(fields, externalorderfulfillment.FieldRedeemCodeID)
+	}
+	if m.FieldCleared(externalorderfulfillment.FieldRedeemCode) {
+		fields = append(fields, externalorderfulfillment.FieldRedeemCode)
+	}
+	if m.FieldCleared(externalorderfulfillment.FieldGroupID) {
+		fields = append(fields, externalorderfulfillment.FieldGroupID)
+	}
+	if m.FieldCleared(externalorderfulfillment.FieldExpiresAt) {
+		fields = append(fields, externalorderfulfillment.FieldExpiresAt)
+	}
+	if m.FieldCleared(externalorderfulfillment.FieldManualURL) {
+		fields = append(fields, externalorderfulfillment.FieldManualURL)
+	}
+	if m.FieldCleared(externalorderfulfillment.FieldDeliveryMessage) {
+		fields = append(fields, externalorderfulfillment.FieldDeliveryMessage)
+	}
+	if m.FieldCleared(externalorderfulfillment.FieldFailReason) {
+		fields = append(fields, externalorderfulfillment.FieldFailReason)
+	}
+	if m.FieldCleared(externalorderfulfillment.FieldOperator) {
+		fields = append(fields, externalorderfulfillment.FieldOperator)
+	}
+	if m.FieldCleared(externalorderfulfillment.FieldDeliveredAt) {
+		fields = append(fields, externalorderfulfillment.FieldDeliveredAt)
+	}
+	if m.FieldCleared(externalorderfulfillment.FieldNotifiedAt) {
+		fields = append(fields, externalorderfulfillment.FieldNotifiedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ExternalOrderFulfillmentMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ExternalOrderFulfillmentMutation) ClearField(name string) error {
+	switch name {
+	case externalorderfulfillment.FieldBuyerRef:
+		m.ClearBuyerRef()
+		return nil
+	case externalorderfulfillment.FieldSkuName:
+		m.ClearSkuName()
+		return nil
+	case externalorderfulfillment.FieldRedeemCodeID:
+		m.ClearRedeemCodeID()
+		return nil
+	case externalorderfulfillment.FieldRedeemCode:
+		m.ClearRedeemCode()
+		return nil
+	case externalorderfulfillment.FieldGroupID:
+		m.ClearGroupID()
+		return nil
+	case externalorderfulfillment.FieldExpiresAt:
+		m.ClearExpiresAt()
+		return nil
+	case externalorderfulfillment.FieldManualURL:
+		m.ClearManualURL()
+		return nil
+	case externalorderfulfillment.FieldDeliveryMessage:
+		m.ClearDeliveryMessage()
+		return nil
+	case externalorderfulfillment.FieldFailReason:
+		m.ClearFailReason()
+		return nil
+	case externalorderfulfillment.FieldOperator:
+		m.ClearOperator()
+		return nil
+	case externalorderfulfillment.FieldDeliveredAt:
+		m.ClearDeliveredAt()
+		return nil
+	case externalorderfulfillment.FieldNotifiedAt:
+		m.ClearNotifiedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ExternalOrderFulfillment nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ExternalOrderFulfillmentMutation) ResetField(name string) error {
+	switch name {
+	case externalorderfulfillment.FieldPlatform:
+		m.ResetPlatform()
+		return nil
+	case externalorderfulfillment.FieldPlatformOrderID:
+		m.ResetPlatformOrderID()
+		return nil
+	case externalorderfulfillment.FieldBuyerRef:
+		m.ResetBuyerRef()
+		return nil
+	case externalorderfulfillment.FieldSkuCode:
+		m.ResetSkuCode()
+		return nil
+	case externalorderfulfillment.FieldSkuName:
+		m.ResetSkuName()
+		return nil
+	case externalorderfulfillment.FieldAmount:
+		m.ResetAmount()
+		return nil
+	case externalorderfulfillment.FieldCurrency:
+		m.ResetCurrency()
+		return nil
+	case externalorderfulfillment.FieldRedeemCodeID:
+		m.ResetRedeemCodeID()
+		return nil
+	case externalorderfulfillment.FieldRedeemCode:
+		m.ResetRedeemCode()
+		return nil
+	case externalorderfulfillment.FieldRedeemType:
+		m.ResetRedeemType()
+		return nil
+	case externalorderfulfillment.FieldRedeemValue:
+		m.ResetRedeemValue()
+		return nil
+	case externalorderfulfillment.FieldGroupID:
+		m.ResetGroupID()
+		return nil
+	case externalorderfulfillment.FieldValidityDays:
+		m.ResetValidityDays()
+		return nil
+	case externalorderfulfillment.FieldExpiresAt:
+		m.ResetExpiresAt()
+		return nil
+	case externalorderfulfillment.FieldManualURL:
+		m.ResetManualURL()
+		return nil
+	case externalorderfulfillment.FieldDeliveryMessage:
+		m.ResetDeliveryMessage()
+		return nil
+	case externalorderfulfillment.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case externalorderfulfillment.FieldNotifyStatus:
+		m.ResetNotifyStatus()
+		return nil
+	case externalorderfulfillment.FieldFailReason:
+		m.ResetFailReason()
+		return nil
+	case externalorderfulfillment.FieldOperator:
+		m.ResetOperator()
+		return nil
+	case externalorderfulfillment.FieldDeliveredAt:
+		m.ResetDeliveredAt()
+		return nil
+	case externalorderfulfillment.FieldNotifiedAt:
+		m.ResetNotifiedAt()
+		return nil
+	case externalorderfulfillment.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case externalorderfulfillment.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ExternalOrderFulfillment field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ExternalOrderFulfillmentMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ExternalOrderFulfillmentMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ExternalOrderFulfillmentMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ExternalOrderFulfillmentMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ExternalOrderFulfillmentMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ExternalOrderFulfillmentMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ExternalOrderFulfillmentMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown ExternalOrderFulfillment unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ExternalOrderFulfillmentMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown ExternalOrderFulfillment edge %s", name)
 }
 
 // GroupMutation represents an operation that mutates the Group nodes in the graph.

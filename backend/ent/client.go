@@ -27,6 +27,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
+	"github.com/Wei-Shaw/sub2api/ent/externalfulfillmentsku"
+	"github.com/Wei-Shaw/sub2api/ent/externalorderfulfillment"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
@@ -83,6 +85,10 @@ type Client struct {
 	ChannelMonitorRequestTemplate *ChannelMonitorRequestTemplateClient
 	// ErrorPassthroughRule is the client for interacting with the ErrorPassthroughRule builders.
 	ErrorPassthroughRule *ErrorPassthroughRuleClient
+	// ExternalFulfillmentSKU is the client for interacting with the ExternalFulfillmentSKU builders.
+	ExternalFulfillmentSKU *ExternalFulfillmentSKUClient
+	// ExternalOrderFulfillment is the client for interacting with the ExternalOrderFulfillment builders.
+	ExternalOrderFulfillment *ExternalOrderFulfillmentClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// IdempotencyRecord is the client for interacting with the IdempotencyRecord builders.
@@ -152,6 +158,8 @@ func (c *Client) init() {
 	c.ChannelMonitorHistory = NewChannelMonitorHistoryClient(c.config)
 	c.ChannelMonitorRequestTemplate = NewChannelMonitorRequestTemplateClient(c.config)
 	c.ErrorPassthroughRule = NewErrorPassthroughRuleClient(c.config)
+	c.ExternalFulfillmentSKU = NewExternalFulfillmentSKUClient(c.config)
+	c.ExternalOrderFulfillment = NewExternalOrderFulfillmentClient(c.config)
 	c.Group = NewGroupClient(c.config)
 	c.IdempotencyRecord = NewIdempotencyRecordClient(c.config)
 	c.IdentityAdoptionDecision = NewIdentityAdoptionDecisionClient(c.config)
@@ -279,6 +287,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ChannelMonitorHistory:         NewChannelMonitorHistoryClient(cfg),
 		ChannelMonitorRequestTemplate: NewChannelMonitorRequestTemplateClient(cfg),
 		ErrorPassthroughRule:          NewErrorPassthroughRuleClient(cfg),
+		ExternalFulfillmentSKU:        NewExternalFulfillmentSKUClient(cfg),
+		ExternalOrderFulfillment:      NewExternalOrderFulfillmentClient(cfg),
 		Group:                         NewGroupClient(cfg),
 		IdempotencyRecord:             NewIdempotencyRecordClient(cfg),
 		IdentityAdoptionDecision:      NewIdentityAdoptionDecisionClient(cfg),
@@ -333,6 +343,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ChannelMonitorHistory:         NewChannelMonitorHistoryClient(cfg),
 		ChannelMonitorRequestTemplate: NewChannelMonitorRequestTemplateClient(cfg),
 		ErrorPassthroughRule:          NewErrorPassthroughRuleClient(cfg),
+		ExternalFulfillmentSKU:        NewExternalFulfillmentSKUClient(cfg),
+		ExternalOrderFulfillment:      NewExternalOrderFulfillmentClient(cfg),
 		Group:                         NewGroupClient(cfg),
 		IdempotencyRecord:             NewIdempotencyRecordClient(cfg),
 		IdentityAdoptionDecision:      NewIdentityAdoptionDecisionClient(cfg),
@@ -388,7 +400,8 @@ func (c *Client) Use(hooks ...Hook) {
 		c.APIKey, c.Account, c.AccountGroup, c.Announcement, c.AnnouncementRead,
 		c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
 		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
-		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule, c.Group,
+		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule,
+		c.ExternalFulfillmentSKU, c.ExternalOrderFulfillment, c.Group,
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
 		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
@@ -407,7 +420,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.APIKey, c.Account, c.AccountGroup, c.Announcement, c.AnnouncementRead,
 		c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
 		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
-		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule, c.Group,
+		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule,
+		c.ExternalFulfillmentSKU, c.ExternalOrderFulfillment, c.Group,
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
 		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
@@ -446,6 +460,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ChannelMonitorRequestTemplate.mutate(ctx, m)
 	case *ErrorPassthroughRuleMutation:
 		return c.ErrorPassthroughRule.mutate(ctx, m)
+	case *ExternalFulfillmentSKUMutation:
+		return c.ExternalFulfillmentSKU.mutate(ctx, m)
+	case *ExternalOrderFulfillmentMutation:
+		return c.ExternalOrderFulfillment.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
 	case *IdempotencyRecordMutation:
@@ -2397,6 +2415,272 @@ func (c *ErrorPassthroughRuleClient) mutate(ctx context.Context, m *ErrorPassthr
 		return (&ErrorPassthroughRuleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown ErrorPassthroughRule mutation op: %q", m.Op())
+	}
+}
+
+// ExternalFulfillmentSKUClient is a client for the ExternalFulfillmentSKU schema.
+type ExternalFulfillmentSKUClient struct {
+	config
+}
+
+// NewExternalFulfillmentSKUClient returns a client for the ExternalFulfillmentSKU from the given config.
+func NewExternalFulfillmentSKUClient(c config) *ExternalFulfillmentSKUClient {
+	return &ExternalFulfillmentSKUClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `externalfulfillmentsku.Hooks(f(g(h())))`.
+func (c *ExternalFulfillmentSKUClient) Use(hooks ...Hook) {
+	c.hooks.ExternalFulfillmentSKU = append(c.hooks.ExternalFulfillmentSKU, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `externalfulfillmentsku.Intercept(f(g(h())))`.
+func (c *ExternalFulfillmentSKUClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ExternalFulfillmentSKU = append(c.inters.ExternalFulfillmentSKU, interceptors...)
+}
+
+// Create returns a builder for creating a ExternalFulfillmentSKU entity.
+func (c *ExternalFulfillmentSKUClient) Create() *ExternalFulfillmentSKUCreate {
+	mutation := newExternalFulfillmentSKUMutation(c.config, OpCreate)
+	return &ExternalFulfillmentSKUCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ExternalFulfillmentSKU entities.
+func (c *ExternalFulfillmentSKUClient) CreateBulk(builders ...*ExternalFulfillmentSKUCreate) *ExternalFulfillmentSKUCreateBulk {
+	return &ExternalFulfillmentSKUCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ExternalFulfillmentSKUClient) MapCreateBulk(slice any, setFunc func(*ExternalFulfillmentSKUCreate, int)) *ExternalFulfillmentSKUCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ExternalFulfillmentSKUCreateBulk{err: fmt.Errorf("calling to ExternalFulfillmentSKUClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ExternalFulfillmentSKUCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ExternalFulfillmentSKUCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ExternalFulfillmentSKU.
+func (c *ExternalFulfillmentSKUClient) Update() *ExternalFulfillmentSKUUpdate {
+	mutation := newExternalFulfillmentSKUMutation(c.config, OpUpdate)
+	return &ExternalFulfillmentSKUUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ExternalFulfillmentSKUClient) UpdateOne(_m *ExternalFulfillmentSKU) *ExternalFulfillmentSKUUpdateOne {
+	mutation := newExternalFulfillmentSKUMutation(c.config, OpUpdateOne, withExternalFulfillmentSKU(_m))
+	return &ExternalFulfillmentSKUUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ExternalFulfillmentSKUClient) UpdateOneID(id int64) *ExternalFulfillmentSKUUpdateOne {
+	mutation := newExternalFulfillmentSKUMutation(c.config, OpUpdateOne, withExternalFulfillmentSKUID(id))
+	return &ExternalFulfillmentSKUUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ExternalFulfillmentSKU.
+func (c *ExternalFulfillmentSKUClient) Delete() *ExternalFulfillmentSKUDelete {
+	mutation := newExternalFulfillmentSKUMutation(c.config, OpDelete)
+	return &ExternalFulfillmentSKUDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ExternalFulfillmentSKUClient) DeleteOne(_m *ExternalFulfillmentSKU) *ExternalFulfillmentSKUDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ExternalFulfillmentSKUClient) DeleteOneID(id int64) *ExternalFulfillmentSKUDeleteOne {
+	builder := c.Delete().Where(externalfulfillmentsku.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ExternalFulfillmentSKUDeleteOne{builder}
+}
+
+// Query returns a query builder for ExternalFulfillmentSKU.
+func (c *ExternalFulfillmentSKUClient) Query() *ExternalFulfillmentSKUQuery {
+	return &ExternalFulfillmentSKUQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeExternalFulfillmentSKU},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ExternalFulfillmentSKU entity by its id.
+func (c *ExternalFulfillmentSKUClient) Get(ctx context.Context, id int64) (*ExternalFulfillmentSKU, error) {
+	return c.Query().Where(externalfulfillmentsku.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ExternalFulfillmentSKUClient) GetX(ctx context.Context, id int64) *ExternalFulfillmentSKU {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *ExternalFulfillmentSKUClient) Hooks() []Hook {
+	return c.hooks.ExternalFulfillmentSKU
+}
+
+// Interceptors returns the client interceptors.
+func (c *ExternalFulfillmentSKUClient) Interceptors() []Interceptor {
+	return c.inters.ExternalFulfillmentSKU
+}
+
+func (c *ExternalFulfillmentSKUClient) mutate(ctx context.Context, m *ExternalFulfillmentSKUMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ExternalFulfillmentSKUCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ExternalFulfillmentSKUUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ExternalFulfillmentSKUUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ExternalFulfillmentSKUDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ExternalFulfillmentSKU mutation op: %q", m.Op())
+	}
+}
+
+// ExternalOrderFulfillmentClient is a client for the ExternalOrderFulfillment schema.
+type ExternalOrderFulfillmentClient struct {
+	config
+}
+
+// NewExternalOrderFulfillmentClient returns a client for the ExternalOrderFulfillment from the given config.
+func NewExternalOrderFulfillmentClient(c config) *ExternalOrderFulfillmentClient {
+	return &ExternalOrderFulfillmentClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `externalorderfulfillment.Hooks(f(g(h())))`.
+func (c *ExternalOrderFulfillmentClient) Use(hooks ...Hook) {
+	c.hooks.ExternalOrderFulfillment = append(c.hooks.ExternalOrderFulfillment, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `externalorderfulfillment.Intercept(f(g(h())))`.
+func (c *ExternalOrderFulfillmentClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ExternalOrderFulfillment = append(c.inters.ExternalOrderFulfillment, interceptors...)
+}
+
+// Create returns a builder for creating a ExternalOrderFulfillment entity.
+func (c *ExternalOrderFulfillmentClient) Create() *ExternalOrderFulfillmentCreate {
+	mutation := newExternalOrderFulfillmentMutation(c.config, OpCreate)
+	return &ExternalOrderFulfillmentCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ExternalOrderFulfillment entities.
+func (c *ExternalOrderFulfillmentClient) CreateBulk(builders ...*ExternalOrderFulfillmentCreate) *ExternalOrderFulfillmentCreateBulk {
+	return &ExternalOrderFulfillmentCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ExternalOrderFulfillmentClient) MapCreateBulk(slice any, setFunc func(*ExternalOrderFulfillmentCreate, int)) *ExternalOrderFulfillmentCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ExternalOrderFulfillmentCreateBulk{err: fmt.Errorf("calling to ExternalOrderFulfillmentClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ExternalOrderFulfillmentCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ExternalOrderFulfillmentCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ExternalOrderFulfillment.
+func (c *ExternalOrderFulfillmentClient) Update() *ExternalOrderFulfillmentUpdate {
+	mutation := newExternalOrderFulfillmentMutation(c.config, OpUpdate)
+	return &ExternalOrderFulfillmentUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ExternalOrderFulfillmentClient) UpdateOne(_m *ExternalOrderFulfillment) *ExternalOrderFulfillmentUpdateOne {
+	mutation := newExternalOrderFulfillmentMutation(c.config, OpUpdateOne, withExternalOrderFulfillment(_m))
+	return &ExternalOrderFulfillmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ExternalOrderFulfillmentClient) UpdateOneID(id int64) *ExternalOrderFulfillmentUpdateOne {
+	mutation := newExternalOrderFulfillmentMutation(c.config, OpUpdateOne, withExternalOrderFulfillmentID(id))
+	return &ExternalOrderFulfillmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ExternalOrderFulfillment.
+func (c *ExternalOrderFulfillmentClient) Delete() *ExternalOrderFulfillmentDelete {
+	mutation := newExternalOrderFulfillmentMutation(c.config, OpDelete)
+	return &ExternalOrderFulfillmentDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ExternalOrderFulfillmentClient) DeleteOne(_m *ExternalOrderFulfillment) *ExternalOrderFulfillmentDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ExternalOrderFulfillmentClient) DeleteOneID(id int64) *ExternalOrderFulfillmentDeleteOne {
+	builder := c.Delete().Where(externalorderfulfillment.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ExternalOrderFulfillmentDeleteOne{builder}
+}
+
+// Query returns a query builder for ExternalOrderFulfillment.
+func (c *ExternalOrderFulfillmentClient) Query() *ExternalOrderFulfillmentQuery {
+	return &ExternalOrderFulfillmentQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeExternalOrderFulfillment},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ExternalOrderFulfillment entity by its id.
+func (c *ExternalOrderFulfillmentClient) Get(ctx context.Context, id int64) (*ExternalOrderFulfillment, error) {
+	return c.Query().Where(externalorderfulfillment.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ExternalOrderFulfillmentClient) GetX(ctx context.Context, id int64) *ExternalOrderFulfillment {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *ExternalOrderFulfillmentClient) Hooks() []Hook {
+	return c.hooks.ExternalOrderFulfillment
+}
+
+// Interceptors returns the client interceptors.
+func (c *ExternalOrderFulfillmentClient) Interceptors() []Interceptor {
+	return c.inters.ExternalOrderFulfillment
+}
+
+func (c *ExternalOrderFulfillmentClient) mutate(ctx context.Context, m *ExternalOrderFulfillmentMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ExternalOrderFulfillmentCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ExternalOrderFulfillmentUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ExternalOrderFulfillmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ExternalOrderFulfillmentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ExternalOrderFulfillment mutation op: %q", m.Op())
 	}
 }
 
@@ -6212,23 +6496,23 @@ type (
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
 		AuthIdentityChannel, ChannelMonitor, ChannelMonitorDailyRollup,
 		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
-		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
-		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
-		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
-		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
-		UserSubscription []ent.Hook
+		ExternalFulfillmentSKU, ExternalOrderFulfillment, Group, IdempotencyRecord,
+		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
+		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
+		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
+		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
+		UserAttributeValue, UserPlatformQuota, UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
 		AuthIdentityChannel, ChannelMonitor, ChannelMonitorDailyRollup,
 		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
-		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
-		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
-		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
-		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
-		UserSubscription []ent.Interceptor
+		ExternalFulfillmentSKU, ExternalOrderFulfillment, Group, IdempotencyRecord,
+		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
+		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
+		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
+		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
+		UserAttributeValue, UserPlatformQuota, UserSubscription []ent.Interceptor
 	}
 )
 

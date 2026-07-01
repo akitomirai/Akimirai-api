@@ -90,6 +90,20 @@ func RegisterPaymentRoutes(
 			adminOrders.POST("/:id/refund", adminPaymentHandler.ProcessRefund)
 		}
 
+		// External marketplace fulfillment
+		externalSKUs := adminGroup.Group("/external-fulfillment-skus")
+		{
+			externalSKUs.GET("", adminPaymentHandler.ListExternalFulfillmentSKUs)
+			externalSKUs.POST("", adminPaymentHandler.UpsertExternalFulfillmentSKU)
+			externalSKUs.DELETE("/:id", adminPaymentHandler.DeleteExternalFulfillmentSKU)
+		}
+		externalFulfillments := adminGroup.Group("/external-fulfillments")
+		{
+			externalFulfillments.GET("", adminPaymentHandler.ListExternalFulfillments)
+			externalFulfillments.POST("", adminPaymentHandler.CreateExternalFulfillment)
+			externalFulfillments.POST("/:id/retry-notify", adminPaymentHandler.RetryExternalFulfillmentNotify)
+		}
+
 		// Subscription Plans
 		plans := adminGroup.Group("/plans")
 		{

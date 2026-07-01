@@ -17,6 +17,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
+	"github.com/Wei-Shaw/sub2api/ent/externalfulfillmentsku"
+	"github.com/Wei-Shaw/sub2api/ent/externalorderfulfillment"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
@@ -763,6 +765,190 @@ func init() {
 	errorpassthroughruleDescSkipMonitoring := errorpassthroughruleFields[11].Descriptor()
 	// errorpassthroughrule.DefaultSkipMonitoring holds the default value on creation for the skip_monitoring field.
 	errorpassthroughrule.DefaultSkipMonitoring = errorpassthroughruleDescSkipMonitoring.Default.(bool)
+	externalfulfillmentskuFields := schema.ExternalFulfillmentSKU{}.Fields()
+	_ = externalfulfillmentskuFields
+	// externalfulfillmentskuDescPlatform is the schema descriptor for platform field.
+	externalfulfillmentskuDescPlatform := externalfulfillmentskuFields[0].Descriptor()
+	// externalfulfillmentsku.DefaultPlatform holds the default value on creation for the platform field.
+	externalfulfillmentsku.DefaultPlatform = externalfulfillmentskuDescPlatform.Default.(string)
+	// externalfulfillmentsku.PlatformValidator is a validator for the "platform" field. It is called by the builders before save.
+	externalfulfillmentsku.PlatformValidator = externalfulfillmentskuDescPlatform.Validators[0].(func(string) error)
+	// externalfulfillmentskuDescSkuCode is the schema descriptor for sku_code field.
+	externalfulfillmentskuDescSkuCode := externalfulfillmentskuFields[1].Descriptor()
+	// externalfulfillmentsku.SkuCodeValidator is a validator for the "sku_code" field. It is called by the builders before save.
+	externalfulfillmentsku.SkuCodeValidator = func() func(string) error {
+		validators := externalfulfillmentskuDescSkuCode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(sku_code string) error {
+			for _, fn := range fns {
+				if err := fn(sku_code); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// externalfulfillmentskuDescName is the schema descriptor for name field.
+	externalfulfillmentskuDescName := externalfulfillmentskuFields[2].Descriptor()
+	// externalfulfillmentsku.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	externalfulfillmentsku.NameValidator = func() func(string) error {
+		validators := externalfulfillmentskuDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// externalfulfillmentskuDescAmount is the schema descriptor for amount field.
+	externalfulfillmentskuDescAmount := externalfulfillmentskuFields[3].Descriptor()
+	// externalfulfillmentsku.DefaultAmount holds the default value on creation for the amount field.
+	externalfulfillmentsku.DefaultAmount = externalfulfillmentskuDescAmount.Default.(float64)
+	// externalfulfillmentskuDescCurrency is the schema descriptor for currency field.
+	externalfulfillmentskuDescCurrency := externalfulfillmentskuFields[4].Descriptor()
+	// externalfulfillmentsku.DefaultCurrency holds the default value on creation for the currency field.
+	externalfulfillmentsku.DefaultCurrency = externalfulfillmentskuDescCurrency.Default.(string)
+	// externalfulfillmentsku.CurrencyValidator is a validator for the "currency" field. It is called by the builders before save.
+	externalfulfillmentsku.CurrencyValidator = externalfulfillmentskuDescCurrency.Validators[0].(func(string) error)
+	// externalfulfillmentskuDescRedeemType is the schema descriptor for redeem_type field.
+	externalfulfillmentskuDescRedeemType := externalfulfillmentskuFields[5].Descriptor()
+	// externalfulfillmentsku.RedeemTypeValidator is a validator for the "redeem_type" field. It is called by the builders before save.
+	externalfulfillmentsku.RedeemTypeValidator = externalfulfillmentskuDescRedeemType.Validators[0].(func(string) error)
+	// externalfulfillmentskuDescRedeemValue is the schema descriptor for redeem_value field.
+	externalfulfillmentskuDescRedeemValue := externalfulfillmentskuFields[6].Descriptor()
+	// externalfulfillmentsku.DefaultRedeemValue holds the default value on creation for the redeem_value field.
+	externalfulfillmentsku.DefaultRedeemValue = externalfulfillmentskuDescRedeemValue.Default.(float64)
+	// externalfulfillmentskuDescValidityDays is the schema descriptor for validity_days field.
+	externalfulfillmentskuDescValidityDays := externalfulfillmentskuFields[8].Descriptor()
+	// externalfulfillmentsku.DefaultValidityDays holds the default value on creation for the validity_days field.
+	externalfulfillmentsku.DefaultValidityDays = externalfulfillmentskuDescValidityDays.Default.(int)
+	// externalfulfillmentskuDescEnabled is the schema descriptor for enabled field.
+	externalfulfillmentskuDescEnabled := externalfulfillmentskuFields[12].Descriptor()
+	// externalfulfillmentsku.DefaultEnabled holds the default value on creation for the enabled field.
+	externalfulfillmentsku.DefaultEnabled = externalfulfillmentskuDescEnabled.Default.(bool)
+	// externalfulfillmentskuDescCreatedAt is the schema descriptor for created_at field.
+	externalfulfillmentskuDescCreatedAt := externalfulfillmentskuFields[13].Descriptor()
+	// externalfulfillmentsku.DefaultCreatedAt holds the default value on creation for the created_at field.
+	externalfulfillmentsku.DefaultCreatedAt = externalfulfillmentskuDescCreatedAt.Default.(func() time.Time)
+	// externalfulfillmentskuDescUpdatedAt is the schema descriptor for updated_at field.
+	externalfulfillmentskuDescUpdatedAt := externalfulfillmentskuFields[14].Descriptor()
+	// externalfulfillmentsku.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	externalfulfillmentsku.DefaultUpdatedAt = externalfulfillmentskuDescUpdatedAt.Default.(func() time.Time)
+	// externalfulfillmentsku.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	externalfulfillmentsku.UpdateDefaultUpdatedAt = externalfulfillmentskuDescUpdatedAt.UpdateDefault.(func() time.Time)
+	externalorderfulfillmentFields := schema.ExternalOrderFulfillment{}.Fields()
+	_ = externalorderfulfillmentFields
+	// externalorderfulfillmentDescPlatform is the schema descriptor for platform field.
+	externalorderfulfillmentDescPlatform := externalorderfulfillmentFields[0].Descriptor()
+	// externalorderfulfillment.DefaultPlatform holds the default value on creation for the platform field.
+	externalorderfulfillment.DefaultPlatform = externalorderfulfillmentDescPlatform.Default.(string)
+	// externalorderfulfillment.PlatformValidator is a validator for the "platform" field. It is called by the builders before save.
+	externalorderfulfillment.PlatformValidator = externalorderfulfillmentDescPlatform.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescPlatformOrderID is the schema descriptor for platform_order_id field.
+	externalorderfulfillmentDescPlatformOrderID := externalorderfulfillmentFields[1].Descriptor()
+	// externalorderfulfillment.PlatformOrderIDValidator is a validator for the "platform_order_id" field. It is called by the builders before save.
+	externalorderfulfillment.PlatformOrderIDValidator = func() func(string) error {
+		validators := externalorderfulfillmentDescPlatformOrderID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(platform_order_id string) error {
+			for _, fn := range fns {
+				if err := fn(platform_order_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// externalorderfulfillmentDescBuyerRef is the schema descriptor for buyer_ref field.
+	externalorderfulfillmentDescBuyerRef := externalorderfulfillmentFields[2].Descriptor()
+	// externalorderfulfillment.BuyerRefValidator is a validator for the "buyer_ref" field. It is called by the builders before save.
+	externalorderfulfillment.BuyerRefValidator = externalorderfulfillmentDescBuyerRef.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescSkuCode is the schema descriptor for sku_code field.
+	externalorderfulfillmentDescSkuCode := externalorderfulfillmentFields[3].Descriptor()
+	// externalorderfulfillment.SkuCodeValidator is a validator for the "sku_code" field. It is called by the builders before save.
+	externalorderfulfillment.SkuCodeValidator = func() func(string) error {
+		validators := externalorderfulfillmentDescSkuCode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(sku_code string) error {
+			for _, fn := range fns {
+				if err := fn(sku_code); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// externalorderfulfillmentDescSkuName is the schema descriptor for sku_name field.
+	externalorderfulfillmentDescSkuName := externalorderfulfillmentFields[4].Descriptor()
+	// externalorderfulfillment.SkuNameValidator is a validator for the "sku_name" field. It is called by the builders before save.
+	externalorderfulfillment.SkuNameValidator = externalorderfulfillmentDescSkuName.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescAmount is the schema descriptor for amount field.
+	externalorderfulfillmentDescAmount := externalorderfulfillmentFields[5].Descriptor()
+	// externalorderfulfillment.DefaultAmount holds the default value on creation for the amount field.
+	externalorderfulfillment.DefaultAmount = externalorderfulfillmentDescAmount.Default.(float64)
+	// externalorderfulfillmentDescCurrency is the schema descriptor for currency field.
+	externalorderfulfillmentDescCurrency := externalorderfulfillmentFields[6].Descriptor()
+	// externalorderfulfillment.DefaultCurrency holds the default value on creation for the currency field.
+	externalorderfulfillment.DefaultCurrency = externalorderfulfillmentDescCurrency.Default.(string)
+	// externalorderfulfillment.CurrencyValidator is a validator for the "currency" field. It is called by the builders before save.
+	externalorderfulfillment.CurrencyValidator = externalorderfulfillmentDescCurrency.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescRedeemCode is the schema descriptor for redeem_code field.
+	externalorderfulfillmentDescRedeemCode := externalorderfulfillmentFields[8].Descriptor()
+	// externalorderfulfillment.RedeemCodeValidator is a validator for the "redeem_code" field. It is called by the builders before save.
+	externalorderfulfillment.RedeemCodeValidator = externalorderfulfillmentDescRedeemCode.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescRedeemType is the schema descriptor for redeem_type field.
+	externalorderfulfillmentDescRedeemType := externalorderfulfillmentFields[9].Descriptor()
+	// externalorderfulfillment.RedeemTypeValidator is a validator for the "redeem_type" field. It is called by the builders before save.
+	externalorderfulfillment.RedeemTypeValidator = externalorderfulfillmentDescRedeemType.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescRedeemValue is the schema descriptor for redeem_value field.
+	externalorderfulfillmentDescRedeemValue := externalorderfulfillmentFields[10].Descriptor()
+	// externalorderfulfillment.DefaultRedeemValue holds the default value on creation for the redeem_value field.
+	externalorderfulfillment.DefaultRedeemValue = externalorderfulfillmentDescRedeemValue.Default.(float64)
+	// externalorderfulfillmentDescValidityDays is the schema descriptor for validity_days field.
+	externalorderfulfillmentDescValidityDays := externalorderfulfillmentFields[12].Descriptor()
+	// externalorderfulfillment.DefaultValidityDays holds the default value on creation for the validity_days field.
+	externalorderfulfillment.DefaultValidityDays = externalorderfulfillmentDescValidityDays.Default.(int)
+	// externalorderfulfillmentDescStatus is the schema descriptor for status field.
+	externalorderfulfillmentDescStatus := externalorderfulfillmentFields[16].Descriptor()
+	// externalorderfulfillment.DefaultStatus holds the default value on creation for the status field.
+	externalorderfulfillment.DefaultStatus = externalorderfulfillmentDescStatus.Default.(string)
+	// externalorderfulfillment.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	externalorderfulfillment.StatusValidator = externalorderfulfillmentDescStatus.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescNotifyStatus is the schema descriptor for notify_status field.
+	externalorderfulfillmentDescNotifyStatus := externalorderfulfillmentFields[17].Descriptor()
+	// externalorderfulfillment.DefaultNotifyStatus holds the default value on creation for the notify_status field.
+	externalorderfulfillment.DefaultNotifyStatus = externalorderfulfillmentDescNotifyStatus.Default.(string)
+	// externalorderfulfillment.NotifyStatusValidator is a validator for the "notify_status" field. It is called by the builders before save.
+	externalorderfulfillment.NotifyStatusValidator = externalorderfulfillmentDescNotifyStatus.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescOperator is the schema descriptor for operator field.
+	externalorderfulfillmentDescOperator := externalorderfulfillmentFields[19].Descriptor()
+	// externalorderfulfillment.OperatorValidator is a validator for the "operator" field. It is called by the builders before save.
+	externalorderfulfillment.OperatorValidator = externalorderfulfillmentDescOperator.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescCreatedAt is the schema descriptor for created_at field.
+	externalorderfulfillmentDescCreatedAt := externalorderfulfillmentFields[22].Descriptor()
+	// externalorderfulfillment.DefaultCreatedAt holds the default value on creation for the created_at field.
+	externalorderfulfillment.DefaultCreatedAt = externalorderfulfillmentDescCreatedAt.Default.(func() time.Time)
+	// externalorderfulfillmentDescUpdatedAt is the schema descriptor for updated_at field.
+	externalorderfulfillmentDescUpdatedAt := externalorderfulfillmentFields[23].Descriptor()
+	// externalorderfulfillment.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	externalorderfulfillment.DefaultUpdatedAt = externalorderfulfillmentDescUpdatedAt.Default.(func() time.Time)
+	// externalorderfulfillment.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	externalorderfulfillment.UpdateDefaultUpdatedAt = externalorderfulfillmentDescUpdatedAt.UpdateDefault.(func() time.Time)
 	groupMixin := schema.Group{}.Mixin()
 	groupMixinHooks1 := groupMixin[1].Hooks()
 	group.Hooks[0] = groupMixinHooks1[0]

@@ -42,6 +42,12 @@ type ChannelMonitorRequestTemplate func(*sql.Selector)
 // ErrorPassthroughRule is the predicate function for errorpassthroughrule builders.
 type ErrorPassthroughRule func(*sql.Selector)
 
+// ExternalFulfillmentSKU is the predicate function for externalfulfillmentsku builders.
+type ExternalFulfillmentSKU func(*sql.Selector)
+
+// ExternalOrderFulfillment is the predicate function for externalorderfulfillment builders.
+type ExternalOrderFulfillment func(*sql.Selector)
+
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 

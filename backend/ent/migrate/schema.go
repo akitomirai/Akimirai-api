@@ -650,6 +650,99 @@ var (
 			},
 		},
 	}
+	// ExternalFulfillmentSkusColumns holds the columns for the "external_fulfillment_skus" table.
+	ExternalFulfillmentSkusColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "platform", Type: field.TypeString, Size: 32, Default: "xianyu"},
+		{Name: "sku_code", Type: field.TypeString, Size: 128},
+		{Name: "name", Type: field.TypeString, Size: 255},
+		{Name: "amount", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,2)"}},
+		{Name: "currency", Type: field.TypeString, Size: 16, Default: "CNY"},
+		{Name: "redeem_type", Type: field.TypeString, Size: 32},
+		{Name: "redeem_value", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,6)"}},
+		{Name: "group_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "validity_days", Type: field.TypeInt, Default: 0},
+		{Name: "expires_in_days", Type: field.TypeInt, Nullable: true},
+		{Name: "manual_url", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "delivery_template", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "enabled", Type: field.TypeBool, Default: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// ExternalFulfillmentSkusTable holds the schema information for the "external_fulfillment_skus" table.
+	ExternalFulfillmentSkusTable = &schema.Table{
+		Name:       "external_fulfillment_skus",
+		Columns:    ExternalFulfillmentSkusColumns,
+		PrimaryKey: []*schema.Column{ExternalFulfillmentSkusColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "externalfulfillmentsku_platform_sku_code",
+				Unique:  true,
+				Columns: []*schema.Column{ExternalFulfillmentSkusColumns[1], ExternalFulfillmentSkusColumns[2]},
+			},
+			{
+				Name:    "externalfulfillmentsku_platform_enabled",
+				Unique:  false,
+				Columns: []*schema.Column{ExternalFulfillmentSkusColumns[1], ExternalFulfillmentSkusColumns[13]},
+			},
+		},
+	}
+	// ExternalOrderFulfillmentsColumns holds the columns for the "external_order_fulfillments" table.
+	ExternalOrderFulfillmentsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "platform", Type: field.TypeString, Size: 32, Default: "xianyu"},
+		{Name: "platform_order_id", Type: field.TypeString, Size: 128},
+		{Name: "buyer_ref", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "sku_code", Type: field.TypeString, Size: 128},
+		{Name: "sku_name", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "amount", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,2)"}},
+		{Name: "currency", Type: field.TypeString, Size: 16, Default: "CNY"},
+		{Name: "redeem_code_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "redeem_code", Type: field.TypeString, Nullable: true, Size: 128},
+		{Name: "redeem_type", Type: field.TypeString, Size: 32},
+		{Name: "redeem_value", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,6)"}},
+		{Name: "group_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "validity_days", Type: field.TypeInt, Default: 0},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "manual_url", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "delivery_message", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "status", Type: field.TypeString, Size: 32, Default: "pending"},
+		{Name: "notify_status", Type: field.TypeString, Size: 32, Default: "skipped"},
+		{Name: "fail_reason", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "operator", Type: field.TypeString, Nullable: true, Size: 128},
+		{Name: "delivered_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "notified_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+	}
+	// ExternalOrderFulfillmentsTable holds the schema information for the "external_order_fulfillments" table.
+	ExternalOrderFulfillmentsTable = &schema.Table{
+		Name:       "external_order_fulfillments",
+		Columns:    ExternalOrderFulfillmentsColumns,
+		PrimaryKey: []*schema.Column{ExternalOrderFulfillmentsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "externalorderfulfillment_platform_platform_order_id",
+				Unique:  true,
+				Columns: []*schema.Column{ExternalOrderFulfillmentsColumns[1], ExternalOrderFulfillmentsColumns[2]},
+			},
+			{
+				Name:    "externalorderfulfillment_status_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ExternalOrderFulfillmentsColumns[17], ExternalOrderFulfillmentsColumns[23]},
+			},
+			{
+				Name:    "externalorderfulfillment_platform_sku_code_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ExternalOrderFulfillmentsColumns[1], ExternalOrderFulfillmentsColumns[4], ExternalOrderFulfillmentsColumns[23]},
+			},
+			{
+				Name:    "externalorderfulfillment_redeem_code_id",
+				Unique:  false,
+				Columns: []*schema.Column{ExternalOrderFulfillmentsColumns[8]},
+			},
+		},
+	}
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1816,6 +1909,8 @@ var (
 		ChannelMonitorHistoriesTable,
 		ChannelMonitorRequestTemplatesTable,
 		ErrorPassthroughRulesTable,
+		ExternalFulfillmentSkusTable,
+		ExternalOrderFulfillmentsTable,
 		GroupsTable,
 		IdempotencyRecordsTable,
 		IdentityAdoptionDecisionsTable,
@@ -1890,6 +1985,12 @@ func init() {
 	}
 	ErrorPassthroughRulesTable.Annotation = &entsql.Annotation{
 		Table: "error_passthrough_rules",
+	}
+	ExternalFulfillmentSkusTable.Annotation = &entsql.Annotation{
+		Table: "external_fulfillment_skus",
+	}
+	ExternalOrderFulfillmentsTable.Annotation = &entsql.Annotation{
+		Table: "external_order_fulfillments",
 	}
 	GroupsTable.Annotation = &entsql.Annotation{
 		Table: "groups",

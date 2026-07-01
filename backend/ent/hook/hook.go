@@ -153,6 +153,30 @@ func (f ErrorPassthroughRuleFunc) Mutate(ctx context.Context, m ent.Mutation) (e
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ErrorPassthroughRuleMutation", m)
 }
 
+// The ExternalFulfillmentSKUFunc type is an adapter to allow the use of ordinary
+// function as ExternalFulfillmentSKU mutator.
+type ExternalFulfillmentSKUFunc func(context.Context, *ent.ExternalFulfillmentSKUMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ExternalFulfillmentSKUFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ExternalFulfillmentSKUMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ExternalFulfillmentSKUMutation", m)
+}
+
+// The ExternalOrderFulfillmentFunc type is an adapter to allow the use of ordinary
+// function as ExternalOrderFulfillment mutator.
+type ExternalOrderFulfillmentFunc func(context.Context, *ent.ExternalOrderFulfillmentMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ExternalOrderFulfillmentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ExternalOrderFulfillmentMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ExternalOrderFulfillmentMutation", m)
+}
+
 // The GroupFunc type is an adapter to allow the use of ordinary
 // function as Group mutator.
 type GroupFunc func(context.Context, *ent.GroupMutation) (ent.Value, error)

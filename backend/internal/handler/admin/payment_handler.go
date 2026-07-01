@@ -117,6 +117,119 @@ func (h *PaymentHandler) RetryFulfillment(c *gin.Context) {
 	response.Success(c, gin.H{"message": "fulfillment retried"})
 }
 
+// ListExternalFulfillmentSKUs returns marketplace SKU mappings.
+// GET /api/v1/admin/payment/external-fulfillment-skus
+func (h *PaymentHandler) ListExternalFulfillmentSKUs(c *gin.Context) {
+	page, pageSize := response.ParsePagination(c)
+	var enabled *bool
+	if raw := strings.TrimSpace(c.Query("enabled")); raw != "" {
+		if raw == "true" || raw == "1" {
+			v := true
+			enabled = &v
+		} else if raw == "false" || raw == "0" {
+			v := false
+			enabled = &v
+		} else {
+			response.BadRequest(c, "Invalid enabled")
+			return
+		}
+	}
+	items, total, err := h.paymentService.ListExternalFulfillmentSKUs(c.Request.Context(), service.ExternalFulfillmentSKUListParams{
+		Page:     page,
+		PageSize: pageSize,
+		Platform: c.Query("platform"),
+		Enabled:  enabled,
+		Keyword:  c.Query("keyword"),
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Paginated(c, items, int64(total), page, pageSize)
+}
+
+// UpsertExternalFulfillmentSKU creates or updates a marketplace SKU mapping.
+// POST /api/v1/admin/payment/external-fulfillment-skus
+func (h *PaymentHandler) UpsertExternalFulfillmentSKU(c *gin.Context) {
+	var req service.ExternalFulfillmentSKURequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	item, err := h.paymentService.UpsertExternalFulfillmentSKU(c.Request.Context(), req)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, item)
+}
+
+// DeleteExternalFulfillmentSKU deletes a marketplace SKU mapping.
+// DELETE /api/v1/admin/payment/external-fulfillment-skus/:id
+func (h *PaymentHandler) DeleteExternalFulfillmentSKU(c *gin.Context) {
+	id, ok := parseIDParam(c, "id")
+	if !ok {
+		return
+	}
+	if err := h.paymentService.DeleteExternalFulfillmentSKU(c.Request.Context(), id); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"message": "deleted"})
+}
+
+// CreateExternalFulfillment creates a marketplace order fulfillment and redeem code.
+// POST /api/v1/admin/payment/external-fulfillments
+func (h *PaymentHandler) CreateExternalFulfillment(c *gin.Context) {
+	var req service.CreateExternalFulfillmentRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	req.Operator = adminPaymentOperator(c)
+	result, err := h.paymentService.CreateExternalFulfillment(c.Request.Context(), req)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+// ListExternalFulfillments returns marketplace order fulfillment records.
+// GET /api/v1/admin/payment/external-fulfillments
+func (h *PaymentHandler) ListExternalFulfillments(c *gin.Context) {
+	page, pageSize := response.ParsePagination(c)
+	items, total, err := h.paymentService.ListExternalFulfillments(c.Request.Context(), service.ExternalFulfillmentListParams{
+		Page:     page,
+		PageSize: pageSize,
+		Platform: c.Query("platform"),
+		Status:   c.Query("status"),
+		SKUCode:  c.Query("sku_code"),
+		Keyword:  c.Query("keyword"),
+		Notify:   c.Query("notify_status"),
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Paginated(c, items, int64(total), page, pageSize)
+}
+
+// RetryExternalFulfillmentNotify retries Feishu notification for a fulfillment.
+// POST /api/v1/admin/payment/external-fulfillments/:id/retry-notify
+func (h *PaymentHandler) RetryExternalFulfillmentNotify(c *gin.Context) {
+	id, ok := parseIDParam(c, "id")
+	if !ok {
+		return
+	}
+	item, err := h.paymentService.RetryExternalFulfillmentNotify(c.Request.Context(), id)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, item)
+}
+
 func sanitizeAdminPaymentOrdersForResponse(orders []*dbent.PaymentOrder) []*dbent.PaymentOrder {
 	if len(orders) == 0 {
 		return orders
