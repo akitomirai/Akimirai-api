@@ -44,7 +44,7 @@
           </nav>
         </div>
 
-        <!-- Tab: Security — Admin API Key -->
+        <!-- Tab: Security �?Admin API Key -->
         <div v-show="activeTab === 'security'" class="space-y-6">
           <!-- Admin API Key Settings -->
           <div class="card">
@@ -199,7 +199,7 @@
             </div>
           </div>
         </div>
-        <!-- /Tab: Security — Admin API Key -->
+        <!-- /Tab: Security �?Admin API Key -->
 
         <!-- Tab: Gateway -->
         <div v-show="activeTab === 'gateway'" class="space-y-6">
@@ -1351,7 +1351,7 @@
         </div>
         <!-- /Tab: Gateway -->
 
-        <!-- Tab: Security — Registration, Turnstile, LinuxDo -->
+        <!-- Tab: Security �?Registration, Turnstile, LinuxDo -->
         <div v-show="activeTab === 'security'" class="space-y-6">
           <!-- Registration Settings -->
           <div class="card">
@@ -1798,7 +1798,7 @@
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {{
                   localText(
-                    "开启 GitHub 或 Google 邮箱授权登录后，系统会读取已验证邮箱，存在则直接登录，不存在则自动注册。",
+                    "开�?GitHub �?Google 邮箱授权登录后，系统会读取已验证邮箱，存在则直接登录，不存在则自动注册�?",
                     "After GitHub or Google email OAuth is enabled, the system reads a verified email, signs in matching users, and auto-registers missing users.",
                   )
                 }}
@@ -1815,7 +1815,7 @@
                       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         {{
                           localText(
-                            "GitHub OAuth App 需要 read:user user:email 权限，回调地址填写下方后端地址。",
+                            "GitHub OAuth App 需�?read:user user:email 权限，回调地址填写下方后端地址�?",
                             "GitHub OAuth App needs read:user user:email scopes. Use the backend callback URL below.",
                           )
                         }}
@@ -1827,26 +1827,23 @@
                   <div v-if="form.github_oauth_enabled" class="mt-4 space-y-4">
                     <div class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300">
                       <template v-if="isZhLocale">
-                        开通引导：GitHub Settings → Developer settings →
-                        <a
+                        开通引导：GitHub Settings �?Developer settings �?                        <a
                           data-testid="github-oauth-apps-guide-link"
                           href="https://github.com/settings/developers"
                           target="_blank"
                           rel="noopener noreferrer"
                           class="font-medium text-primary-600 hover:underline dark:text-primary-400"
                         >OAuth Apps</a>
-                        → New OAuth App；Homepage URL 填站点域名，Authorization callback URL 填下面的后端回调地址。
-                      </template>
+                        �?New OAuth App；Homepage URL 填站点域名，Authorization callback URL 填下面的后端回调地址�?                      </template>
                       <template v-else>
-                        Setup guide: GitHub Settings → Developer settings →
-                        <a
+                        Setup guide: GitHub Settings �?Developer settings �?                        <a
                           data-testid="github-oauth-apps-guide-link"
                           href="https://github.com/settings/developers"
                           target="_blank"
                           rel="noopener noreferrer"
                           class="font-medium text-primary-600 hover:underline dark:text-primary-400"
                         >OAuth Apps</a>
-                        → New OAuth App. Use your site origin as Homepage URL and the backend callback URL below as Authorization callback URL.
+                        �?New OAuth App. Use your site origin as Homepage URL and the backend callback URL below as Authorization callback URL.
                       </template>
                     </div>
 
@@ -1925,7 +1922,7 @@
                       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         {{
                           localText(
-                            "Google OAuth 客户端需要 openid email profile 范围，并在凭据里登记后端回调地址。",
+                            "Google OAuth 客户端需�?openid email profile 范围，并在凭据里登记后端回调地址�?",
                             "Google OAuth client needs openid email profile scopes and the backend callback URL registered in credentials.",
                           )
                         }}
@@ -1938,8 +1935,8 @@
                     <div class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300">
                       {{
                         localText(
-                          "开通引导：Google Cloud Console → APIs & Services → OAuth consent screen 完成同意屏幕；Credentials → Create Credentials → OAuth client ID，类型选择 Web application，并把下面地址加入 Authorized redirect URIs。",
-                          "Setup guide: Google Cloud Console → APIs & Services → OAuth consent screen, then Credentials → Create Credentials → OAuth client ID, choose Web application, and add the URL below to Authorized redirect URIs.",
+                          "开通引导：Google Cloud Console �?APIs & Services �?OAuth consent screen 完成同意屏幕；Credentials �?Create Credentials �?OAuth client ID，类型选择 Web application，并把下面地址加入 Authorized redirect URIs�?",
+                          "Setup guide: Google Cloud Console �?APIs & Services �?OAuth consent screen, then Credentials �?Create Credentials �?OAuth client ID, choose Web application, and add the URL below to Authorized redirect URIs.",
                         )
                       }}
                     </div>
@@ -2057,7 +2054,7 @@
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                           {{
                             localText(
-                              "桌面浏览器通过微信开放平台扫码登录。可与公众号或移动应用同时存在。",
+                              "桌面浏览器通过微信开放平台扫码登录。可与公众号或移动应用同时存在�?",
                               "Desktop browsers sign in through WeChat Open Platform QR login. This can coexist with Official Account or Mobile App.",
                             )
                           }}
@@ -2086,7 +2083,7 @@
                           class="input font-mono text-sm"
                           :placeholder="
                             localText(
-                              '微信开放平台 PC 应用 AppID',
+                              '微信开放平�?PC 应用 AppID',
                               'WeChat Open Platform PC App ID',
                             )
                           "
@@ -2106,11 +2103,11 @@
                           :placeholder="
                             form.wechat_connect_open_app_secret_configured
                               ? localText(
-                                  '密钥已配置，留空以保留当前值。',
+                                  '密钥已配置，留空以保留当前值�?',
                                   'Secret configured. Leave empty to keep the current value.',
                                 )
                               : localText(
-                                  '微信开放平台 PC 应用 AppSecret',
+                                  '微信开放平�?PC 应用 AppSecret',
                                   'WeChat Open Platform PC App Secret',
                                 )
                           "
@@ -2130,7 +2127,7 @@
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                           {{
                             localText(
-                              "仅在微信内浏览器可用；非微信环境下会显示不可用。",
+                              "仅在微信内浏览器可用；非微信环境下会显示不可用�?",
                               "Only available inside the WeChat browser. It is shown as unavailable outside WeChat.",
                             )
                           }}
@@ -2150,7 +2147,7 @@
                         <label
                           class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
                         >
-                          {{ localText("公众号 AppID", "Official Account App ID") }}
+                          {{ localText("公众�?AppID", "Official Account App ID") }}
                         </label>
                         <input
                           v-model="form.wechat_connect_mp_app_id"
@@ -2159,7 +2156,7 @@
                           class="input font-mono text-sm"
                           :placeholder="
                             localText(
-                              '公众号 AppID',
+                              '公众�?AppID',
                               'Official Account App ID',
                             )
                           "
@@ -2171,7 +2168,7 @@
                         >
                           {{
                             localText(
-                              "公众号 AppSecret",
+                              "公众�?AppSecret",
                               "Official Account App Secret",
                             )
                           }}
@@ -2184,11 +2181,11 @@
                           :placeholder="
                             form.wechat_connect_mp_app_secret_configured
                               ? localText(
-                                  '密钥已配置，留空以保留当前值。',
+                                  '密钥已配置，留空以保留当前值�?',
                                   'Secret configured. Leave empty to keep the current value.',
                                 )
                               : localText(
-                                  '公众号 AppSecret',
+                                  '公众�?AppSecret',
                                   'Official Account App Secret',
                                 )
                           "
@@ -2208,7 +2205,7 @@
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                           {{
                             localText(
-                              "原生移动端通过微信 SDK 唤起授权，网页端不会直接发起该流程。",
+                              "原生移动端通过微信 SDK 唤起授权，网页端不会直接发起该流程�?",
                               "Native mobile clients start authorization through the WeChat SDK. The web UI does not launch this flow directly.",
                             )
                           }}
@@ -2257,7 +2254,7 @@
                           :placeholder="
                             form.wechat_connect_mobile_app_secret_configured
                               ? localText(
-                                  '密钥已配置，留空以保留当前值。',
+                                  '密钥已配置，留空以保留当前值�?',
                                   'Secret configured. Leave empty to keep the current value.',
                                 )
                               : localText(
@@ -2281,7 +2278,7 @@
                 >
                   {{
                     localText(
-                      "如果同时启用 PC 应用和公众号/移动应用，这些应用需要挂在同一个微信开放平台主体下，否则 UnionID 无法稳定归并账号。",
+                      "如果同时启用 PC 应用和公众号/移动应用，这些应用需要挂在同一个微信开放平台主体下，否�?UnionID 无法稳定归并账号�?",
                       "When PC App is enabled together with Official Account or Mobile App, they should belong to the same WeChat Open Platform account so UnionID can merge identities reliably.",
                     )
                   }}
@@ -2309,7 +2306,7 @@
                     <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                       {{
                         localText(
-                          "用于 PC 应用和公众号的网页回调。移动应用走原生 SDK 时不直接使用这个浏览器回调。",
+                          "用于 PC 应用和公众号的网页回调。移动应用走原生 SDK 时不直接使用这个浏览器回调�?",
                           "Used by PC App and Official Account browser callbacks. Native mobile SDK flows do not start from this browser callback directly.",
                         )
                       }}
@@ -2502,7 +2499,7 @@
                     <Toggle v-model="form.dingtalk_connect_bypass_registration" />
                   </div>
 
-                  <!-- 身份同步开关（仅 internal_only 模式下可见） -->
+                  <!-- 身份同步开关（�?internal_only 模式下可见） -->
                   <div
                     v-if="form.dingtalk_connect_corp_restriction_policy === 'internal_only'"
                     class="pt-4 border-t border-gray-100 dark:border-dark-700 space-y-2"
@@ -2537,7 +2534,7 @@
                         <input
                           v-model="form.dingtalk_connect_sync_display_name_attr_name"
                           type="text"
-                          placeholder="钉钉姓名"
+                          :placeholder="localText('钉钉姓名', 'DingTalk Name')"
                           class="input text-sm flex-1 max-w-xs"
                         />
                       </div>
@@ -2583,7 +2580,7 @@
                         <input
                           v-model="form.dingtalk_connect_sync_corp_email_attr_name"
                           type="text"
-                          placeholder="钉钉企业邮箱"
+                          :placeholder="localText('钉钉企业邮箱', 'DingTalk Corporate Email')"
                           class="input text-sm flex-1 max-w-xs"
                         />
                       </div>
@@ -2629,7 +2626,7 @@
                         <input
                           v-model="form.dingtalk_connect_sync_dept_attr_name"
                           type="text"
-                          placeholder="钉钉部门"
+                          :placeholder="localText('钉钉部门', 'DingTalk Department')"
                           class="input text-sm flex-1 max-w-xs"
                         />
                       </div>
@@ -3052,7 +3049,7 @@
             </div>
           </div>
         </div>
-        <!-- /Tab: Security — Registration, Turnstile, LinuxDo, OIDC -->
+        <!-- /Tab: Security �?Registration, Turnstile, LinuxDo, OIDC -->
 
         <!-- Tab: Users -->
         <div v-show="activeTab === 'users'" class="space-y-6">
@@ -3263,7 +3260,7 @@
                 </div>
               </div>
 
-              <!-- ★ 新增：系统全局默认平台限额矩阵 -->
+              <!-- �?新增：系统全局默认平台限额矩阵 -->
               <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
                 <div class="mb-3">
                   <label class="font-medium text-gray-900 dark:text-white">
@@ -3601,7 +3598,7 @@
                       </div>
                     </div>
 
-                    <!-- ★ 新增：auth source 平台限额覆盖区块 -->
+                    <!-- �?新增：auth source 平台限额覆盖区块 -->
                     <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
                       <div class="mb-3">
                         <label class="font-medium text-gray-900 dark:text-white">
@@ -3670,7 +3667,7 @@
         </div>
         <!-- /Tab: Users -->
 
-        <!-- Tab: Gateway — Claude Code, Scheduling -->
+        <!-- Tab: Gateway �?Claude Code, Scheduling -->
         <div v-show="activeTab === 'gateway'" class="space-y-6">
           <!-- Claude Code Settings -->
           <div class="card">
@@ -3721,6 +3718,254 @@
                   {{ t("admin.settings.claudeCode.maxVersionHint") }}
                 </p>
               </div>
+            </div>
+          </div>
+
+          <!-- Codex Settings -->
+          <div class="card">
+            <div
+              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+            >
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                {{ t("admin.settings.gatewayForwarding.codexHardeningTitle") }}
+              </h2>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                  <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                    {{ t("admin.settings.gatewayForwarding.codexClientRestrictionTitle") }}
+                  </h3>
+                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {{ t("admin.settings.gatewayForwarding.codexHardeningDesc") }}
+                  </p>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label
+                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >
+                      {{ t("admin.settings.gatewayForwarding.minCodexVersion") }}
+                    </label>
+                    <input
+                      v-model="form.min_codex_version"
+                      type="text"
+                      class="input w-full font-mono text-sm"
+                      :placeholder="
+                        t(
+                          'admin.settings.gatewayForwarding.minCodexVersionPlaceholder',
+                        )
+                      "
+                    />
+                  </div>
+                  <div>
+                    <label
+                      class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >
+                      {{ t("admin.settings.gatewayForwarding.maxCodexVersion") }}
+                    </label>
+                    <input
+                      v-model="form.max_codex_version"
+                      type="text"
+                      class="input w-full font-mono text-sm"
+                      :placeholder="
+                        t(
+                          'admin.settings.gatewayForwarding.maxCodexVersionPlaceholder',
+                        )
+                      "
+                    />
+                  </div>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ t("admin.settings.gatewayForwarding.codexVersionHint") }}
+                </p>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t("admin.settings.gatewayForwarding.codexFingerprintSignals") }}
+                  </label>
+                  <p class="mb-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t("admin.settings.gatewayForwarding.codexFingerprintSignalsDesc") }}
+                  </p>
+                  <div
+                    v-for="(row, i) in codexFingerprintRows"
+                    :key="`codex-fp-${i}`"
+                    class="mb-2 flex items-center gap-2"
+                  >
+                    <select v-model="row.type" class="input w-32 text-sm">
+                      <option value="header_exact">{{ t("admin.settings.gatewayForwarding.codexFpTypeHeaderExact") }}</option>
+                      <option value="header_prefix">{{ t("admin.settings.gatewayForwarding.codexFpTypeHeaderPrefix") }}</option>
+                      <option value="body_path">{{ t("admin.settings.gatewayForwarding.codexFpTypeBodyPath") }}</option>
+                    </select>
+                    <input
+                      v-model="row.match"
+                      type="text"
+                      class="input flex-1 font-mono text-sm"
+                      :placeholder="t('admin.settings.gatewayForwarding.codexFpMatchPlaceholder')"
+                    />
+                    <label class="flex shrink-0 items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                      <input v-model="row.required" type="checkbox" />
+                      {{ t("admin.settings.gatewayForwarding.codexFpRequired") }}
+                    </label>
+                    <button
+                      type="button"
+                      class="btn btn-secondary btn-sm shrink-0 text-red-600 hover:text-red-700 dark:text-red-400"
+                      @click="removeCodexFingerprintRow(i)"
+                    >
+                      {{ t("admin.settings.gatewayForwarding.codexRemoveRow") }}
+                    </button>
+                  </div>
+                  <button type="button" class="btn btn-secondary btn-sm" @click="addCodexFingerprintRow">
+                    {{ t("admin.settings.gatewayForwarding.codexAddRow") }}
+                  </button>
+                  <p
+                    v-if="codexFingerprintNoRequired"
+                    class="mt-2 text-xs text-amber-600 dark:text-amber-500"
+                  >
+                    {{ t("admin.settings.gatewayForwarding.codexFingerprintNoRequiredWarn") }}
+                  </p>
+                </div>
+
+                <div class="flex items-center justify-between">
+                  <div class="pr-4">
+                    <label
+                      class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >
+                      {{
+                        t("admin.settings.gatewayForwarding.codexAllowAppServer")
+                      }}
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {{
+                        t(
+                          "admin.settings.gatewayForwarding.codexAllowAppServerDesc",
+                        )
+                      }}
+                    </p>
+                  </div>
+                  <Toggle
+                    v-model="form.codex_cli_only_allow_app_server_clients"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {{ t("admin.settings.gatewayForwarding.codexBlacklist") }}
+                  </label>
+                  <p class="mb-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t("admin.settings.gatewayForwarding.codexBlacklistDesc") }}
+                  </p>
+                  <div
+                    v-for="(row, i) in codexBlacklistRows"
+                    :key="`codex-bl-${i}`"
+                    class="mb-2 flex gap-2"
+                  >
+                    <input
+                      v-model="row.originator"
+                      type="text"
+                      class="input w-1/3 font-mono text-sm"
+                      :placeholder="
+                        t(
+                          'admin.settings.gatewayForwarding.codexOriginatorPlaceholder',
+                        )
+                      "
+                    />
+                    <input
+                      v-model="row.uaContains"
+                      type="text"
+                      class="input flex-1 font-mono text-sm"
+                      :placeholder="
+                        t(
+                          'admin.settings.gatewayForwarding.codexUaContainsPlaceholder',
+                        )
+                      "
+                    />
+                    <button
+                      type="button"
+                      class="btn btn-secondary btn-sm shrink-0 text-red-600 hover:text-red-700 dark:text-red-400"
+                      @click="removeCodexBlacklistRow(i)"
+                    >
+                      {{ t("admin.settings.gatewayForwarding.codexRemoveRow") }}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    @click="addCodexBlacklistRow"
+                  >
+                    {{ t("admin.settings.gatewayForwarding.codexAddRow") }}
+                  </button>
+                </div>
+
+                <div>
+                  <label
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {{ t("admin.settings.gatewayForwarding.codexWhitelist") }}
+                  </label>
+                  <p class="mb-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t("admin.settings.gatewayForwarding.codexWhitelistDesc") }}
+                  </p>
+                  <div
+                    v-for="(row, i) in codexWhitelistRows"
+                    :key="`codex-wl-${i}`"
+                    class="mb-2 flex gap-2"
+                  >
+                    <input
+                      v-model="row.originator"
+                      type="text"
+                      class="input w-1/3 font-mono text-sm"
+                      :placeholder="
+                        t(
+                          'admin.settings.gatewayForwarding.codexOriginatorPlaceholder',
+                        )
+                      "
+                    />
+                    <input
+                      v-model="row.uaContains"
+                      type="text"
+                      class="input flex-1 font-mono text-sm"
+                      :placeholder="
+                        t(
+                          'admin.settings.gatewayForwarding.codexUaContainsPlaceholder',
+                        )
+                      "
+                    />
+                    <label
+                      class="flex shrink-0 items-center gap-1 text-xs text-gray-600 dark:text-gray-400"
+                      :title="
+                        t(
+                          'admin.settings.gatewayForwarding.codexWhitelistSkipFingerprintTooltip',
+                        )
+                      "
+                    >
+                      <input
+                        v-model="row.skipEngineFingerprint"
+                        type="checkbox"
+                      />
+                      {{
+                        t(
+                          'admin.settings.gatewayForwarding.codexWhitelistSkipFingerprint',
+                        )
+                      }}
+                    </label>
+                    <button
+                      type="button"
+                      class="btn btn-secondary btn-sm shrink-0 text-red-600 hover:text-red-700 dark:text-red-400"
+                      @click="removeCodexWhitelistRow(i)"
+                    >
+                      {{ t("admin.settings.gatewayForwarding.codexRemoveRow") }}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    @click="addCodexWhitelistRow"
+                  >
+                    {{ t("admin.settings.gatewayForwarding.codexAddRow") }}
+                  </button>
+                </div>
             </div>
           </div>
 
@@ -4120,6 +4365,31 @@
                 <Toggle v-model="form.rewrite_message_cache_control" />
               </div>
 
+              <!-- 客户�?dateline 归一化（�?Anthropic OAuth/SetupToken�?-->
+              <div class="flex items-center justify-between">
+                <div>
+                  <label
+                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {{
+                      t(
+                        "admin.settings.gatewayForwarding.clientDatelineNormalization",
+                      )
+                    }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {{
+                      t(
+                        "admin.settings.gatewayForwarding.clientDatelineNormalizationHint",
+                      )
+                    }}
+                  </p>
+                </div>
+                <Toggle
+                  v-model="form.enable_client_dateline_normalization"
+                />
+              </div>
+
               <!-- Antigravity UA 版本 -->
               <div>
                 <label
@@ -4180,18 +4450,6 @@
                 </p>
               </div>
 
-              <!-- 是否允许在 Claude Code 中使用 Codex 插件（全局开关） -->
-              <div class="flex items-center justify-between">
-                <div class="pr-4">
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {{ t("admin.settings.gatewayForwarding.openaiAllowClaudeCodeCodexPlugin") }}
-                  </label>
-                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    {{ t("admin.settings.gatewayForwarding.openaiAllowClaudeCodeCodexPluginDesc") }}
-                  </p>
-                </div>
-                <Toggle v-model="form.openai_allow_claude_code_codex_plugin" />
-              </div>
             </div>
           </div>
           <!-- Privacy Filter -->
@@ -4344,7 +4602,7 @@
                           provider.quota_limit != null &&
                           provider.quota_limit > 0
                             ? provider.quota_limit
-                            : "∞"
+                            : "�?"
                         }}
                       </span>
                       <span
@@ -4394,7 +4652,7 @@
                           "
                           :placeholder="
                             provider.api_key_configured
-                              ? '••••••••'
+                              ? '•••••••�?'
                               : t(
                                   'admin.settings.webSearchEmulation.apiKeyPlaceholder',
                                 )
@@ -4495,7 +4753,7 @@
                           type="number"
                           min="1"
                           class="input text-sm"
-                          :placeholder="'∞'"
+                          :placeholder="'0'"
                         />
                         <p class="mt-0.5 text-xs text-gray-400">
                           {{
@@ -4566,7 +4824,7 @@
                           provider.quota_limit != null &&
                           provider.quota_limit > 0
                             ? provider.quota_limit
-                            : "∞"
+                            : "�?"
                         }}</span
                       >
                       <button
@@ -4716,7 +4974,7 @@
           </div>
         </div>
         </div>
-        <!-- /Tab: Gateway — Claude Code, Scheduling -->
+        <!-- /Tab: Gateway �?Claude Code, Scheduling -->
 
         <!-- Tab: General -->
         <div v-show="activeTab === 'general'" class="space-y-6">
@@ -5279,7 +5537,7 @@
 	                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
 	                    {{
 	                      localText(
-	                        "控制登录页是否要求用户先阅读并同意服务条款、隐私政策或其他 Markdown 文档。",
+	                        "控制登录页是否要求用户先阅读并同意服务条款、隐私政策或其他 Markdown 文档�?",
 	                        "Control whether the login page requires users to accept Markdown policy documents first.",
 	                      )
 	                    }}
@@ -5287,7 +5545,7 @@
 	                </div>
 	                <div class="flex items-center gap-3">
 	                  <span class="text-sm text-gray-600 dark:text-gray-300">
-	                    {{ form.login_agreement_enabled ? localText("已启用", "Enabled") : localText("未启用", "Disabled") }}
+                    {{ form.login_agreement_enabled ? localText("已启用", "Enabled") : localText("未启用", "Disabled") }}
 	                  </span>
 	                  <Toggle v-model="form.login_agreement_enabled" />
 	                </div>
@@ -5361,7 +5619,7 @@
                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       {{
                         localText(
-                          "文档名称可自定义，内容按 Markdown 保存。可参考：服务条款、使用政策、支持的国家和地区、服务特定条款。",
+                          "文档名称可自定义，内容按 Markdown 保存。可参考：服务条款、使用政策、支持的国家和地区、服务特定条款�?",
                           "Document titles are customizable and content is saved as Markdown.",
                         )
                       }}
@@ -5469,7 +5727,7 @@
         </div>
         <!-- /Tab: Login Agreement -->
 
-	        <!-- Tab: Features (功能开关) -->
+	        <!-- Tab: Features (功能开�? -->
         <div v-show="activeTab === 'features'" class="space-y-6">
 
         <div class="card">
@@ -5486,7 +5744,7 @@
                 class="inline-flex items-center gap-1 text-primary-600 hover:underline dark:text-primary-400"
               >
                 {{ t('admin.settings.features.channelMonitor.configureLink') }}
-                <span aria-hidden="true">→</span>
+                <span aria-hidden="true">�?/span>
               </router-link>
             </p>
           </div>
@@ -5536,7 +5794,7 @@
                 class="inline-flex items-center gap-1 text-primary-600 hover:underline dark:text-primary-400"
               >
                 {{ t('admin.settings.features.availableChannels.configureLink') }}
-                <span aria-hidden="true">→</span>
+                <span aria-hidden="true">�?/span>
               </router-link>
             </p>
           </div>
@@ -5569,7 +5827,7 @@
                 class="inline-flex items-center gap-1 text-primary-600 hover:underline dark:text-primary-400"
               >
                 {{ t('admin.settings.features.riskControl.configureLink') }}
-                <span aria-hidden="true">→</span>
+                <span aria-hidden="true">�?/span>
               </router-link>
             </p>
           </div>
@@ -5613,7 +5871,7 @@
           </div>
         </div>
 
-        <!-- Affiliate (邀请返利) feature card -->
+        <!-- Affiliate (邀请返�? feature card -->
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -5875,7 +6133,7 @@
                     ×
                   </button>
                 </div>
-                <!-- Search input + result dropdown — hidden once a selection is made -->
+                <!-- Search input + result dropdown �?hidden once a selection is made -->
                 <template v-else>
                   <input
                     v-model="affiliateModal.userQuery"
@@ -7066,6 +7324,12 @@ import {
   normalizeRegistrationEmailSuffixDomains,
   parseRegistrationEmailSuffixWhitelistInput,
 } from "@/utils/registrationEmailPolicy";
+import {
+  parseFingerprintSignalsToRows,
+  serializeFingerprintRowsToJSON,
+  defaultFingerprintSignalRows,
+  type FingerprintSignalRow,
+} from "./codexFingerprintSignals";
 
 const { t, locale } = useI18n();
 const appStore = useAppStore();
@@ -7084,7 +7348,7 @@ const paymentGuideHref = computed(() =>
 
 const paymentMethodsHref = computed(() =>
   locale.value.startsWith("zh")
-    ? "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md#支持的支付方式"
+    ? "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md#支持的支付方�?"
     : "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT.md#supported-payment-methods",
 );
 
@@ -7174,7 +7438,7 @@ const registrationEmailSuffixWhitelistTags = ref<string[]>([]);
 const registrationEmailSuffixWhitelistDraft = ref("");
 const tablePageSizeOptionsInput = ref("10, 20, 50, 100");
 
-// Admin API Key 状态
+// Admin API Key 状�?
 const adminApiKeyLoading = ref(true);
 const adminApiKeyExists = ref(false);
 const adminApiKeyMasked = ref("");
@@ -7182,7 +7446,7 @@ const adminApiKeyOperating = ref(false);
 const newAdminApiKey = ref("");
 const subscriptionGroups = ref<AdminGroup[]>([]);
 
-// Overload Cooldown (529) 状态
+// Overload Cooldown (529) 状�?
 const overloadCooldownLoading = ref(true);
 const overloadCooldownSaving = ref(false);
 const overloadCooldownForm = reactive({
@@ -7190,7 +7454,7 @@ const overloadCooldownForm = reactive({
   cooldown_minutes: 10,
 });
 
-// Rate Limit Cooldown (429) 状态
+// Rate Limit Cooldown (429) 状�?
 const rateLimit429CooldownLoading = ref(true);
 const rateLimit429CooldownSaving = ref(false);
 const rateLimit429CooldownForm = reactive({
@@ -7198,7 +7462,7 @@ const rateLimit429CooldownForm = reactive({
   cooldown_seconds: 5,
 });
 
-// Stream Timeout 状态
+// Stream Timeout 状�?
 const streamTimeoutLoading = ref(true);
 const streamTimeoutSaving = ref(false);
 const streamTimeoutForm = reactive({
@@ -7209,7 +7473,7 @@ const streamTimeoutForm = reactive({
   threshold_window_minutes: 10,
 });
 
-// Rectifier 状态
+// Rectifier 状�?
 const rectifierLoading = ref(true);
 const rectifierSaving = ref(false);
 const rectifierForm = reactive({
@@ -7220,7 +7484,7 @@ const rectifierForm = reactive({
   apikey_signature_patterns: [] as string[],
 });
 
-// Beta Policy 状态
+// Beta Policy 状�?
 const betaPolicyLoading = ref(true);
 const betaPolicySaving = ref(false);
 const betaPolicyForm = reactive({
@@ -7235,12 +7499,11 @@ const betaPolicyForm = reactive({
   }>,
 });
 
-// OpenAI Fast/Flex Policy 状态
+// OpenAI Fast/Flex Policy 状�?
 const openaiFastPolicyForm = reactive({
   rules: [] as OpenAIFastPolicyRule[],
 });
-// 标记 openai_fast_policy_settings 是否已成功从后端加载，
-// 避免后端 GET 出错或字段缺失时，保存把默认规则覆盖成空数组。
+// 标记 openai_fast_policy_settings 是否已成功从后端加载�?// 避免后端 GET 出错或字段缺失时，保存把默认规则覆盖成空数组�?
 const openaiFastPolicyLoaded = ref(false);
 
 const tablePageSizeMin = 5;
@@ -7251,22 +7514,22 @@ function defaultLoginAgreementDocuments(): LoginAgreementDocument[] {
   return [
     {
       id: "terms",
-      title: "服务条款",
+      title: localText("服务条款", "Terms of Service"),
       content_md: "",
     },
     {
       id: "usage-policy",
-      title: "使用政策",
+      title: localText("使用政策", "Usage Policy"),
       content_md: "",
     },
     {
       id: "supported-regions",
-      title: "支持的国家和地区",
+      title: localText("支持的国家和地区", "Supported Countries and Regions"),
       content_md: "",
     },
     {
       id: "service-specific-terms",
-      title: "服务特定条款",
+      title: localText("服务特定条款", "Service-Specific Terms"),
       content_md: "",
     },
   ];
@@ -7744,7 +8007,7 @@ type SettingsForm = Omit<
   google_oauth_client_secret: string;
   force_email_on_third_party_signup: boolean;
   openai_advanced_scheduler_enabled: boolean;
-  // 系统全局平台限额 map；form 内始终归一化为全 4 平台对象（模板非空绑定依赖此不变量）
+  // 系统全局平台限额 map；form 内始终归一化为�?4 平台对象（模板非空绑定依赖此不变量）
   default_platform_quotas: DefaultPlatformQuotasMap;
 };
 
@@ -7855,9 +8118,9 @@ const form = reactive<SettingsForm>({
   dingtalk_connect_sync_corp_email_attr_key: "dingtalk_email",
   dingtalk_connect_sync_display_name_attr_key: "dingtalk_name",
   dingtalk_connect_sync_dept_attr_key: "dingtalk_department",
-  dingtalk_connect_sync_corp_email_attr_name: "钉钉企业邮箱",
-  dingtalk_connect_sync_display_name_attr_name: "钉钉姓名",
-  dingtalk_connect_sync_dept_attr_name: "钉钉部门",
+  dingtalk_connect_sync_corp_email_attr_name: localText("钉钉企业邮箱", "DingTalk Corporate Email"),
+  dingtalk_connect_sync_display_name_attr_name: localText("钉钉姓名", "DingTalk Name"),
+  dingtalk_connect_sync_dept_attr_name: localText("钉钉部门", "DingTalk Department"),
   wechat_connect_enabled: false,
   wechat_connect_app_id: "",
   wechat_connect_app_secret: "",
@@ -7944,10 +8207,17 @@ const form = reactive<SettingsForm>({
   claude_oauth_system_prompt_blocks: defaultClaudeOAuthSystemPromptBlocks,
   enable_anthropic_cache_ttl_1h_injection: false,
   rewrite_message_cache_control: false,
+  enable_client_dateline_normalization: true,
   antigravity_user_agent_version: "",
   openai_codex_user_agent: "",
   openai_allow_claude_code_codex_plugin: false,
   privacy_filter_config: normalizePrivacyFilterConfig(),
+  min_codex_version: "",
+  max_codex_version: "",
+  codex_cli_only_blacklist: "[]",
+  codex_cli_only_whitelist: "[]",
+  codex_cli_only_allow_app_server_clients: false,
+  codex_cli_only_engine_fingerprint_signals: "",
   // 余额、订阅到期与账号限额通知
   balance_low_notify_enabled: false,
   balance_low_notify_threshold: 0,
@@ -7960,7 +8230,7 @@ const form = reactive<SettingsForm>({
   channel_monitor_default_interval_seconds: 60,
   // Available Channels feature switch
   available_channels_enabled: false,
-  // Affiliate (邀请返利) feature switch
+  // Affiliate (邀请返�? feature switch
   affiliate_enabled: false,
   // Allow user view error requests
   allow_user_view_error_requests: false,
@@ -7995,7 +8265,7 @@ const authSourceDefaultsMeta = computed(() => [
     source: "github" as AuthSourceType,
     title: "GitHub",
     description: localText(
-      "通过 GitHub 已验证邮箱首次注册或首次绑定时应用。",
+      "通过 GitHub 已验证邮箱首次注册或首次绑定时应用�?",
       "Applied on first signup or first bind through a verified GitHub email.",
     ),
   },
@@ -8003,15 +8273,15 @@ const authSourceDefaultsMeta = computed(() => [
     source: "google" as AuthSourceType,
     title: "Google",
     description: localText(
-      "通过 Google 已验证邮箱首次注册或首次绑定时应用。",
+      "通过 Google 已验证邮箱首次注册或首次绑定时应用�?",
       "Applied on first signup or first bind through a verified Google email.",
     ),
   },
   {
     source: "dingtalk" as AuthSourceType,
-    title: "钉钉",
+    title: t("auth.dingtalkProviderName"),
     description: localText(
-      "通过钉钉首次注册或首次绑定时应用。",
+      "通过钉钉首次注册或首次绑定时应用�?",
       "Applied on first signup or first bind through DingTalk.",
     ),
   },
@@ -8210,7 +8480,7 @@ const defaultSubscriptionGroupOptions = computed<
 const registrationEmailSuffixWhitelistSeparatorKeys = new Set([
   " ",
   ",",
-  "，",
+  "�?",
   "Enter",
   "Tab",
 ]);
@@ -8302,13 +8572,15 @@ const addQuotaNotifyEmail = () => {
 const currentOrigin =
   typeof window !== "undefined" ? window.location.origin : "";
 
+function buildApiCallbackUrl(path: string): string {
+  const base = (form.api_base_url || currentOrigin).replace(/\/+$/, "");
+  const apiRoot = base.endsWith("/api/v1") ? base : `${base}/api/v1`;
+  return `${apiRoot}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 // LinuxDo OAuth redirect URL suggestion
 const linuxdoRedirectUrlSuggestion = computed(() => {
-  if (typeof window === "undefined") return "";
-  const origin =
-    window.location.origin ||
-    `${window.location.protocol}//${window.location.host}`;
-  return `${origin}/api/v1/auth/oauth/linuxdo/callback`;
+  return buildApiCallbackUrl("/auth/oauth/linuxdo/callback");
 });
 
 async function setAndCopyLinuxdoRedirectUrl() {
@@ -8325,19 +8597,11 @@ async function setAndCopyLinuxdoRedirectUrl() {
 type EmailOAuthProvider = "github" | "google";
 
 const githubOAuthRedirectUrlSuggestion = computed(() => {
-  if (typeof window === "undefined") return "";
-  const origin =
-    window.location.origin ||
-    `${window.location.protocol}//${window.location.host}`;
-  return `${origin}/api/v1/auth/oauth/github/callback`;
+  return buildApiCallbackUrl("/auth/oauth/github/callback");
 });
 
 const googleOAuthRedirectUrlSuggestion = computed(() => {
-  if (typeof window === "undefined") return "";
-  const origin =
-    window.location.origin ||
-    `${window.location.protocol}//${window.location.host}`;
-  return `${origin}/api/v1/auth/oauth/google/callback`;
+  return buildApiCallbackUrl("/auth/oauth/google/callback");
 });
 
 async function setAndCopyEmailOAuthRedirectUrl(provider: EmailOAuthProvider) {
@@ -8359,11 +8623,7 @@ async function setAndCopyEmailOAuthRedirectUrl(provider: EmailOAuthProvider) {
 }
 
 const wechatRedirectUrlSuggestion = computed(() => {
-  if (typeof window === "undefined") return "";
-  const origin =
-    window.location.origin ||
-    `${window.location.protocol}//${window.location.host}`;
-  return `${origin}/api/v1/auth/oauth/wechat/callback`;
+  return buildApiCallbackUrl("/auth/oauth/wechat/callback");
 });
 
 function syncWeChatConnectMode(preferredMode?: WeChatConnectMode) {
@@ -8428,11 +8688,7 @@ async function setAndCopyWeChatRedirectUrl() {
 }
 
 const oidcRedirectUrlSuggestion = computed(() => {
-  if (typeof window === "undefined") return "";
-  const origin =
-    window.location.origin ||
-    `${window.location.protocol}//${window.location.host}`;
-  return `${origin}/api/v1/auth/oauth/oidc/callback`;
+  return buildApiCallbackUrl("/auth/oauth/oidc/callback");
 });
 
 async function setAndCopyOIDCRedirectUrl() {
@@ -8553,6 +8809,82 @@ function parseTablePageSizeOptionsInput(raw: string): number[] | null {
   return deduped;
 }
 
+// ── codex_cli_only �?白名单结构化编辑（行 �?JSON）──
+interface CodexClientRow {
+  originator: string;
+  uaContains: string; // 逗号分隔，序列化时拆�?ua_contains 数组
+  skipEngineFingerprint?: boolean; // 仅白名单：命中即跳过引擎指纹
+}
+const codexBlacklistRows = ref<CodexClientRow[]>([]);
+const codexWhitelistRows = ref<CodexClientRow[]>([]);
+const codexFingerprintRows = ref<FingerprintSignalRow[]>([]);
+const codexFingerprintNoRequired = computed(
+  () => !codexFingerprintRows.value.some((r) => r.required),
+);
+function addCodexFingerprintRow(): void {
+  codexFingerprintRows.value.push({ type: "header_exact", match: "", required: false });
+}
+function removeCodexFingerprintRow(i: number): void {
+  codexFingerprintRows.value.splice(i, 1);
+}
+
+function parseCodexEntriesToRows(raw: string): CodexClientRow[] {
+  if (!raw || !raw.trim()) return [];
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr.map((e) => ({
+      originator: typeof e?.originator === "string" ? e.originator : "",
+      uaContains: Array.isArray(e?.ua_contains)
+        ? e.ua_contains
+            .filter((x: unknown) => typeof x === "string")
+            .join(", ")
+        : "",
+      skipEngineFingerprint: e?.skip_engine_fingerprint === true,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function serializeCodexRowsToJSON(rows: CodexClientRow[]): string {
+  const entries = rows
+    .map((r) => {
+      const entry: {
+        originator: string;
+        ua_contains: string[];
+        skip_engine_fingerprint?: boolean;
+      } = {
+        originator: r.originator.trim(),
+        ua_contains: r.uaContains
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0),
+      };
+      if (r.skipEngineFingerprint) entry.skip_engine_fingerprint = true;
+      return entry;
+    })
+    .filter((e) => e.originator !== "" || e.ua_contains.length > 0);
+  return entries.length > 0 ? JSON.stringify(entries) : "";
+}
+
+function addCodexBlacklistRow(): void {
+  codexBlacklistRows.value.push({ originator: "", uaContains: "" });
+}
+function removeCodexBlacklistRow(i: number): void {
+  codexBlacklistRows.value.splice(i, 1);
+}
+function addCodexWhitelistRow(): void {
+  codexWhitelistRows.value.push({
+    originator: "",
+    uaContains: "",
+    skipEngineFingerprint: false,
+  });
+}
+function removeCodexWhitelistRow(i: number): void {
+  codexWhitelistRows.value.splice(i, 1);
+}
+
 async function loadSettings() {
   loading.value = true;
   loadFailed.value = false;
@@ -8578,6 +8910,15 @@ async function loadSettings() {
       form.claude_oauth_system_prompt,
     );
     syncClaudeOAuthSystemPromptBlocksFormField();
+    codexBlacklistRows.value = parseCodexEntriesToRows(
+      form.codex_cli_only_blacklist,
+    );
+    codexWhitelistRows.value = parseCodexEntriesToRows(
+      form.codex_cli_only_whitelist,
+    );
+    codexFingerprintRows.value = form.codex_cli_only_engine_fingerprint_signals
+      ? parseFingerprintSignalsToRows(form.codex_cli_only_engine_fingerprint_signals)
+      : defaultFingerprintSignalRows();
     form.login_agreement_mode =
       settings.login_agreement_mode === "checkbox" ? "checkbox" : "modal";
     form.login_agreement_updated_at =
@@ -8673,7 +9014,7 @@ async function loadSettings() {
 
     // Load OpenAI fast/flex policy rules from bulk settings.
     // 仅当 payload 真的包含该字段时填充并标记为已加载；否则保持表单空值，
-    // 让 saveSettings 在未加载时跳过该字段，防止覆盖后端默认规则。
+    // �?saveSettings 在未加载时跳过该字段，防止覆盖后端默认规则�?
     if (
       settings.openai_fast_policy_settings &&
       Array.isArray(settings.openai_fast_policy_settings.rules)
@@ -8809,7 +9150,7 @@ async function saveSettings() {
     if (form.login_agreement_enabled && normalizedLoginAgreementDocuments.length === 0) {
       appStore.showError(
         localText(
-          "启用登录条款确认时，至少需要保留一份文档。",
+          "启用登录条款确认时，至少需要保留一份文档�?",
           "At least one document is required when login agreement is enabled.",
         ),
       );
@@ -8821,7 +9162,7 @@ async function saveSettings() {
     if (emptyTitleDocument) {
       appStore.showError(
         localText(
-          "登录条款文档名称不能为空。",
+          "登录条款文档名称不能为空�?",
           "Login agreement document title cannot be empty.",
         ),
       );
@@ -8832,7 +9173,7 @@ async function saveSettings() {
     if (duplicateLoginAgreementDocumentId) {
       appStore.showError(
         localText(
-          `登录条款文档路由不能重复：/legal/${duplicateLoginAgreementDocumentId}`,
+          `登录条款文档路由不能重复�?legal/${duplicateLoginAgreementDocumentId}`,
           `Login agreement document routes cannot be duplicated: /legal/${duplicateLoginAgreementDocumentId}`,
         ),
       );
@@ -8881,13 +9222,13 @@ async function saveSettings() {
     if (form.wechat_connect_mp_enabled && form.wechat_connect_mobile_enabled) {
       appStore.showError(
         localText(
-          "公众号和移动应用不能同时启用。",
+          "公众号和移动应用不能同时启用�?",
           "Official Account and Mobile App cannot be enabled at the same time.",
         ),
       );
       return;
     }
-    // Validate URL fields — novalidate disables browser-native checks, so we validate here
+    // Validate URL fields �?novalidate disables browser-native checks, so we validate here
     const isValidHttpUrl = (url: string): boolean => {
       if (!url) return true;
       try {
@@ -9075,6 +9416,8 @@ async function saveSettings() {
       enable_anthropic_cache_ttl_1h_injection:
         form.enable_anthropic_cache_ttl_1h_injection,
       rewrite_message_cache_control: form.rewrite_message_cache_control,
+      enable_client_dateline_normalization:
+        form.enable_client_dateline_normalization,
       antigravity_user_agent_version:
         form.antigravity_user_agent_version?.trim() || "",
       openai_codex_user_agent:
@@ -9082,6 +9425,15 @@ async function saveSettings() {
       openai_allow_claude_code_codex_plugin: form.openai_allow_claude_code_codex_plugin,
       privacy_filter_config: normalizePrivacyFilterConfig(
         form.privacy_filter_config,
+      ),
+      min_codex_version: form.min_codex_version?.trim() || "",
+      max_codex_version: form.max_codex_version?.trim() || "",
+      codex_cli_only_blacklist: serializeCodexRowsToJSON(codexBlacklistRows.value),
+      codex_cli_only_whitelist: serializeCodexRowsToJSON(codexWhitelistRows.value),
+      codex_cli_only_allow_app_server_clients:
+        form.codex_cli_only_allow_app_server_clients,
+      codex_cli_only_engine_fingerprint_signals: serializeFingerprintRowsToJSON(
+        codexFingerprintRows.value,
       ),
       // Payment configuration
       payment_enabled: form.payment_enabled,
@@ -9133,13 +9485,12 @@ async function saveSettings() {
         Number(form.channel_monitor_default_interval_seconds) || 60,
       // Available Channels feature switch
       available_channels_enabled: form.available_channels_enabled,
-      // Affiliate (邀请返利) feature switch
+      // Affiliate (邀请返�? feature switch
       affiliate_enabled: form.affiliate_enabled,
       allow_user_view_error_requests: form.allow_user_view_error_requests,
     };
 
-    // 仅当 openai_fast_policy_settings 已成功从后端加载时才回写，
-    // 否则省略整个字段，让后端保留既有规则（含默认值）。
+    // 仅当 openai_fast_policy_settings 已成功从后端加载时才回写�?    // 否则省略整个字段，让后端保留既有规则（含默认值）�?
     if (openaiFastPolicyLoaded.value) {
       payload.openai_fast_policy_settings = {
         rules: openaiFastPolicyForm.rules.map((rule) => {
@@ -9481,7 +9832,7 @@ async function loadRectifierSettings() {
   try {
     const settings = await adminAPI.settings.getRectifierSettings();
     Object.assign(rectifierForm, settings);
-    // 确保 patterns 是数组（旧数据可能为 null）
+    // 确保 patterns 是数组（旧数据可能为 null�?
     if (!Array.isArray(rectifierForm.apikey_signature_patterns)) {
       rectifierForm.apikey_signature_patterns = [];
     }
@@ -9559,7 +9910,7 @@ const betaPresets: Record<
   ],
 };
 
-// 常用模型模式（具体 ID + 通配符示例）
+// 常用模型模式（具�?ID + 通配符示例）
 const commonModelPatterns = [
   "claude-opus-4-6",
   "claude-sonnet-4-6",
@@ -9916,7 +10267,15 @@ async function loadProviders() {
   providersLoading.value = true;
   try {
     const res = await adminAPI.payment.getProviders();
-    providers.value = res.data || [];
+    // Normalize supported_types: backend returns null when the list is empty
+    // (Go nil slice �?JSON null). Without this, ProviderCard's isSelected()'
+    // throws TypeError on null.includes(), causing the card to vanish.
+    providers.value = (res.data || []).map((p) => ({
+      ...p,
+      supported_types: Array.isArray(p.supported_types)
+        ? p.supported_types
+        : [],
+    }));
   } catch (err: unknown) {
     appStore.showError(extractI18nErrorMessage(err, t, "payment.errors", t("common.error")));
   } finally {
@@ -10010,9 +10369,12 @@ async function handleToggleField(
 }
 
 async function handleToggleType(provider: ProviderInstance, type: string) {
-  const updated = provider.supported_types.includes(type)
-    ? provider.supported_types.filter((t) => t !== type)
-    : [...provider.supported_types, type];
+  const currentTypes = Array.isArray(provider.supported_types)
+    ? provider.supported_types
+    : [];
+  const updated = currentTypes.includes(type)
+    ? currentTypes.filter((t) => t !== type)
+    : [...currentTypes, type];
   const conflict = findProviderEnablementConflict({
     id: provider.id,
     provider_key: provider.provider_key,
@@ -10082,7 +10444,7 @@ onMounted(() => {
 });
 
 // =========================
-// Affiliate (邀请返利) 专属用户管理
+// Affiliate (邀请返�? 专属用户管理
 // =========================
 
 interface AffiliateState {
@@ -10317,7 +10679,7 @@ function clearSelectedAffiliateUser() {
 
 // affiliateModalCanSubmit guards the Save button: must have a user picked AND
 // produce at least one field change. Without this the admin could "save" an
-// empty payload that silently does nothing — the user reported exactly that
+// empty payload that silently does nothing �?the user reported exactly that
 // confusion.
 const affiliateModalCanSubmit = computed(() => {
   if (affiliateModal.mode === "add") {
@@ -10423,7 +10785,7 @@ async function submitAffiliateBatchModal() {
 
 // Load the per-user table the first time the affiliate switch is observed
 // as enabled. The form starts disabled and is updated to the server's value
-// after the settings load — so this fires either when the saved value is
+// after the settings load �?so this fires either when the saved value is
 // truthy on first paint, or when the admin manually toggles it on.
 watch(
   () => form.affiliate_enabled,
@@ -10434,9 +10796,7 @@ watch(
   },
 );
 
-// bypass_registration 与身份同步三开关仅在 internal_only 模式下生效。切换 policy 到其它值时，
-// 立即把相关字段重置为 false，避免保存请求里残留旧值。后端 admin handler 与
-// 配置加载层都有 coerce 兜底，这里是 UX 层的同步而非安全防线。
+// bypass_registration 与身份同步三开关仅�?internal_only 模式下生效。切�?policy 到其它值时�?// 立即把相关字段重置为 false，避免保存请求里残留旧值。后�?admin handler �?// 配置加载层都�?coerce 兜底，这里是 UX 层的同步而非安全防线�?
 watch(
   () => form.dingtalk_connect_corp_restriction_policy,
   (policy) => {

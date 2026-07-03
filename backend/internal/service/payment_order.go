@@ -79,6 +79,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	if appliedDiscount != nil {
 		payBaseAmount = appliedDiscount.BaseAmount
 	}
+	// Subscription plan price is direct-pay; recharge multiplier only affects credited balance.
 	payAmountStr, payAmount, err := calculateCreateOrderPayAmount(payBaseAmount, feeRate, methodCurrency)
 	if err != nil {
 		return nil, err

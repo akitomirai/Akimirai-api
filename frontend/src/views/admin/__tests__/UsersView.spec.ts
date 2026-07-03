@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+﻿import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 
 import type { AdminUser } from '@/types'
@@ -55,7 +55,7 @@ vi.mock('vue-i18n', async () => {
   }
 })
 
-const createAdminUser = (): AdminUser => ({
+const createAdminUser = (overrides: Partial<AdminUser> = {}): AdminUser => ({
   id: 42,
   username: 'scoped-user',
   email: 'scoped@example.com',
@@ -72,7 +72,8 @@ const createAdminUser = (): AdminUser => ({
   notes: '',
   last_active_at: '2026-04-16T02:00:00Z',
   last_used_at: '2026-04-17T02:00:00Z',
-  current_concurrency: 0
+  current_concurrency: 0,
+  ...overrides
 })
 
 const DataTableStub = {
@@ -81,7 +82,11 @@ const DataTableStub = {
   template: `
     <div>
       <div data-test="columns">{{ columns.map(col => col.key).join(',') }}</div>
+      <div data-test="row-order">{{ data.map(row => row.email).join(',') }}</div>
       <button data-test="sort-last-used" @click="$emit('sort', 'last_used_at', 'desc')">sort</button>
+      <template v-for="col in columns" :key="col.key">
+        <slot :name="'header-' + col.key" :column="col" />
+      </template>
       <div v-for="row in data" :key="row.id">
         <slot name="cell-username" :value="row.username" :row="row" />
         <slot name="cell-last_used_at" :value="row.last_used_at" :row="row" />
@@ -92,6 +97,7 @@ const DataTableStub = {
 
 describe('admin UsersView', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     localStorage.clear()
 
     listUsers.mockReset()
@@ -111,6 +117,10 @@ describe('admin UsersView', () => {
     getBatchUsersUsage.mockResolvedValue({ stats: {} })
     listEnabledDefinitions.mockResolvedValue([])
     getBatchUserAttributes.mockResolvedValue({ values: {} })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('shows active, used, and created activity columns in order and requests last_used_at sort', async () => {

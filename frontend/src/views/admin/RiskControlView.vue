@@ -317,6 +317,9 @@
                     <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
                       <div>{{ row.highest_category || '-' }}</div>
                       <div class="text-xs text-gray-400">{{ percent(row.highest_score) }}</div>
+                      <div v-if="row.matched_keyword" class="mt-0.5 text-xs font-medium text-red-600 dark:text-red-300" :title="t('admin.riskControl.matchedKeyword') + ': ' + row.matched_keyword">
+                        {{ t('admin.riskControl.matchedKeyword') }}: {{ row.matched_keyword }}
+                      </div>
                     </td>
                     <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-700 dark:text-gray-300">
                       <div>{{ violationCountText(row) }}</div>
@@ -1078,6 +1081,10 @@
                 {{ inputDetailRow.highest_category || '-' }} / {{ percent(inputDetailRow.highest_score) }}
               </p>
             </div>
+            <div v-if="inputDetailRow.matched_keyword" class="rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-900/60 dark:bg-red-900/20">
+              <p class="text-xs font-medium text-red-500 dark:text-red-300">{{ t('admin.riskControl.matchedKeyword') }}</p>
+              <p class="mt-1 truncate text-sm font-semibold text-red-700 dark:text-red-200" :title="inputDetailRow.matched_keyword">{{ inputDetailRow.matched_keyword }}</p>
+            </div>
           </div>
 
           <div class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800">
@@ -1256,49 +1263,49 @@ const defaultBlockedKeywords = [
   '写入webshell',
   'getshell payload',
   'getshell脚本',
-  '未授权渗透脚本',
-  '渗透攻击脚本',
-  '内网渗透工具',
-  '批量扫漏洞脚本',
-  '批量扫漏洞工具',
+  '未授权渗透脚�?',
+  '渗透攻击脚�?',
+  '内网渗透工�?',
+  '批量扫漏洞脚�?',
+  '批量扫漏洞工�?',
   '木马免杀',
   '编写木马',
-  '键盘记录器代码',
-  '编写键盘记录器',
+  '键盘记录器代�?',
+  '编写键盘记录�?',
   '批量撞库',
   '撞库工具',
   '密码爆破脚本',
   '密码爆破工具',
-  '验证码破解脚本',
-  '验证码破解工具',
-  '破解验证码脚本',
-  '破解验证码工具',
-  '绕过验证码脚本',
-  '绕过验证码工具',
+  '验证码破解脚�?',
+  '验证码破解工�?',
+  '破解验证码脚�?',
+  '破解验证码工�?',
+  '绕过验证码脚�?',
+  '绕过验证码工�?',
   '绕过滑块脚本',
   '绕过滑块工具',
   '绕过waf脚本',
   '绕过waf payload',
   '绕过反爬批量抓取脚本',
   '绕过反爬批量抓取工具',
-  '绕过安全检测脚本',
+  '绕过安全检测脚�?',
   '安全策略绕过脚本',
   '批量注册脚本',
   '批量注册工具',
   '批量养号工具',
   '批量养号脚本',
-  '自动化批量注册脚本',
-  '自动化批量注册工具',
+  '自动化批量注册脚�?',
+  '自动化批量注册工�?',
   '自动刷单脚本',
   '自动刷单工具',
-  '自动刷单机器人',
+  '自动刷单机器�?',
   '帮我自动刷单',
   '自动刷量脚本',
   '自动刷量工具',
   '帮我自动刷量',
   '自动控评脚本',
   '自动控评工具',
-  '自动控评机器人',
+  '自动控评机器�?',
   '批量抓取禁爬脚本',
   '批量抓取禁爬工具',
   '帮我批量抓取禁爬',
@@ -1330,42 +1337,42 @@ const defaultBlockedKeywords = [
   '批量诈骗群发',
   '授权绕过脚本',
   '绕过授权校验',
-  '绕过授权检测',
-  '激活破解工具',
-  '破解激活工具',
+  '绕过授权检�?',
+  '激活破解工�?',
+  '破解激活工�?',
   '脱壳破解工具',
   '逆向破解授权',
   '逆向破解许可',
   '编写外挂',
-  '外挂开发',
+  '外挂开�?',
   '外挂脚本',
-  '编写作弊器',
-  '作弊器开发',
+  '编写作弊�?',
+  '作弊器开�?',
   '油猴刷量脚本',
   '油猴刷单脚本',
   '油猴抢购脚本',
   '油猴自动抢购脚本',
   '油猴批量刷量脚本',
-  'app自动化抢购脚本',
-  'app自动化绕过风控脚本',
-  '网页自动化刷量脚本',
-  '网页自动化刷单脚本',
-  '网页自动化绕过风控脚本',
-  '越狱绕过检测',
+  'app自动化抢购脚�?',
+  'app自动化绕过风控脚�?',
+  '网页自动化刷量脚�?',
+  '网页自动化刷单脚�?',
+  '网页自动化绕过风控脚�?',
+  '越狱绕过检�?',
   '越狱绕过限制',
   '越狱插件破解',
-  'root检测绕过',
+  'root检测绕�?',
   '绕过风控脚本',
-  '生成绕过内容审计提示词',
-  '编写绕过内容审计提示词',
-  '帮我生成绕过内容审计提示词',
-  '帮我编写绕过内容审计提示词',
-  '帮我生成越狱提示词',
-  '帮我编写越狱提示词',
-  '生成提示词越狱模板',
-  '编写提示词越狱模板',
-  '生成绕过模型安全提示词',
-  '编写绕过模型安全提示词',
+  '生成绕过内容审计提示�?',
+  '编写绕过内容审计提示�?',
+  '帮我生成绕过内容审计提示�?',
+  '帮我编写绕过内容审计提示�?',
+  '帮我生成越狱提示�?',
+  '帮我编写越狱提示�?',
+  '生成提示词越狱模�?',
+  '编写提示词越狱模�?',
+  '生成绕过模型安全提示�?',
+  '编写绕过模型安全提示�?',
 ]
 const riskThresholdDefaults: Record<string, number> = {
   harassment: 98,
@@ -1386,6 +1393,7 @@ const riskThresholdCategories = Object.keys(riskThresholdDefaults)
 
 const { t } = useI18n()
 const appStore = useAppStore()
+const defaultBlockMessage = () => t('admin.riskControl.defaultBlockMessage')
 
 const loading = ref(true)
 const saving = ref(false)
@@ -1992,7 +2000,7 @@ async function saveConfig() {
       worker_count: Number(configForm.worker_count) || 4,
       queue_size: Number(configForm.queue_size) || 32768,
       block_status: Number(configForm.block_status) || 403,
-      block_message: configForm.block_message || '内容审计命中风险规则，请调整输入后重试',
+      block_message: configForm.block_message || defaultBlockMessage(),
       email_on_hit: configForm.email_on_hit,
       auto_ban_enabled: configForm.auto_ban_enabled,
       cyber_policy_exclude_from_ban_count: configForm.cyber_policy_exclude_from_ban_count,

@@ -1,5 +1,21 @@
-<template>
+﻿<template>
   <div class="card overflow-hidden">
+    <div
+      v-if="showIpGeoToolbar"
+      class="flex items-center justify-end gap-2 border-b border-gray-200 px-4 py-2 dark:border-dark-700"
+    >
+      <span v-if="pendingIpCount > 0" class="text-xs text-gray-500 dark:text-gray-400">
+        {{ t('usage.ipGeo.pending', { count: pendingIpCount }) }}
+      </span>
+      <button
+        type="button"
+        class="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-primary-600 transition-colors hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-primary-400 dark:hover:bg-primary-900/30"
+        :disabled="ipGeoBatchLoading || pendingIpCount === 0"
+        @click="handleBatchFetchIpGeo"
+      >
+        {{ ipGeoBatchLoading ? t('usage.ipGeo.batchFetching') : t('usage.ipGeo.batchFetch') }}
+      </button>
+    </div>
     <div class="overflow-auto">
       <DataTable
         :columns="columns"
@@ -42,7 +58,7 @@
                  class="break-all"
                  :class="i === 0 ? 'font-medium text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
                  :style="i > 0 ? `padding-left: ${i * 0.75}rem` : ''">
-              <span v-if="i > 0" class="mr-0.5">↳</span>{{ step }}
+              <span v-if="i > 0" class="mr-0.5">→</span>{{ step }}
             </div>
           </div>
           <div v-else-if="row.upstream_model && row.upstream_model !== row.model" class="space-y-0.5 text-xs">
@@ -50,7 +66,7 @@
               {{ row.model }}
             </div>
             <div class="break-all text-gray-500 dark:text-gray-400">
-              <span class="mr-0.5">↳</span>{{ row.upstream_model }}
+              <span class="mr-0.5">→</span>{{ row.upstream_model }}
             </div>
           </div>
           <span v-else class="font-medium text-gray-900 dark:text-white">{{ row.model }}</span>
@@ -68,7 +84,7 @@
               <span class="font-medium text-gray-500 dark:text-gray-400">{{ t('usage.inbound') }}:</span>
               <span class="ml-1">{{ row.inbound_endpoint?.trim() || '-' }}</span>
             </div>
-            <div class="break-all text-gray-700 dark:text-gray-300">
+            <div v-if="showUpstreamEndpoint" class="break-all text-gray-700 dark:text-gray-300">
               <span class="font-medium text-gray-500 dark:text-gray-400">{{ t('usage.upstream') }}:</span>
               <span class="ml-1">{{ row.upstream_endpoint?.trim() || '-' }}</span>
             </div>
@@ -95,7 +111,7 @@
         </template>
 
         <template #cell-tokens="{ row }">
-          <!-- 图片生成请求（仅按次计费时显示图片格式） -->
+          <!-- 鍥剧墖鐢熸垚璇锋眰锛堜粎鎸夋璁¤垂鏃舵樉绀哄浘鐗囨牸寮忥級 -->
           <div v-if="isImageUsage(row)" class="flex items-center gap-1.5">
             <svg class="h-4 w-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -103,7 +119,7 @@
             <span class="font-medium text-gray-900 dark:text-white">{{ row.image_count }}{{ t('usage.imageUnit') }}</span>
             <span class="text-gray-400">({{ formatImageBillingSize(row, t) }})</span>
           </div>
-          <!-- Token 请求 -->
+          <!-- Token 璇锋眰 -->
           <div v-else class="flex items-center gap-1.5">
             <div class="space-y-1 text-sm">
               <div class="flex items-center gap-2">
@@ -163,7 +179,7 @@
                 </div>
               </div>
             </div>
-            <div v-if="row.account_rate_multiplier != null" class="mt-0.5 text-[11px] text-orange-500 dark:text-orange-400">
+            <div v-if="showAccountBilling && row.account_rate_multiplier != null" class="mt-0.5 text-[11px] text-orange-500 dark:text-orange-400">
               A ${{ accountBilled(row).toFixed(6) }}
             </div>
           </div>
@@ -188,7 +204,10 @@
         </template>
 
         <template #cell-ip_address="{ row }">
-          <span v-if="row.ip_address" class="text-sm font-mono text-gray-600 dark:text-gray-400">{{ row.ip_address }}</span>
+          <div v-if="row.ip_address">
+            <span class="text-sm font-mono text-gray-600 dark:text-gray-400">{{ row.ip_address }}</span>
+            <IpGeoCell :ip="row.ip_address" />
+          </div>
           <span v-else class="text-sm text-gray-400 dark:text-gray-500">-</span>
         </template>
 
@@ -228,7 +247,7 @@
               <span class="font-medium text-pink-300">{{ tokenTooltipData.image_output_tokens.toLocaleString() }}</span>
             </div>
             <div v-if="tokenTooltipData && tokenTooltipData.cache_creation_tokens > 0">
-              <!-- 有 5m/1h 明细时，展开显示 -->
+              <!-- 鏈?5m/1h 鏄庣粏鏃讹紝灞曞紑鏄剧ず -->
               <template v-if="tokenTooltipData.cache_creation_5m_tokens > 0 || tokenTooltipData.cache_creation_1h_tokens > 0">
                 <div v-if="tokenTooltipData.cache_creation_5m_tokens > 0" class="flex items-center justify-between gap-4">
                   <span class="text-gray-400 flex items-center gap-1.5">
@@ -245,7 +264,7 @@
                   <span class="font-medium text-white">{{ tokenTooltipData.cache_creation_1h_tokens.toLocaleString() }}</span>
                 </div>
               </template>
-              <!-- 无明细时，只显示聚合值 -->
+              <!-- 鏃犳槑缁嗘椂锛屽彧鏄剧ず鑱氬悎鍊?-->
               <div v-else class="flex items-center justify-between gap-4">
                 <span class="text-gray-400">{{ t('admin.usage.cacheCreationTokens') }}</span>
                 <span class="font-medium text-white">{{ tokenTooltipData.cache_creation_tokens.toLocaleString() }}</span>
@@ -419,20 +438,22 @@
             <span class="font-semibold text-green-400">${{ tooltipData?.actual_cost?.toFixed(6) || '0.000000' }}</span>
           </div>
           <!-- Account billing (separated from user billing) -->
-          <div class="flex items-center justify-between gap-6 border-t border-gray-700 pt-1.5">
-            <span class="text-gray-400">{{ t('usage.accountMultiplier') }}</span>
-            <span class="font-semibold text-blue-400">{{ formatMultiplier(tooltipData?.account_rate_multiplier ?? 1) }}x</span>
-          </div>
-          <div class="flex items-center justify-between gap-6">
-            <span class="text-gray-400">{{ t('usage.accountBilled') }}</span>
-            <span class="font-semibold text-green-400">
-              ${{ accountBilled({
-                total_cost: tooltipData?.total_cost,
-                account_stats_cost: tooltipData?.account_stats_cost,
-                account_rate_multiplier: tooltipData?.account_rate_multiplier,
-              }).toFixed(6) }}
-            </span>
-          </div>
+          <template v-if="showAccountBilling">
+            <div class="flex items-center justify-between gap-6 border-t border-gray-700 pt-1.5">
+              <span class="text-gray-400">{{ t('usage.accountMultiplier') }}</span>
+              <span class="font-semibold text-blue-400">{{ formatMultiplier(tooltipData?.account_rate_multiplier ?? 1) }}x</span>
+            </div>
+            <div class="flex items-center justify-between gap-6">
+              <span class="text-gray-400">{{ t('usage.accountBilled') }}</span>
+              <span class="font-semibold text-green-400">
+                ${{ accountBilled({
+                  total_cost: tooltipData?.total_cost,
+                  account_stats_cost: tooltipData?.account_stats_cost,
+                  account_rate_multiplier: tooltipData?.account_rate_multiplier,
+                }).toFixed(6) }}
+              </span>
+            </div>
+          </template>
         </div>
         <div class="absolute right-full top-1/2 h-0 w-0 -translate-y-1/2 border-b-[6px] border-r-[6px] border-t-[6px] border-b-transparent border-r-gray-900 border-t-transparent dark:border-r-gray-800"></div>
       </div>
@@ -441,7 +462,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { formatDateTime, formatReasoningEffort } from '@/utils/format'
 import { formatCacheTokens, formatMultiplier } from '@/utils/formatters'
@@ -477,7 +498,9 @@ function accountBilled(row: { total_cost?: number | null; account_stats_cost?: n
 
 import DataTable from '@/components/common/DataTable.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import IpGeoCell from '@/components/common/IpGeoCell.vue'
 import Icon from '@/components/icons/Icon.vue'
+import { fetchBatch, getEntry } from '@/utils/ipGeoLookup'
 import type { AdminUsageLog } from '@/types'
 import type { Column } from '@/components/common/types'
 
@@ -488,19 +511,51 @@ interface Props {
   serverSideSort?: boolean
   defaultSortKey?: string
   defaultSortOrder?: 'asc' | 'desc'
+  showAccountBilling?: boolean
+  showUpstreamEndpoint?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   loading: false,
   serverSideSort: false,
   defaultSortKey: '',
-  defaultSortOrder: 'asc'
+  defaultSortOrder: 'asc',
+  showAccountBilling: true,
+  showUpstreamEndpoint: true
 })
-defineEmits<{
+const emit = defineEmits<{
   userClick: [userID: number, email?: string]
   sort: [key: string, order: 'asc' | 'desc']
+  ipGeoBatchFailed: []
 }>()
 const { t } = useI18n()
+const showAccountBilling = props.showAccountBilling
+const showUpstreamEndpoint = props.showUpstreamEndpoint
+const ipGeoBatchLoading = ref(false)
+
+const showIpGeoToolbar = computed(() => props.columns.some((col) => col.key === 'ip_address'))
+
+const currentPageIps = computed(() =>
+  Array.from(new Set(props.data.map((row) => row.ip_address).filter((ip): ip is string => Boolean(ip))))
+)
+
+const pendingIpCount = computed(() => {
+  if (!showIpGeoToolbar.value) return 0
+  return currentPageIps.value.filter((ip) => {
+    const status = getEntry(ip).status
+    return status === 'idle' || status === 'error'
+  }).length
+})
+
+const handleBatchFetchIpGeo = async () => {
+  ipGeoBatchLoading.value = true
+  try {
+    const ok = await fetchBatch(currentPageIps.value)
+    if (!ok) emit('ipGeoBatchFailed')
+  } finally {
+    ipGeoBatchLoading.value = false
+  }
+}
 
 // Tooltip state - cost
 const tooltipVisible = ref(false)
@@ -572,7 +627,7 @@ const hideTokenTooltip = () => {
   tokenTooltipData.value = null
 }
 
-/** 是否包含延迟分解信息 */
+/** 鏄惁鍖呭惈寤惰繜鍒嗚В淇℃伅 */
 const hasLatencyBreakdown = (row: { client_transport?: string | null; auth_latency_ms?: number | null; routing_latency_ms?: number | null; upstream_latency_ms?: number | null; response_latency_ms?: number | null } | null | undefined): boolean => {
   if (!row) return false
   return (
@@ -584,7 +639,7 @@ const hasLatencyBreakdown = (row: { client_transport?: string | null; auth_laten
   )
 }
 
-/** 计算单行缓存命中率 = cache_read / (input + cache_read + cache_write) × 100 */
+/** 璁＄畻鍗曡缂撳瓨鍛戒腑鐜?= cache_read / (input + cache_read + cache_write) 脳 100 */
 const getPerRequestCacheHitRatio = (row: { input_tokens?: number; cache_read_tokens?: number; cache_creation_tokens?: number }): number | null => {
   const input = row.input_tokens ?? 0
   const read = row.cache_read_tokens ?? 0

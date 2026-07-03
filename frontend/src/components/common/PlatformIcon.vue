@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <!-- Claude/Anthropic logo -->
   <svg v-if="platform === 'anthropic'" :class="sizeClass" viewBox="0 0 16 16" fill="currentColor">
     <path

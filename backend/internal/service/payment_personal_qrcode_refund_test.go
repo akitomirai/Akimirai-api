@@ -26,7 +26,7 @@ func TestGwRefundRequiresManualReferenceForPersonalQRCode(t *testing.T) {
 		entClient: client,
 	}
 
-	err := svc.gwRefund(ctx, &RefundPlan{
+	_, err := svc.gwRefund(ctx, &RefundPlan{
 		OrderID:       order.ID,
 		Order:         order,
 		RefundAmount:  order.Amount,
@@ -53,7 +53,7 @@ func TestGwRefundAuditsManualReferenceForPersonalQRCode(t *testing.T) {
 		entClient: client,
 	}
 
-	err := svc.gwRefund(ctx, &RefundPlan{
+	resp, err := svc.gwRefund(ctx, &RefundPlan{
 		OrderID:               order.ID,
 		Order:                 order,
 		RefundAmount:          order.Amount,
@@ -62,6 +62,7 @@ func TestGwRefundAuditsManualReferenceForPersonalQRCode(t *testing.T) {
 		ManualRefundReference: "alipay-refund-20260626",
 	})
 	require.NoError(t, err)
+	require.Equal(t, payment.ProviderStatusSuccess, resp.Status)
 
 	logs, err := svc.GetOrderAuditLogs(ctx, order.ID)
 	require.NoError(t, err)

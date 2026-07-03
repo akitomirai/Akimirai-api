@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Centralized platform color definitions.
  *
  * All components that need platform-specific styling should import from here
@@ -7,7 +7,7 @@
 
 export type Platform = 'anthropic' | 'openai' | 'antigravity' | 'gemini' | 'grok'
 
-// ── Badge (bg + text + border, for inline badges with border) ───────
+// 鈹€鈹€ Badge (bg + text + border, for inline badges with border) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 const BADGE: Record<Platform, string> = {
   anthropic: 'bg-orange-500/10 text-orange-600 border-orange-500/30 dark:text-orange-400',
   openai: 'bg-green-500/10 text-green-600 border-green-500/30 dark:text-green-400',
@@ -17,7 +17,7 @@ const BADGE: Record<Platform, string> = {
 }
 const BADGE_DEFAULT = 'bg-slate-500/10 text-slate-600 border-slate-500/30 dark:text-slate-400'
 
-// ── Light badge (softer bg, no border) ──────────────────────────────
+// 鈹€鈹€ Light badge (softer bg, no border) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 const BADGE_LIGHT: Record<Platform, string> = {
   anthropic: 'bg-orange-500/10 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300',
   openai: 'bg-green-500/10 text-green-600 dark:bg-green-500/10 dark:text-green-300',
@@ -26,7 +26,7 @@ const BADGE_LIGHT: Record<Platform, string> = {
   grok: 'bg-teal-500/10 text-teal-600 dark:bg-teal-500/10 dark:text-teal-300',
 }
 
-// ── Border ──────────────────────────────────────────────────────────
+// 鈹€鈹€ Border 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 const BORDER: Record<Platform, string> = {
   anthropic: 'border-orange-500/20 dark:border-orange-500/20',
   openai: 'border-green-500/20 dark:border-green-500/20',
@@ -36,7 +36,7 @@ const BORDER: Record<Platform, string> = {
 }
 const BORDER_DEFAULT = 'border-gray-200 dark:border-dark-700'
 
-// ── Accent bar (gradient) ───────────────────────────────────────────
+// 鈹€鈹€ Accent bar (gradient) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 const ACCENT_BAR: Record<Platform, string> = {
   anthropic: 'bg-gradient-to-r from-orange-400 to-orange-500',
   openai: 'bg-gradient-to-r from-emerald-400 to-emerald-500',
@@ -46,7 +46,7 @@ const ACCENT_BAR: Record<Platform, string> = {
 }
 const ACCENT_BAR_DEFAULT = 'bg-gradient-to-r from-primary-400 to-primary-500'
 
-// ── Text (price, icon) ─────────────────────────────────────────────
+// 鈹€鈹€ Text (price, icon) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 const TEXT: Record<Platform, string> = {
   anthropic: 'text-orange-600 dark:text-orange-400',
   openai: 'text-emerald-600 dark:text-emerald-400',
@@ -56,7 +56,7 @@ const TEXT: Record<Platform, string> = {
 }
 const TEXT_DEFAULT = 'text-primary-600 dark:text-primary-400'
 
-// ── Icon (check mark etc.) ──────────────────────────────────────────
+// 鈹€鈹€ Icon (check mark etc.) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 const ICON: Record<Platform, string> = {
   anthropic: 'text-orange-500 dark:text-orange-400',
   openai: 'text-emerald-500 dark:text-emerald-400',
@@ -66,7 +66,7 @@ const ICON: Record<Platform, string> = {
 }
 const ICON_DEFAULT = 'text-primary-500 dark:text-primary-400'
 
-// ── Button (solid bg) ───────────────────────────────────────────────
+// 鈹€鈹€ Button (solid bg) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 const BUTTON: Record<Platform, string> = {
   anthropic: 'bg-orange-500 text-white hover:bg-orange-600 active:bg-orange-700 dark:bg-orange-500/80 dark:hover:bg-orange-500',
   openai: 'bg-green-600 text-white hover:bg-green-700 active:bg-green-800 dark:bg-green-600/80 dark:hover:bg-green-600',
@@ -76,7 +76,7 @@ const BUTTON: Record<Platform, string> = {
 }
 const BUTTON_DEFAULT = 'bg-primary-500 text-white hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-500'
 
-// ── Discount badge ──────────────────────────────────────────────────
+// 鈹€鈹€ Discount badge 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 const DISCOUNT: Record<Platform, string> = {
   anthropic: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
   openai: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
@@ -86,7 +86,7 @@ const DISCOUNT: Record<Platform, string> = {
 }
 const DISCOUNT_DEFAULT = 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
 
-// ── Header gradient (subscription confirm) ─────────────────────────
+// 鈹€鈹€ Header gradient (subscription confirm) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 const GRADIENT: Record<Platform, string> = {
   anthropic: 'from-orange-500 to-orange-600',
   openai: 'from-emerald-500 to-emerald-600',
@@ -96,7 +96,7 @@ const GRADIENT: Record<Platform, string> = {
 }
 const GRADIENT_DEFAULT = 'from-primary-500 to-primary-600'
 
-// ── Header text (light text on gradient bg) ────────────────────────
+// 鈹€鈹€ Header text (light text on gradient bg) 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 const GRADIENT_TEXT: Record<Platform, string> = {
   anthropic: 'text-orange-100',
   openai: 'text-emerald-100',
@@ -115,7 +115,7 @@ const GRADIENT_SUBTEXT: Record<Platform, string> = {
 }
 const GRADIENT_SUBTEXT_DEFAULT = 'text-primary-200'
 
-// ── Public API ──────────────────────────────────────────────────────
+// 鈹€鈹€ Public API 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
 function isPlatform(p: string): p is Platform {
   return p === 'anthropic' || p === 'openai' || p === 'antigravity' || p === 'gemini' || p === 'grok'

@@ -1,199 +1,162 @@
-<template>
+﻿<template>
   <AppLayout>
-    <TablePageLayout>
-      <template #actions>
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <!-- Total Requests -->
-          <div class="card p-4">
-          <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
-              <Icon name="document" size="md" class="text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {{ t('usage.totalRequests') }}
-              </p>
-              <p class="text-xl font-bold text-gray-900 dark:text-white">
-                {{ usageStats?.total_requests?.toLocaleString() || '0' }}
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ t('usage.inSelectedRange') }}
-              </p>
-            </div>
-          </div>
-        </div>
+    <div class="space-y-6">
+      <UsageStatsCards :stats="usageStats" :show-account-cost="false" :strike-standard-cost="true" />
 
-        <!-- Total Tokens -->
+      <div class="space-y-4">
         <div class="card p-4">
-          <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-amber-100 p-2 dark:bg-amber-900/30">
-              <Icon name="cube" size="md" class="text-amber-600 dark:text-amber-400" />
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {{ t('usage.totalTokens') }}
-              </p>
-              <p class="text-xl font-bold text-gray-900 dark:text-white">
-                {{ formatTokens(usageStats?.total_tokens || 0) }}
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                <span>{{ t('usage.in') }} {{ formatTokens(usageStats?.total_input_tokens || 0) }}</span>
-                <span> · </span>
-                <span>{{ t('usage.out') }} {{ formatTokens(usageStats?.total_output_tokens || 0) }}</span>
-                <span> · </span>
-                <span class="text-sky-600 dark:text-sky-400">{{ t('usage.cacheHit') }} {{ formatTokens(usageStats?.total_cache_read_tokens || 0) }}</span>
-                <span> · </span>
-                <span class="text-amber-600 dark:text-amber-400">{{ t('usage.cacheCreate') }} {{ formatTokens(usageStats?.total_cache_creation_tokens || 0) }}</span>
-              </p>
-              <p class="text-xs text-gray-400 dark:text-gray-500">
-                {{ t('usage.cacheHitRate') }}:
-                <template v-if="cacheStats.totalInput > 0">
-                  <span class="text-sky-600 dark:text-sky-400">{{ formatTokens(cacheStats.cacheRead) }}</span>
-                  <span class="text-gray-400">/</span>
-                  <span class="text-gray-600 dark:text-gray-300">{{ formatTokens(cacheStats.totalInput) }}</span>
-                  <span class="ml-1">{{ cacheStats.ratePercent }}</span>
-                </template>
-                <template v-else>-</template>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Total Cost -->
-        <div class="card p-4">
-          <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-green-100 p-2 dark:bg-green-900/30">
-              <Icon name="dollar" size="md" class="text-green-600 dark:text-green-400" />
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {{ t('usage.totalCost') }}
-              </p>
-              <p class="text-xl font-bold text-green-600 dark:text-green-400">
-                ${{ (usageStats?.total_actual_cost || 0).toFixed(4) }}
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ t('usage.actualCost') }} /
-                <span class="line-through">${{ (usageStats?.total_cost || 0).toFixed(4) }}</span>
-                {{ t('usage.standardCost') }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Average Duration -->
-        <div class="card p-4">
-          <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-purple-100 p-2 dark:bg-purple-900/30">
-              <Icon name="clock" size="md" class="text-purple-600 dark:text-purple-400" />
-            </div>
-            <div>
-              <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {{ t('usage.avgDuration') }}
-              </p>
-              <p class="text-xl font-bold text-gray-900 dark:text-white">
-                {{ formatDuration(usageStats?.average_duration_ms || 0) }}
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('usage.perRequest') }}</p>
-            </div>
-          </div>
-        </div>
-        </div>
-      </template>
-
-      <template #filters>
-        <div class="card">
-          <div class="px-6 py-4">
-          <div class="flex flex-wrap items-end gap-4">
-            <!-- API Key Filter -->
-            <div class="min-w-[180px]">
-              <label class="input-label">{{ t('usage.apiKeyFilter') }}</label>
-              <Select
-                v-model="filters.api_key_id"
-                :options="apiKeyOptions"
-                :placeholder="t('usage.allApiKeys')"
-                @change="applyFilters"
-              />
-            </div>
-
-            <!-- Date Range Filter -->
-            <div>
-              <label class="input-label">{{ t('usage.timeRange') }}</label>
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.dashboard.timeRange') }}:</span>
               <DateRangePicker
                 v-model:start-date="startDate"
                 v-model:end-date="endDate"
                 @change="onDateRangeChange"
               />
             </div>
-
-            <!-- Actions -->
-            <div class="ml-auto flex items-center gap-3">
-              <button @click="applyFilters" :disabled="loading" class="btn btn-secondary">
-                {{ t('common.refresh') }}
-              </button>
-              <button @click="resetFilters" class="btn btn-secondary">
-                {{ t('common.reset') }}
-              </button>
-              <button @click="exportToCSV" :disabled="exporting" class="btn btn-primary">
-                <svg
-                  v-if="exporting"
-                  class="-ml-1 mr-2 h-4 w-4 animate-spin"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                  ></circle>
-                  <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                {{ exporting ? t('usage.exporting') : t('usage.exportCsv') }}
-              </button>
+            <div class="ml-auto flex items-center gap-2">
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.dashboard.granularity') }}:</span>
+              <div class="w-28">
+                <Select v-model="granularity" :options="granularityOptions" @change="loadChartData" />
+              </div>
             </div>
           </div>
         </div>
-        </div>
-      </template>
 
-      <template #table>
-        <!-- Tab 切换栏 -->
-        <div v-if="errorViewEnabled" class="mb-0 flex gap-2 border-b border-gray-200 px-4 pt-3 dark:border-dark-700">
-          <button class="tab" :class="{ 'tab-active': activeTab === 'usage' }" @click="activeTab = 'usage'">
-            {{ t('usage.tabs.usage') }}
-          </button>
-          <button class="tab" :class="{ 'tab-active': activeTab === 'errors' }" @click="switchToErrors">
-            {{ t('usage.tabs.errors') }}
-          </button>
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <ModelDistributionChart
+            v-model:metric="modelDistributionMetric"
+            :model-stats="requestedModelStats"
+            :loading="modelStatsLoading"
+            :show-source-toggle="false"
+            :show-metric-toggle="true"
+            :enable-breakdown="false"
+            :show-account-cost="false"
+            :start-date="startDate"
+            :end-date="endDate"
+          />
+          <GroupDistributionChart
+            v-model:metric="groupDistributionMetric"
+            :group-stats="groupStats"
+            :loading="chartsLoading"
+            :show-metric-toggle="true"
+            :enable-breakdown="false"
+            :show-account-cost="false"
+            :start-date="startDate"
+            :end-date="endDate"
+          />
         </div>
 
-        <!-- 用量明细表 -->
-        <!-- flex 链让 DataTable 根 .table-wrapper(flex:1)拿到有界高度以启用内部滚动。
-             虚拟化器测高 race 导致的概率空白,已在 DataTable 内用「就绪门控 + initialRect 兜底」根治。 -->
-        <div v-show="activeTab === 'usage'" class="flex min-h-0 flex-1 flex-col">
-          <DataTable
-          :columns="columns"
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <EndpointDistributionChart
+            v-model:source="endpointDistributionSource"
+            v-model:metric="endpointDistributionMetric"
+            :endpoint-stats="inboundEndpointStats"
+            :upstream-endpoint-stats="upstreamEndpointStats"
+            :endpoint-path-stats="endpointPathStats"
+            :loading="endpointStatsLoading"
+            :show-source-toggle="false"
+            :show-metric-toggle="true"
+            :enable-breakdown="false"
+            :title="t('usage.endpointDistribution')"
+            :start-date="startDate"
+            :end-date="endDate"
+          />
+          <TokenUsageTrend :trend-data="trendData" :loading="chartsLoading" />
+        </div>
+      </div>
+
+      <div class="card p-6">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <div class="flex flex-1 flex-wrap items-end gap-4">
+            <div class="w-full sm:w-auto sm:min-w-[220px]">
+              <label class="input-label">{{ t('usage.apiKeyFilter') }}</label>
+              <Select v-model="filters.api_key_id" :options="apiKeyOptions" @change="applyFilters" />
+            </div>
+            <div class="w-full sm:w-auto sm:min-w-[220px]">
+              <label class="input-label">{{ t('usage.model') }}</label>
+              <Select v-model="filters.model" :options="modelOptions" searchable @change="applyFilters" />
+            </div>
+            <div class="w-full sm:w-auto sm:min-w-[200px]">
+              <label class="input-label">{{ t('admin.usage.group') }}</label>
+              <Select v-model="filters.group_id" :options="groupOptions" searchable @change="applyFilters" />
+            </div>
+            <div class="w-full sm:w-auto sm:min-w-[180px]">
+              <label class="input-label">{{ t('usage.type') }}</label>
+              <Select v-model="filters.request_type" :options="requestTypeOptions" @change="applyFilters" />
+            </div>
+            <div class="w-full sm:w-auto sm:min-w-[200px]">
+              <label class="input-label">{{ t('admin.usage.billingType') }}</label>
+              <Select v-model="filters.billing_type" :options="billingTypeOptions" @change="applyFilters" />
+            </div>
+            <div class="w-full sm:w-auto sm:min-w-[200px]">
+              <label class="input-label">{{ t('admin.usage.billingMode') }}</label>
+              <Select v-model="filters.billing_mode" :options="billingModeOptions" @change="applyFilters" />
+            </div>
+          </div>
+
+          <div class="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
+            <button type="button" @click="refreshData" :disabled="loading" class="btn btn-secondary">
+              {{ t('common.refresh') }}
+            </button>
+            <button type="button" @click="resetFilters" class="btn btn-secondary">
+              {{ t('common.reset') }}
+            </button>
+            <div class="relative" ref="columnDropdownRef">
+              <button
+                type="button"
+                @click="showColumnDropdown = !showColumnDropdown"
+                class="btn btn-secondary px-2 md:px-3"
+                :title="t('admin.users.columnSettings')"
+              >
+                <Icon name="grid" size="sm" />
+                <span class="hidden md:inline">{{ t('admin.users.columnSettings') }}</span>
+              </button>
+              <div
+                v-if="showColumnDropdown"
+                class="absolute right-0 top-full z-50 mt-1 max-h-80 w-48 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-dark-600 dark:bg-dark-800"
+              >
+                <button
+                  v-for="col in toggleableColumns"
+                  :key="col.key"
+                  type="button"
+                  @click="toggleColumn(col.key)"
+                  class="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
+                >
+                  <span>{{ col.label }}</span>
+                  <Icon v-if="isColumnVisible(col.key)" name="check" size="sm" class="text-primary-500" />
+                </button>
+              </div>
+            </div>
+            <button type="button" @click="exportToCSV" :disabled="exporting" class="btn btn-primary">
+              {{ exporting ? t('usage.exporting') : t('usage.exportCsv') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="errorViewEnabled" class="flex gap-2 border-b border-gray-200 dark:border-dark-700">
+        <button class="tab" :class="{ 'tab-active': activeTab === 'usage' }" @click="activeTab = 'usage'">
+          {{ t('usage.tabs.usage') }}
+        </button>
+        <button class="tab" :class="{ 'tab-active': activeTab === 'errors' }" @click="switchToErrors">
+          {{ t('usage.tabs.errors') }}
+        </button>
+      </div>
+
+      <template v-if="activeTab === 'usage'">
+        <UsageTable
           :data="usageLogs"
           :loading="loading"
+          :columns="visibleColumns"
           :server-side-sort="true"
-          :estimate-row-height="88"
-          :overscan="12"
+          :show-account-billing="false"
+          :show-upstream-endpoint="false"
           default-sort-key="created_at"
           default-sort-order="desc"
           @sort="handleSort"
-        >
-          <template #cell-api_key="{ row }">
-            <span class="text-sm text-gray-900 dark:text-white">{{
-              row.api_key?.name || '-'
-            }}</span>
-          </template>
+          @ipGeoBatchFailed="handleIpGeoBatchFailed"
+        />
 
           <template #cell-model="{ value }">
             <span class="font-medium text-gray-900 dark:text-white">{{ value }}</span>
@@ -228,7 +191,7 @@
           </template>
 
           <template #cell-tokens="{ row }">
-            <!-- 图片生成请求 -->
+            <!-- 鍥剧墖鐢熸垚璇锋眰 -->
             <div v-if="isImageUsage(row)" class="flex items-center gap-1.5">
               <svg
                 class="h-4 w-4 text-indigo-500"
@@ -246,7 +209,7 @@
               <span class="font-medium text-gray-900 dark:text-white">{{ row.image_count }}{{ t('usage.imageUnit') }}</span>
               <span class="text-gray-400">({{ formatImageBillingSize(row, t) }})</span>
             </div>
-            <!-- Token 请求 -->
+            <!-- Token 璇锋眰 -->
             <div v-else class="flex items-center gap-1.5">
               <div class="space-y-1.5 text-sm">
                 <!-- Input / Output Tokens -->
@@ -387,7 +350,7 @@
         </DataTable>
         </div>
 
-        <!-- 错误请求表 -->
+        <!-- 閿欒璇锋眰琛?-->
         <div v-if="errorViewEnabled" v-show="activeTab === 'errors'" class="flex min-h-0 flex-1 flex-col">
           <UserErrorRequestsTable
             :rows="errorRows"
@@ -403,17 +366,28 @@
         </div>
       </template>
 
-      <template #pagination>
-        <Pagination
-          v-if="pagination.total > 0 && activeTab === 'usage'"
-          :page="pagination.page"
-          :total="pagination.total"
-          :page-size="pagination.page_size"
-          @update:page="handlePageChange"
-          @update:pageSize="handlePageSizeChange"
-        />
-      </template>
-    </TablePageLayout>
+      <Pagination
+        v-if="pagination.total > 0"
+        :page="pagination.page"
+        :total="pagination.total"
+        :page-size="pagination.page_size"
+        @update:page="handlePageChange"
+        @update:pageSize="handlePageSizeChange"
+      />
+
+      <UserErrorRequestsTable
+        v-else-if="errorViewEnabled"
+        :rows="errorRows"
+        :total="errorTotal"
+        :loading="errorLoading"
+        :page="errorPage"
+        :page-size="errorPageSize"
+        :api-keys="apiKeys"
+        @filter="onErrorFilter"
+        @update:page="onErrorPage"
+        @update:pageSize="onErrorPageSize"
+      />
+    </div>
   </AppLayout>
 
   <!-- Token Tooltip Portal -->
@@ -450,7 +424,7 @@
               <span class="font-medium text-pink-300">{{ tokenTooltipData.image_output_tokens.toLocaleString() }}</span>
             </div>
             <div v-if="tokenTooltipData && tokenTooltipData.cache_creation_tokens > 0">
-              <!-- 有 5m/1h 明细时，展开显示 -->
+              <!-- 鏈?5m/1h 鏄庣粏鏃讹紝灞曞紑鏄剧ず -->
               <template v-if="tokenTooltipData.cache_creation_5m_tokens > 0 || tokenTooltipData.cache_creation_1h_tokens > 0">
                 <div v-if="tokenTooltipData.cache_creation_5m_tokens > 0" class="flex items-center justify-between gap-4">
                   <span class="text-gray-400 flex items-center gap-1.5">
@@ -467,7 +441,7 @@
                   <span class="font-medium text-white">{{ tokenTooltipData.cache_creation_1h_tokens.toLocaleString() }}</span>
                 </div>
               </template>
-              <!-- 无明细时，只显示聚合值 -->
+              <!-- 鏃犳槑缁嗘椂锛屽彧鏄剧ず鑱氬悎鍊?-->
               <div v-else class="flex items-center justify-between gap-4">
                 <span class="text-gray-400">{{ t('admin.usage.cacheCreationTokens') }}</span>
                 <span class="font-medium text-white">{{ tokenTooltipData.cache_creation_tokens.toLocaleString() }}</span>
@@ -662,72 +636,55 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import { usageAPI, keysAPI } from '@/api'
+import { keysAPI, usageAPI, userGroupsAPI } from '@/api'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import TablePageLayout from '@/components/layout/TablePageLayout.vue'
-import DataTable from '@/components/common/DataTable.vue'
 import Pagination from '@/components/common/Pagination.vue'
-import EmptyState from '@/components/common/EmptyState.vue'
-import Select from '@/components/common/Select.vue'
+import Select, { type SelectOption } from '@/components/common/Select.vue'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'
+import UsageStatsCards from '@/components/admin/usage/UsageStatsCards.vue'
+import UsageTable from '@/components/admin/usage/UsageTable.vue'
+import ModelDistributionChart from '@/components/charts/ModelDistributionChart.vue'
+import GroupDistributionChart from '@/components/charts/GroupDistributionChart.vue'
+import EndpointDistributionChart from '@/components/charts/EndpointDistributionChart.vue'
+import TokenUsageTrend from '@/components/charts/TokenUsageTrend.vue'
 import Icon from '@/components/icons/Icon.vue'
 import UserErrorRequestsTable from '@/components/user/UserErrorRequestsTable.vue'
-import type { UsageLog, ApiKey, UsageQueryParams, UsageStatsResponse, UserErrorRequest } from '@/types'
-import type { Column } from '@/components/common/types'
-import { formatDateTime, formatReasoningEffort } from '@/utils/format'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
-import { formatCacheTokens, formatMultiplier } from '@/utils/formatters'
-import { formatTokenPricePerMillion } from '@/utils/usagePricing'
-import { getUsageServiceTierLabel } from '@/utils/usageServiceTier'
-import { resolveUsageRequestType } from '@/utils/usageRequestType'
-import {
-  BILLING_MODE_TOKEN,
-  getBillingModeBadgeClass,
-  getBillingModeLabel,
-  isImageUsage,
-  getDisplayBillingMode,
-  imageUnitPrice,
-} from '@/utils/billingMode'
-import {
-  formatImageBillingSize,
-  formatImageInputSize,
-  formatImageOutputSize,
-  formatImageSizeBreakdown,
-  formatImageSizeSource,
-  hasImageOutputTokens,
-  textOutputTokens,
-  hasImageOutputCost,
-} from '@/utils/imageUsage'
+import { formatReasoningEffort } from '@/utils/format'
+import { BILLING_MODE_IMAGE, getBillingModeLabel } from '@/utils/billingMode'
+import { resolveUsageRequestType, requestTypeToLegacyStream } from '@/utils/usageRequestType'
+import type {
+  ApiKey,
+  EndpointStat,
+  Group,
+  GroupStat,
+  ModelStat,
+  TrendDataPoint,
+  UsageLog,
+  UsageQueryParams,
+  UsageStatsResponse,
+  UserErrorRequest,
+} from '@/types'
+import type { Column } from '@/components/common/types'
 
 const { t } = useI18n()
 const route = useRoute()
 const appStore = useAppStore()
 
-let abortController: AbortController | null = null
+type DistributionMetric = 'tokens' | 'actual_cost'
+type EndpointSource = 'inbound' | 'upstream' | 'path'
 
-// Tooltip state
-const tooltipVisible = ref(false)
-const tooltipPosition = ref({ x: 0, y: 0 })
-const tooltipData = ref<UsageLog | null>(null)
-
-// Token tooltip state
-const tokenTooltipVisible = ref(false)
-const tokenTooltipPosition = ref({ x: 0, y: 0 })
-const tokenTooltipData = ref<UsageLog | null>(null)
-
-// Usage stats from API
 const usageStats = ref<UsageStatsResponse | null>(null)
 
-// 缓存命中率 = cache_read / (input + cache_read)
-// 分母为 0（无任何输入）时显示 '-'
+// 缂撳瓨鍛戒腑鐜?= cache_read / (input + cache_read)
+// 鍒嗘瘝涓?0锛堟棤浠讳綍杈撳叆锛夋椂鏄剧ず '-'
 const cacheStats = computed(() => {
-  // 总输入 token = 普通输入 + 缓存写入 + 缓存读取（命中）
-  // 缓存命中率 = 缓存读取 / 总输入；总输入为 0 时返回零值，模板按 '-' 渲染。
-  const cacheRead = usageStats.value?.total_cache_read_tokens || 0
+  // 鎬昏緭鍏?token = 鏅€氳緭鍏?+ 缂撳瓨鍐欏叆 + 缂撳瓨璇诲彇锛堝懡涓級
+  // 缂撳瓨鍛戒腑鐜?= 缂撳瓨璇诲彇 / 鎬昏緭鍏ワ紱鎬昏緭鍏ヤ负 0 鏃惰繑鍥為浂鍊硷紝妯℃澘鎸?'-' 娓叉煋銆?  const cacheRead = usageStats.value?.total_cache_read_tokens || 0
   const cacheCreate = usageStats.value?.total_cache_creation_tokens || 0
   const input = usageStats.value?.total_input_tokens || 0
   const totalInput = input + cacheCreate + cacheRead
@@ -752,89 +709,185 @@ const columns = computed<Column[]>(() => [
 ])
 
 const usageLogs = ref<UsageLog[]>([])
-const apiKeys = ref<ApiKey[]>([])
-const loading = ref(false)
-const exporting = ref(false)
+const trendData = ref<TrendDataPoint[]>([])
+const requestedModelStats = ref<ModelStat[]>([])
+const groupStats = ref<GroupStat[]>([])
+const inboundEndpointStats = ref<EndpointStat[]>([])
+const upstreamEndpointStats = ref<EndpointStat[]>([])
+const endpointPathStats = ref<EndpointStat[]>([])
 
-const apiKeyOptions = computed(() => {
-  return [
-    { value: null, label: t('usage.allApiKeys') },
-    ...apiKeys.value.map((key) => ({
-      value: key.id,
-      label: key.name
-    }))
-  ]
+const loading = ref(false)
+const chartsLoading = ref(false)
+const modelStatsLoading = ref(false)
+const endpointStatsLoading = ref(false)
+const exporting = ref(false)
+const errorRows = ref<UserErrorRequest[]>([])
+const errorLoading = ref(false)
+const errorPage = ref(1)
+const errorPageSize = ref(20)
+const errorTotal = ref(0)
+const errorFilter = ref<{ model: string; category: string; api_key_id: number | null }>({
+  model: '',
+  category: '',
+  api_key_id: null,
 })
 
-// Helper function to format date in local timezone
-const formatLocalDate = (date: Date): string => {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+let abortController: AbortController | null = null
+let chartReqSeq = 0
+let statsReqSeq = 0
+let modelStatsReqSeq = 0
+
+const formatLocalDate = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+
+const getLast24HoursRangeDates = () => {
+  const end = new Date()
+  const start = new Date(end.getTime() - 24 * 60 * 60 * 1000)
+  return { start: formatLocalDate(start), end: formatLocalDate(end) }
 }
 
-// Initialize date range immediately
-const now = new Date()
-const weekAgo = new Date(now)
-weekAgo.setDate(weekAgo.getDate() - 6)
+const getGranularityForRange = (start: string, end: string): 'day' | 'hour' => {
+  const startTime = new Date(`${start}T00:00:00`).getTime()
+  const endTime = new Date(`${end}T00:00:00`).getTime()
+  return Math.ceil((endTime - startTime) / (1000 * 60 * 60 * 24)) <= 1 ? 'hour' : 'day'
+}
 
-// Date range state
-const startDate = ref(formatLocalDate(weekAgo))
-const endDate = ref(formatLocalDate(now))
+const defaultRange = getLast24HoursRangeDates()
+const startDate = ref(defaultRange.start)
+const endDate = ref(defaultRange.end)
+const granularity = ref<'day' | 'hour'>(getGranularityForRange(startDate.value, endDate.value))
+
+const modelDistributionMetric = ref<DistributionMetric>('tokens')
+const groupDistributionMetric = ref<DistributionMetric>('tokens')
+const endpointDistributionMetric = ref<DistributionMetric>('tokens')
+const endpointDistributionSource = ref<EndpointSource>('inbound')
+const activeTab = ref<'usage' | 'errors'>('usage')
+const errorViewEnabled = computed(() => appStore.cachedPublicSettings?.allow_user_view_error_requests ?? false)
 
 const filters = ref<UsageQueryParams>({
-  api_key_id: undefined,
-  start_date: undefined,
-  end_date: undefined
+  start_date: startDate.value,
+  end_date: endDate.value,
+  request_type: undefined,
+  billing_type: null,
+  billing_mode: null,
 })
-
-// Initialize filters with date range
-filters.value.start_date = startDate.value
-filters.value.end_date = endDate.value
-
-// Handle date range change from DateRangePicker
-const onDateRangeChange = (range: {
-  startDate: string
-  endDate: string
-  preset: string | null
-}) => {
-  filters.value.start_date = range.startDate
-  filters.value.end_date = range.endDate
-  applyFilters()
-  errorPage.value = 1
-  if (activeTab.value === 'errors') {
-    loadErrors()
-  } else {
-    errorRows.value = []  // 失效，下次切到 errors tab 时按新日期重新加载
-  }
-}
 
 const pagination = reactive({
   page: 1,
   page_size: getPersistedPageSize(),
   total: 0,
-  pages: 0
 })
 const sortState = reactive({
   sort_by: 'created_at',
-  sort_order: 'desc' as 'asc' | 'desc'
+  sort_order: 'desc' as 'asc' | 'desc',
 })
 
-const formatDuration = (ms: number | null | undefined): string => {
-  if (ms == null) return '-'
-  if (ms < 1000) return `${ms.toFixed(0)}ms`
-  return `${(ms / 1000).toFixed(2)}s`
+const granularityOptions = computed<SelectOption[]>(() => [
+  { value: 'day', label: t('admin.dashboard.day') },
+  { value: 'hour', label: t('admin.dashboard.hour') },
+])
+const requestTypeOptions = computed<SelectOption[]>(() => [
+  { value: null, label: t('admin.usage.allTypes') },
+  { value: 'ws_v2', label: t('usage.ws') },
+  { value: 'stream', label: t('usage.stream') },
+  { value: 'sync', label: t('usage.sync') },
+])
+const billingTypeOptions = computed<SelectOption[]>(() => [
+  { value: null, label: t('admin.usage.allBillingTypes') },
+  { value: 0, label: t('admin.usage.billingTypeBalance') },
+  { value: 1, label: t('admin.usage.billingTypeSubscription') },
+])
+const billingModeOptions = computed<SelectOption[]>(() => [
+  { value: null, label: t('admin.usage.allBillingModes') },
+  { value: 'token', label: t('admin.usage.billingModeToken') },
+  { value: 'per_request', label: t('admin.usage.billingModePerRequest') },
+  { value: 'image', label: t('admin.usage.billingModeImage') },
+])
+
+const apiKeys = ref<ApiKey[]>([])
+const groups = ref<Group[]>([])
+const modelOptionValues = ref<string[]>([])
+
+const apiKeyOptions = computed<SelectOption[]>(() => [
+  { value: null, label: t('usage.allApiKeys') },
+  ...apiKeys.value.map((key) => ({ value: key.id, label: key.name })),
+])
+const groupOptions = computed<SelectOption[]>(() => [
+  { value: null, label: t('admin.usage.allGroups') },
+  ...groups.value.map((group) => ({ value: group.id, label: group.name })),
+])
+const modelOptions = computed<SelectOption[]>(() => [
+  { value: null, label: t('admin.usage.allModels') },
+  ...modelOptionValues.value.map((model) => ({ value: model, label: model })),
+])
+
+const normalizedFilters = computed<UsageQueryParams>(() => {
+  const requestType = filters.value.request_type
+  const legacyStream = requestType ? requestTypeToLegacyStream(requestType) : filters.value.stream
+  return {
+    ...filters.value,
+    start_date: startDate.value,
+    end_date: endDate.value,
+    stream: legacyStream === null ? undefined : legacyStream,
+  }
+})
+
+const buildUsageListParams = (page: number, pageSize: number): UsageQueryParams => ({
+  page,
+  page_size: pageSize,
+  ...normalizedFilters.value,
+  sort_by: sortState.sort_by,
+  sort_order: sortState.sort_order,
+})
+
+const loadLogs = async () => {
+  abortController?.abort()
+  const controller = new AbortController()
+  abortController = controller
+  loading.value = true
+  try {
+    const res = await usageAPI.query(buildUsageListParams(pagination.page, pagination.page_size), {
+      signal: controller.signal,
+    })
+    if (!controller.signal.aborted) {
+      usageLogs.value = res.items
+      pagination.total = res.total
+    }
+  } catch (error: any) {
+    if (error?.name !== 'AbortError' && error?.code !== 'ERR_CANCELED') {
+      appStore.showError(t('usage.failedToLoad'))
+    }
+  } finally {
+    if (abortController === controller) loading.value = false
+  }
 }
 
-
-const formatUserAgent = (ua: string): string => {
-  return ua
+const loadStats = async () => {
+  const seq = ++statsReqSeq
+  endpointStatsLoading.value = true
+  try {
+    const stats = await usageAPI.getStats(normalizedFilters.value)
+    if (seq !== statsReqSeq) return
+    usageStats.value = stats
+    inboundEndpointStats.value = stats.endpoints || []
+    upstreamEndpointStats.value = []
+    endpointPathStats.value = []
+  } catch (error) {
+    if (seq !== statsReqSeq) return
+    console.error('Failed to load usage stats:', error)
+    inboundEndpointStats.value = []
+    upstreamEndpointStats.value = []
+    endpointPathStats.value = []
+  } finally {
+    if (seq === statsReqSeq) endpointStatsLoading.value = false
+  }
 }
 
 const getRequestTypeLabel = (log: UsageLog): string => {
   const requestType = resolveUsageRequestType(log)
   if (requestType === 'cyber') return t('usage.cyber')
   if (requestType === 'ws_v2') return t('usage.ws')
-  // 非 WS 但有 openai_ws_mode 标记，显示 "WS (HTTP)" 以区分传输方式
-  if (log.openai_ws_mode) return `${t('usage.ws')}`
+  // 闈?WS 浣嗘湁 openai_ws_mode 鏍囪锛屾樉绀?"WS (HTTP)" 浠ュ尯鍒嗕紶杈撴柟寮?  if (log.openai_ws_mode) return `${t('usage.ws')}`
   if (requestType === 'stream') return t('usage.stream')
   if (requestType === 'sync') return t('usage.sync')
   return t('usage.unknown')
@@ -849,6 +902,78 @@ const getRequestTypeBadgeClass = (log: UsageLog): string => {
   return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
 }
 
+const refreshModelOptions = (models: ModelStat[]) => {
+  const current = filters.value.model
+  const set = new Set(modelOptionValues.value)
+  models.forEach((item) => {
+    if (item.model) set.add(item.model)
+  })
+  if (current) set.add(current)
+  modelOptionValues.value = Array.from(set).sort()
+}
+
+const applyFilters = () => {
+  pagination.page = 1
+  void loadLogs()
+  void loadStats()
+  void loadModelStats()
+  void loadChartData()
+  resetErrorRows()
+}
+
+const refreshData = () => {
+  void loadLogs()
+  void loadStats()
+  void loadModelStats()
+  void loadChartData()
+  if (activeTab.value === 'errors') void loadErrors()
+}
+
+const resetFilters = () => {
+  const range = getLast24HoursRangeDates()
+  startDate.value = range.start
+  endDate.value = range.end
+  filters.value = {
+    start_date: range.start,
+    end_date: range.end,
+    request_type: undefined,
+    billing_type: null,
+    billing_mode: null,
+  }
+  granularity.value = getGranularityForRange(range.start, range.end)
+  applyFilters()
+}
+
+const onDateRangeChange = (range: { startDate: string; endDate: string; preset: string | null }) => {
+  startDate.value = range.startDate
+  endDate.value = range.endDate
+  filters.value.start_date = range.startDate
+  filters.value.end_date = range.endDate
+  granularity.value = getGranularityForRange(range.startDate, range.endDate)
+  applyFilters()
+}
+
+const handlePageChange = (page: number) => {
+  pagination.page = page
+  void loadLogs()
+}
+
+const handlePageSizeChange = (pageSize: number) => {
+  pagination.page_size = pageSize
+  pagination.page = 1
+  void loadLogs()
+}
+
+const handleSort = (key: string, order: 'asc' | 'desc') => {
+  sortState.sort_by = key
+  sortState.sort_order = order
+  pagination.page = 1
+  void loadLogs()
+}
+
+const handleIpGeoBatchFailed = () => {
+  appStore.showError(t('usage.ipGeo.batchFailed'))
+}
 
 const getRequestTypeExportText = (log: UsageLog): string => {
   const requestType = resolveUsageRequestType(log)
@@ -864,153 +989,15 @@ const formatUsageEndpoints = (log: UsageLog): string => {
   const upstream = log.upstream_endpoint?.trim()
   if (!inbound && !upstream) return '-'
   if (!upstream || upstream === inbound) return inbound || '-'
-  return `${inbound} → ${upstream}`
+  return `${inbound} 鈫?${upstream}`
 }
 
-const formatTokens = (value: number): string => {
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(2)}B`
-  } else if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(2)}M`
-  } else if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(2)}K`
-  }
-  return value.toLocaleString()
-}
-
-type UsageTableQueryParams = UsageQueryParams & {
-  sort_by?: string
-  sort_order?: 'asc' | 'desc'
-}
-
-const buildUsageQueryParams = (page: number, pageSize: number): UsageTableQueryParams => ({
-  page,
-  page_size: pageSize,
-  ...filters.value,
-  sort_by: sortState.sort_by,
-  sort_order: sortState.sort_order
-})
-
-const loadUsageLogs = async () => {
-  if (abortController) {
-    abortController.abort()
-  }
-  const currentAbortController = new AbortController()
-  abortController = currentAbortController
-  const { signal } = currentAbortController
-  loading.value = true
-  try {
-    const response = await usageAPI.query(
-      buildUsageQueryParams(pagination.page, pagination.page_size),
-      { signal }
-    )
-    if (signal.aborted) {
-      return
-    }
-    usageLogs.value = response.items
-    pagination.total = response.total
-    pagination.pages = response.pages
-  } catch (error) {
-    if (signal.aborted) {
-      return
-    }
-    const abortError = error as { name?: string; code?: string }
-    if (abortError?.name === 'AbortError' || abortError?.code === 'ERR_CANCELED') {
-      return
-    }
-    appStore.showError(t('usage.failedToLoad'))
-  } finally {
-    if (abortController === currentAbortController) {
-      loading.value = false
-    }
-  }
-}
-
-const loadApiKeys = async () => {
-  try {
-    const response = await keysAPI.list(1, 100)
-    apiKeys.value = response.items
-  } catch (error) {
-    console.error('Failed to load API keys:', error)
-  }
-}
-
-const loadUsageStats = async () => {
-  try {
-    const apiKeyId = filters.value.api_key_id ? Number(filters.value.api_key_id) : undefined
-    const stats = await usageAPI.getStatsByDateRange(
-      filters.value.start_date || startDate.value,
-      filters.value.end_date || endDate.value,
-      apiKeyId
-    )
-    usageStats.value = stats
-  } catch (error) {
-    console.error('Failed to load usage stats:', error)
-  }
-}
-
-const applyFilters = () => {
-  pagination.page = 1
-  loadUsageLogs()
-  loadUsageStats()
-}
-
-const resetFilters = () => {
-  filters.value = {
-    api_key_id: undefined,
-    start_date: undefined,
-    end_date: undefined
-  }
-  // Reset date range to default (last 7 days)
-  const now = new Date()
-  const weekAgo = new Date(now)
-  weekAgo.setDate(weekAgo.getDate() - 6)
-  startDate.value = formatLocalDate(weekAgo)
-  endDate.value = formatLocalDate(now)
-  filters.value.start_date = startDate.value
-  filters.value.end_date = endDate.value
-  pagination.page = 1
-  loadUsageLogs()
-  loadUsageStats()
-}
-
-const handlePageChange = (page: number) => {
-  pagination.page = page
-  loadUsageLogs()
-}
-
-const handlePageSizeChange = (pageSize: number) => {
-  pagination.page_size = pageSize
-  pagination.page = 1
-  loadUsageLogs()
-}
-
-const handleSort = (key: string, order: 'asc' | 'desc') => {
-  sortState.sort_by = key
-  sortState.sort_order = order
-  pagination.page = 1
-  loadUsageLogs()
-}
-
-/**
- * Escape CSV value to prevent injection and handle special characters
- */
 const escapeCSVValue = (value: unknown): string => {
   if (value == null) return ''
-
   const str = String(value)
   const escaped = str.replace(/"/g, '""')
-
-  // Prevent formula injection by prefixing dangerous characters with single quote
-  if (/^[=+\-@\t\r]/.test(str)) {
-    return `"\'${escaped}"`
-  }
-
-  // Escape values containing comma, quote, or newline
-  if (/[,"\n\r]/.test(str)) {
-    return `"${escaped}"`
-  }
-
+  if (/^[=+\-@\t\r]/.test(str)) return `"\'${escaped}"`
+  if (/[,"\n\r]/.test(str)) return `"${escaped}"`
   return str
 }
 
@@ -1019,31 +1006,27 @@ const exportToCSV = async () => {
     appStore.showWarning(t('usage.noDataToExport'))
     return
   }
-
   exporting.value = true
   appStore.showInfo(t('usage.preparingExport'))
-
   try {
     const allLogs: UsageLog[] = []
-    const pageSize = 100 // Use a larger page size for export to reduce requests
-    const totalRequests = Math.ceil(pagination.total / pageSize)
-
-    for (let page = 1; page <= totalRequests; page++) {
-      const response = await usageAPI.query(buildUsageQueryParams(page, pageSize))
+    const pageSize = 100
+    const totalPages = Math.ceil(pagination.total / pageSize)
+    for (let page = 1; page <= totalPages; page++) {
+      const response = await usageAPI.query(buildUsageListParams(page, pageSize))
       allLogs.push(...response.items)
     }
-
     if (allLogs.length === 0) {
       appStore.showWarning(t('usage.noDataToExport'))
       return
     }
-
     const headers = [
       'Time',
       'API Key Name',
       'Model',
       'Reasoning Effort',
       'Inbound Endpoint',
+      'IP Address',
       'Type',
       'Billing Mode',
       'Input Tokens',
@@ -1055,7 +1038,7 @@ const exportToCSV = async () => {
       'Billed Cost',
       'Original Cost',
       'First Token (ms)',
-      'Duration (ms)'
+      'Duration (ms)',
     ]
     const rows = allLogs.map((log) =>
       [
@@ -1081,60 +1064,98 @@ const exportToCSV = async () => {
 
     const csvContent = [
       headers.map(escapeCSVValue).join(','),
-      ...rows.map((row) => row.join(','))
+      ...rows.map((row) => row.join(',')),
     ].join('\n')
-
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `usage_${filters.value.start_date}_to_${filters.value.end_date}.csv`
+    link.download = `usage_${startDate.value}_to_${endDate.value}.csv`
     link.click()
     window.URL.revokeObjectURL(url)
-
     appStore.showSuccess(t('usage.exportSuccess'))
   } catch (error) {
-    appStore.showError(t('usage.exportFailed'))
     console.error('CSV Export failed:', error)
+    appStore.showError(t('usage.exportFailed'))
   } finally {
     exporting.value = false
   }
 }
 
-// Tooltip functions
-const showTooltip = (event: MouseEvent, row: UsageLog) => {
-  const target = event.currentTarget as HTMLElement
-  const rect = target.getBoundingClientRect()
+const ALWAYS_VISIBLE = ['created_at']
+const DEFAULT_HIDDEN_COLUMNS = ['user_agent']
+const HIDDEN_COLUMNS_KEY = 'user-usage-hidden-columns'
 
-  tooltipData.value = row
-  // Position to the right of the icon, vertically centered
-  tooltipPosition.value.x = rect.right + 8
-  tooltipPosition.value.y = rect.top + rect.height / 2
-  tooltipVisible.value = true
+const allColumns = computed<Column[]>(() => [
+  { key: 'api_key', label: t('usage.apiKeyFilter'), sortable: false },
+  { key: 'model', label: t('usage.model'), sortable: true },
+  { key: 'reasoning_effort', label: t('usage.reasoningEffort'), sortable: false },
+  { key: 'endpoint', label: t('usage.endpoint'), sortable: false },
+  { key: 'ip_address', label: 'IP', sortable: false },
+  { key: 'group', label: t('admin.usage.group'), sortable: false },
+  { key: 'stream', label: t('usage.type'), sortable: false },
+  { key: 'billing_mode', label: t('admin.usage.billingMode'), sortable: false },
+  { key: 'tokens', label: t('usage.tokens'), sortable: false },
+  { key: 'cost', label: t('usage.cost'), sortable: false },
+  { key: 'first_token', label: t('usage.firstToken'), sortable: false },
+  { key: 'duration', label: t('usage.duration'), sortable: false },
+  { key: 'created_at', label: t('usage.time'), sortable: true },
+  { key: 'user_agent', label: t('usage.userAgent'), sortable: false },
+])
+
+const hiddenColumns = reactive<Set<string>>(new Set())
+const toggleableColumns = computed(() => allColumns.value.filter((col) => !ALWAYS_VISIBLE.includes(col.key)))
+const visibleColumns = computed(() =>
+  allColumns.value.filter((col) => ALWAYS_VISIBLE.includes(col.key) || !hiddenColumns.has(col.key))
+)
+const isColumnVisible = (key: string) => !hiddenColumns.has(key)
+const toggleColumn = (key: string) => {
+  if (hiddenColumns.has(key)) hiddenColumns.delete(key)
+  else hiddenColumns.add(key)
+  localStorage.setItem(HIDDEN_COLUMNS_KEY, JSON.stringify([...hiddenColumns]))
+}
+const loadSavedColumns = () => {
+  try {
+    const saved = localStorage.getItem(HIDDEN_COLUMNS_KEY)
+    const values = saved ? JSON.parse(saved) as string[] : DEFAULT_HIDDEN_COLUMNS
+    values.forEach((key) => hiddenColumns.add(key))
+  } catch {
+    DEFAULT_HIDDEN_COLUMNS.forEach((key) => hiddenColumns.add(key))
+  }
 }
 
-const hideTooltip = () => {
-  tooltipVisible.value = false
-  tooltipData.value = null
+const showColumnDropdown = ref(false)
+const columnDropdownRef = ref<HTMLElement | null>(null)
+const handleColumnClickOutside = (event: MouseEvent) => {
+  if (columnDropdownRef.value && !columnDropdownRef.value.contains(event.target as HTMLElement)) {
+    showColumnDropdown.value = false
+  }
 }
 
-// Token tooltip functions
-const showTokenTooltip = (event: MouseEvent, row: UsageLog) => {
-  const target = event.currentTarget as HTMLElement
-  const rect = target.getBoundingClientRect()
-
-  tokenTooltipData.value = row
-  tokenTooltipPosition.value.x = rect.right + 8
-  tokenTooltipPosition.value.y = rect.top + rect.height / 2
-  tokenTooltipVisible.value = true
+const loadFilterOptions = async () => {
+  try {
+    const [keys, availableGroups] = await Promise.all([
+      keysAPI.list(1, 100),
+      userGroupsAPI.getAvailable(),
+    ])
+    apiKeys.value = keys.items
+    groups.value = availableGroups
+  } catch (error) {
+    console.error('Failed to load usage filter options:', error)
+  }
 }
 
-const hideTokenTooltip = () => {
-  tokenTooltipVisible.value = false
-  tokenTooltipData.value = null
+const resetErrorRows = () => {
+  errorPage.value = 1
+  if (activeTab.value === 'errors') {
+    void loadErrors()
+  } else {
+    errorRows.value = []
+    errorTotal.value = 0
+  }
 }
 
-/** 是否包含延迟分解信息 */
+/** 鏄惁鍖呭惈寤惰繜鍒嗚В淇℃伅 */
 const hasLatencyBreakdown = (row: UsageLog | null | undefined): boolean => {
   if (!row) return false
   return (
@@ -1146,7 +1167,7 @@ const hasLatencyBreakdown = (row: UsageLog | null | undefined): boolean => {
   )
 }
 
-/** 计算单行缓存命中率 = cache_read / (input + cache_read + cache_write) × 100 */
+/** 璁＄畻鍗曡缂撳瓨鍛戒腑鐜?= cache_read / (input + cache_read + cache_write) 脳 100 */
 const getPerRequestCacheHitRatio = (row: UsageLog): number | null => {
   const input = row.input_tokens ?? 0
   const read = row.cache_read_tokens ?? 0
@@ -1161,7 +1182,7 @@ const getPerRequestCacheHitProgressWidth = (row: UsageLog): string => {
   return `${Math.min(100, Math.max(0, ratio ?? 0))}%`
 }
 
-// ── Error Requests Tab ──────────────────────────────────────────────────────
+// 鈹€鈹€ Error Requests Tab 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 const activeTab = ref<'usage' | 'errors'>('usage')
 const errorViewEnabled = computed(() => appStore.cachedPublicSettings?.allow_user_view_error_requests ?? false)
 
@@ -1194,17 +1215,26 @@ const loadErrors = async () => {
   }
 }
 
-const onErrorFilter = (f: { model: string; category: string; api_key_id: number | null }) => {
-  errorFilter.value = f
+const onErrorFilter = (filter: { model: string; category: string; api_key_id: number | null }) => {
+  errorFilter.value = filter
   errorPage.value = 1
-  loadErrors()
+  void loadErrors()
 }
-const onErrorPage = (p: number) => { errorPage.value = p; loadErrors() }
-const onErrorPageSize = (s: number) => { errorPageSize.value = s; errorPage.value = 1; loadErrors() }
+
+const onErrorPage = (page: number) => {
+  errorPage.value = page
+  void loadErrors()
+}
+
+const onErrorPageSize = (pageSize: number) => {
+  errorPageSize.value = pageSize
+  errorPage.value = 1
+  void loadErrors()
+}
 
 const switchToErrors = () => {
   activeTab.value = 'errors'
-  if (errorRows.value.length === 0) loadErrors()
+  if (errorRows.value.length === 0) void loadErrors()
 }
 
 onMounted(() => {

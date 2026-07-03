@@ -101,12 +101,12 @@ export interface User {
 }
 
 export interface AdminUser extends User {
-  // 管理员备注（普通用户接口不返回）
+  // Admin-only notes.
   notes: string
   last_used_at?: string | null
   // 用户专属分组倍率配置 (group_id -> rate_multiplier)
   group_rates?: Record<number, number>
-  // 当前并发数（仅管理员列表接口返回）
+  // Current concurrency returned by the admin list API.
   current_concurrency?: number
 }
 
@@ -142,7 +142,7 @@ export interface UserAffiliateDetail {
   aff_quota: number
   aff_frozen_quota: number
   aff_history_quota: number
-  /** 当前用户作为邀请人时实际生效的返利比例（专属覆盖全局）。0-100。 */
+  /** 当前用户作为邀请人时实际生效的返利比例（专属覆盖全局）�?-100�?*/
   effective_rebate_rate_percent: number
   invitees: AffiliateInvitee[]
 }
@@ -228,6 +228,8 @@ export interface PublicSettings {
   google_oauth_enabled: boolean
   backend_mode_enabled: boolean
   version: string
+  // 服务器全局时区（IANA 名称与当�?UTC 偏移），高峰时段等服务端本地时间窗口的展示标注用�?  // 可选：注入�?__APP_CONFIG__ 旧缓存可能缺�?  server_timezone?: string
+  server_utc_offset?: string
   balance_low_notify_enabled: boolean
   account_quota_notify_enabled: boolean
   balance_low_notify_threshold: number
@@ -519,11 +521,16 @@ export interface Group {
   image_price_1k: number | null
   image_price_2k: number | null
   image_price_4k: number | null
-  // Claude Code 客户端限制
+  // 高峰时段倍率配置
+  peak_rate_enabled: boolean
+  peak_start: string
+  peak_end: string
+  peak_rate_multiplier: number
+  // Claude Code client restriction.
   claude_code_only: boolean
   fallback_group_id: number | null
   fallback_group_id_on_invalid_request: number | null
-  // OpenAI Messages 调度开关（用户侧需要此字段判断是否展示 Claude Code 教程）
+  // OpenAI Messages dispatch switch.
   allow_messages_dispatch?: boolean
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
@@ -534,22 +541,22 @@ export interface Group {
 }
 
 export interface AdminGroup extends Group {
-  // 模型路由配置（仅管理员可见，内部信息）
+  // Model routing configuration visible to admins.
   model_routing: Record<string, number[]> | null
   model_routing_enabled: boolean
 
-  // MCP XML 协议注入（仅 antigravity 平台使用）
+  // MCP XML injection for antigravity groups.
   mcp_xml_inject: boolean
 
-  // 支持的模型系列（仅 antigravity 平台使用）
+  // Supported model scopes for antigravity groups.
   supported_model_scopes?: string[]
 
-  // 分组下账号数量（仅管理员可见）
+  // Number of accounts in the group.
   account_count?: number
   active_account_count?: number
   rate_limited_account_count?: number
 
-  // OpenAI Messages 调度配置（仅 openai 平台使用）
+  // OpenAI Messages dispatch configuration.
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
   models_list_config?: ModelsListConfig
@@ -639,6 +646,10 @@ export interface CreateGroupRequest {
   image_price_1k?: number | null
   image_price_2k?: number | null
   image_price_4k?: number | null
+  peak_rate_enabled?: boolean
+  peak_start?: string
+  peak_end?: string
+  peak_rate_multiplier?: number
   claude_code_only?: boolean
   fallback_group_id?: number | null
   fallback_group_id_on_invalid_request?: number | null
@@ -653,8 +664,7 @@ export interface CreateGroupRequest {
   rpm_limit?: number
   require_oauth_only?: boolean
   require_privacy_set?: boolean
-  // 从指定分组复制账号
-  copy_accounts_from_group_ids?: number[]
+  // 从指定分组复制账�?  copy_accounts_from_group_ids?: number[]
 }
 
 export interface UpdateGroupRequest {
@@ -674,6 +684,10 @@ export interface UpdateGroupRequest {
   image_price_1k?: number | null
   image_price_2k?: number | null
   image_price_4k?: number | null
+  peak_rate_enabled?: boolean
+  peak_start?: string
+  peak_end?: string
+  peak_rate_multiplier?: number
   claude_code_only?: boolean
   fallback_group_id?: number | null
   fallback_group_id_on_invalid_request?: number | null
@@ -826,10 +840,9 @@ export interface Account {
   notes?: string | null
   platform: AccountPlatform
   type: AccountType
-  // 后端响应里 credentials 已脱敏：access_token / refresh_token / id_token /
+  // 后端响应�?credentials 已脱敏：access_token / refresh_token / id_token /
   // api_key / session_key / cookie / aws_secret_access_key / aws_session_token /
-  // service_account_json / service_account / private_key 不会出现，
-  // 改为通过 credentials_status.has_<key> 暴露存在性。
+  // Sensitive credential values are redacted; use credentials_status for key presence.
   credentials?: Record<string, unknown>
   credentials_status?: Record<string, boolean>
   // Extra fields including Codex usage, OpenAI compact capability, and model-level rate limits.
@@ -869,33 +882,33 @@ export interface Account {
   session_window_end: string | null
   session_window_status: 'allowed' | 'allowed_warning' | 'rejected' | null
 
-  // 5h窗口费用控制（仅 Anthropic OAuth/SetupToken 账号有效）
+  // 5h window cost controls for Anthropic OAuth/SetupToken accounts.
   window_cost_limit?: number | null
   window_cost_sticky_reserve?: number | null
 
-  // 会话数量控制（仅 Anthropic OAuth/SetupToken 账号有效）
+  // Session count controls for Anthropic OAuth/SetupToken accounts.
   max_sessions?: number | null
   session_idle_timeout_minutes?: number | null
 
-  // RPM 限制（仅 Anthropic OAuth/SetupToken 账号有效）
+  // RPM controls for Anthropic OAuth/SetupToken accounts.
   base_rpm?: number | null
   rpm_strategy?: string | null
   rpm_sticky_buffer?: number | null
   user_msg_queue_mode?: string | null  // "serialize" | "throttle" | null
 
-  // TLS指纹伪装（仅 Anthropic OAuth/SetupToken 账号有效）
+  // TLS fingerprinting for Anthropic OAuth/SetupToken accounts.
   enable_tls_fingerprint?: boolean | null
   tls_fingerprint_profile_id?: number | null
 
-  // 会话ID伪装（仅 Anthropic OAuth/SetupToken 账号有效）
-  // 启用后将在15分钟内固定 metadata.user_id 中的 session ID
+  // Session ID masking for Anthropic OAuth/SetupToken accounts.
+  // When enabled, metadata.user_id session IDs are stabilized briefly.
   session_id_masking_enabled?: boolean | null
 
-  // 缓存 TTL 强制替换（仅 Anthropic OAuth/SetupToken 账号有效）
+  // Forced cache TTL override for Anthropic OAuth/SetupToken accounts.
   cache_ttl_override_enabled?: boolean | null
   cache_ttl_override_target?: string | null
 
-  // 自定义 Base URL 中继转发（仅 Anthropic OAuth/SetupToken 账号有效）
+  // Custom Base URL relay for Anthropic OAuth/SetupToken accounts.
   custom_base_url_enabled?: boolean | null
   custom_base_url?: string | null
 
@@ -919,8 +932,18 @@ export interface Account {
 
   // 运行时状态（仅当启用对应限制时返回）
   current_window_cost?: number | null // 当前窗口费用
-  active_sessions?: number | null // 当前活跃会话数
-  current_rpm?: number | null // 当前分钟 RPM 计数
+  active_sessions?: number | null // Active sessions.
+  current_rpm?: number | null // Current minute RPM count.
+
+  // Spark shadow-account relation.
+  parent_account_id?: number | null
+  quota_dimension?: string
+  // Parent account metadata populated for shadow accounts.
+  parent_email?: string
+  parent_plan_type?: string
+  parent_privacy_mode?: string
+  parent_subscription_expires_at?: string
+  parent_chatgpt_account_id?: string
 }
 
 // Account Usage types
@@ -936,15 +959,21 @@ export interface UsageProgress {
   utilization: number // Percentage (0-100+, 100 = 100%)
   resets_at: string | null
   remaining_seconds: number
-  window_stats?: WindowStats | null // 窗口期统计（从窗口开始到当前的使用量）
+  window_stats?: WindowStats | null
   used_requests?: number
   limit_requests?: number
 }
 
-// Antigravity 单个模型的配额信息
 export interface AntigravityModelQuota {
-  utilization: number // 使用率 0-100
-  reset_time: string  // 重置时间 ISO8601
+  utilization: number
+  reset_time: string
+}
+
+export interface GrokQuotaWindow {
+  limit?: number
+  remaining?: number
+  reset_unix?: number
+  reset_at?: string
 }
 
 export interface AccountUsageInfo {
@@ -960,26 +989,29 @@ export interface AccountUsageInfo {
   gemini_pro_minute?: UsageProgress | null
   gemini_flash_minute?: UsageProgress | null
   antigravity_quota?: Record<string, AntigravityModelQuota> | null
+  grok_request_quota?: GrokQuotaWindow | null
+  grok_token_quota?: GrokQuotaWindow | null
+  grok_retry_after_seconds?: number | null
+  grok_entitlement_status?: string
+  grok_quota_snapshot_state?: string
+  grok_last_quota_probe_at?: string
+  grok_last_headers_seen_at?: string
+  grok_last_status_code?: number
+  grok_local_usage?: WindowStats | null
   ai_credits?: Array<{
     credit_type?: string
     amount?: number
     minimum_balance?: number
   }> | null
-  // Antigravity 403 forbidden 状态
   is_forbidden?: boolean
   forbidden_reason?: string
-  forbidden_type?: string   // "validation" | "violation" | "forbidden"
-  validation_url?: string   // 验证/申诉链接
-
-  // 状态标记（后端自动推导）
-  needs_verify?: boolean    // 需要人工验证（forbidden_type=validation）
-  is_banned?: boolean       // 账号被封（forbidden_type=violation）
-  needs_reauth?: boolean    // token 失效需重新授权（401）
-
-  // 机器可读错误码：forbidden / unauthenticated / rate_limited / network_error
+  forbidden_type?: string
+  validation_url?: string
+  needs_verify?: boolean
+  is_banned?: boolean
+  needs_reauth?: boolean
   error_code?: string
-
-  error?: string            // usage 获取失败时的错误信息
+  error?: string
 }
 
 // OpenAI Codex usage snapshot (from response headers)
@@ -1114,6 +1146,8 @@ export interface AdminDataPayload {
   exported_at: string
   proxies: AdminDataProxy[]
   accounts: AdminDataAccount[]
+  // Spark shadow accounts skipped during export.
+  skipped_shadows?: number
 }
 
 export interface AdminDataProxy {
@@ -1174,6 +1208,24 @@ export interface CodexSessionImportRequest {
   credential_extras?: Record<string, unknown>
   extra?: Record<string, unknown>
   update_existing?: boolean
+  skip_default_group_bind?: boolean
+  confirm_mixed_channel_risk?: boolean
+}
+
+export interface OpenAICodexPATCreateRequest {
+  access_token: string
+  name?: string
+  notes?: string | null
+  group_ids?: number[]
+  proxy_id?: number | null
+  concurrency?: number
+  priority?: number
+  rate_multiplier?: number
+  load_factor?: number | null
+  expires_at?: number | null
+  auto_pause_on_expired?: boolean
+  credential_extras?: Record<string, unknown>
+  extra?: Record<string, unknown>
   skip_default_group_bind?: boolean
   confirm_mixed_channel_risk?: boolean
 }
@@ -1266,6 +1318,7 @@ export interface UsageLog {
 
   // User-Agent
   user_agent: string | null
+  ip_address?: string | null
 
   // Cache TTL Override
   cache_ttl_overridden: boolean
@@ -1292,17 +1345,14 @@ export interface AdminUsageLog extends UsageLog {
 
   // 账号计费倍率（仅管理员可见）
   account_rate_multiplier?: number | null
-  // 自定义定价规则计算的账号统计费用（nil 时使用 total_cost * multiplier）
+  // Account statistics cost calculated by custom pricing rules.
   account_stats_cost?: number | null
 
-  // 渠道 ID 和计费等级（仅管理员可见）
+  // Channel ID and billing tier visible to admins.
   channel_id?: number | null
   billing_tier?: string | null
 
-  // 用户请求 IP（仅管理员可见）
-  ip_address?: string | null
-
-  // 最小账号信息（仅管理员接口返回）
+  // Minimal account summary returned by admin APIs.
   account?: UsageLogAccountSummary
 }
 
@@ -1349,7 +1399,7 @@ export interface RedeemCode {
   group_id?: number | null // 订阅类型专用
   validity_days?: number // 订阅类型专用
   user?: User
-  group?: Group // 关联的分组
+  group?: Group
 }
 
 export interface GenerateRedeemCodesRequest {
@@ -1383,23 +1433,21 @@ export interface RedeemCodeRequest {
 export interface DashboardStats {
   // 用户统计
   total_users: number
-  today_new_users: number // 今日新增用户数
-  active_users: number // 今日有请求的用户数
-  hourly_active_users: number // 当前小时活跃用户数（UTC）
-  stats_updated_at: string // 统计更新时间（UTC RFC3339）
-  stats_stale: boolean // 统计是否过期
+  today_new_users: number
+  active_users: number
+  hourly_active_users: number
+  stats_updated_at: string
+  stats_stale: boolean
 
   // API Key 统计
   total_api_keys: number
-  active_api_keys: number // 状态为 active 的 API Key 数
-
+  active_api_keys: number // 状态为 active �?API Key �?
   // 账户统计
   total_accounts: number
-  normal_accounts: number // 正常账户数
-  error_accounts: number // 异常账户数
-  ratelimit_accounts: number // 限流账户数
-  overload_accounts: number // 过载账户数
-
+  normal_accounts: number
+  error_accounts: number
+  ratelimit_accounts: number
+  overload_accounts: number
   // 累计 Token 使用统计
   total_requests: number
   total_input_tokens: number
@@ -1424,11 +1472,11 @@ export interface DashboardStats {
 
   // 系统运行统计
   average_duration_ms: number // 平均响应时间
-  uptime: number // 系统运行时间(秒)
+  uptime: number
 
   // 性能指标
-  rpm: number // 近5分钟平均每分钟请求数
-  tpm: number // 近5分钟平均每分钟Token数
+  rpm: number // �?分钟平均每分钟请求数
+  tpm: number
 }
 
 export interface UsageStatsResponse {
@@ -1444,6 +1492,9 @@ export interface UsageStatsResponse {
   total_actual_cost: number // 实际扣除
   average_duration_ms: number
   models?: Record<string, number>
+  endpoints?: EndpointStat[]
+  upstream_endpoints?: EndpointStat[]
+  endpoint_paths?: EndpointStat[]
 }
 
 // ==================== Trend & Chart Types ====================
@@ -1470,7 +1521,7 @@ export interface ModelStat {
   total_tokens: number
   cost: number // 标准计费
   actual_cost: number // 实际扣除
-  account_cost: number // 账号成本
+  account_cost?: number // 账号成本（仅管理员接口返回）
 }
 
 export interface EndpointStat {
@@ -1488,7 +1539,7 @@ export interface GroupStat {
   total_tokens: number
   cost: number // 标准计费
   actual_cost: number // 实际扣除
-  account_cost: number // 账号成本
+  account_cost?: number // 账号成本（仅管理员接口返回）
 }
 
 export interface UserBreakdownItem {
@@ -1565,7 +1616,7 @@ export interface UserSubscription {
   id: number
   user_id: number
   group_id: number
-  status: 'active' | 'expired' | 'revoked'
+  status: 'active' | 'expired' | 'revoked' | 'suspended'
   starts_at: string
   daily_usage_usd: number
   weekly_usage_usd: number
@@ -1575,6 +1626,7 @@ export interface UserSubscription {
   monthly_window_start: string | null
   created_at: string
   updated_at: string
+  revoked_at?: string | null
   expires_at: string | null
   user?: User
   group?: Group
@@ -1670,8 +1722,10 @@ export interface UsageQueryParams {
   request_type?: UsageRequestType
   stream?: boolean
   billing_type?: number | null
+  billing_mode?: string | null
   start_date?: string
   end_date?: string
+  timezone?: string
   sort_by?: string
   sort_order?: 'asc' | 'desc'
 }
