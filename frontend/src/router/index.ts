@@ -198,15 +198,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/quick-start',
-    name: 'QuickStart',
-    component: () => import('@/views/user/QuickStartView.vue'),
-    meta: {
-      requiresAuth: true,
-      requiresAdmin: false,
-      title: 'Quick Start',
-      titleKey: 'quickStart.title',
-      descriptionKey: 'quickStart.description'
-    }
+    redirect: '/keys'
   },
   {
     path: '/usage',
@@ -254,6 +246,26 @@ const routes: RouteRecordRaw[] = [
       title: 'Available Channels',
       titleKey: 'availableChannels.title',
       descriptionKey: 'availableChannels.description'
+    }
+  },
+  {
+    path: '/images',
+    name: 'ImageGeneration',
+    component: () => import('@/views/user/ImageGenerationView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: '画图'
+    }
+  },
+  {
+    path: '/image-management',
+    name: 'ImageManagement',
+    component: () => import('@/views/user/ImageManagementView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: '我的作品'
     }
   },
   {
@@ -653,6 +665,18 @@ const routes: RouteRecordRaw[] = [
       requiresAdmin: true,
       title: 'Subscription Plans',
       titleKey: 'nav.paymentPlans',
+      requiresPayment: true
+    }
+  },
+  {
+    path: '/admin/orders/external-fulfillment',
+    name: 'AdminExternalFulfillment',
+    component: () => import('@/views/admin/orders/ExternalFulfillmentView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'External Fulfillment',
+      titleKey: 'nav.externalFulfillment',
       requiresPayment: true
     }
   },

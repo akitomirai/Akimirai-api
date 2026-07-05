@@ -22,6 +22,17 @@ func GroupAllowsImageGeneration(group *Group) bool {
 	return group == nil || group.AllowImageGeneration
 }
 
+// PlatformSupportsImageGenerationKey reports whether a group platform may back
+// a dashboard image-generation API key.
+func PlatformSupportsImageGenerationKey(platform string) bool {
+	switch strings.ToLower(strings.TrimSpace(platform)) {
+	case PlatformImage, PlatformOpenAI, PlatformGrok:
+		return true
+	default:
+		return false
+	}
+}
+
 // IsImageGenerationIntent classifies requests that can produce generated images.
 func IsImageGenerationIntent(endpoint string, requestedModel string, body []byte) bool {
 	if IsImageGenerationEndpoint(endpoint) {
