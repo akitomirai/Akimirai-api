@@ -442,28 +442,6 @@ func logOpenAIChatCompletionsSlowFirstToken(
 	logger.L().Warn("openai chat_completions: slow first upstream event", fields...)
 }
 
-func openAIChatChunksContainFirstToken(chunks []apicompat.ChatCompletionsChunk) bool {
-	for _, chunk := range chunks {
-		for _, choice := range chunk.Choices {
-			delta := choice.Delta
-			if delta.Content != nil && *delta.Content != "" {
-				return true
-			}
-			if delta.ReasoningContent != nil && *delta.ReasoningContent != "" {
-				return true
-			}
-			for _, toolCall := range delta.ToolCalls {
-				if strings.TrimSpace(toolCall.ID) != "" ||
-					strings.TrimSpace(toolCall.Function.Name) != "" ||
-					toolCall.Function.Arguments != "" {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
 func normalizeResponsesRequestServiceTier(req *apicompat.ResponsesRequest) {
 	if req == nil {
 		return
@@ -670,6 +648,12 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 	}
 
 	processDataLine := func(payload string) bool {
+		if firstChunk {
+			firstChunk = false
+			ms := int(time.Since(startTime).Milliseconds())
+			firstTokenMs = &ms
+		}
+
 		var event apicompat.ResponsesStreamEvent
 		if err := json.Unmarshal([]byte(payload), &event); err != nil {
 			logger.L().Warn("openai chat_completions stream: failed to parse event",
@@ -729,11 +713,6 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 		}
 
 		chunks := apicompat.ResponsesEventToChatChunks(&event, state)
-		if firstChunk && openAIChatChunksContainFirstToken(chunks) {
-			firstChunk = false
-			ms := int(time.Since(startTime).Milliseconds())
-			firstTokenMs = &ms
-		}
 		if !clientDisconnected {
 			for _, chunk := range chunks {
 				refusalDetector.ObserveChatChunk(chunk)
