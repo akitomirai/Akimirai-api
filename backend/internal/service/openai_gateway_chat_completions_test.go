@@ -405,12 +405,60 @@ func TestForwardAsChatCompletions_StreamsUsageWithoutClientStreamOptions(t *test
 	require.Equal(t, 13, result.Usage.InputTokens)
 	require.Equal(t, 7, result.Usage.OutputTokens)
 	require.Equal(t, 5, result.Usage.CacheReadInputTokens)
+	latency, ok := c.Get(OpsUpstreamLatencyMsKey)
+	require.True(t, ok)
+	require.IsType(t, int64(0), latency)
 
 	responseBody := rec.Body.String()
 	require.Contains(t, responseBody, `"usage"`)
 	require.Contains(t, responseBody, `"prompt_tokens":13`)
 	require.Contains(t, responseBody, `"completion_tokens":7`)
 	require.Contains(t, responseBody, `"cached_tokens":5`)
+}
+
+func TestForwardAsChatCompletions_FirstTokenIgnoresResponseCreatedRoleChunk(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	body := []byte(`{"model":"gpt-5.4","messages":[{"role":"user","content":"hello"}],"stream":true}`)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	pr, pw := io.Pipe()
+	go func() {
+		defer func() { _ = pw.Close() }()
+		_, _ = io.WriteString(pw, `data: {"type":"response.created","response":{"id":"resp_first_token","model":"gpt-5.4","status":"in_progress","output":[]}}`+"\n\n")
+		time.Sleep(80 * time.Millisecond)
+		_, _ = io.WriteString(pw, `data: {"type":"response.output_text.delta","delta":"ok"}`+"\n\n")
+		_, _ = io.WriteString(pw, `data: {"type":"response.completed","response":{"id":"resp_first_token","object":"response","model":"gpt-5.4","status":"completed","output":[{"type":"message","id":"msg_1","role":"assistant","status":"completed","content":[{"type":"output_text","text":"ok"}]}],"usage":{"input_tokens":13,"output_tokens":7,"total_tokens":20}}}`+"\n\n")
+		_, _ = io.WriteString(pw, "data: [DONE]\n\n")
+	}()
+
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"text/event-stream"}, "x-request-id": []string{"rid_first_token_delta"}},
+		Body:       pr,
+	}}
+
+	svc := &OpenAIGatewayService{httpUpstream: upstream}
+	account := &Account{
+		ID:          1,
+		Name:        "openai-oauth",
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeOAuth,
+		Concurrency: 1,
+		Credentials: map[string]any{
+			"access_token":       "oauth-token",
+			"chatgpt_account_id": "chatgpt-acc",
+		},
+	}
+
+	result, err := svc.ForwardAsChatCompletions(context.Background(), c, account, body, "", "gpt-5.1")
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.NotNil(t, result.FirstTokenMs)
+	require.GreaterOrEqual(t, *result.FirstTokenMs, 40)
 }
 
 func TestForwardAsChatCompletions_StreamsTopLevelTerminalUsage(t *testing.T) {
