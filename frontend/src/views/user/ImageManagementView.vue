@@ -1,26 +1,9 @@
 <template>
   <AppLayout>
     <div class="image-management-page">
-      <header class="page-header">
-        <div>
-          <p class="text-sm font-medium text-primary-600 dark:text-primary-400">Images</p>
-          <h1 class="mt-1 text-2xl font-semibold text-gray-950 dark:text-white">我的作品</h1>
-        </div>
-        <div class="header-actions">
-          <router-link class="soft-button" to="/images">
-            <Icon name="sparkles" size="sm" />
-            <span>画图</span>
-          </router-link>
-          <button class="soft-button" type="button" :disabled="loadingWorks" @click="loadWorks">
-            <Icon name="refresh" size="sm" :class="{ 'animate-spin': loadingWorks }" />
-            <span>刷新</span>
-          </button>
-        </div>
-      </header>
-
-      <section class="toolbar" aria-label="作品筛选">
-        <div class="search-control">
-          <Icon name="search" size="md" class="text-gray-400 dark:text-dark-300" />
+      <header class="works-commandbar">
+        <div class="works-search-control" role="search">
+          <Icon name="search" size="sm" />
           <input
             v-model="searchQuery"
             type="search"
@@ -28,10 +11,31 @@
             aria-label="搜索图片"
           />
         </div>
-      </section>
+        <div class="works-topbar-right">
+          <div class="workbench-mode-switch" aria-label="GPTImage 模式">
+            <router-link class="workbench-mode-tab workbench-mode-tab-active" to="/images">画廊</router-link>
+            <button class="workbench-mode-tab" type="button" disabled title="Agent 模式即将接入">Agent</button>
+          </div>
+          <div class="workbench-control-strip" aria-label="作品控制区">
+            <span class="workbench-status-chip" title="作品保存在当前浏览器本地">
+              <span class="workbench-status-dot"></span>
+              本地
+            </span>
+            <button class="workbench-console-btn" type="button" title="刷新作品" :disabled="loadingWorks" @click="loadWorks">
+              <Icon name="refresh" size="sm" :class="{ 'animate-spin': loadingWorks }" />
+              <span class="workbench-console-label">刷新</span>
+              <span class="workbench-count">{{ worksTotal }}</span>
+            </button>
+          </div>
+          <button class="workbench-works-link workbench-works-link-active" type="button" aria-current="page">
+            <Icon name="grid" size="sm" />
+            <span class="workbench-works-label">我的作品</span>
+          </button>
+        </div>
+      </header>
 
-      <section class="content-panel">
-        <div class="panel-toolbar">
+      <section class="works-gallery-shell">
+        <div class="works-gallery-header">
           <div class="panel-count">
             <Icon name="grid" size="sm" />
             <span>共 {{ worksTotal }} 个作品</span>
@@ -52,7 +56,7 @@
           <span>正在加载图片</span>
         </div>
 
-        <div v-else class="panel-body">
+        <div v-else class="works-gallery-body">
           <div v-if="filteredWorks.length > 0" class="masonry-grid">
             <article v-for="work in filteredWorks" :key="work.id" class="image-card">
               <button type="button" class="image-preview" @click="openDetail(toWorkDetail(work))">
@@ -136,7 +140,6 @@
 
 <script setup lang="ts">
 import { computed, defineComponent, h, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useAppStore } from '@/stores/app'
@@ -197,7 +200,6 @@ const LOCAL_HISTORY_KEY = 'image_generation_conversations:v2'
 const REDRAW_HANDOFF_KEY = 'image_generation_redraw:v1'
 
 const appStore = useAppStore()
-const router = useRouter()
 
 const searchQuery = ref('')
 const works = ref<ImageWork[]>([])
@@ -299,7 +301,7 @@ async function copyPrompt(prompt: string) {
 function useAsReference(detail: ImageDetail) {
   if (!detail.src) { appStore.showError('当前图片没有可用地址'); return }
   sessionStorage.setItem(REDRAW_HANDOFF_KEY, JSON.stringify({ src: detail.src, prompt: detail.prompt, name: `${detail.fileName}.png` }))
-  void router.push('/images')
+  window.location.href = '/images'
 }
 
 async function downloadDetail(detail: ImageDetail) {
@@ -587,5 +589,373 @@ onMounted(() => { void loadWorks() })
   .detail-modal { max-height: calc(100vh - 1rem); }
   .detail-image { min-height: 18rem; }
   .detail-meta { grid-template-columns: 1fr; }
+}
+
+/* GPTImage works surface */
+.image-management-page {
+  grid-template-rows: auto minmax(34rem, 1fr);
+  gap: 0.75rem;
+}
+
+.works-commandbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.works-search-control {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: min(32rem, 100%);
+  height: 2.25rem;
+  min-width: 14rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.875rem;
+  background: rgba(255, 255, 255, 0.84);
+  padding: 0 0.875rem;
+  color: #94a3b8;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.works-search-control input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #111827;
+  font-size: 0.8125rem;
+}
+
+.works-search-control input::placeholder { color: #94a3b8; }
+
+.works-topbar-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.workbench-mode-switch,
+.workbench-control-strip,
+.workbench-works-link {
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  border: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.workbench-mode-switch {
+  gap: 0.125rem;
+  padding: 0.1875rem;
+  border-radius: 0.75rem;
+}
+
+.workbench-mode-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.25rem;
+  height: 1.75rem;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 0.5625rem;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.workbench-mode-tab:hover:not(:disabled) {
+  color: #111827;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.workbench-mode-tab-active {
+  background: #fff;
+  color: #111827;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+}
+
+.workbench-mode-tab:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.workbench-control-strip {
+  gap: 0.25rem;
+  padding: 0.1875rem;
+  border-radius: 0.875rem;
+}
+
+.workbench-status-chip,
+.workbench-console-btn,
+.workbench-works-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-width: 0;
+  height: 1.75rem;
+  border-radius: 0.625rem;
+  color: #475569;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.workbench-status-chip {
+  padding: 0 0.625rem;
+  background: #f8fafc;
+}
+
+.workbench-status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+.workbench-console-btn {
+  border: 0;
+  background: transparent;
+  padding: 0 0.625rem;
+  cursor: pointer;
+}
+
+.workbench-console-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  color: #111827;
+}
+
+.workbench-console-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.workbench-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4f46e5;
+  padding: 0 0.3125rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+}
+
+.workbench-works-link {
+  padding: 0 0.75rem;
+  border-radius: 0.75rem;
+  text-decoration: none;
+}
+
+.workbench-works-link-active {
+  color: #111827;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.works-gallery-shell {
+  min-height: 34rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.875rem;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.works-gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  padding: 0 0.875rem;
+}
+
+.works-gallery-body {
+  flex: 1;
+  overflow: auto;
+  padding: 0.875rem;
+}
+
+.panel-count {
+  color: #64748b;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.pager button {
+  border: 0;
+  background: transparent;
+}
+
+.image-card {
+  border-color: #e5e7eb;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.image-preview {
+  background: #f8fafc;
+}
+
+.card-actions button {
+  border: 0;
+  background: transparent;
+}
+
+.empty-state {
+  min-height: 28rem;
+}
+
+.empty-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+}
+
+.detail-modal {
+  border-radius: 1rem;
+  border-color: #e5e7eb;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+}
+
+.detail-header {
+  min-height: 4rem;
+  border-color: #f1f5f9;
+}
+
+.detail-image {
+  border-radius: 0.75rem;
+  background: #f8fafc;
+}
+
+.detail-meta div {
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.dark .works-search-control,
+.dark .workbench-mode-switch,
+.dark .workbench-control-strip,
+.dark .workbench-works-link,
+.dark .works-gallery-shell {
+  border-color: #334155;
+  background: rgba(30, 41, 59, 0.82);
+  box-shadow: none;
+}
+
+.dark .works-search-control {
+  color: #94a3b8;
+}
+
+.dark .works-search-control input {
+  color: #f8fafc;
+}
+
+.dark .workbench-mode-tab,
+.dark .workbench-status-chip,
+.dark .workbench-console-btn,
+.dark .workbench-works-link {
+  color: #94a3b8;
+}
+
+.dark .workbench-mode-tab:hover:not(:disabled),
+.dark .workbench-console-btn:hover:not(:disabled) {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dark .workbench-mode-tab-active,
+.dark .workbench-works-link-active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  box-shadow: none;
+}
+
+.dark .workbench-status-chip,
+.dark .works-gallery-body,
+.dark .image-preview,
+.dark .empty-icon,
+.dark .detail-image,
+.dark .detail-meta div {
+  background: rgba(15, 23, 42, 0.34);
+}
+
+.dark .works-gallery-header,
+.dark .detail-header {
+  border-color: #334155;
+}
+
+.dark .works-gallery-shell,
+.dark .detail-modal {
+  border-color: #334155;
+}
+
+@media (max-width: 1100px) {
+  .works-commandbar {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .works-search-control {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .works-topbar-right {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .image-management-page {
+    grid-template-rows: auto minmax(28rem, 1fr);
+  }
+
+  .works-topbar-right {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.125rem;
+  }
+
+  .workbench-mode-tab {
+    min-width: auto;
+    padding: 0 0.625rem;
+  }
+
+  .workbench-console-label,
+  .workbench-works-label {
+    display: none;
+  }
+
+  .works-gallery-header {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 0.75rem;
+  }
+
+  .pager {
+    justify-content: flex-end;
+  }
 }
 </style>

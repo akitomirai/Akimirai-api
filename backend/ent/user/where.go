@@ -170,6 +170,11 @@ func RpmLimit(v int) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldRpmLimit, v))
 }
 
+// PrivacyFilterConfig applies equality check predicate on the "privacy_filter_config" field. It's identical to PrivacyFilterConfigEQ.
+func PrivacyFilterConfig(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldPrivacyFilterConfig, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldCreatedAt, v))
@@ -1338,6 +1343,71 @@ func RpmLimitLT(v int) predicate.User {
 // RpmLimitLTE applies the LTE predicate on the "rpm_limit" field.
 func RpmLimitLTE(v int) predicate.User {
 	return predicate.User(sql.FieldLTE(FieldRpmLimit, v))
+}
+
+// PrivacyFilterConfigEQ applies the EQ predicate on the "privacy_filter_config" field.
+func PrivacyFilterConfigEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldPrivacyFilterConfig, v))
+}
+
+// PrivacyFilterConfigNEQ applies the NEQ predicate on the "privacy_filter_config" field.
+func PrivacyFilterConfigNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldPrivacyFilterConfig, v))
+}
+
+// PrivacyFilterConfigIn applies the In predicate on the "privacy_filter_config" field.
+func PrivacyFilterConfigIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldPrivacyFilterConfig, vs...))
+}
+
+// PrivacyFilterConfigNotIn applies the NotIn predicate on the "privacy_filter_config" field.
+func PrivacyFilterConfigNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldPrivacyFilterConfig, vs...))
+}
+
+// PrivacyFilterConfigGT applies the GT predicate on the "privacy_filter_config" field.
+func PrivacyFilterConfigGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldPrivacyFilterConfig, v))
+}
+
+// PrivacyFilterConfigGTE applies the GTE predicate on the "privacy_filter_config" field.
+func PrivacyFilterConfigGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldPrivacyFilterConfig, v))
+}
+
+// PrivacyFilterConfigLT applies the LT predicate on the "privacy_filter_config" field.
+func PrivacyFilterConfigLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldPrivacyFilterConfig, v))
+}
+
+// PrivacyFilterConfigLTE applies the LTE predicate on the "privacy_filter_config" field.
+func PrivacyFilterConfigLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldPrivacyFilterConfig, v))
+}
+
+// PrivacyFilterConfigContains applies the Contains predicate on the "privacy_filter_config" field.
+func PrivacyFilterConfigContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldPrivacyFilterConfig, v))
+}
+
+// PrivacyFilterConfigHasPrefix applies the HasPrefix predicate on the "privacy_filter_config" field.
+func PrivacyFilterConfigHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldPrivacyFilterConfig, v))
+}
+
+// PrivacyFilterConfigHasSuffix applies the HasSuffix predicate on the "privacy_filter_config" field.
+func PrivacyFilterConfigHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldPrivacyFilterConfig, v))
+}
+
+// PrivacyFilterConfigEqualFold applies the EqualFold predicate on the "privacy_filter_config" field.
+func PrivacyFilterConfigEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldPrivacyFilterConfig, v))
+}
+
+// PrivacyFilterConfigContainsFold applies the ContainsFold predicate on the "privacy_filter_config" field.
+func PrivacyFilterConfigContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldPrivacyFilterConfig, v))
 }
 
 // HasAPIKeys applies the HasEdge predicate on the "api_keys" edge.

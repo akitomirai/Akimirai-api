@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
@@ -47,10 +48,10 @@ func (d *PgDumper) Dump(ctx context.Context) (io.ReadCloser, error) {
 	}
 
 	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("start pg_dump: %w", err)
+		return nil, postgresToolStartError("pg_dump", err)
 	}
 
-	// 返回一个 ReadCloser：读 stdout，关闭时等待进程退出
+	// Return a ReadCloser that reads stdout and waits for the process on Close.
 	return &cmdReadCloser{ReadCloser: stdout, cmd: cmd}, nil
 }
 
@@ -76,9 +77,19 @@ func (d *PgDumper) Restore(ctx context.Context, data io.Reader) error {
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			return postgresToolStartError("psql", err)
+		}
 		return fmt.Errorf("%v: %s", err, string(output))
 	}
 	return nil
+}
+
+func postgresToolStartError(tool string, err error) error {
+	if errors.Is(err, exec.ErrNotFound) {
+		return fmt.Errorf("%s not found in PATH; install PostgreSQL client tools or use the project Docker image with bundled pg_dump/psql: %w", tool, err)
+	}
+	return fmt.Errorf("start %s: %w", tool, err)
 }
 
 // cmdReadCloser wraps a command stdout pipe and waits for the process on Close

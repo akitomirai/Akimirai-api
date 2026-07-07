@@ -36,6 +36,13 @@ COPY frontend/ ./
 COPY docs/legal/ /app/docs/legal/
 RUN pnpm run build
 
+# Build the vendored GPT Image Playground into the embedded /images subtree.
+WORKDIR /app/gpt-image-playground
+COPY gpt-image-playground/package.json gpt-image-playground/package-lock.json ./
+RUN npm ci
+COPY gpt-image-playground/ ./
+RUN npm run build
+
 # -----------------------------------------------------------------------------
 # Stage 2: Backend Builder
 # -----------------------------------------------------------------------------

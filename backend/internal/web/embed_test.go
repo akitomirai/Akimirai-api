@@ -442,6 +442,8 @@ func TestFrontendServer_Middleware(t *testing.T) {
 			"/health",
 			"/responses",
 			"/responses/compact",
+			"/images/generations",
+			"/images/edits",
 		}
 
 		for _, path := range apiPaths {
@@ -669,6 +671,8 @@ func TestServeEmbeddedFrontend(t *testing.T) {
 			"/health",
 			"/responses",
 			"/responses/compact",
+			"/images/generations",
+			"/images/edits",
 		}
 
 		for _, path := range apiPaths {
@@ -689,6 +693,36 @@ func TestServeEmbeddedFrontend(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestShouldBypassEmbeddedFrontendImagesPaths(t *testing.T) {
+	tests := []struct {
+		path   string
+		bypass bool
+	}{
+		{path: "/images/generations", bypass: true},
+		{path: "/images/edits", bypass: true},
+		{path: "/images/generations/", bypass: true},
+		{path: "/images", bypass: false},
+		{path: "/images/", bypass: false},
+		{path: "/images/assets/index.js", bypass: false},
+		{path: "/images/favicon.svg", bypass: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			assert.Equal(t, tt.bypass, shouldBypassEmbeddedFrontend(tt.path))
+		})
+	}
+}
+
+func TestSetStaticCacheHeadersForPlaygroundAssets(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	setStaticCacheHeaders(c, "images/assets/index.js")
+
+	assert.Equal(t, "public, max-age=31536000, immutable", w.Header().Get("Cache-Control"))
 }
 
 // Tests for HTMLCache

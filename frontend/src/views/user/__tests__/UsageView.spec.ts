@@ -8,6 +8,7 @@ const {
   getStats,
   getDashboardModels,
   getDashboardSnapshotV2,
+  listMyErrorRequests,
   list,
   getAvailable,
   showError,
@@ -19,6 +20,7 @@ const {
   getStats: vi.fn(),
   getDashboardModels: vi.fn(),
   getDashboardSnapshotV2: vi.fn(),
+  listMyErrorRequests: vi.fn(),
   list: vi.fn(),
   getAvailable: vi.fn(),
   showError: vi.fn(),
@@ -44,9 +46,13 @@ const messages: Record<string, string> = {
   'usage.original': 'Original',
   'usage.billed': 'Billed',
   'usage.allApiKeys': 'All API Keys',
+  'usage.tabs.usage': 'Usage',
+  'usage.tabs.errors': 'Error Requests',
+  'usage.errors.disabled': 'Error request records are not enabled',
   'usage.apiKeyFilter': 'API Key',
   'usage.model': 'Model',
   'usage.reasoningEffort': 'Reasoning Effort',
+  'usage.endpoint': 'Endpoint',
   'usage.type': 'Type',
   'usage.tokens': 'Tokens',
   'usage.cacheHitRate': 'Cache Hit Rate',
@@ -77,10 +83,6 @@ const messages: Record<string, string> = {
   'admin.usage.billingModeImage': 'Image',
   'admin.usage.allGroups': 'All groups',
   'admin.usage.allModels': 'All models',
-  'usage.allApiKeys': 'All API Keys',
-  'usage.apiKeyFilter': 'API Key',
-  'usage.model': 'Model',
-  'usage.type': 'Type',
   'usage.ws': 'WS',
   'usage.stream': 'Stream',
   'usage.sync': 'Sync',
@@ -93,6 +95,8 @@ const messages: Record<string, string> = {
   'usage.exportFailed': 'Export failed',
   'common.refresh': 'Refresh',
   'common.reset': 'Reset',
+  'admin.dashboard.timeRange': 'Time range',
+  'admin.users.columnSettings': 'Columns',
 }
 
 vi.mock('@/api', () => ({
@@ -101,6 +105,7 @@ vi.mock('@/api', () => ({
     getStats,
     getDashboardModels,
     getDashboardSnapshotV2,
+    listMyErrorRequests,
   },
   keysAPI: {
     list,
@@ -111,7 +116,17 @@ vi.mock('@/api', () => ({
 }))
 
 vi.mock('@/stores/app', () => ({
-  useAppStore: () => ({ showError, showWarning, showSuccess, showInfo }),
+  useAppStore: () => ({
+    cachedPublicSettings: { allow_user_view_error_requests: false },
+    showError,
+    showWarning,
+    showSuccess,
+    showInfo,
+  }),
+}))
+
+vi.mock('vue-router', () => ({
+  useRoute: () => ({ query: {} }),
 }))
 
 vi.mock('vue-i18n', async () => {
@@ -125,38 +140,80 @@ vi.mock('vue-i18n', async () => {
 })
 
 const AppLayoutStub = { template: '<div><slot /></div>' }
-const TablePageLayoutStub = {
-  template: '<div><slot name="actions" /><slot name="filters" /><slot name="table" /><slot /></div>',
-}
-const DataTableStub = {
-  props: ['data'],
+const UsageStatsCardsStub = { template: '<div data-test="usage-stats" />' }
+const UsageTableStub = {
+  props: ['columns', 'data', 'dense', 'framed'],
   template: `
-    <div>
-      <div v-for="row in data" :key="row.request_id">
-        <slot name="cell-billing_mode" :row="row" />
-        <slot name="cell-tokens" :row="row" />
-        <slot name="cell-cache_hit_rate" :row="row" />
-        <slot name="cell-cost" :row="row" />
-      </div>
+    <div data-test="usage-table" :data-dense="String(dense)" :data-framed="String(framed)">
+      <span v-for="column in columns" :key="column.key">{{ column.label }}</span>
+      <span v-for="row in data" :key="row.request_id">{{ row.request_id }}</span>
     </div>
   `,
+}
+const UserErrorRequestsTableStub = {
+  template: '<div data-test="error-requests-table" />',
+}
+
+const usageLog = {
+  id: 1,
+  user_id: 1,
+  api_key_id: 1,
+  account_id: null,
+  request_id: 'req-user-1',
+  model: 'gpt-5.5',
+  service_tier: 'priority',
+  reasoning_effort: null,
+  inbound_endpoint: '/v1/responses',
+  upstream_endpoint: '/v1/responses',
+  group_id: null,
+  subscription_id: null,
+  input_tokens: 631,
+  output_tokens: 28,
+  cache_creation_tokens: 0,
+  cache_read_tokens: 172000,
+  cache_creation_5m_tokens: 0,
+  cache_creation_1h_tokens: 0,
+  input_cost: 0.001,
+  output_cost: 0.002,
+  cache_creation_cost: 0,
+  cache_read_cost: 0.001,
+  total_cost: 0.016202,
+  actual_cost: 0.016202,
+  rate_multiplier: 1,
+  billing_type: 0,
+  request_type: 'stream',
+  stream: true,
+  openai_ws_mode: false,
+  duration_ms: 5420,
+  first_token_ms: 4740,
+  image_count: 0,
+  image_size: null,
+  image_input_size: null,
+  image_output_size: null,
+  image_size_source: null,
+  image_size_breakdown: null,
+  image_output_tokens: 0,
+  image_output_cost: 0,
+  user_agent: 'test-agent',
+  ip_address: '203.0.113.10',
+  cache_ttl_overridden: false,
+  billing_mode: 'token',
+  created_at: '2026-07-07T11:45:33Z',
+  api_key: { id: 1, name: 'demo-key' },
 }
 
 function mountUsageView() {
   return mount(UsageView, {
     global: {
       stubs: {
-        AppLayout: simpleStub,
+        AppLayout: AppLayoutStub,
         Pagination: true,
         Select: true,
         DateRangePicker: true,
         Icon: true,
-        UsageStatsCards: chartStub,
-        UsageTable: chartStub,
-        ModelDistributionChart: chartStub,
-        GroupDistributionChart: chartStub,
-        EndpointDistributionChart: chartStub,
-        TokenUsageTrend: chartStub,
+        UsageStatsCards: UsageStatsCardsStub,
+        UsageTable: UsageTableStub,
+        UserErrorRequestsTable: UserErrorRequestsTableStub,
       },
     },
   })
@@ -168,12 +225,14 @@ describe('user UsageView', () => {
     getStats.mockReset()
     getDashboardModels.mockReset()
     getDashboardSnapshotV2.mockReset()
+    listMyErrorRequests.mockReset()
     list.mockReset()
     getAvailable.mockReset()
     showError.mockReset()
     showWarning.mockReset()
     showSuccess.mockReset()
     showInfo.mockReset()
+    localStorage.clear()
 
     query.mockResolvedValue({ items: [usageLog], total: 1, pages: 1 })
     getStats.mockResolvedValue({
@@ -202,41 +261,45 @@ describe('user UsageView', () => {
       trend: [],
       groups: [],
     })
+    listMyErrorRequests.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 20, pages: 0 })
     list.mockResolvedValue({ items: [{ id: 1, name: 'demo-key' }] })
     getAvailable.mockResolvedValue([{ id: 1, name: 'default' }])
   })
 
-  it('loads logs, stats, model stats, and snapshot on first render', async () => {
-    mountUsageView()
+  it('loads compact usage data without chart requests on first render', async () => {
+    const wrapper = mountUsageView()
     await flushPromises()
 
-    const setupState = (wrapper.vm as any).$?.setupState
-    setupState.tooltipData = {
-      request_id: 'req-user-1',
-      actual_cost: 0.092883,
-      total_cost: 0.092883,
-      rate_multiplier: 1,
-      service_tier: 'priority',
-      input_cost: 0.020285,
-      output_cost: 0.00303,
-      cache_creation_cost: 0,
-      cache_read_cost: 0.069568,
-      input_tokens: 4057,
-      output_tokens: 101,
-    }
-    setupState.tooltipVisible = true
-    await nextTick()
+    expect(query).toHaveBeenCalled()
+    expect(getStats).toHaveBeenCalled()
+    expect(list).toHaveBeenCalledWith(1, 100)
+    expect(getAvailable).not.toHaveBeenCalled()
+    expect(getDashboardModels).not.toHaveBeenCalled()
+    expect(getDashboardSnapshotV2).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Usage')
+    expect(wrapper.text()).toContain('Error Requests')
 
-    const text = wrapper.text()
-    expect(text).toContain('Service tier')
-    expect(text).toContain('Fast')
-    expect(text).toContain('Rate')
-    expect(text).toContain('1.00x')
-    expect(text).toContain('Billed')
-    expect(text).toContain('$0.092883')
-    expect(text).toContain('98.6%')
-    expect(text).toContain('$5.0000 / 1M tokens')
-    expect(text).toContain('$30.0000 / 1M tokens')
+    const table = wrapper.get('[data-test="usage-table"]')
+    expect(table.attributes('data-dense')).toBe('true')
+    expect(table.attributes('data-framed')).toBe('false')
+    expect(table.text()).toContain('Cache Hit Rate')
+    expect(table.text()).not.toContain('IP')
+    expect(table.text()).not.toContain('Reasoning Effort')
+    expect(table.text()).not.toContain('All groups')
+  })
+
+  it('keeps the error requests tab visible when the feature is disabled', async () => {
+    const wrapper = mountUsageView()
+    await flushPromises()
+
+    const errorTab = wrapper.findAll('button').find((button) => button.text().includes('Error Requests'))
+    expect(errorTab).toBeTruthy()
+
+    await errorTab!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Error request records are not enabled')
+    expect(listMyErrorRequests).not.toHaveBeenCalled()
   })
 
   it('exports csv with current filters and without admin-only fields', async () => {
@@ -269,6 +332,11 @@ describe('user UsageView', () => {
     }))
     expect(clickSpy).toHaveBeenCalled()
     expect(showSuccess).toHaveBeenCalled()
+    expect(csvContent.startsWith('\uFEFF')).toBe(true)
+    expect(csvContent.slice(1)).toBe([
+      'Time,API Key Name,Model,Reasoning Effort,Inbound Endpoint,IP Address,Type,Billing Mode,Input Tokens,Output Tokens,Cache Read Tokens,Cache Creation Tokens,Rate Multiplier,Billed Cost,Original Cost,First Token (ms),Duration (ms)',
+      '2026-07-07T11:45:33Z,demo-key,gpt-5.5,"\'-",/v1/responses,203.0.113.10,Stream,Token,631,28,172000,0,1,0.01620200,0.01620200,4740,5420',
+    ].join('\n'))
     expect(csvContent).toContain('IP Address')
     expect(csvContent).toContain('203.0.113.10')
     expect(csvContent).toContain('Billed Cost')

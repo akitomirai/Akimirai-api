@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   formatRegistrationEmailSuffixWhitelistForMessage,
+  isRegistrationEmailLocalPartBlocked,
   isRegistrationEmailSuffixAllowed,
   isRegistrationEmailSuffixDomainValid,
   normalizeRegistrationEmailSuffixDomain,
@@ -81,6 +82,14 @@ describe('registrationEmailPolicy utils', () => {
 
   it('isRegistrationEmailSuffixAllowed allows any email when whitelist is empty', () => {
     expect(isRegistrationEmailSuffixAllowed('user@example.com', [])).toBe(true)
+  })
+
+  it('isRegistrationEmailLocalPartBlocked rejects reserved aliases and plus-tag variants', () => {
+    expect(isRegistrationEmailLocalPartBlocked('root@qq.com')).toBe(true)
+    expect(isRegistrationEmailLocalPartBlocked('ROOT+signup@qq.com')).toBe(true)
+    expect(isRegistrationEmailLocalPartBlocked('admin@example.com')).toBe(true)
+    expect(isRegistrationEmailLocalPartBlocked('rootless@example.com')).toBe(false)
+    expect(isRegistrationEmailLocalPartBlocked('alice@example.com')).toBe(false)
   })
 
   it('isRegistrationEmailSuffixAllowed applies exact suffix matching', () => {

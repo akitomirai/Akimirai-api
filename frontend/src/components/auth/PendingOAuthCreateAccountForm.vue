@@ -93,6 +93,7 @@ import { useI18n } from 'vue-i18n'
 import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { getPublicSettings, sendPendingOAuthVerifyCode } from '@/api/auth'
 import { useAppStore } from '@/stores'
+import { isRegistrationEmailLocalPartBlocked } from '@/utils/registrationEmailPolicy'
 
 export type PendingOAuthCreateAccountPayload = {
   email: string
@@ -207,9 +208,20 @@ function onTurnstileError() {
   sendCodeError.value = t('auth.turnstileFailed')
 }
 
+function validateRegistrationEmail(trimmedEmail: string): boolean {
+  if (!trimmedEmail) {
+    return false
+  }
+  if (isRegistrationEmailLocalPartBlocked(trimmedEmail)) {
+    sendCodeError.value = t('auth.emailLocalPartNotAllowed')
+    return false
+  }
+  return true
+}
+
 async function handleSendCode() {
   const trimmedEmail = email.value.trim()
-  if (!trimmedEmail) {
+  if (!validateRegistrationEmail(trimmedEmail)) {
     return
   }
 
@@ -241,7 +253,7 @@ async function handleSendCode() {
 
 function handleSubmit() {
   const trimmedEmail = email.value.trim()
-  if (!trimmedEmail || password.value.length < 6) {
+  if (!validateRegistrationEmail(trimmedEmail) || password.value.length < 6) {
     return
   }
 

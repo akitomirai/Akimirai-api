@@ -6,6 +6,22 @@ const EMAIL_SUFFIX_WILDCARD_PREFIX = '*.'
 const EMAIL_SUFFIX_MESSAGE_VISIBLE_LIMIT = 5
 const EMAIL_SUFFIX_DOMAIN_PATTERN =
   /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/
+const REGISTRATION_EMAIL_BLOCKED_LOCAL_PARTS = new Set([
+  'abuse',
+  'admin',
+  'administrator',
+  'daemon',
+  'do-not-reply',
+  'donotreply',
+  'hostmaster',
+  'mailer-daemon',
+  'no-reply',
+  'noreply',
+  'postmaster',
+  'root',
+  'system',
+  'webmaster'
+])
 
 // normalizeRegistrationEmailSuffixDomain converts raw input into a canonical domain token.
 // Exact domains are returned without "@"; wildcard domains keep the "*." prefix.
@@ -63,6 +79,40 @@ export function normalizeRegistrationEmailSuffixWhitelist(
   items: string[] | null | undefined
 ): string[] {
   return normalizeRegistrationEmailSuffixDomains(items).map(toCanonicalRegistrationEmailSuffix)
+}
+
+function extractRegistrationEmailLocalPart(email: string): string {
+  const raw = String(email || '').trim().toLowerCase()
+  if (!raw) {
+    return ''
+  }
+  const atIndex = raw.indexOf('@')
+  if (atIndex <= 0 || atIndex >= raw.length - 1) {
+    return ''
+  }
+  if (raw.indexOf('@', atIndex + 1) !== -1) {
+    return ''
+  }
+  return raw.slice(0, atIndex)
+}
+
+function normalizeRegistrationEmailLocalPart(localPart: string): string {
+  const normalized = String(localPart || '').trim().toLowerCase()
+  if (!normalized) {
+    return ''
+  }
+  const plusIndex = normalized.indexOf('+')
+  return plusIndex >= 0 ? normalized.slice(0, plusIndex) : normalized
+}
+
+export function isRegistrationEmailLocalPartBlocked(email: string): boolean {
+  const localPart = extractRegistrationEmailLocalPart(email)
+  if (!localPart) {
+    return false
+  }
+  return REGISTRATION_EMAIL_BLOCKED_LOCAL_PARTS.has(
+    normalizeRegistrationEmailLocalPart(localPart)
+  )
 }
 
 function extractRegistrationEmailDomain(email: string): string {

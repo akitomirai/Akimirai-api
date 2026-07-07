@@ -116,7 +116,7 @@ func (s *FrontendServer) Middleware() gin.HandlerFunc {
 }
 
 func setStaticCacheHeaders(c *gin.Context, cleanPath string) {
-	if strings.HasPrefix(cleanPath, "assets/") {
+	if strings.HasPrefix(cleanPath, "assets/") || strings.HasPrefix(cleanPath, "images/assets/") {
 		c.Header("Cache-Control", "public, max-age=31536000, immutable")
 	}
 }
@@ -315,7 +315,12 @@ func shouldBypassEmbeddedFrontend(path string) bool {
 		trimmed == "/health" ||
 		trimmed == "/responses" ||
 		strings.HasPrefix(trimmed, "/responses/") ||
-		strings.HasPrefix(trimmed, "/images/")
+		isEmbeddedImagesAPIPath(trimmed)
+}
+
+func isEmbeddedImagesAPIPath(path string) bool {
+	trimmed := strings.TrimRight(strings.TrimSpace(path), "/")
+	return trimmed == "/images/generations" || trimmed == "/images/edits"
 }
 
 func serveIndexHTML(c *gin.Context, fsys fs.FS) {

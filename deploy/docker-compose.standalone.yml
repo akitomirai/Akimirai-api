@@ -77,9 +77,20 @@ services:
       - JWT_EXPIRE_HOUR=${JWT_EXPIRE_HOUR:-24}
 
       # =======================================================================
+      # Setup Configuration
+      # =======================================================================
+      - SETUP_MIGRATION_TIMEOUT_SECONDS=${SETUP_MIGRATION_TIMEOUT_SECONDS:-0}
+
+      # =======================================================================
       # Timezone Configuration
       # =======================================================================
       - TZ=${TZ:-Asia/Shanghai}
+
+      # =======================================================================
+      # External Marketplace Fulfillment
+      # =======================================================================
+      # Feishu custom bot webhook for Xianyu/external order delivery messages.
+      - EXTERNAL_FULFILLMENT_FEISHU_WEBHOOK_URL=${EXTERNAL_FULFILLMENT_FEISHU_WEBHOOK_URL:-}
 
       # =======================================================================
       # Gemini OAuth Configuration (optional)

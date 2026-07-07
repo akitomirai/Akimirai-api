@@ -13,24 +13,6 @@
           {{ t('dashboard.commercial.loadFailed') }}
         </div>
 
-        <UserDashboardCommercialPath
-          :stats="stats"
-          :balance="balance"
-          :api-keys="apiKeys"
-          :api-keys-loading="loadingApiKeys"
-          :api-keys-error="apiKeysError"
-          :recent-errors="recentErrors"
-          :errors-loading="loadingErrors"
-          :errors-error="errorsError"
-          :error-view-enabled="errorViewEnabled"
-          :base-url="baseUrl"
-          :recommended-model="recommendedModel"
-          :available-model-count="availableModelCount"
-          :models-loading="loadingModels"
-          :models-error="modelsError"
-          :payment-enabled="paymentEnabled"
-        />
-
         <UserDashboardStats
           v-if="stats"
           :stats="stats"
@@ -60,7 +42,7 @@
             <UserDashboardRecentUsage :data="recentUsage" :loading="loadingUsage" />
           </div>
           <div class="lg:col-span-1">
-            <UserDashboardQuickActions />
+            <UserDashboardAnnouncements />
           </div>
         </div>
       </template>
@@ -76,19 +58,13 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import UserDashboardStats from '@/components/user/dashboard/UserDashboardStats.vue'
 import UserDashboardCharts from '@/components/user/dashboard/UserDashboardCharts.vue'
 import UserDashboardRecentUsage from '@/components/user/dashboard/UserDashboardRecentUsage.vue'
-import UserDashboardQuickActions from '@/components/user/dashboard/UserDashboardQuickActions.vue'
-import UserDashboardCommercialPath from '@/components/user/dashboard/UserDashboardCommercialPath.vue'
-import { useAppStore, useAuthStore } from '@/stores'
-import { keysAPI } from '@/api/keys'
+import UserDashboardAnnouncements from '@/components/user/dashboard/UserDashboardAnnouncements.vue'
+import { useAuthStore } from '@/stores'
 import { usageAPI, type UserDashboardStats as UserStatsType } from '@/api/usage'
-import userChannelsAPI from '@/api/channels'
 import { getMyPlatformQuotas } from '@/api/user'
-import { getBrowserOriginFallback, normalizeOpenAIBaseUrl } from '@/utils/quickStart'
-import { pickRecommendedCatalogModel, toModelCatalogItems, type ModelCatalogItem } from '@/utils/modelCatalog'
-import type { ApiKey, ModelStat, PlatformQuotaItem, TrendDataPoint, UsageLog, UserErrorRequest } from '@/types'
+import type { ModelStat, PlatformQuotaItem, TrendDataPoint, UsageLog } from '@/types'
 
 const { t } = useI18n()
-const appStore = useAppStore()
 const authStore = useAuthStore()
 const user = computed(() => authStore.user)
 
@@ -96,21 +72,12 @@ const stats = ref<UserStatsType | null>(null)
 const loading = ref(false)
 const loadingUsage = ref(false)
 const loadingCharts = ref(false)
-const loadingApiKeys = ref(false)
-const loadingErrors = ref(false)
-const loadingModels = ref(false)
 const dashboardError = ref(false)
-const apiKeysError = ref(false)
-const errorsError = ref(false)
-const modelsError = ref(false)
 
 const trendData = ref<TrendDataPoint[]>([])
 const modelStats = ref<ModelStat[]>([])
 const recentUsage = ref<UsageLog[]>([])
-const apiKeys = ref<ApiKey[]>([])
-const recentErrors = ref<UserErrorRequest[]>([])
 const platformQuotas = ref<PlatformQuotaItem[] | null>(null)
-const availableModels = ref<ModelCatalogItem[]>([])
 
 const formatLocalDate = (d: Date) => d.toISOString().split('T')[0]
 const startDate = ref(formatLocalDate(new Date(Date.now() - 6 * 86400000)))
@@ -121,14 +88,6 @@ const balance = computed(() => {
   const value = user.value?.balance
   return typeof value === 'number' && Number.isFinite(value) ? value : null
 })
-
-const paymentEnabled = computed(() => appStore.cachedPublicSettings?.payment_enabled ?? false)
-const errorViewEnabled = computed(() => appStore.cachedPublicSettings?.allow_user_view_error_requests ?? false)
-const baseUrl = computed(() =>
-  normalizeOpenAIBaseUrl(appStore.cachedPublicSettings?.api_base_url, getBrowserOriginFallback())
-)
-const recommendedModel = computed(() => pickRecommendedCatalogModel(availableModels.value)?.id || '')
-const availableModelCount = computed(() => availableModels.value.length)
 
 const loadStats = async () => {
   loading.value = true
@@ -183,68 +142,6 @@ const loadRecent = async () => {
   }
 }
 
-const loadApiKeys = async () => {
-  loadingApiKeys.value = true
-  apiKeysError.value = false
-  try {
-    const res = await keysAPI.list(1, 100)
-    apiKeys.value = res.items || []
-  } catch (error) {
-    console.error('Failed to load API key summary:', error instanceof Error ? error.message : error)
-    apiKeysError.value = true
-    apiKeys.value = []
-  } finally {
-    loadingApiKeys.value = false
-  }
-}
-
-const loadRecentErrors = async () => {
-  if (!errorViewEnabled.value) {
-    recentErrors.value = []
-    return
-  }
-
-  loadingErrors.value = true
-  errorsError.value = false
-  try {
-    const resp = await usageAPI.listMyErrorRequests({
-      page: 1,
-      page_size: 5,
-    })
-    recentErrors.value = resp.items || []
-  } catch (error) {
-    console.error('Failed to load recent user errors:', error instanceof Error ? error.message : error)
-    errorsError.value = true
-    recentErrors.value = []
-  } finally {
-    loadingErrors.value = false
-  }
-}
-
-const loadAvailableModels = async () => {
-  loadingModels.value = true
-  modelsError.value = false
-  try {
-    const catalog = await userChannelsAPI.getModelCatalog()
-    availableModels.value = toModelCatalogItems(catalog)
-  } catch (error) {
-    console.error('Failed to load available models:', error instanceof Error ? error.message : error)
-    modelsError.value = true
-    availableModels.value = []
-  } finally {
-    loadingModels.value = false
-  }
-}
-
-const loadPublicSettingsAndErrors = async () => {
-  try {
-    await appStore.fetchPublicSettings()
-  } catch (error) {
-    console.error('Failed to load public settings:', error instanceof Error ? error.message : error)
-  }
-  await loadRecentErrors()
-}
-
 const loadPlatformQuotas = async () => {
   try {
     const data = await getMyPlatformQuotas()
@@ -259,10 +156,7 @@ const refreshAll = () => {
   loadStats()
   loadCharts()
   loadRecent()
-  loadApiKeys()
-  loadAvailableModels()
   loadPlatformQuotas()
-  loadPublicSettingsAndErrors()
 }
 
 onMounted(refreshAll)

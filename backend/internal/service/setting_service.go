@@ -213,8 +213,6 @@ type SettingService struct {
 	antigravityUAVersionSF      singleflight.Group
 	openAICodexUACache          atomic.Value // *cachedOpenAICodexUserAgent
 	openAICodexUASF             singleflight.Group
-	openAIAllowCodexPluginCache atomic.Value // *cachedOpenAIAllowCodexPlugin
-	openAIAllowCodexPluginSF    singleflight.Group
 	privacyFilterConfigCache    atomic.Value // *cachedPrivacyFilterConfig
 	privacyFilterConfigSF       singleflight.Group
 	codexRestrictionPolicyCache atomic.Value // *cachedCodexRestrictionPolicy
@@ -474,11 +472,7 @@ func marshalLoginAgreementDocuments(docs []LoginAgreementDocument) (string, erro
 }
 
 func mustMarshalPrivacyFilterConfig(config PrivacyFilterConfig) string {
-	b, err := json.Marshal(NormalizePrivacyFilterConfig(config))
-	if err != nil {
-		return `{"enabled":false,"types":[]}`
-	}
-	return string(b)
+	return MarshalPrivacyFilterConfig(config)
 }
 
 func buildLoginAgreementRevision(updatedAt string, docs []LoginAgreementDocument) string {
@@ -694,14 +688,14 @@ func (s *SettingService) SetDefaultSubscriptionGroupReader(reader DefaultSubscri
 	s.defaultSubGroupReader = reader
 }
 
-// SetProxyRepository injects a proxy repo for resolving websearch provider proxy URLs.
-func (s *SettingService) SetProxyRepository(repo ProxyRepository) {
-	s.proxyRepo = repo
-}
-
 // SetAccountRepository injects account access for public model-platform summaries.
 func (s *SettingService) SetAccountRepository(repo AccountRepository) {
 	s.accountRepo = repo
+}
+
+// SetProxyRepository injects a proxy repo for resolving websearch provider proxy URLs.
+func (s *SettingService) SetProxyRepository(repo ProxyRepository) {
+	s.proxyRepo = repo
 }
 
 func (s *SettingService) LoadAPIKeyACLTrustForwardedIPSetting(ctx context.Context) error {
@@ -947,7 +941,6 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		DocURL:                           settings[SettingKeyDocURL],
 		HomeContent:                      settings[SettingKeyHomeContent],
 		HideCcsImportButton:              settings[SettingKeyHideCcsImportButton] == "true",
-		ConfiguredAIPlatforms:            s.GetConfiguredAIPlatformLabels(ctx),
 		PurchaseSubscriptionEnabled:      settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
 		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
 		TableDefaultPageSize:             tableDefaultPageSize,
@@ -982,174 +975,6 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 
 		AllowUserViewErrorRequests: settings[SettingKeyAllowUserViewErrorRequests] == "true",
 	}, nil
-}
-
-// GetConfiguredAIPlatformLabels returns user-facing model-family labels derived
-// from currently schedulable accounts and their model mappings.
-func (s *SettingService) GetConfiguredAIPlatformLabels(ctx context.Context) []string {
-	if s == nil || s.accountRepo == nil {
-		return []string{}
-	}
-	accounts, err := s.accountRepo.ListSchedulable(ctx)
-	if err != nil {
-		slog.Warn("failed to list schedulable accounts for public platform summary", "error", err)
-		return []string{}
-	}
-	return configuredAIPlatformLabelsFromAccounts(accounts)
-}
-
-func configuredAIPlatformLabelsFromAccounts(accounts []Account) []string {
-	seen := make(map[string]struct{})
-	for i := range accounts {
-		account := &accounts[i]
-		if label := modelFamilyLabelForPlatform(account.Platform); label != "" {
-			seen[label] = struct{}{}
-		}
-		for requested, mapped := range account.GetModelMapping() {
-			if label := modelFamilyLabelForModel(requested); label != "" {
-				seen[label] = struct{}{}
-			}
-			if label := modelFamilyLabelForModel(mapped); label != "" {
-				seen[label] = struct{}{}
-			}
-		}
-		for requested, mapped := range account.GetCompactModelMapping() {
-			if label := modelFamilyLabelForModel(requested); label != "" {
-				seen[label] = struct{}{}
-			}
-			if label := modelFamilyLabelForModel(mapped); label != "" {
-				seen[label] = struct{}{}
-			}
-		}
-	}
-
-	if len(seen) == 0 {
-		return []string{}
-	}
-	labels := make([]string, 0, len(seen))
-	for label := range seen {
-		labels = append(labels, label)
-	}
-	sort.Slice(labels, func(i, j int) bool {
-		left, right := modelFamilyLabelPriority(labels[i]), modelFamilyLabelPriority(labels[j])
-		if left != right {
-			return left < right
-		}
-		return labels[i] < labels[j]
-	})
-	return labels
-}
-
-func modelFamilyLabelForPlatform(platform string) string {
-	switch strings.ToLower(strings.TrimSpace(platform)) {
-	case PlatformOpenAI, "openai-compatible":
-		return "GPT"
-	case PlatformAnthropic, "claude":
-		return "Claude"
-	case PlatformGemini, "google":
-		return "Gemini"
-	case PlatformGrok, "xai", "x-ai":
-		return "Grok"
-	case PlatformAntigravity:
-		return "Claude"
-	case "zhipu", "glm", "bigmodel":
-		return "GLM"
-	case "deepseek":
-		return "DeepSeek"
-	case "qwen", "dashscope", "aliyun":
-		return "Qwen"
-	case "moonshot", "kimi":
-		return "Kimi"
-	default:
-		return ""
-	}
-}
-
-func modelFamilyLabelForModel(model string) string {
-	normalized := strings.ToLower(strings.TrimSpace(model))
-	normalized = strings.TrimPrefix(normalized, "models/")
-	if normalized == "" {
-		return ""
-	}
-	switch {
-	case strings.HasPrefix(normalized, "gpt-"),
-		strings.HasPrefix(normalized, "o1"),
-		strings.HasPrefix(normalized, "o3"),
-		strings.HasPrefix(normalized, "o4"),
-		strings.HasPrefix(normalized, "o5"),
-		strings.HasPrefix(normalized, "codex"):
-		return "GPT"
-	case strings.HasPrefix(normalized, "claude-"),
-		strings.Contains(normalized, ".claude-"):
-		return "Claude"
-	case strings.HasPrefix(normalized, "gemini-"):
-		return "Gemini"
-	case strings.HasPrefix(normalized, "glm-"),
-		strings.HasPrefix(normalized, "chatglm"),
-		strings.HasPrefix(normalized, "cogview"),
-		strings.HasPrefix(normalized, "cogvideo"):
-		return "GLM"
-	case strings.HasPrefix(normalized, "deepseek-"):
-		return "DeepSeek"
-	case strings.HasPrefix(normalized, "grok-"):
-		return "Grok"
-	case strings.HasPrefix(normalized, "qwen"),
-		strings.HasPrefix(normalized, "qwq-"):
-		return "Qwen"
-	case strings.HasPrefix(normalized, "kimi-"),
-		strings.HasPrefix(normalized, "moonshot-"):
-		return "Kimi"
-	case strings.HasPrefix(normalized, "doubao-"):
-		return "Doubao"
-	case strings.HasPrefix(normalized, "llama-"),
-		strings.HasPrefix(normalized, "codellama-"):
-		return "Llama"
-	case strings.HasPrefix(normalized, "mistral-"),
-		strings.HasPrefix(normalized, "codestral-"),
-		strings.HasPrefix(normalized, "pixtral-"),
-		strings.HasPrefix(normalized, "open-mistral-"),
-		strings.HasPrefix(normalized, "open-mixtral-"):
-		return "Mistral"
-	case strings.HasPrefix(normalized, "yi-"):
-		return "Yi"
-	case strings.HasPrefix(normalized, "abab"):
-		return "MiniMax"
-	default:
-		return ""
-	}
-}
-
-func modelFamilyLabelPriority(label string) int {
-	switch label {
-	case "GPT":
-		return 0
-	case "Claude":
-		return 1
-	case "Gemini":
-		return 2
-	case "GLM":
-		return 3
-	case "DeepSeek":
-		return 4
-	case "Grok":
-		return 5
-	case "Qwen":
-		return 6
-	case "Kimi":
-		return 7
-	case "Doubao":
-		return 8
-	case "Llama":
-		return 9
-	case "Mistral":
-		return 10
-	case "Yi":
-		return 11
-	case "MiniMax":
-		return 12
-	default:
-		return 100
-	}
 }
 
 // channelMonitorIntervalMin / channelMonitorIntervalMax bound the default interval
@@ -2120,6 +1945,9 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	if err != nil {
 		return nil, err
 	}
+	if err := s.normalizeOpenAIAdvancedSchedulerOverrides(settings); err != nil {
+		return nil, err
+	}
 	settings.PaymentVisibleMethodAlipaySource = alipaySource
 	settings.PaymentVisibleMethodWxpaySource = wxpaySource
 	settings.WeChatConnectAppID = strings.TrimSpace(settings.WeChatConnectAppID)
@@ -2436,6 +2264,18 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingPaymentVisibleMethodAlipayEnabled] = strconv.FormatBool(settings.PaymentVisibleMethodAlipayEnabled)
 	updates[SettingPaymentVisibleMethodWxpayEnabled] = strconv.FormatBool(settings.PaymentVisibleMethodWxpayEnabled)
 	updates[openAIAdvancedSchedulerSettingKey] = strconv.FormatBool(settings.OpenAIAdvancedSchedulerEnabled)
+	updates[SettingKeyOpenAIAdvancedSchedulerStickyWeightedEnabled] = strconv.FormatBool(settings.OpenAIAdvancedSchedulerStickyWeightedEnabled)
+	updates[SettingKeyOpenAIAdvancedSchedulerSubscriptionPriorityEnabled] = strconv.FormatBool(settings.OpenAIAdvancedSchedulerSubscriptionPriorityEnabled)
+	updates[SettingKeyOpenAIAdvancedSchedulerLBTopK] = settings.OpenAIAdvancedSchedulerLBTopK
+	updates[SettingKeyOpenAIAdvancedSchedulerWeightPriority] = settings.OpenAIAdvancedSchedulerWeightPriority
+	updates[SettingKeyOpenAIAdvancedSchedulerWeightLoad] = settings.OpenAIAdvancedSchedulerWeightLoad
+	updates[SettingKeyOpenAIAdvancedSchedulerWeightQueue] = settings.OpenAIAdvancedSchedulerWeightQueue
+	updates[SettingKeyOpenAIAdvancedSchedulerWeightErrorRate] = settings.OpenAIAdvancedSchedulerWeightErrorRate
+	updates[SettingKeyOpenAIAdvancedSchedulerWeightTTFT] = settings.OpenAIAdvancedSchedulerWeightTTFT
+	updates[SettingKeyOpenAIAdvancedSchedulerWeightReset] = settings.OpenAIAdvancedSchedulerWeightReset
+	updates[SettingKeyOpenAIAdvancedSchedulerWeightQuotaHeadroom] = settings.OpenAIAdvancedSchedulerWeightQuotaHeadroom
+	updates[SettingKeyOpenAIAdvancedSchedulerWeightPreviousResponse] = settings.OpenAIAdvancedSchedulerWeightPreviousResponse
+	updates[SettingKeyOpenAIAdvancedSchedulerWeightSessionSticky] = settings.OpenAIAdvancedSchedulerWeightSessionSticky
 
 	// 余额、订阅到期与账号限额通知
 	updates[SettingKeyBalanceLowNotifyEnabled] = strconv.FormatBool(settings.BalanceLowNotifyEnabled)
@@ -2588,7 +2428,21 @@ func (s *SettingService) refreshCachedSettings(settings *SystemSettings) {
 	})
 	openAIAdvancedSchedulerSettingSF.Forget(openAIAdvancedSchedulerSettingKey)
 	openAIAdvancedSchedulerSettingCache.Store(&cachedOpenAIAdvancedSchedulerSetting{
-		enabled:   settings.OpenAIAdvancedSchedulerEnabled,
+		enabled:                     settings.OpenAIAdvancedSchedulerEnabled,
+		stickyWeightedEnabled:       settings.OpenAIAdvancedSchedulerStickyWeightedEnabled,
+		subscriptionPriorityEnabled: settings.OpenAIAdvancedSchedulerSubscriptionPriorityEnabled,
+		lbTopKOverride:              parsePositiveIntOverride(settings.OpenAIAdvancedSchedulerLBTopK),
+		weightOverrides: parseOpenAIAdvancedSchedulerWeightOverrides(map[string]string{
+			SettingKeyOpenAIAdvancedSchedulerWeightPriority:         settings.OpenAIAdvancedSchedulerWeightPriority,
+			SettingKeyOpenAIAdvancedSchedulerWeightLoad:             settings.OpenAIAdvancedSchedulerWeightLoad,
+			SettingKeyOpenAIAdvancedSchedulerWeightQueue:            settings.OpenAIAdvancedSchedulerWeightQueue,
+			SettingKeyOpenAIAdvancedSchedulerWeightErrorRate:        settings.OpenAIAdvancedSchedulerWeightErrorRate,
+			SettingKeyOpenAIAdvancedSchedulerWeightTTFT:             settings.OpenAIAdvancedSchedulerWeightTTFT,
+			SettingKeyOpenAIAdvancedSchedulerWeightReset:            settings.OpenAIAdvancedSchedulerWeightReset,
+			SettingKeyOpenAIAdvancedSchedulerWeightQuotaHeadroom:    settings.OpenAIAdvancedSchedulerWeightQuotaHeadroom,
+			SettingKeyOpenAIAdvancedSchedulerWeightPreviousResponse: settings.OpenAIAdvancedSchedulerWeightPreviousResponse,
+			SettingKeyOpenAIAdvancedSchedulerWeightSessionSticky:    settings.OpenAIAdvancedSchedulerWeightSessionSticky,
+		}),
 		expiresAt: time.Now().Add(openAIAdvancedSchedulerSettingCacheTTL).UnixNano(),
 	})
 	// Invalidate the quota auto-pause cache and let the next read trigger a fresh load.
@@ -3462,18 +3316,30 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyCodexCLIOnlyEngineFingerprintSignals: openai.DefaultEngineFingerprintSignalsJSON(),
 
 		// 分组隔离（默认不允许未分组 Key 调度）
-		SettingKeyAllowUngroupedKeyScheduling:        "false",
-		SettingKeyPrivacyFilterConfig:                mustMarshalPrivacyFilterConfig(DefaultPrivacyFilterConfig()),
-		SettingKeyEnableAnthropicCacheTTL1hInjection: "false",
-		SettingKeyRewriteMessageCacheControl:         strconv.FormatBool(s.defaultRewriteMessageCacheControl()),
-		SettingKeyEnableClientDatelineNormalization:  "true",
-		SettingKeyAntigravityUserAgentVersion:        "",
-		SettingKeyOpenAICodexUserAgent:               "",
-		SettingPaymentVisibleMethodAlipaySource:      "",
-		SettingPaymentVisibleMethodWxpaySource:       "",
-		SettingPaymentVisibleMethodAlipayEnabled:     "false",
-		SettingPaymentVisibleMethodWxpayEnabled:      "false",
-		openAIAdvancedSchedulerSettingKey:            "false",
+		SettingKeyAllowUngroupedKeyScheduling:                        "false",
+		SettingKeyPrivacyFilterConfig:                                mustMarshalPrivacyFilterConfig(DefaultPrivacyFilterConfig()),
+		SettingKeyEnableAnthropicCacheTTL1hInjection:                 "false",
+		SettingKeyRewriteMessageCacheControl:                         strconv.FormatBool(s.defaultRewriteMessageCacheControl()),
+		SettingKeyEnableClientDatelineNormalization:                  "true",
+		SettingKeyAntigravityUserAgentVersion:                        "",
+		SettingKeyOpenAICodexUserAgent:                               "",
+		SettingPaymentVisibleMethodAlipaySource:                      "",
+		SettingPaymentVisibleMethodWxpaySource:                       "",
+		SettingPaymentVisibleMethodAlipayEnabled:                     "false",
+		SettingPaymentVisibleMethodWxpayEnabled:                      "false",
+		openAIAdvancedSchedulerSettingKey:                            "false",
+		SettingKeyOpenAIAdvancedSchedulerStickyWeightedEnabled:       "false",
+		SettingKeyOpenAIAdvancedSchedulerSubscriptionPriorityEnabled: "false",
+		SettingKeyOpenAIAdvancedSchedulerLBTopK:                      "",
+		SettingKeyOpenAIAdvancedSchedulerWeightPriority:              "",
+		SettingKeyOpenAIAdvancedSchedulerWeightLoad:                  "",
+		SettingKeyOpenAIAdvancedSchedulerWeightQueue:                 "",
+		SettingKeyOpenAIAdvancedSchedulerWeightErrorRate:             "",
+		SettingKeyOpenAIAdvancedSchedulerWeightTTFT:                  "",
+		SettingKeyOpenAIAdvancedSchedulerWeightReset:                 "",
+		SettingKeyOpenAIAdvancedSchedulerWeightQuotaHeadroom:         "",
+		SettingKeyOpenAIAdvancedSchedulerWeightPreviousResponse:      "",
+		SettingKeyOpenAIAdvancedSchedulerWeightSessionSticky:         "",
 
 		SettingKeyAllowUserViewErrorRequests: "false",
 	}
@@ -4037,6 +3903,29 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	result.PaymentVisibleMethodAlipayEnabled = settings[SettingPaymentVisibleMethodAlipayEnabled] == "true"
 	result.PaymentVisibleMethodWxpayEnabled = settings[SettingPaymentVisibleMethodWxpayEnabled] == "true"
 	result.OpenAIAdvancedSchedulerEnabled = settings[openAIAdvancedSchedulerSettingKey] == "true"
+	result.OpenAIAdvancedSchedulerStickyWeightedEnabled = settings[SettingKeyOpenAIAdvancedSchedulerStickyWeightedEnabled] == "true"
+	result.OpenAIAdvancedSchedulerSubscriptionPriorityEnabled = settings[SettingKeyOpenAIAdvancedSchedulerSubscriptionPriorityEnabled] == "true"
+	result.OpenAIAdvancedSchedulerLBTopK = strings.TrimSpace(settings[SettingKeyOpenAIAdvancedSchedulerLBTopK])
+	result.OpenAIAdvancedSchedulerWeightPriority = strings.TrimSpace(settings[SettingKeyOpenAIAdvancedSchedulerWeightPriority])
+	result.OpenAIAdvancedSchedulerWeightLoad = strings.TrimSpace(settings[SettingKeyOpenAIAdvancedSchedulerWeightLoad])
+	result.OpenAIAdvancedSchedulerWeightQueue = strings.TrimSpace(settings[SettingKeyOpenAIAdvancedSchedulerWeightQueue])
+	result.OpenAIAdvancedSchedulerWeightErrorRate = strings.TrimSpace(settings[SettingKeyOpenAIAdvancedSchedulerWeightErrorRate])
+	result.OpenAIAdvancedSchedulerWeightTTFT = strings.TrimSpace(settings[SettingKeyOpenAIAdvancedSchedulerWeightTTFT])
+	result.OpenAIAdvancedSchedulerWeightReset = strings.TrimSpace(settings[SettingKeyOpenAIAdvancedSchedulerWeightReset])
+	result.OpenAIAdvancedSchedulerWeightQuotaHeadroom = strings.TrimSpace(settings[SettingKeyOpenAIAdvancedSchedulerWeightQuotaHeadroom])
+	result.OpenAIAdvancedSchedulerWeightPreviousResponse = strings.TrimSpace(settings[SettingKeyOpenAIAdvancedSchedulerWeightPreviousResponse])
+	result.OpenAIAdvancedSchedulerWeightSessionSticky = strings.TrimSpace(settings[SettingKeyOpenAIAdvancedSchedulerWeightSessionSticky])
+	result.OpenAIAdvancedSchedulerEffectiveLBTopK = s.openAIAdvancedSchedulerEffectiveLBTopK()
+	effectiveWeights := s.openAIAdvancedSchedulerEffectiveWeights()
+	result.OpenAIAdvancedSchedulerEffectiveWeightPriority = formatOpenAIAdvancedSchedulerFloat(effectiveWeights.Priority)
+	result.OpenAIAdvancedSchedulerEffectiveWeightLoad = formatOpenAIAdvancedSchedulerFloat(effectiveWeights.Load)
+	result.OpenAIAdvancedSchedulerEffectiveWeightQueue = formatOpenAIAdvancedSchedulerFloat(effectiveWeights.Queue)
+	result.OpenAIAdvancedSchedulerEffectiveWeightErrorRate = formatOpenAIAdvancedSchedulerFloat(effectiveWeights.ErrorRate)
+	result.OpenAIAdvancedSchedulerEffectiveWeightTTFT = formatOpenAIAdvancedSchedulerFloat(effectiveWeights.TTFT)
+	result.OpenAIAdvancedSchedulerEffectiveWeightReset = formatOpenAIAdvancedSchedulerFloat(effectiveWeights.Reset)
+	result.OpenAIAdvancedSchedulerEffectiveWeightQuotaHeadroom = formatOpenAIAdvancedSchedulerFloat(effectiveWeights.QuotaHeadroom)
+	result.OpenAIAdvancedSchedulerEffectiveWeightPreviousResponse = formatOpenAIAdvancedSchedulerFloat(effectiveWeights.PreviousResponse)
+	result.OpenAIAdvancedSchedulerEffectiveWeightSessionSticky = formatOpenAIAdvancedSchedulerFloat(effectiveWeights.SessionSticky)
 
 	// 余额、订阅到期与账号限额通知
 	result.BalanceLowNotifyEnabled = settings[SettingKeyBalanceLowNotifyEnabled] == "true"
@@ -4107,6 +3996,119 @@ func normalizeVisibleMethodSettingSource(method, source string, enabled bool) (s
 		)
 	}
 	return normalized, nil
+}
+
+func (s *SettingService) openAIAdvancedSchedulerEffectiveLBTopK() string {
+	if s != nil && s.cfg != nil && s.cfg.Gateway.OpenAIWS.LBTopK > 0 {
+		return strconv.Itoa(s.cfg.Gateway.OpenAIWS.LBTopK)
+	}
+	return "7"
+}
+
+func (s *SettingService) openAIAdvancedSchedulerEffectiveWeights() config.GatewayOpenAIWSSchedulerScoreWeights {
+	defaults := config.GatewayOpenAIWSSchedulerScoreWeights{
+		Priority:         1.0,
+		Load:             1.0,
+		Queue:            0.7,
+		ErrorRate:        0.8,
+		TTFT:             0.5,
+		Reset:            0.0,
+		QuotaHeadroom:    0.0,
+		PreviousResponse: 5.0,
+		SessionSticky:    3.0,
+	}
+	if s == nil || s.cfg == nil {
+		return defaults
+	}
+
+	weights := s.cfg.Gateway.OpenAIWS.SchedulerScoreWeights
+	baseSum := weights.Priority + weights.Load + weights.Queue + weights.ErrorRate + weights.TTFT + weights.QuotaHeadroom
+	if baseSum <= 0 {
+		return defaults
+	}
+	return weights
+}
+
+func formatOpenAIAdvancedSchedulerFloat(value float64) string {
+	return strconv.FormatFloat(value, 'f', -1, 64)
+}
+
+func (s *SettingService) normalizeOpenAIAdvancedSchedulerOverrides(settings *SystemSettings) error {
+	lbTopK, err := normalizeOptionalPositiveIntString(settings.OpenAIAdvancedSchedulerLBTopK)
+	if err != nil {
+		return infraerrors.BadRequest("INVALID_OPENAI_ADVANCED_SCHEDULER_LB_TOP_K", "openai advanced scheduler TopK must be a positive integer or empty")
+	}
+	settings.OpenAIAdvancedSchedulerLBTopK = lbTopK
+
+	weights := []*string{
+		&settings.OpenAIAdvancedSchedulerWeightPriority,
+		&settings.OpenAIAdvancedSchedulerWeightLoad,
+		&settings.OpenAIAdvancedSchedulerWeightQueue,
+		&settings.OpenAIAdvancedSchedulerWeightErrorRate,
+		&settings.OpenAIAdvancedSchedulerWeightTTFT,
+		&settings.OpenAIAdvancedSchedulerWeightReset,
+		&settings.OpenAIAdvancedSchedulerWeightQuotaHeadroom,
+		&settings.OpenAIAdvancedSchedulerWeightPreviousResponse,
+		&settings.OpenAIAdvancedSchedulerWeightSessionSticky,
+	}
+	for _, target := range weights {
+		normalized, err := normalizeOptionalNonNegativeFloatString(*target)
+		if err != nil {
+			return infraerrors.BadRequest("INVALID_OPENAI_ADVANCED_SCHEDULER_WEIGHT", "openai advanced scheduler weights must be non-negative numbers or empty")
+		}
+		*target = normalized
+	}
+
+	// 与 config.Validate 的 "scheduler_score_weights must not all be zero" 保持一致：
+	// 覆盖值（空则回退到生效的配置值）叠加后的基础权重和不允许为 0，
+	// 否则调度会静默退化为 TopK 内均匀随机。
+	effective := s.openAIAdvancedSchedulerEffectiveWeights()
+	baseSum := resolveOpenAIAdvancedSchedulerWeight(settings.OpenAIAdvancedSchedulerWeightPriority, effective.Priority) +
+		resolveOpenAIAdvancedSchedulerWeight(settings.OpenAIAdvancedSchedulerWeightLoad, effective.Load) +
+		resolveOpenAIAdvancedSchedulerWeight(settings.OpenAIAdvancedSchedulerWeightQueue, effective.Queue) +
+		resolveOpenAIAdvancedSchedulerWeight(settings.OpenAIAdvancedSchedulerWeightErrorRate, effective.ErrorRate) +
+		resolveOpenAIAdvancedSchedulerWeight(settings.OpenAIAdvancedSchedulerWeightTTFT, effective.TTFT) +
+		resolveOpenAIAdvancedSchedulerWeight(settings.OpenAIAdvancedSchedulerWeightQuotaHeadroom, effective.QuotaHeadroom)
+	if baseSum <= 0 {
+		return infraerrors.BadRequest("INVALID_OPENAI_ADVANCED_SCHEDULER_WEIGHT", "openai advanced scheduler base weights must not all be zero")
+	}
+	return nil
+}
+
+// resolveOpenAIAdvancedSchedulerWeight 返回覆盖值（已归一化的非空字符串），空则回退默认值。
+func resolveOpenAIAdvancedSchedulerWeight(normalized string, fallback float64) float64 {
+	if normalized == "" {
+		return fallback
+	}
+	value, err := strconv.ParseFloat(normalized, 64)
+	if err != nil {
+		return fallback
+	}
+	return value
+}
+
+func normalizeOptionalPositiveIntString(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", nil
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil || value <= 0 {
+		return "", fmt.Errorf("invalid positive integer")
+	}
+	return strconv.Itoa(value), nil
+}
+
+func normalizeOptionalNonNegativeFloatString(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", nil
+	}
+	value, err := strconv.ParseFloat(raw, 64)
+	if err != nil || value < 0 || math.IsNaN(value) || math.IsInf(value, 0) {
+		return "", fmt.Errorf("invalid non-negative float")
+	}
+	return strconv.FormatFloat(value, 'f', -1, 64), nil
 }
 
 func parseDefaultSubscriptions(raw string) []DefaultSubscriptionSetting {

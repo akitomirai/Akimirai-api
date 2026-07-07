@@ -160,6 +160,33 @@ describe('EmailVerifyView', () => {
     expect(sendVerifyCodeMock).not.toHaveBeenCalled()
   })
 
+  it('blocks reserved email local-parts before auto-sending a verification code', async () => {
+    sessionStorage.setItem(
+      'register_data',
+      JSON.stringify({
+        email: 'root@qq.com',
+        password: 'secret-123',
+      })
+    )
+
+    mount(EmailVerifyView, {
+      global: {
+        stubs: {
+          AuthLayout: { template: '<div><slot /><slot name="footer" /></div>' },
+          Icon: true,
+          TurnstileWidget: true,
+          transition: false,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(sendVerifyCodeMock).not.toHaveBeenCalled()
+    expect(sendPendingOAuthVerifyCodeMock).not.toHaveBeenCalled()
+    expect(showErrorMock).toHaveBeenCalledWith('auth.emailLocalPartNotAllowed')
+  })
+
   it('skips the registration email suffix whitelist for pending oauth verification', async () => {
     authStoreState.pendingAuthSession = {
       token: 'pending-token-2',

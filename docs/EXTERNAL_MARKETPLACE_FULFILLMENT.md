@@ -10,6 +10,10 @@ This module supports marketplace resale workflows such as Xianyu order intake:
 
 ## Feishu Webhook
 
+In Feishu, add a custom bot to the delivery group and copy its webhook URL.
+The current backend sends plain text webhook payloads only; configure the bot
+without Feishu signature verification unless backend signing support is added.
+
 Set the webhook URL in the backend runtime environment:
 
 ```bash

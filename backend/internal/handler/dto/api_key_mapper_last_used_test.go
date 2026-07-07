@@ -11,18 +11,20 @@ import (
 func TestAPIKeyFromService_MapsLastUsedAt(t *testing.T) {
 	lastUsed := time.Now().UTC().Truncate(time.Second)
 	src := &service.APIKey{
-		ID:         1,
-		UserID:     2,
-		Key:        "sk-map-last-used",
-		Name:       "Mapper",
-		Status:     service.StatusActive,
-		LastUsedAt: &lastUsed,
+		ID:                 1,
+		UserID:             2,
+		Key:                "sk-map-last-used",
+		Name:               "Mapper",
+		Status:             service.StatusActive,
+		LastUsedAt:         &lastUsed,
+		CurrentConcurrency: 3,
 	}
 
 	out := APIKeyFromService(src)
 	require.NotNil(t, out)
 	require.NotNil(t, out.LastUsedAt)
 	require.WithinDuration(t, lastUsed, *out.LastUsedAt, time.Second)
+	require.Equal(t, 3, out.CurrentConcurrency)
 }
 
 func TestAPIKeyFromService_MapsNilLastUsedAt(t *testing.T) {
@@ -39,7 +41,7 @@ func TestAPIKeyFromService_MapsNilLastUsedAt(t *testing.T) {
 	require.Nil(t, out.LastUsedAt)
 }
 
-func TestAPIKeyFromService_MasksStoredKeyUnlessVisibleOnce(t *testing.T) {
+func TestAPIKeyFromService_ReturnsServiceKey(t *testing.T) {
 	src := &service.APIKey{
 		ID:        1,
 		UserID:    2,
@@ -52,7 +54,7 @@ func TestAPIKeyFromService_MasksStoredKeyUnlessVisibleOnce(t *testing.T) {
 
 	out := APIKeyFromService(src)
 	require.NotNil(t, out)
-	require.Equal(t, "sk-12345...", out.Key)
+	require.Equal(t, "ak_hmac_sha256_v1:1111111111111111111111111111111111111111111111111111111111111111", out.Key)
 	require.Equal(t, "sk-12345", out.KeyPrefix)
 	require.False(t, out.KeyVisibleOnce)
 

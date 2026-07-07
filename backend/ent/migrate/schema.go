@@ -1638,6 +1638,7 @@ var (
 		{Name: "balance_notify_extra_emails", Type: field.TypeString, Default: "[]", SchemaType: map[string]string{"postgres": "text"}},
 		{Name: "total_recharged", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
 		{Name: "rpm_limit", Type: field.TypeInt, Default: 0},
+		{Name: "privacy_filter_config", Type: field.TypeString, Default: "{\"enabled\":false,\"types\":[\"ip_address\",\"email\",\"phone\",\"id_card\",\"bank_card\",\"api_key\",\"token\",\"private_key\",\"random_string\"]}", SchemaType: map[string]string{"postgres": "text"}},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{

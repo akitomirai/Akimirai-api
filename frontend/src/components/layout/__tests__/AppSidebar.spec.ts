@@ -30,3 +30,18 @@ describe('AppSidebar header styles', () => {
     expect(sidebarBrandBlockMatch?.[0]).not.toContain('overflow: hidden;')
   })
 })
+
+describe('AppSidebar navigation visibility', () => {
+  it('keeps GPTImage out of the sidebar while preserving store and order entries', () => {
+    expect(componentSource).not.toContain("path: '/images'")
+    expect(componentSource).not.toContain("path: '/image-management'")
+
+    const purchaseItem = componentSource.match(/\{ path: '\/purchase'[\s\S]*?\}/)?.[0] ?? ''
+    const ordersItem = componentSource.match(/\{ path: '\/orders'[\s\S]*?\}/)?.[0] ?? ''
+
+    expect(purchaseItem).toContain("label: t('nav.buySubscription')")
+    expect(ordersItem).toContain("label: t('nav.myOrders')")
+    expect(purchaseItem).not.toContain('featureFlag')
+    expect(ordersItem).not.toContain('featureFlag')
+  })
+})

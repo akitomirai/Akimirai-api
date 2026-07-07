@@ -340,6 +340,20 @@ func (_c *UserCreate) SetNillableRpmLimit(v *int) *UserCreate {
 	return _c
 }
 
+// SetPrivacyFilterConfig sets the "privacy_filter_config" field.
+func (_c *UserCreate) SetPrivacyFilterConfig(v string) *UserCreate {
+	_c.mutation.SetPrivacyFilterConfig(v)
+	return _c
+}
+
+// SetNillablePrivacyFilterConfig sets the "privacy_filter_config" field if the given value is not nil.
+func (_c *UserCreate) SetNillablePrivacyFilterConfig(v *string) *UserCreate {
+	if v != nil {
+		_c.SetPrivacyFilterConfig(*v)
+	}
+	return _c
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_c *UserCreate) AddAPIKeyIDs(ids ...int64) *UserCreate {
 	_c.mutation.AddAPIKeyIDs(ids...)
@@ -638,6 +652,10 @@ func (_c *UserCreate) defaults() error {
 		v := user.DefaultRpmLimit
 		_c.mutation.SetRpmLimit(v)
 	}
+	if _, ok := _c.mutation.PrivacyFilterConfig(); !ok {
+		v := user.DefaultPrivacyFilterConfig
+		_c.mutation.SetPrivacyFilterConfig(v)
+	}
 	return nil
 }
 
@@ -723,6 +741,9 @@ func (_c *UserCreate) check() error {
 	}
 	if _, ok := _c.mutation.RpmLimit(); !ok {
 		return &ValidationError{Name: "rpm_limit", err: errors.New(`ent: missing required field "User.rpm_limit"`)}
+	}
+	if _, ok := _c.mutation.PrivacyFilterConfig(); !ok {
+		return &ValidationError{Name: "privacy_filter_config", err: errors.New(`ent: missing required field "User.privacy_filter_config"`)}
 	}
 	return nil
 }
@@ -842,6 +863,10 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.RpmLimit(); ok {
 		_spec.SetField(user.FieldRpmLimit, field.TypeInt, value)
 		_node.RpmLimit = value
+	}
+	if value, ok := _c.mutation.PrivacyFilterConfig(); ok {
+		_spec.SetField(user.FieldPrivacyFilterConfig, field.TypeString, value)
+		_node.PrivacyFilterConfig = value
 	}
 	if nodes := _c.mutation.APIKeysIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -1437,6 +1462,18 @@ func (u *UserUpsert) AddRpmLimit(v int) *UserUpsert {
 	return u
 }
 
+// SetPrivacyFilterConfig sets the "privacy_filter_config" field.
+func (u *UserUpsert) SetPrivacyFilterConfig(v string) *UserUpsert {
+	u.Set(user.FieldPrivacyFilterConfig, v)
+	return u
+}
+
+// UpdatePrivacyFilterConfig sets the "privacy_filter_config" field to the value that was provided on create.
+func (u *UserUpsert) UpdatePrivacyFilterConfig() *UserUpsert {
+	u.SetExcluded(user.FieldPrivacyFilterConfig)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -1864,6 +1901,20 @@ func (u *UserUpsertOne) AddRpmLimit(v int) *UserUpsertOne {
 func (u *UserUpsertOne) UpdateRpmLimit() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateRpmLimit()
+	})
+}
+
+// SetPrivacyFilterConfig sets the "privacy_filter_config" field.
+func (u *UserUpsertOne) SetPrivacyFilterConfig(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetPrivacyFilterConfig(v)
+	})
+}
+
+// UpdatePrivacyFilterConfig sets the "privacy_filter_config" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdatePrivacyFilterConfig() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdatePrivacyFilterConfig()
 	})
 }
 
@@ -2460,6 +2511,20 @@ func (u *UserUpsertBulk) AddRpmLimit(v int) *UserUpsertBulk {
 func (u *UserUpsertBulk) UpdateRpmLimit() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateRpmLimit()
+	})
+}
+
+// SetPrivacyFilterConfig sets the "privacy_filter_config" field.
+func (u *UserUpsertBulk) SetPrivacyFilterConfig(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetPrivacyFilterConfig(v)
+	})
+}
+
+// UpdatePrivacyFilterConfig sets the "privacy_filter_config" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdatePrivacyFilterConfig() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdatePrivacyFilterConfig()
 	})
 }
 

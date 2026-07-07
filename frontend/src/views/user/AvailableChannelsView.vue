@@ -1,13 +1,6 @@
 <template>
   <AppLayout>
     <div class="space-y-6">
-      <ModelCatalogPanel
-        :items="modelCatalogItems"
-        :loading="loading"
-        :error="loadError"
-        @retry="loadChannels"
-      />
-
       <TablePageLayout>
         <template #filters>
           <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
@@ -64,18 +57,15 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import AvailableChannelsTable from '@/components/channels/AvailableChannelsTable.vue'
-import ModelCatalogPanel from '@/components/channels/ModelCatalogPanel.vue'
 import userChannelsAPI, { type UserAvailableChannel } from '@/api/channels'
 import userGroupsAPI from '@/api/groups'
 import { useAppStore } from '@/stores/app'
 import { extractApiErrorMessage } from '@/utils/apiError'
-import { toModelCatalogItems, type ModelCatalogItem } from '@/utils/modelCatalog'
 
 const { t } = useI18n()
 const appStore = useAppStore()
 
 const channels = ref<UserAvailableChannel[]>([])
-const modelCatalog = ref<ModelCatalogItem[]>([])
 const userGroupRates = ref<Record<number, number>>({})
 const loading = ref(false)
 const loadError = ref(false)
@@ -115,37 +105,22 @@ const filteredChannels = computed(() => {
     .filter((ch): ch is UserAvailableChannel => ch !== null)
 })
 
-const modelCatalogItems = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return modelCatalog.value
-  return modelCatalog.value.filter((item) =>
-    item.id.toLowerCase().includes(q) ||
-    item.displayName.toLowerCase().includes(q) ||
-    item.provider.toLowerCase().includes(q) ||
-    item.channelNames.some((name) => name.toLowerCase().includes(q)) ||
-    item.groups.some((group) => group.name.toLowerCase().includes(q))
-  )
-})
-
 async function loadChannels() {
   loading.value = true
   loadError.value = false
   try {
-    const [list, catalog, rates] = await Promise.all([
+    const [list, rates] = await Promise.all([
       userChannelsAPI.getAvailable(),
-      userChannelsAPI.getModelCatalog(),
       userGroupsAPI.getUserGroupRates().catch((err: unknown) => {
         console.error('Failed to load user group rates:', err)
         return {} as Record<number, number>
       }),
     ])
     channels.value = list
-    modelCatalog.value = toModelCatalogItems(catalog)
     userGroupRates.value = rates
   } catch (err: unknown) {
     loadError.value = true
     channels.value = []
-    modelCatalog.value = []
     appStore.showError(extractApiErrorMessage(err, t('common.error')))
   } finally {
     loading.value = false

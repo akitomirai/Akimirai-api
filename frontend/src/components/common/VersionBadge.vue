@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div v-if="isAdmin" class="relative">
     <!-- Admin: Full version badge with dropdown -->
     <template v-if="isAdmin">
       <button
@@ -373,10 +373,6 @@
       </transition>
     </template>
 
-    <!-- Non-admin: Simple static version text -->
-    <span v-else-if="version" class="text-xs text-gray-500 dark:text-dark-400">
-      v{{ version }}
-    </span>
   </div>
 </template>
 

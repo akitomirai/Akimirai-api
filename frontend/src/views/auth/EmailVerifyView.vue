@@ -165,6 +165,7 @@ import { apiClient } from '@/api/client'
 import { buildAuthErrorMessage } from '@/utils/authError'
 import {
   formatRegistrationEmailSuffixWhitelistForMessage,
+  isRegistrationEmailLocalPartBlocked,
   isRegistrationEmailSuffixAllowed,
   normalizeRegistrationEmailSuffixWhitelist
 } from '@/utils/registrationEmailPolicy'
@@ -400,6 +401,12 @@ async function sendCode(): Promise<void> {
   errorMessage.value = ''
 
   try {
+    if (isRegistrationEmailLocalPartBlocked(email.value)) {
+      errorMessage.value = t('auth.emailLocalPartNotAllowed')
+      appStore.showError(errorMessage.value)
+      return
+    }
+
     if (!shouldBypassRegistrationEmailPolicy() && !isRegistrationEmailSuffixAllowed(email.value, registrationEmailSuffixWhitelist.value)) {
       errorMessage.value = buildEmailSuffixNotAllowedMessage()
       appStore.showError(errorMessage.value)
@@ -493,6 +500,12 @@ async function handleVerify(): Promise<void> {
   isLoading.value = true
 
   try {
+    if (isRegistrationEmailLocalPartBlocked(email.value)) {
+      errorMessage.value = t('auth.emailLocalPartNotAllowed')
+      appStore.showError(errorMessage.value)
+      return
+    }
+
     if (!shouldBypassRegistrationEmailPolicy() && !isRegistrationEmailSuffixAllowed(email.value, registrationEmailSuffixWhitelist.value)) {
       errorMessage.value = buildEmailSuffixNotAllowedMessage()
       appStore.showError(errorMessage.value)

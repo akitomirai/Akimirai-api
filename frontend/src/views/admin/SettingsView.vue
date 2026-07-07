@@ -44,7 +44,7 @@
           </nav>
         </div>
 
-        <!-- Tab: Security �?Admin API Key -->
+        <!-- Tab: Security — Admin API Key -->
         <div v-show="activeTab === 'security'" class="space-y-6">
           <!-- Admin API Key Settings -->
           <div class="card">
@@ -199,7 +199,7 @@
             </div>
           </div>
         </div>
-        <!-- /Tab: Security �?Admin API Key -->
+        <!-- /Tab: Security — Admin API Key -->
 
         <!-- Tab: Gateway -->
         <div v-show="activeTab === 'gateway'" class="space-y-6">
@@ -1351,7 +1351,7 @@
         </div>
         <!-- /Tab: Gateway -->
 
-        <!-- Tab: Security �?Registration, Turnstile, LinuxDo -->
+        <!-- Tab: Security — Registration, Turnstile, LinuxDo -->
         <div v-show="activeTab === 'security'" class="space-y-6">
           <!-- Registration Settings -->
           <div class="card">
@@ -1798,7 +1798,7 @@
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {{
                   localText(
-                    "开�?GitHub �?Google 邮箱授权登录后，系统会读取已验证邮箱，存在则直接登录，不存在则自动注册�?",
+                    "开启 GitHub 或 Google 邮箱授权登录后，系统会读取已验证邮箱，存在则直接登录，不存在则自动注册。",
                     "After GitHub or Google email OAuth is enabled, the system reads a verified email, signs in matching users, and auto-registers missing users.",
                   )
                 }}
@@ -1815,7 +1815,7 @@
                       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         {{
                           localText(
-                            "GitHub OAuth App 需�?read:user user:email 权限，回调地址填写下方后端地址�?",
+                            "GitHub OAuth App 需要 read:user user:email 权限，回调地址填写下方后端地址。",
                             "GitHub OAuth App needs read:user user:email scopes. Use the backend callback URL below.",
                           )
                         }}
@@ -1827,23 +1827,26 @@
                   <div v-if="form.github_oauth_enabled" class="mt-4 space-y-4">
                     <div class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300">
                       <template v-if="isZhLocale">
-                        开通引导：GitHub Settings �?Developer settings �?                        <a
+                        开通引导：GitHub Settings → Developer settings →
+                        <a
                           data-testid="github-oauth-apps-guide-link"
                           href="https://github.com/settings/developers"
                           target="_blank"
                           rel="noopener noreferrer"
                           class="font-medium text-primary-600 hover:underline dark:text-primary-400"
                         >OAuth Apps</a>
-                        �?New OAuth App；Homepage URL 填站点域名，Authorization callback URL 填下面的后端回调地址�?                      </template>
+                        → New OAuth App；Homepage URL 填站点域名，Authorization callback URL 填下面的后端回调地址。
+                      </template>
                       <template v-else>
-                        Setup guide: GitHub Settings �?Developer settings �?                        <a
+                        Setup guide: GitHub Settings → Developer settings →
+                        <a
                           data-testid="github-oauth-apps-guide-link"
                           href="https://github.com/settings/developers"
                           target="_blank"
                           rel="noopener noreferrer"
                           class="font-medium text-primary-600 hover:underline dark:text-primary-400"
                         >OAuth Apps</a>
-                        �?New OAuth App. Use your site origin as Homepage URL and the backend callback URL below as Authorization callback URL.
+                        → New OAuth App. Use your site origin as Homepage URL and the backend callback URL below as Authorization callback URL.
                       </template>
                     </div>
 
@@ -1922,7 +1925,7 @@
                       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                         {{
                           localText(
-                            "Google OAuth 客户端需�?openid email profile 范围，并在凭据里登记后端回调地址�?",
+                            "Google OAuth 客户端需要 openid email profile 范围，并在凭据里登记后端回调地址。",
                             "Google OAuth client needs openid email profile scopes and the backend callback URL registered in credentials.",
                           )
                         }}
@@ -1935,8 +1938,8 @@
                     <div class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300">
                       {{
                         localText(
-                          "开通引导：Google Cloud Console �?APIs & Services �?OAuth consent screen 完成同意屏幕；Credentials �?Create Credentials �?OAuth client ID，类型选择 Web application，并把下面地址加入 Authorized redirect URIs�?",
-                          "Setup guide: Google Cloud Console �?APIs & Services �?OAuth consent screen, then Credentials �?Create Credentials �?OAuth client ID, choose Web application, and add the URL below to Authorized redirect URIs.",
+                          "开通引导：Google Cloud Console → APIs & Services → OAuth consent screen 完成同意屏幕；Credentials → Create Credentials → OAuth client ID，类型选择 Web application，并把下面地址加入 Authorized redirect URIs。",
+                          "Setup guide: Google Cloud Console → APIs & Services → OAuth consent screen, then Credentials → Create Credentials → OAuth client ID, choose Web application, and add the URL below to Authorized redirect URIs.",
                         )
                       }}
                     </div>
@@ -2054,7 +2057,7 @@
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                           {{
                             localText(
-                              "桌面浏览器通过微信开放平台扫码登录。可与公众号或移动应用同时存在�?",
+                              "桌面浏览器通过微信开放平台扫码登录。可与公众号或移动应用同时存在。",
                               "Desktop browsers sign in through WeChat Open Platform QR login. This can coexist with Official Account or Mobile App.",
                             )
                           }}
@@ -2083,7 +2086,7 @@
                           class="input font-mono text-sm"
                           :placeholder="
                             localText(
-                              '微信开放平�?PC 应用 AppID',
+                              '微信开放平台 PC 应用 AppID',
                               'WeChat Open Platform PC App ID',
                             )
                           "
@@ -2103,11 +2106,11 @@
                           :placeholder="
                             form.wechat_connect_open_app_secret_configured
                               ? localText(
-                                  '密钥已配置，留空以保留当前值�?',
+                                  '密钥已配置，留空以保留当前值。',
                                   'Secret configured. Leave empty to keep the current value.',
                                 )
                               : localText(
-                                  '微信开放平�?PC 应用 AppSecret',
+                                  '微信开放平台 PC 应用 AppSecret',
                                   'WeChat Open Platform PC App Secret',
                                 )
                           "
@@ -2127,7 +2130,7 @@
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                           {{
                             localText(
-                              "仅在微信内浏览器可用；非微信环境下会显示不可用�?",
+                              "仅在微信内浏览器可用；非微信环境下会显示不可用。",
                               "Only available inside the WeChat browser. It is shown as unavailable outside WeChat.",
                             )
                           }}
@@ -2147,7 +2150,7 @@
                         <label
                           class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
                         >
-                          {{ localText("公众�?AppID", "Official Account App ID") }}
+                          {{ localText("公众号 AppID", "Official Account App ID") }}
                         </label>
                         <input
                           v-model="form.wechat_connect_mp_app_id"
@@ -2156,7 +2159,7 @@
                           class="input font-mono text-sm"
                           :placeholder="
                             localText(
-                              '公众�?AppID',
+                              '公众号 AppID',
                               'Official Account App ID',
                             )
                           "
@@ -2168,7 +2171,7 @@
                         >
                           {{
                             localText(
-                              "公众�?AppSecret",
+                              "公众号 AppSecret",
                               "Official Account App Secret",
                             )
                           }}
@@ -2181,11 +2184,11 @@
                           :placeholder="
                             form.wechat_connect_mp_app_secret_configured
                               ? localText(
-                                  '密钥已配置，留空以保留当前值�?',
+                                  '密钥已配置，留空以保留当前值。',
                                   'Secret configured. Leave empty to keep the current value.',
                                 )
                               : localText(
-                                  '公众�?AppSecret',
+                                  '公众号 AppSecret',
                                   'Official Account App Secret',
                                 )
                           "
@@ -2205,7 +2208,7 @@
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                           {{
                             localText(
-                              "原生移动端通过微信 SDK 唤起授权，网页端不会直接发起该流程�?",
+                              "原生移动端通过微信 SDK 唤起授权，网页端不会直接发起该流程。",
                               "Native mobile clients start authorization through the WeChat SDK. The web UI does not launch this flow directly.",
                             )
                           }}
@@ -2254,7 +2257,7 @@
                           :placeholder="
                             form.wechat_connect_mobile_app_secret_configured
                               ? localText(
-                                  '密钥已配置，留空以保留当前值�?',
+                                  '密钥已配置，留空以保留当前值。',
                                   'Secret configured. Leave empty to keep the current value.',
                                 )
                               : localText(
@@ -2278,7 +2281,7 @@
                 >
                   {{
                     localText(
-                      "如果同时启用 PC 应用和公众号/移动应用，这些应用需要挂在同一个微信开放平台主体下，否�?UnionID 无法稳定归并账号�?",
+                      "如果同时启用 PC 应用和公众号/移动应用，这些应用需要挂在同一个微信开放平台主体下，否则 UnionID 无法稳定归并账号。",
                       "When PC App is enabled together with Official Account or Mobile App, they should belong to the same WeChat Open Platform account so UnionID can merge identities reliably.",
                     )
                   }}
@@ -2306,7 +2309,7 @@
                     <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
                       {{
                         localText(
-                          "用于 PC 应用和公众号的网页回调。移动应用走原生 SDK 时不直接使用这个浏览器回调�?",
+                          "用于 PC 应用和公众号的网页回调。移动应用走原生 SDK 时不直接使用这个浏览器回调。",
                           "Used by PC App and Official Account browser callbacks. Native mobile SDK flows do not start from this browser callback directly.",
                         )
                       }}
@@ -2499,7 +2502,7 @@
                     <Toggle v-model="form.dingtalk_connect_bypass_registration" />
                   </div>
 
-                  <!-- 身份同步开关（�?internal_only 模式下可见） -->
+                  <!-- 身份同步开关（仅 internal_only 模式下可见） -->
                   <div
                     v-if="form.dingtalk_connect_corp_restriction_policy === 'internal_only'"
                     class="pt-4 border-t border-gray-100 dark:border-dark-700 space-y-2"
@@ -3049,7 +3052,7 @@
             </div>
           </div>
         </div>
-        <!-- /Tab: Security �?Registration, Turnstile, LinuxDo, OIDC -->
+        <!-- /Tab: Security — Registration, Turnstile, LinuxDo, OIDC -->
 
         <!-- Tab: Users -->
         <div v-show="activeTab === 'users'" class="space-y-6">
@@ -3260,7 +3263,7 @@
                 </div>
               </div>
 
-              <!-- �?新增：系统全局默认平台限额矩阵 -->
+              <!-- ★ 新增：系统全局默认平台限额矩阵 -->
               <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
                 <div class="mb-3">
                   <label class="font-medium text-gray-900 dark:text-white">
@@ -3598,7 +3601,7 @@
                       </div>
                     </div>
 
-                    <!-- �?新增：auth source 平台限额覆盖区块 -->
+                    <!-- ★ 新增：auth source 平台限额覆盖区块 -->
                     <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
                       <div class="mb-3">
                         <label class="font-medium text-gray-900 dark:text-white">
@@ -3667,7 +3670,7 @@
         </div>
         <!-- /Tab: Users -->
 
-        <!-- Tab: Gateway �?Claude Code, Scheduling -->
+        <!-- Tab: Gateway — Claude Code, Scheduling -->
         <div v-show="activeTab === 'gateway'" class="space-y-6">
           <!-- Claude Code Settings -->
           <div class="card">
@@ -4010,6 +4013,81 @@
                   </p>
                 </div>
                 <Toggle v-model="form.openai_advanced_scheduler_enabled" />
+              </div>
+
+              <div
+                v-if="form.openai_advanced_scheduler_enabled"
+                class="flex items-center justify-between border-t border-gray-100 pt-5 dark:border-dark-700"
+              >
+                <div>
+                  <label
+                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {{ t("admin.settings.openaiExperimentalScheduler.stickyWeightedTitle") }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {{
+                      t("admin.settings.openaiExperimentalScheduler.stickyWeightedDescription")
+                    }}
+                  </p>
+                </div>
+                <Toggle v-model="form.openai_advanced_scheduler_sticky_weighted_enabled" />
+              </div>
+
+              <div
+                v-if="form.openai_advanced_scheduler_enabled"
+                class="flex items-center justify-between border-t border-gray-100 pt-5 dark:border-dark-700"
+              >
+                <div>
+                  <label
+                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {{ t("admin.settings.openaiExperimentalScheduler.subscriptionPriorityTitle") }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {{
+                      t("admin.settings.openaiExperimentalScheduler.subscriptionPriorityDescription")
+                    }}
+                  </p>
+                </div>
+                <Toggle v-model="form.openai_advanced_scheduler_subscription_priority_enabled" />
+              </div>
+
+              <div
+                v-if="form.openai_advanced_scheduler_enabled"
+                class="border-t border-gray-100 pt-5 dark:border-dark-700"
+              >
+                <div>
+                  <label
+                    class="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {{ t("admin.settings.openaiExperimentalScheduler.weightsTitle") }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {{
+                      t("admin.settings.openaiExperimentalScheduler.weightsDescription")
+                    }}
+                  </p>
+                </div>
+
+                <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+                  <label
+                    v-for="field in openAIAdvancedSchedulerWeightFields"
+                    :key="field.key"
+                    class="block"
+                  >
+                    <span class="text-xs font-medium text-gray-600 dark:text-gray-400">
+                      {{ field.label }}
+                    </span>
+                    <input
+                      v-model="form[field.key]"
+                      class="input mt-1"
+                      inputmode="decimal"
+                      :placeholder="field.placeholder"
+                      type="text"
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -4365,7 +4443,7 @@
                 <Toggle v-model="form.rewrite_message_cache_control" />
               </div>
 
-              <!-- 客户�?dateline 归一化（�?Anthropic OAuth/SetupToken�?-->
+              <!-- 客户端 dateline 归一化（仅 Anthropic OAuth/SetupToken） -->
               <div class="flex items-center justify-between">
                 <div>
                   <label
@@ -4452,63 +4530,7 @@
 
             </div>
           </div>
-          <!-- Privacy Filter -->
-          <div class="card">
-            <div
-              class="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-4 dark:border-dark-700"
-            >
-              <div>
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                  {{ t("admin.settings.privacyFilter.title") }}
-                </h2>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  {{ t("admin.settings.privacyFilter.description") }}
-                </p>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  {{ t("admin.settings.privacyFilter.noRetention") }}
-                </p>
-              </div>
-              <Toggle v-model="form.privacy_filter_config.enabled" />
-            </div>
-            <div class="grid gap-3 p-6 md:grid-cols-2 xl:grid-cols-3">
-              <button
-                v-for="option in privacyFilterOptions"
-                :key="option.value"
-                type="button"
-                :class="[
-                  'flex min-h-[48px] items-center justify-between gap-3 rounded-lg border px-4 py-3 text-left transition-colors',
-                  isPrivacyFilterTypeSelected(option.value)
-                    ? 'border-primary-200 bg-primary-50 text-primary-800 dark:border-primary-500/40 dark:bg-primary-500/10 dark:text-primary-100'
-                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 dark:border-dark-700 dark:bg-dark-800 dark:text-gray-200',
-                  !form.privacy_filter_config.enabled && 'opacity-70',
-                ]"
-                :title="option.hint"
-                @click="togglePrivacyFilterType(option.value)"
-              >
-                <span class="flex min-w-0 items-center gap-2">
-                  <span class="truncate text-sm font-medium">
-                    {{ option.label }}
-                  </span>
-                  <span
-                    class="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-current text-[10px] opacity-50"
-                    :title="option.hint"
-                  >
-                    ?
-                  </span>
-                </span>
-                <span
-                  :class="[
-                    'inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs',
-                    isPrivacyFilterTypeSelected(option.value)
-                      ? 'border-primary-500 bg-primary-500 text-white'
-                      : 'border-gray-300 bg-white text-transparent dark:border-dark-500 dark:bg-dark-700',
-                  ]"
-                >
-                  <Icon name="check" size="xs" />
-                </span>
-              </button>
-            </div>
-          </div>
+
           <!-- Web Search Emulation -->
           <div class="card">
             <div
@@ -4602,7 +4624,7 @@
                           provider.quota_limit != null &&
                           provider.quota_limit > 0
                             ? provider.quota_limit
-                            : "�?"
+                            : "∞"
                         }}
                       </span>
                       <span
@@ -4652,7 +4674,7 @@
                           "
                           :placeholder="
                             provider.api_key_configured
-                              ? '•••••••�?'
+                              ? '••••••••'
                               : t(
                                   'admin.settings.webSearchEmulation.apiKeyPlaceholder',
                                 )
@@ -4753,7 +4775,7 @@
                           type="number"
                           min="1"
                           class="input text-sm"
-                          :placeholder="'0'"
+                          :placeholder="'∞'"
                         />
                         <p class="mt-0.5 text-xs text-gray-400">
                           {{
@@ -4824,7 +4846,7 @@
                           provider.quota_limit != null &&
                           provider.quota_limit > 0
                             ? provider.quota_limit
-                            : "�?"
+                            : "∞"
                         }}</span
                       >
                       <button
@@ -4974,7 +4996,7 @@
           </div>
         </div>
         </div>
-        <!-- /Tab: Gateway �?Claude Code, Scheduling -->
+        <!-- /Tab: Gateway — Claude Code, Scheduling -->
 
         <!-- Tab: General -->
         <div v-show="activeTab === 'general'" class="space-y-6">
@@ -5537,7 +5559,7 @@
 	                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
 	                    {{
 	                      localText(
-	                        "控制登录页是否要求用户先阅读并同意服务条款、隐私政策或其他 Markdown 文档�?",
+	                        "控制登录页是否要求用户先阅读并同意服务条款、隐私政策或其他 Markdown 文档。",
 	                        "Control whether the login page requires users to accept Markdown policy documents first.",
 	                      )
 	                    }}
@@ -5545,7 +5567,7 @@
 	                </div>
 	                <div class="flex items-center gap-3">
 	                  <span class="text-sm text-gray-600 dark:text-gray-300">
-                    {{ form.login_agreement_enabled ? localText("已启用", "Enabled") : localText("未启用", "Disabled") }}
+	                    {{ form.login_agreement_enabled ? localText("已启用", "Enabled") : localText("未启用", "Disabled") }}
 	                  </span>
 	                  <Toggle v-model="form.login_agreement_enabled" />
 	                </div>
@@ -5619,7 +5641,7 @@
                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       {{
                         localText(
-                          "文档名称可自定义，内容按 Markdown 保存。可参考：服务条款、使用政策、支持的国家和地区、服务特定条款�?",
+                          "文档名称可自定义，内容按 Markdown 保存。可参考：服务条款、使用政策、支持的国家和地区、服务特定条款。",
                           "Document titles are customizable and content is saved as Markdown.",
                         )
                       }}
@@ -5727,7 +5749,7 @@
         </div>
         <!-- /Tab: Login Agreement -->
 
-	        <!-- Tab: Features (功能开�? -->
+	        <!-- Tab: Features (功能开关) -->
         <div v-show="activeTab === 'features'" class="space-y-6">
 
         <div class="card">
@@ -5744,7 +5766,7 @@
                 class="inline-flex items-center gap-1 text-primary-600 hover:underline dark:text-primary-400"
               >
                 {{ t('admin.settings.features.channelMonitor.configureLink') }}
-                <span aria-hidden="true">�?/span>
+                <span aria-hidden="true">&rarr;</span>
               </router-link>
             </p>
           </div>
@@ -5794,7 +5816,7 @@
                 class="inline-flex items-center gap-1 text-primary-600 hover:underline dark:text-primary-400"
               >
                 {{ t('admin.settings.features.availableChannels.configureLink') }}
-                <span aria-hidden="true">�?/span>
+                <span aria-hidden="true">&rarr;</span>
               </router-link>
             </p>
           </div>
@@ -5827,7 +5849,7 @@
                 class="inline-flex items-center gap-1 text-primary-600 hover:underline dark:text-primary-400"
               >
                 {{ t('admin.settings.features.riskControl.configureLink') }}
-                <span aria-hidden="true">�?/span>
+                <span aria-hidden="true">&rarr;</span>
               </router-link>
             </p>
           </div>
@@ -5871,7 +5893,7 @@
           </div>
         </div>
 
-        <!-- Affiliate (邀请返�? feature card -->
+        <!-- Affiliate (邀请返利) feature card -->
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -6133,7 +6155,7 @@
                     ×
                   </button>
                 </div>
-                <!-- Search input + result dropdown �?hidden once a selection is made -->
+                <!-- Search input + result dropdown — hidden once a selection is made -->
                 <template v-else>
                   <input
                     v-model="affiliateModal.userQuery"
@@ -6455,6 +6477,34 @@
                             1
                           ).toFixed(2),
                         })
+                      }}
+                    </p>
+                  </div>
+                  <div>
+                    <label class="input-label">{{
+                      t("admin.settings.payment.subscriptionUsdToCnyRate")
+                    }}</label>
+                    <input
+                      :value="form.payment_subscription_usd_to_cny_rate || ''"
+                      @input="
+                        form.payment_subscription_usd_to_cny_rate =
+                          parseFloat(
+                            ($event.target as HTMLInputElement).value,
+                          ) || 0
+                      "
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      class="input"
+                      :placeholder="
+                        t(
+                          'admin.settings.payment.subscriptionUsdToCnyRateDisabled',
+                        )
+                      "
+                    />
+                    <p class="mt-0.5 text-xs text-gray-400">
+                      {{
+                        t("admin.settings.payment.subscriptionUsdToCnyRateHint")
                       }}
                     </p>
                   </div>
@@ -7285,8 +7335,6 @@ import type {
   DefaultSubscriptionSetting,
   DefaultPlatformQuotasMap,
   OpenAIFastPolicyRule,
-  PrivacyFilterConfig,
-  PrivacyFilterType,
   WeChatConnectMode,
   WebSearchEmulationConfig,
   WebSearchProviderConfig,
@@ -7318,6 +7366,7 @@ import { extractApiErrorMessage, extractI18nErrorMessage } from "@/utils/apiErro
 import { useAppStore } from "@/stores";
 import { useAdminSettingsStore } from "@/stores/adminSettings";
 import { normalizeVisibleMethod } from "@/components/payment/paymentFlow";
+import { normalizePrivacyFilterConfig } from "@/utils/privacyFilter";
 import {
   isRegistrationEmailSuffixDomainValid,
   normalizeRegistrationEmailSuffixDomain,
@@ -7348,7 +7397,7 @@ const paymentGuideHref = computed(() =>
 
 const paymentMethodsHref = computed(() =>
   locale.value.startsWith("zh")
-    ? "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md#支持的支付方�?"
+    ? "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md#支持的支付方式"
     : "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT.md#supported-payment-methods",
 );
 
@@ -7438,7 +7487,7 @@ const registrationEmailSuffixWhitelistTags = ref<string[]>([]);
 const registrationEmailSuffixWhitelistDraft = ref("");
 const tablePageSizeOptionsInput = ref("10, 20, 50, 100");
 
-// Admin API Key 状�?
+// Admin API Key 状态
 const adminApiKeyLoading = ref(true);
 const adminApiKeyExists = ref(false);
 const adminApiKeyMasked = ref("");
@@ -7446,7 +7495,7 @@ const adminApiKeyOperating = ref(false);
 const newAdminApiKey = ref("");
 const subscriptionGroups = ref<AdminGroup[]>([]);
 
-// Overload Cooldown (529) 状�?
+// Overload Cooldown (529) 状态
 const overloadCooldownLoading = ref(true);
 const overloadCooldownSaving = ref(false);
 const overloadCooldownForm = reactive({
@@ -7454,7 +7503,7 @@ const overloadCooldownForm = reactive({
   cooldown_minutes: 10,
 });
 
-// Rate Limit Cooldown (429) 状�?
+// Rate Limit Cooldown (429) 状态
 const rateLimit429CooldownLoading = ref(true);
 const rateLimit429CooldownSaving = ref(false);
 const rateLimit429CooldownForm = reactive({
@@ -7462,7 +7511,7 @@ const rateLimit429CooldownForm = reactive({
   cooldown_seconds: 5,
 });
 
-// Stream Timeout 状�?
+// Stream Timeout 状态
 const streamTimeoutLoading = ref(true);
 const streamTimeoutSaving = ref(false);
 const streamTimeoutForm = reactive({
@@ -7473,7 +7522,7 @@ const streamTimeoutForm = reactive({
   threshold_window_minutes: 10,
 });
 
-// Rectifier 状�?
+// Rectifier 状态
 const rectifierLoading = ref(true);
 const rectifierSaving = ref(false);
 const rectifierForm = reactive({
@@ -7484,7 +7533,7 @@ const rectifierForm = reactive({
   apikey_signature_patterns: [] as string[],
 });
 
-// Beta Policy 状�?
+// Beta Policy 状态
 const betaPolicyLoading = ref(true);
 const betaPolicySaving = ref(false);
 const betaPolicyForm = reactive({
@@ -7499,11 +7548,12 @@ const betaPolicyForm = reactive({
   }>,
 });
 
-// OpenAI Fast/Flex Policy 状�?
+// OpenAI Fast/Flex Policy 状态
 const openaiFastPolicyForm = reactive({
   rules: [] as OpenAIFastPolicyRule[],
 });
-// 标记 openai_fast_policy_settings 是否已成功从后端加载�?// 避免后端 GET 出错或字段缺失时，保存把默认规则覆盖成空数组�?
+// 标记 openai_fast_policy_settings 是否已成功从后端加载，
+// 避免后端 GET 出错或字段缺失时，保存把默认规则覆盖成空数组。
 const openaiFastPolicyLoaded = ref(false);
 
 const tablePageSizeMin = 5;
@@ -7822,56 +7872,6 @@ const claudeOAuthSystemPromptCacheTTLOptions = computed(() => [
   { value: "1h", label: t("admin.settings.gatewayForwarding.cacheTTL1h") },
 ]);
 
-const defaultPrivacyFilterTypes: PrivacyFilterType[] = [
-  "ip_address",
-  "email",
-  "phone",
-  "id_card",
-  "bank_card",
-  "api_key",
-  "token",
-  "private_key",
-  "random_string",
-];
-
-const privacyFilterOptions = computed(() =>
-  defaultPrivacyFilterTypes.map((value) => ({
-    value,
-    label: t(`admin.settings.privacyFilter.types.${value}`),
-    hint: t(`admin.settings.privacyFilter.hints.${value}`),
-  })),
-);
-
-function normalizePrivacyFilterConfig(
-  value?: Partial<PrivacyFilterConfig> | null,
-): PrivacyFilterConfig {
-  const selected = Array.isArray(value?.types)
-    ? value.types.filter((item): item is PrivacyFilterType =>
-        defaultPrivacyFilterTypes.includes(item as PrivacyFilterType),
-      )
-    : [...defaultPrivacyFilterTypes];
-  return {
-    enabled: value?.enabled === true,
-    types: [...new Set(selected)],
-  };
-}
-
-function isPrivacyFilterTypeSelected(type: PrivacyFilterType): boolean {
-  return form.privacy_filter_config.types.includes(type);
-}
-
-function togglePrivacyFilterType(type: PrivacyFilterType): void {
-  const current = new Set(form.privacy_filter_config.types);
-  if (current.has(type)) {
-    current.delete(type);
-  } else {
-    current.add(type);
-  }
-  form.privacy_filter_config.types = defaultPrivacyFilterTypes.filter((item) =>
-    current.has(item),
-  );
-}
-
 function getClaudeOAuthPresetLabel(
   preset: ClaudeOAuthSystemPromptPreset,
 ): string {
@@ -8007,7 +8007,19 @@ type SettingsForm = Omit<
   google_oauth_client_secret: string;
   force_email_on_third_party_signup: boolean;
   openai_advanced_scheduler_enabled: boolean;
-  // 系统全局平台限额 map；form 内始终归一化为�?4 平台对象（模板非空绑定依赖此不变量）
+  openai_advanced_scheduler_sticky_weighted_enabled: boolean;
+  openai_advanced_scheduler_subscription_priority_enabled: boolean;
+  openai_advanced_scheduler_lb_top_k: string;
+  openai_advanced_scheduler_weight_priority: string;
+  openai_advanced_scheduler_weight_load: string;
+  openai_advanced_scheduler_weight_queue: string;
+  openai_advanced_scheduler_weight_error_rate: string;
+  openai_advanced_scheduler_weight_ttft: string;
+  openai_advanced_scheduler_weight_reset: string;
+  openai_advanced_scheduler_weight_quota_headroom: string;
+  openai_advanced_scheduler_weight_previous_response: string;
+  openai_advanced_scheduler_weight_session_sticky: string;
+  // 系统全局平台限额 map；form 内始终归一化为全 4 平台对象（模板非空绑定依赖此不变量）
   default_platform_quotas: DefaultPlatformQuotasMap;
 };
 
@@ -8054,6 +8066,7 @@ const form = reactive<SettingsForm>({
   payment_order_timeout_minutes: 30,
   payment_balance_disabled: false,
   payment_balance_recharge_multiplier: 1,
+  payment_subscription_usd_to_cny_rate: 0,
   payment_recharge_fee_rate: 0,
   payment_enabled_types: [],
   payment_help_image_url: "",
@@ -8198,6 +8211,18 @@ const form = reactive<SettingsForm>({
   // 分组隔离
   allow_ungrouped_key_scheduling: false,
   openai_advanced_scheduler_enabled: false,
+  openai_advanced_scheduler_sticky_weighted_enabled: false,
+  openai_advanced_scheduler_subscription_priority_enabled: false,
+  openai_advanced_scheduler_lb_top_k: "",
+  openai_advanced_scheduler_weight_priority: "",
+  openai_advanced_scheduler_weight_load: "",
+  openai_advanced_scheduler_weight_queue: "",
+  openai_advanced_scheduler_weight_error_rate: "",
+  openai_advanced_scheduler_weight_ttft: "",
+  openai_advanced_scheduler_weight_reset: "",
+  openai_advanced_scheduler_weight_quota_headroom: "",
+  openai_advanced_scheduler_weight_previous_response: "",
+  openai_advanced_scheduler_weight_session_sticky: "",
   // Gateway forwarding behavior
   enable_fingerprint_unification: true,
   enable_metadata_passthrough: false,
@@ -8212,10 +8237,11 @@ const form = reactive<SettingsForm>({
   openai_codex_user_agent: "",
   openai_allow_claude_code_codex_plugin: false,
   privacy_filter_config: normalizePrivacyFilterConfig(),
+  // codex_cli_only 加固
   min_codex_version: "",
   max_codex_version: "",
-  codex_cli_only_blacklist: "[]",
-  codex_cli_only_whitelist: "[]",
+  codex_cli_only_blacklist: "",
+  codex_cli_only_whitelist: "",
   codex_cli_only_allow_app_server_clients: false,
   codex_cli_only_engine_fingerprint_signals: "",
   // 余额、订阅到期与账号限额通知
@@ -8230,10 +8256,107 @@ const form = reactive<SettingsForm>({
   channel_monitor_default_interval_seconds: 60,
   // Available Channels feature switch
   available_channels_enabled: false,
-  // Affiliate (邀请返�? feature switch
+  // Affiliate (邀请返利) feature switch
   affiliate_enabled: false,
   // Allow user view error requests
   allow_user_view_error_requests: false,
+});
+
+type OpenAIAdvancedSchedulerOverrideKey =
+  | "openai_advanced_scheduler_lb_top_k"
+  | "openai_advanced_scheduler_weight_priority"
+  | "openai_advanced_scheduler_weight_load"
+  | "openai_advanced_scheduler_weight_queue"
+  | "openai_advanced_scheduler_weight_error_rate"
+  | "openai_advanced_scheduler_weight_ttft"
+  | "openai_advanced_scheduler_weight_reset"
+  | "openai_advanced_scheduler_weight_quota_headroom"
+  | "openai_advanced_scheduler_weight_previous_response"
+  | "openai_advanced_scheduler_weight_session_sticky";
+
+type OpenAIAdvancedSchedulerEffectiveKey =
+  | "openai_advanced_scheduler_effective_lb_top_k"
+  | "openai_advanced_scheduler_effective_weight_priority"
+  | "openai_advanced_scheduler_effective_weight_load"
+  | "openai_advanced_scheduler_effective_weight_queue"
+  | "openai_advanced_scheduler_effective_weight_error_rate"
+  | "openai_advanced_scheduler_effective_weight_ttft"
+  | "openai_advanced_scheduler_effective_weight_reset"
+  | "openai_advanced_scheduler_effective_weight_quota_headroom"
+  | "openai_advanced_scheduler_effective_weight_previous_response"
+  | "openai_advanced_scheduler_effective_weight_session_sticky";
+
+const openAIAdvancedSchedulerWeightFields = computed<
+  Array<{
+    key: OpenAIAdvancedSchedulerOverrideKey;
+    label: string;
+    placeholder: string;
+  }>
+>(() => {
+  const placeholder = (
+    effectiveKey: OpenAIAdvancedSchedulerEffectiveKey,
+    fallbackValue: string,
+  ) => {
+    const effectiveValue = String(
+      (form as Record<string, unknown>)[effectiveKey] ?? "",
+    ).trim();
+    return t("admin.settings.openaiExperimentalScheduler.defaultPlaceholder", {
+      value: effectiveValue || fallbackValue,
+    });
+  };
+
+  return [
+    {
+      key: "openai_advanced_scheduler_lb_top_k",
+      label: t("admin.settings.openaiExperimentalScheduler.topKLabel"),
+      placeholder: placeholder("openai_advanced_scheduler_effective_lb_top_k", "7"),
+    },
+    {
+      key: "openai_advanced_scheduler_weight_priority",
+      label: t("admin.settings.openaiExperimentalScheduler.priorityWeight"),
+      placeholder: placeholder("openai_advanced_scheduler_effective_weight_priority", "1"),
+    },
+    {
+      key: "openai_advanced_scheduler_weight_load",
+      label: t("admin.settings.openaiExperimentalScheduler.loadWeight"),
+      placeholder: placeholder("openai_advanced_scheduler_effective_weight_load", "1"),
+    },
+    {
+      key: "openai_advanced_scheduler_weight_queue",
+      label: t("admin.settings.openaiExperimentalScheduler.queueWeight"),
+      placeholder: placeholder("openai_advanced_scheduler_effective_weight_queue", "0.7"),
+    },
+    {
+      key: "openai_advanced_scheduler_weight_error_rate",
+      label: t("admin.settings.openaiExperimentalScheduler.errorRateWeight"),
+      placeholder: placeholder("openai_advanced_scheduler_effective_weight_error_rate", "0.8"),
+    },
+    {
+      key: "openai_advanced_scheduler_weight_ttft",
+      label: t("admin.settings.openaiExperimentalScheduler.ttftWeight"),
+      placeholder: placeholder("openai_advanced_scheduler_effective_weight_ttft", "0.5"),
+    },
+    {
+      key: "openai_advanced_scheduler_weight_reset",
+      label: t("admin.settings.openaiExperimentalScheduler.resetWeight"),
+      placeholder: placeholder("openai_advanced_scheduler_effective_weight_reset", "0"),
+    },
+    {
+      key: "openai_advanced_scheduler_weight_quota_headroom",
+      label: t("admin.settings.openaiExperimentalScheduler.quotaHeadroomWeight"),
+      placeholder: placeholder("openai_advanced_scheduler_effective_weight_quota_headroom", "0"),
+    },
+    {
+      key: "openai_advanced_scheduler_weight_previous_response",
+      label: t("admin.settings.openaiExperimentalScheduler.previousResponseWeight"),
+      placeholder: placeholder("openai_advanced_scheduler_effective_weight_previous_response", "5"),
+    },
+    {
+      key: "openai_advanced_scheduler_weight_session_sticky",
+      label: t("admin.settings.openaiExperimentalScheduler.sessionStickyWeight"),
+      placeholder: placeholder("openai_advanced_scheduler_effective_weight_session_sticky", "3"),
+    },
+  ];
 });
 
 const authSourceDefaults = reactive<AuthSourceDefaultsState>(
@@ -8265,7 +8388,7 @@ const authSourceDefaultsMeta = computed(() => [
     source: "github" as AuthSourceType,
     title: "GitHub",
     description: localText(
-      "通过 GitHub 已验证邮箱首次注册或首次绑定时应用�?",
+      "通过 GitHub 已验证邮箱首次注册或首次绑定时应用。",
       "Applied on first signup or first bind through a verified GitHub email.",
     ),
   },
@@ -8273,7 +8396,7 @@ const authSourceDefaultsMeta = computed(() => [
     source: "google" as AuthSourceType,
     title: "Google",
     description: localText(
-      "通过 Google 已验证邮箱首次注册或首次绑定时应用�?",
+      "通过 Google 已验证邮箱首次注册或首次绑定时应用。",
       "Applied on first signup or first bind through a verified Google email.",
     ),
   },
@@ -8281,7 +8404,7 @@ const authSourceDefaultsMeta = computed(() => [
     source: "dingtalk" as AuthSourceType,
     title: t("auth.dingtalkProviderName"),
     description: localText(
-      "通过钉钉首次注册或首次绑定时应用�?",
+      "通过钉钉首次注册或首次绑定时应用。",
       "Applied on first signup or first bind through DingTalk.",
     ),
   },
@@ -8480,7 +8603,7 @@ const defaultSubscriptionGroupOptions = computed<
 const registrationEmailSuffixWhitelistSeparatorKeys = new Set([
   " ",
   ",",
-  "�?",
+  "，",
   "Enter",
   "Tab",
 ]);
@@ -8809,11 +8932,11 @@ function parseTablePageSizeOptionsInput(raw: string): number[] | null {
   return deduped;
 }
 
-// ── codex_cli_only �?白名单结构化编辑（行 �?JSON）──
+// ── codex_cli_only 黑/白名单结构化编辑（行 ↔ JSON）──
 interface CodexClientRow {
   originator: string;
-  uaContains: string; // 逗号分隔，序列化时拆�?ua_contains 数组
-  skipEngineFingerprint?: boolean; // 仅白名单：命中即跳过引擎指纹
+  uaContains: string; // 逗号分隔，序列化时拆成 ua_contains 数组
+  skipEngineFingerprint?: boolean; // 仅白名单：命中即跳过引擎指纹门
 }
 const codexBlacklistRows = ref<CodexClientRow[]>([]);
 const codexWhitelistRows = ref<CodexClientRow[]>([]);
@@ -9014,7 +9137,7 @@ async function loadSettings() {
 
     // Load OpenAI fast/flex policy rules from bulk settings.
     // 仅当 payload 真的包含该字段时填充并标记为已加载；否则保持表单空值，
-    // �?saveSettings 在未加载时跳过该字段，防止覆盖后端默认规则�?
+    // 让 saveSettings 在未加载时跳过该字段，防止覆盖后端默认规则。
     if (
       settings.openai_fast_policy_settings &&
       Array.isArray(settings.openai_fast_policy_settings.rules)
@@ -9150,7 +9273,7 @@ async function saveSettings() {
     if (form.login_agreement_enabled && normalizedLoginAgreementDocuments.length === 0) {
       appStore.showError(
         localText(
-          "启用登录条款确认时，至少需要保留一份文档�?",
+          "启用登录条款确认时，至少需要保留一份文档。",
           "At least one document is required when login agreement is enabled.",
         ),
       );
@@ -9162,7 +9285,7 @@ async function saveSettings() {
     if (emptyTitleDocument) {
       appStore.showError(
         localText(
-          "登录条款文档名称不能为空�?",
+          "登录条款文档名称不能为空。",
           "Login agreement document title cannot be empty.",
         ),
       );
@@ -9173,7 +9296,7 @@ async function saveSettings() {
     if (duplicateLoginAgreementDocumentId) {
       appStore.showError(
         localText(
-          `登录条款文档路由不能重复�?legal/${duplicateLoginAgreementDocumentId}`,
+          `登录条款文档路由不能重复：/legal/${duplicateLoginAgreementDocumentId}`,
           `Login agreement document routes cannot be duplicated: /legal/${duplicateLoginAgreementDocumentId}`,
         ),
       );
@@ -9222,13 +9345,13 @@ async function saveSettings() {
     if (form.wechat_connect_mp_enabled && form.wechat_connect_mobile_enabled) {
       appStore.showError(
         localText(
-          "公众号和移动应用不能同时启用�?",
+          "公众号和移动应用不能同时启用。",
           "Official Account and Mobile App cannot be enabled at the same time.",
         ),
       );
       return;
     }
-    // Validate URL fields �?novalidate disables browser-native checks, so we validate here
+    // Validate URL fields — novalidate disables browser-native checks, so we validate here
     const isValidHttpUrl = (url: string): boolean => {
       if (!url) return true;
       try {
@@ -9422,18 +9545,23 @@ async function saveSettings() {
         form.antigravity_user_agent_version?.trim() || "",
       openai_codex_user_agent:
         form.openai_codex_user_agent?.trim() || "",
-      openai_allow_claude_code_codex_plugin: form.openai_allow_claude_code_codex_plugin,
+      openai_allow_claude_code_codex_plugin:
+        form.openai_allow_claude_code_codex_plugin,
       privacy_filter_config: normalizePrivacyFilterConfig(
         form.privacy_filter_config,
       ),
       min_codex_version: form.min_codex_version?.trim() || "",
       max_codex_version: form.max_codex_version?.trim() || "",
-      codex_cli_only_blacklist: serializeCodexRowsToJSON(codexBlacklistRows.value),
-      codex_cli_only_whitelist: serializeCodexRowsToJSON(codexWhitelistRows.value),
       codex_cli_only_allow_app_server_clients:
         form.codex_cli_only_allow_app_server_clients,
       codex_cli_only_engine_fingerprint_signals: serializeFingerprintRowsToJSON(
         codexFingerprintRows.value,
+      ),
+      codex_cli_only_blacklist: serializeCodexRowsToJSON(
+        codexBlacklistRows.value,
+      ),
+      codex_cli_only_whitelist: serializeCodexRowsToJSON(
+        codexWhitelistRows.value,
       ),
       // Payment configuration
       payment_enabled: form.payment_enabled,
@@ -9450,6 +9578,8 @@ async function saveSettings() {
       payment_balance_disabled: form.payment_balance_disabled,
       payment_balance_recharge_multiplier:
         Number(form.payment_balance_recharge_multiplier) || 1,
+      payment_subscription_usd_to_cny_rate:
+        Number(form.payment_subscription_usd_to_cny_rate) || 0,
       payment_recharge_fee_rate: Number(form.payment_recharge_fee_rate) || 0,
       payment_enabled_types: form.payment_enabled_types,
       payment_load_balance_strategy: form.payment_load_balance_strategy,
@@ -9467,6 +9597,30 @@ async function saveSettings() {
         form.payment_cancel_rate_limit_window_mode,
       payment_alipay_force_qrcode: form.payment_alipay_force_qrcode,
       openai_advanced_scheduler_enabled: form.openai_advanced_scheduler_enabled,
+      openai_advanced_scheduler_sticky_weighted_enabled:
+        form.openai_advanced_scheduler_sticky_weighted_enabled,
+      openai_advanced_scheduler_subscription_priority_enabled:
+        form.openai_advanced_scheduler_subscription_priority_enabled,
+      openai_advanced_scheduler_lb_top_k:
+        form.openai_advanced_scheduler_lb_top_k.trim(),
+      openai_advanced_scheduler_weight_priority:
+        form.openai_advanced_scheduler_weight_priority.trim(),
+      openai_advanced_scheduler_weight_load:
+        form.openai_advanced_scheduler_weight_load.trim(),
+      openai_advanced_scheduler_weight_queue:
+        form.openai_advanced_scheduler_weight_queue.trim(),
+      openai_advanced_scheduler_weight_error_rate:
+        form.openai_advanced_scheduler_weight_error_rate.trim(),
+      openai_advanced_scheduler_weight_ttft:
+        form.openai_advanced_scheduler_weight_ttft.trim(),
+      openai_advanced_scheduler_weight_reset:
+        form.openai_advanced_scheduler_weight_reset.trim(),
+      openai_advanced_scheduler_weight_quota_headroom:
+        form.openai_advanced_scheduler_weight_quota_headroom.trim(),
+      openai_advanced_scheduler_weight_previous_response:
+        form.openai_advanced_scheduler_weight_previous_response.trim(),
+      openai_advanced_scheduler_weight_session_sticky:
+        form.openai_advanced_scheduler_weight_session_sticky.trim(),
       // 余额、订阅到期与账号限额通知
       balance_low_notify_enabled: form.balance_low_notify_enabled,
       balance_low_notify_threshold:
@@ -9485,12 +9639,13 @@ async function saveSettings() {
         Number(form.channel_monitor_default_interval_seconds) || 60,
       // Available Channels feature switch
       available_channels_enabled: form.available_channels_enabled,
-      // Affiliate (邀请返�? feature switch
+      // Affiliate (邀请返利) feature switch
       affiliate_enabled: form.affiliate_enabled,
       allow_user_view_error_requests: form.allow_user_view_error_requests,
     };
 
-    // 仅当 openai_fast_policy_settings 已成功从后端加载时才回写�?    // 否则省略整个字段，让后端保留既有规则（含默认值）�?
+    // 仅当 openai_fast_policy_settings 已成功从后端加载时才回写，
+    // 否则省略整个字段，让后端保留既有规则（含默认值）。
     if (openaiFastPolicyLoaded.value) {
       payload.openai_fast_policy_settings = {
         rules: openaiFastPolicyForm.rules.map((rule) => {
@@ -9832,7 +9987,7 @@ async function loadRectifierSettings() {
   try {
     const settings = await adminAPI.settings.getRectifierSettings();
     Object.assign(rectifierForm, settings);
-    // 确保 patterns 是数组（旧数据可能为 null�?
+    // 确保 patterns 是数组（旧数据可能为 null）
     if (!Array.isArray(rectifierForm.apikey_signature_patterns)) {
       rectifierForm.apikey_signature_patterns = [];
     }
@@ -9910,7 +10065,7 @@ const betaPresets: Record<
   ],
 };
 
-// 常用模型模式（具�?ID + 通配符示例）
+// 常用模型模式（具体 ID + 通配符示例）
 const commonModelPatterns = [
   "claude-opus-4-6",
   "claude-sonnet-4-6",
@@ -10080,7 +10235,7 @@ function togglePaymentType(type: string) {
 
 async function disableProvidersByType(type: string) {
   const matching = providers.value.filter(
-    (p) => p.enabled && providerInstanceClaimsPaymentType(p, type),
+    (p) => p.provider_key === type && p.enabled,
   );
   for (const p of matching) {
     try {
@@ -10090,13 +10245,6 @@ async function disableProvidersByType(type: string) {
       slog("disable provider failed", p.id, err);
     }
   }
-}
-
-function providerInstanceClaimsPaymentType(provider: ProviderInstance, type: string): boolean {
-  if (type === "alipay" || type === "wxpay") {
-    return getProviderVisibleMethods(provider).includes(type);
-  }
-  return provider.provider_key === type;
 }
 
 function slog(...args: unknown[]) {
@@ -10116,7 +10264,6 @@ const providerDialogRef = ref<InstanceType<
 
 const providerKeyOptions = computed(() => [
   { value: "easypay", label: t("admin.settings.payment.providerEasypay") },
-  { value: "personal_qrcode", label: t("admin.settings.payment.providerPersonalQRCode") },
   { value: "alipay", label: t("admin.settings.payment.providerAlipay") },
   { value: "wxpay", label: t("admin.settings.payment.providerWxpay") },
   { value: "stripe", label: t("admin.settings.payment.providerStripe") },
@@ -10125,20 +10272,8 @@ const providerKeyOptions = computed(() => [
 
 const enabledProviderKeyOptions = computed(() => {
   const enabled = form.payment_enabled_types;
-  return providerKeyOptions.value.filter((opt) =>
-    providerKeyEnabledByGlobalTypes(opt.value, enabled),
-  );
+  return providerKeyOptions.value.filter((opt) => enabled.includes(opt.value));
 });
-
-function providerKeyEnabledByGlobalTypes(providerKey: string, enabledTypes: string[]): boolean {
-  if (enabledTypes.includes(providerKey)) {
-    return true;
-  }
-  if (providerKey === "easypay" || providerKey === "personal_qrcode") {
-    return enabledTypes.includes("alipay") || enabledTypes.includes("wxpay");
-  }
-  return false;
-}
 
 const loadBalanceOptions = computed(() => [
   {
@@ -10214,10 +10349,7 @@ function getProviderVisibleMethods(
         }
       });
     }
-  } else if (
-    provider.provider_key === "easypay" ||
-    provider.provider_key === "personal_qrcode"
-  ) {
+  } else if (provider.provider_key === "easypay") {
     supportedTypes.forEach(addMethod);
   }
 
@@ -10268,7 +10400,7 @@ async function loadProviders() {
   try {
     const res = await adminAPI.payment.getProviders();
     // Normalize supported_types: backend returns null when the list is empty
-    // (Go nil slice �?JSON null). Without this, ProviderCard's isSelected()'
+    // (Go nil slice → JSON null). Without this, ProviderCard's isSelected()
     // throws TypeError on null.includes(), causing the card to vanish.
     providers.value = (res.data || []).map((p) => ({
       ...p,
@@ -10444,7 +10576,7 @@ onMounted(() => {
 });
 
 // =========================
-// Affiliate (邀请返�? 专属用户管理
+// Affiliate (邀请返利) 专属用户管理
 // =========================
 
 interface AffiliateState {
@@ -10679,7 +10811,7 @@ function clearSelectedAffiliateUser() {
 
 // affiliateModalCanSubmit guards the Save button: must have a user picked AND
 // produce at least one field change. Without this the admin could "save" an
-// empty payload that silently does nothing �?the user reported exactly that
+// empty payload that silently does nothing — the user reported exactly that
 // confusion.
 const affiliateModalCanSubmit = computed(() => {
   if (affiliateModal.mode === "add") {
@@ -10785,7 +10917,7 @@ async function submitAffiliateBatchModal() {
 
 // Load the per-user table the first time the affiliate switch is observed
 // as enabled. The form starts disabled and is updated to the server's value
-// after the settings load �?so this fires either when the saved value is
+// after the settings load — so this fires either when the saved value is
 // truthy on first paint, or when the admin manually toggles it on.
 watch(
   () => form.affiliate_enabled,
@@ -10796,7 +10928,9 @@ watch(
   },
 );
 
-// bypass_registration 与身份同步三开关仅�?internal_only 模式下生效。切�?policy 到其它值时�?// 立即把相关字段重置为 false，避免保存请求里残留旧值。后�?admin handler �?// 配置加载层都�?coerce 兜底，这里是 UX 层的同步而非安全防线�?
+// bypass_registration 与身份同步三开关仅在 internal_only 模式下生效。切换 policy 到其它值时，
+// 立即把相关字段重置为 false，避免保存请求里残留旧值。后端 admin handler 与
+// 配置加载层都有 coerce 兜底，这里是 UX 层的同步而非安全防线。
 watch(
   () => form.dingtalk_connect_corp_restriction_policy,
   (policy) => {

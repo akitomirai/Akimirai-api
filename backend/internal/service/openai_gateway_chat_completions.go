@@ -39,6 +39,8 @@ var cursorResponsesUnsupportedFields = []string{
 	"stream_options",
 }
 
+const openAIChatCompletionsSlowFirstTokenThresholdMs int64 = 5000
+
 // ForwardAsChatCompletions accepts a Chat Completions request body, converts it
 // to OpenAI Responses API format, forwards to the OpenAI upstream, and converts
 // the response back to Chat Completions format.
@@ -85,6 +87,7 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 	}
 
 	startTime := time.Now()
+	requestPrepareStart := time.Now()
 
 	// 1. Parse Chat Completions request
 	var chatReq apicompat.ChatCompletionsRequest
@@ -224,9 +227,12 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 			}
 		}
 	}
+	requestPrepareLatencyMs := time.Since(requestPrepareStart).Milliseconds()
 
 	// 4b. Apply OpenAI fast policy (may filter service_tier or block the request).
+	policyStart := time.Now()
 	updatedBody, policyErr := s.applyOpenAIFastPolicyToBody(ctx, account, upstreamModel, responsesBody)
+	policyLatencyMs := time.Since(policyStart).Milliseconds()
 	if policyErr != nil {
 		var blocked *OpenAIFastBlockedError
 		if errors.As(policyErr, &blocked) {
@@ -238,12 +244,15 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 	responsesBody = updatedBody
 
 	// 5. Get access token
+	tokenStart := time.Now()
 	token, _, err := s.GetAccessToken(ctx, account)
+	tokenLatencyMs := time.Since(tokenStart).Milliseconds()
 	if err != nil {
 		return nil, fmt.Errorf("get access token: %w", err)
 	}
 
 	// 6. Build upstream request
+	buildRequestStart := time.Now()
 	upstreamCtx, releaseUpstreamCtx := detachUpstreamContext(ctx)
 	upstreamReq, err := s.buildUpstreamRequest(upstreamCtx, c, account, responsesBody, token, true, promptCacheKey, false)
 	releaseUpstreamCtx()
@@ -255,13 +264,22 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 		apiKeyID := getAPIKeyIDFromContext(c)
 		upstreamReq.Header.Set("session_id", generateSessionUUID(isolateOpenAISessionID(apiKeyID, promptCacheKey)))
 	}
+	buildRequestLatencyMs := time.Since(buildRequestStart).Milliseconds()
 
 	// 7. Send request
 	proxyURL := ""
 	if account.Proxy != nil {
 		proxyURL = account.Proxy.URL()
 	}
+	upstreamWireBodyBytes := upstreamReq.ContentLength
+	if upstreamWireBodyBytes < 0 {
+		upstreamWireBodyBytes = 0
+	}
+	upstreamRequestGzip := strings.EqualFold(upstreamReq.Header.Get("Content-Encoding"), "gzip")
+	upstreamStart := time.Now()
 	resp, err := s.httpUpstream.Do(upstreamReq, proxyURL, account.ID, account.Concurrency)
+	upstreamLatencyMs := time.Since(upstreamStart).Milliseconds()
+	SetOpsLatencyMs(c, OpsUpstreamLatencyMsKey, upstreamLatencyMs)
 	if err != nil {
 		return nil, s.handleOpenAIUpstreamTransportError(ctx, c, account, err, false)
 	}
@@ -322,6 +340,28 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 	} else {
 		result, handleErr = s.handleChatBufferedStreamingResponse(resp, c, account, originalModel, billingModel, upstreamModel, startTime)
 	}
+	if result != nil && result.FirstTokenMs != nil {
+		logOpenAIChatCompletionsSlowFirstToken(
+			account,
+			result.RequestID,
+			originalModel,
+			billingModel,
+			upstreamModel,
+			clientStream,
+			isResponsesShape,
+			upstreamRequestGzip,
+			len(body),
+			len(responsesBody),
+			upstreamWireBodyBytes,
+			requestPrepareLatencyMs,
+			policyLatencyMs,
+			tokenLatencyMs,
+			buildRequestLatencyMs,
+			upstreamStart.Sub(startTime).Milliseconds(),
+			upstreamLatencyMs,
+			*result.FirstTokenMs,
+		)
+	}
 
 	// cyber_policy：标记已设、error 已按 Chat Completions 格式发给客户端。丢弃 result、
 	// 返回哨兵，使 handler 落入 tokens=0 免费用量行（对齐 /v1/responses），不计费、不 failover。
@@ -353,6 +393,65 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 	}
 
 	return result, handleErr
+}
+
+func logOpenAIChatCompletionsSlowFirstToken(
+	account *Account,
+	requestID string,
+	originalModel string,
+	billingModel string,
+	upstreamModel string,
+	clientStream bool,
+	responsesShape bool,
+	upstreamRequestGzip bool,
+	requestBodyBytes int,
+	responsesBodyBytes int,
+	upstreamWireBodyBytes int64,
+	requestPrepareLatencyMs int64,
+	policyLatencyMs int64,
+	tokenLatencyMs int64,
+	buildRequestLatencyMs int64,
+	preUpstreamLatencyMs int64,
+	upstreamLatencyMs int64,
+	firstTokenMs int,
+) {
+	if int64(firstTokenMs) < openAIChatCompletionsSlowFirstTokenThresholdMs {
+		return
+	}
+	firstFrameAfterHeadersMs := int64(firstTokenMs) - preUpstreamLatencyMs - upstreamLatencyMs
+	if firstFrameAfterHeadersMs < 0 {
+		firstFrameAfterHeadersMs = 0
+	}
+
+	fields := []zap.Field{
+		zap.String("request_id", requestID),
+		zap.String("original_model", originalModel),
+		zap.String("billing_model", billingModel),
+		zap.String("upstream_model", upstreamModel),
+		zap.Bool("client_stream", clientStream),
+		zap.Bool("responses_shape", responsesShape),
+		zap.Bool("upstream_request_gzip", upstreamRequestGzip),
+		zap.Int("request_body_bytes", requestBodyBytes),
+		zap.Int("responses_body_bytes", responsesBodyBytes),
+		zap.Int64("upstream_wire_body_bytes", upstreamWireBodyBytes),
+		zap.Int64("request_prepare_ms", requestPrepareLatencyMs),
+		zap.Int64("policy_ms", policyLatencyMs),
+		zap.Int64("token_ms", tokenLatencyMs),
+		zap.Int64("build_request_ms", buildRequestLatencyMs),
+		zap.Int64("pre_upstream_ms", preUpstreamLatencyMs),
+		zap.Int64("upstream_headers_ms", upstreamLatencyMs),
+		zap.Int64("first_frame_after_headers_ms", firstFrameAfterHeadersMs),
+		zap.Int("first_token_ms", firstTokenMs),
+	}
+	if account != nil {
+		fields = append(fields,
+			zap.Int64("account_id", account.ID),
+			zap.String("platform", account.Platform),
+			zap.String("account_type", account.Type),
+			zap.Bool("has_proxy", account.Proxy != nil),
+		)
+	}
+	logger.L().Warn("openai chat_completions: slow first upstream event", fields...)
 }
 
 func normalizeResponsesRequestServiceTier(req *apicompat.ResponsesRequest) {

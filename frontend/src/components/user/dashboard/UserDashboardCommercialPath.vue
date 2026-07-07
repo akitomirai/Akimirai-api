@@ -133,10 +133,6 @@
         </div>
       </div>
       <div class="mt-4 flex flex-wrap gap-2">
-        <router-link class="btn btn-sm btn-primary" :to="quickStartTo">
-          <Icon name="book" size="sm" />
-          {{ t('dashboard.commercial.viewQuickStart') }}
-        </router-link>
         <router-link class="btn btn-sm btn-secondary" to="/keys">
           <Icon name="key" size="sm" />
           {{ t('dashboard.commercial.createKey') }}
@@ -292,11 +288,6 @@ const lastUsedAt = computed(() => {
     .filter((value): value is string => !!value)
     .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] || ''
 })
-const quickStartTo = computed(() => (
-  props.recommendedModel
-    ? { path: '/quick-start', query: { model: props.recommendedModel } }
-    : '/quick-start'
-))
 const availableModelsCountLabel = computed(() =>
   t('dashboard.commercial.availableModelsCount', `${props.availableModelCount} available models`)
 )

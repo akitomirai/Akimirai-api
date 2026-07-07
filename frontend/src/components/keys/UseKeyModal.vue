@@ -6,36 +6,6 @@
     @close="emit('close')"
   >
     <div class="space-y-4">
-      <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p class="text-sm font-semibold text-amber-800 dark:text-amber-200">
-              {{ t('keys.useKeyModal.immediateCopyNotice') }}
-            </p>
-            <dl class="mt-3 grid gap-2 text-xs text-amber-700 dark:text-amber-300 sm:grid-cols-2">
-              <div>
-                <dt class="font-medium">{{ t('keys.useKeyModal.keyName') }}</dt>
-                <dd class="mt-1 break-all font-mono">{{ keyName || '-' }}</dd>
-              </div>
-              <div>
-                <dt class="font-medium">{{ t('keys.useKeyModal.keyPrefix') }}</dt>
-                <dd class="mt-1 break-all font-mono">{{ maskedKey }}</dd>
-              </div>
-            </dl>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <button class="btn btn-sm btn-primary" type="button" @click="copySecret">
-              <Icon name="copy" size="sm" />
-              {{ t('keys.useKeyModal.copyApiKey') }}
-            </button>
-            <button class="btn btn-sm btn-secondary" type="button" @click="copyBaseUrl">
-              <Icon name="copy" size="sm" />
-              {{ t('keys.useKeyModal.copyBaseUrl') }}
-            </button>
-          </div>
-        </div>
-      </div>
-
       <!-- No Group Assigned Warning -->
       <div v-if="!platform" class="flex items-start gap-3 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
         <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
@@ -57,6 +27,63 @@
         <p class="text-sm text-gray-600 dark:text-gray-400">
           {{ platformDescription }}
         </p>
+
+        <div
+          v-if="allowImageGeneration"
+          class="rounded-xl border border-cyan-100 bg-cyan-50/70 p-4 dark:border-cyan-900/50 dark:bg-cyan-950/20"
+        >
+          <div class="flex items-start gap-3">
+            <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300">
+              <Icon name="sparkles" size="sm" />
+            </span>
+            <div class="min-w-0 flex-1">
+              <h3 class="text-sm font-semibold text-cyan-950 dark:text-cyan-100">
+                {{ t('keys.useKeyModal.gptImage.title') }}
+              </h3>
+              <p class="mt-1 text-sm text-cyan-800 dark:text-cyan-200">
+                {{ t('keys.useKeyModal.gptImage.description') }}
+              </p>
+            </div>
+          </div>
+
+          <dl class="mt-4 grid gap-2 text-xs sm:grid-cols-2">
+            <div class="rounded-lg bg-white/75 p-3 dark:bg-dark-900/60">
+              <dt class="font-medium text-gray-500 dark:text-gray-400">{{ t('keys.useKeyModal.gptImage.apiUrl') }}</dt>
+              <dd class="mt-1 break-all font-mono text-gray-950 dark:text-white">{{ gptImageApiUrl }}</dd>
+            </div>
+            <div class="rounded-lg bg-white/75 p-3 dark:bg-dark-900/60">
+              <dt class="font-medium text-gray-500 dark:text-gray-400">{{ t('keys.useKeyModal.gptImage.apiKey') }}</dt>
+              <dd class="mt-1 break-all font-mono text-gray-950 dark:text-white">{{ apiKey }}</dd>
+            </div>
+            <div class="rounded-lg bg-white/75 p-3 dark:bg-dark-900/60">
+              <dt class="font-medium text-gray-500 dark:text-gray-400">{{ t('keys.useKeyModal.gptImage.apiMode') }}</dt>
+              <dd class="mt-1 font-mono text-gray-950 dark:text-white">images</dd>
+            </div>
+            <div class="rounded-lg bg-white/75 p-3 dark:bg-dark-900/60">
+              <dt class="font-medium text-gray-500 dark:text-gray-400">{{ t('keys.useKeyModal.gptImage.model') }}</dt>
+              <dd class="mt-1 font-mono text-gray-950 dark:text-white">{{ gptImageModel }}</dd>
+            </div>
+          </dl>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              @click="copyGptImageConfig"
+            >
+              <Icon :name="copiedGptImageConfig ? 'check' : 'clipboard'" size="sm" />
+              {{ copiedGptImageConfig ? t('keys.useKeyModal.gptImage.copied') : t('keys.useKeyModal.gptImage.copyConfig') }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              @click="openGptImage"
+            >
+              <Icon name="externalLink" size="sm" />
+              {{ t('keys.useKeyModal.gptImage.open') }}
+            </button>
+          </div>
+        </div>
 
         <!-- Client Tabs -->
         <div v-if="clientTabs.length" class="border-b border-gray-200 dark:border-dark-700">
@@ -153,13 +180,6 @@
     <template #footer>
       <div class="flex flex-wrap justify-end gap-2">
         <button
-          @click="goTo('/quick-start')"
-          class="btn btn-primary"
-        >
-          <Icon name="book" size="sm" />
-          {{ t('keys.useKeyModal.nextQuickStart') }}
-        </button>
-        <button
           @click="goTo('/usage')"
           class="btn btn-secondary"
         >
@@ -184,7 +204,6 @@ import { useRouter } from 'vue-router'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useClipboard } from '@/composables/useClipboard'
-import { getBrowserOriginFallback, normalizeOpenAIBaseUrl } from '@/utils/quickStart'
 import type { GroupPlatform } from '@/types'
 
 interface Props {
@@ -195,6 +214,7 @@ interface Props {
   keyPrefix?: string
   platform: GroupPlatform | null
   allowMessagesDispatch?: boolean
+  allowImageGeneration?: boolean
 }
 
 interface Emits {
@@ -222,15 +242,9 @@ const router = useRouter()
 const { copyToClipboard: clipboardCopy } = useClipboard()
 
 const copiedIndex = ref<number | null>(null)
+const copiedGptImageConfig = ref(false)
 const activeTab = ref<string>('unix')
 const activeClientTab = ref<string>('claude')
-const openAIBaseUrl = computed(() => normalizeOpenAIBaseUrl(props.baseUrl, getBrowserOriginFallback()))
-const maskedKey = computed(() => {
-  const prefix = props.keyPrefix?.trim()
-  if (prefix) return `${prefix}********`
-  if (props.apiKey.length <= 12) return '********'
-  return `${props.apiKey.slice(0, 8)}********${props.apiKey.slice(-4)}`
-})
 
 // Reset tabs when platform changes
 const defaultClientTab = computed(() => {
@@ -413,6 +427,28 @@ const platformNote = computed(() => {
 
 const showPlatformNote = computed(() => activeClientTab.value !== 'opencode')
 
+const ensureV1 = (value: string) => {
+  const trimmed = value.replace(/\/+$/, '')
+  return trimmed.endsWith('/v1') ? trimmed : `${trimmed}/v1`
+}
+
+const gptImageModel = 'gpt-image-2'
+
+const gptImageApiUrl = computed(() => {
+  const baseUrl = props.baseUrl || window.location.origin
+  const baseRoot = baseUrl.replace(/\/v1\/?$/, '').replace(/\/+$/, '')
+  return ensureV1(baseRoot)
+})
+
+const gptImageConfigContent = computed(() => {
+  return [
+    `${t('keys.useKeyModal.gptImage.apiUrl')}: ${gptImageApiUrl.value}`,
+    `${t('keys.useKeyModal.gptImage.apiKey')}: ${props.apiKey}`,
+    `${t('keys.useKeyModal.gptImage.apiMode')}: images`,
+    `${t('keys.useKeyModal.gptImage.model')}: ${gptImageModel}`
+  ].join('\n')
+})
+
 const escapeHtml = (value: string) => value
   .replace(/&/g, '&amp;')
   .replace(/</g, '&lt;')
@@ -435,10 +471,6 @@ const currentFiles = computed((): FileConfig[] => {
   const baseUrl = props.baseUrl || window.location.origin
   const apiKey = props.apiKey
   const baseRoot = baseUrl.replace(/\/v1\/?$/, '').replace(/\/+$/, '')
-  const ensureV1 = (value: string) => {
-    const trimmed = value.replace(/\/+$/, '')
-    return trimmed.endsWith('/v1') ? trimmed : `${trimmed}/v1`
-  }
   const apiBase = ensureV1(baseRoot)
   const antigravityBase = ensureV1(`${baseRoot}/antigravity`)
   const antigravityGeminiBase = (() => {
@@ -680,6 +712,54 @@ function generateOpenCodeConfig(platform: string, baseUrl: string, apiKey: strin
       name: 'GPT-5.2',
       limit: {
         context: 400000,
+        output: 128000
+      },
+      options: {
+        store: false
+      },
+      variants: {
+        low: {},
+        medium: {},
+        high: {},
+        xhigh: {}
+      }
+    },
+    'gpt-5.6-sol': {
+      name: 'GPT-5.6 Sol',
+      limit: {
+        context: 1050000,
+        output: 128000
+      },
+      options: {
+        store: false
+      },
+      variants: {
+        low: {},
+        medium: {},
+        high: {},
+        xhigh: {}
+      }
+    },
+    'gpt-5.6-terra': {
+      name: 'GPT-5.6 Terra',
+      limit: {
+        context: 1050000,
+        output: 128000
+      },
+      options: {
+        store: false
+      },
+      variants: {
+        low: {},
+        medium: {},
+        high: {},
+        xhigh: {}
+      }
+    },
+    'gpt-5.6-luna': {
+      name: 'GPT-5.6 Luna',
+      limit: {
+        context: 1050000,
         output: 128000
       },
       options: {
@@ -1121,8 +1201,20 @@ const copyContent = async (content: string, index: number) => {
   }
 }
 
-const copySecret = () => clipboardCopy(props.apiKey, t('keys.copied'))
-const copyBaseUrl = () => clipboardCopy(openAIBaseUrl.value, t('keys.copied'))
+const copyGptImageConfig = async () => {
+  const success = await clipboardCopy(gptImageConfigContent.value, t('keys.useKeyModal.gptImage.copied'))
+  if (success) {
+    copiedGptImageConfig.value = true
+    setTimeout(() => {
+      copiedGptImageConfig.value = false
+    }, 2000)
+  }
+}
+
+const openGptImage = () => {
+  emit('close')
+  window.location.href = '/images'
+}
 
 const goTo = (path: string) => {
   emit('close')

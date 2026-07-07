@@ -208,6 +208,7 @@ func (r *apiKeyRepository) GetByKeyForAuth(ctx context.Context, key string) (*se
 				user.FieldLastLoginAt,
 				user.FieldLastActiveAt,
 				user.FieldRpmLimit,
+				user.FieldPrivacyFilterConfig,
 			)
 			q.WithAllowedGroups(func(gq *dbent.GroupQuery) {
 				gq.Select(group.FieldID)
@@ -256,7 +257,11 @@ func (r *apiKeyRepository) GetByKeyForAuth(ctx context.Context, key string) (*se
 		}
 		return nil, err
 	}
-	return apiKeyEntityToService(m), nil
+	out := apiKeyEntityToService(m)
+	if out != nil && out.KeyHash != "" {
+		out.Key = out.KeyHash
+	}
+	return out, nil
 }
 
 func (r *apiKeyRepository) SetKeyHashAndPrefix(ctx context.Context, id int64, keyHash, keyPrefix string) error {
@@ -789,7 +794,7 @@ func apiKeyEntityToService(m *dbent.APIKey) *service.APIKey {
 	out := &service.APIKey{
 		ID:            m.ID,
 		UserID:        m.UserID,
-		Key:           firstNonEmptyString(firstNonEmptyStringPtr(m.KeyHash), m.Key),
+		Key:           m.Key,
 		KeyHash:       firstNonEmptyStringPtr(m.KeyHash),
 		KeyPrefix:     firstNonEmptyStringPtr(m.KeyPrefix),
 		Name:          m.Name,
@@ -855,6 +860,7 @@ func userEntityToService(u *dbent.User) *service.User {
 		BalanceNotifyThreshold:     u.BalanceNotifyThreshold,
 		TotalRecharged:             u.TotalRecharged,
 		RPMLimit:                   u.RpmLimit,
+		PrivacyFilterConfig:        service.ParsePrivacyFilterConfig(u.PrivacyFilterConfig),
 		CreatedAt:                  u.CreatedAt,
 		UpdatedAt:                  u.UpdatedAt,
 		DeletedAt:                  u.DeletedAt,

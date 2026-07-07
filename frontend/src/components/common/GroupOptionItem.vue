@@ -42,6 +42,12 @@
         >
           {{ peakRateText }}
         </span>
+        <span
+          v-if="imageCapable"
+          class="inline-flex items-center whitespace-nowrap rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-300"
+        >
+          {{ t('keys.imageGroupBadge') }}
+        </span>
       </div>
       <!-- Checkmark -->
       <svg
@@ -81,6 +87,7 @@ interface Props {
   description?: string | null
   selected?: boolean
   showCheckmark?: boolean
+  imageCapable?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -88,7 +95,8 @@ const props = withDefaults(defineProps<Props>(), {
   selected: false,
   showCheckmark: true,
   userRateMultiplier: null,
-  peakRateEnabled: false
+  peakRateEnabled: false,
+  imageCapable: false
 })
 
 // Whether user has a custom rate different from default
@@ -132,6 +140,8 @@ const ratePillClass = computed(() => {
       return 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400'
     case 'gemini':
       return 'bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400'
+    case 'image':
+      return 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-400'
     default: // antigravity and others
       return 'bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400'
   }

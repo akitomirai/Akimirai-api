@@ -35,9 +35,10 @@ var (
 	ErrAPIKeyQuotaExhausted = infraerrors.TooManyRequests("API_KEY_QUOTA_EXHAUSTED", "api key 额度已用完")
 
 	// Rate limit errors
-	ErrAPIKeyRateLimit5hExceeded = infraerrors.TooManyRequests("API_KEY_RATE_5H_EXCEEDED", "api key 5小时限额已用完")
-	ErrAPIKeyRateLimit1dExceeded = infraerrors.TooManyRequests("API_KEY_RATE_1D_EXCEEDED", "api key 日限额已用完")
-	ErrAPIKeyRateLimit7dExceeded = infraerrors.TooManyRequests("API_KEY_RATE_7D_EXCEEDED", "api key 7天限额已用完")
+	ErrAPIKeyRateLimit5hExceeded     = infraerrors.TooManyRequests("API_KEY_RATE_5H_EXCEEDED", "api key 5小时限额已用完")
+	ErrAPIKeyRateLimit1dExceeded     = infraerrors.TooManyRequests("API_KEY_RATE_1D_EXCEEDED", "api key 日限额已用完")
+	ErrAPIKeyRateLimit7dExceeded     = infraerrors.TooManyRequests("API_KEY_RATE_7D_EXCEEDED", "api key 7天限额已用完")
+	ErrImageGenerationAPIKeyRequired = infraerrors.Forbidden("IMAGE_GENERATION_API_KEY_REQUIRED", "No active API key with image generation access is available")
 )
 
 const (
@@ -208,6 +209,7 @@ type APIKeyService struct {
 	userGroupRateRepo     UserGroupRateRepository
 	cache                 APIKeyCache
 	rateLimitCacheInvalid RateLimitCacheInvalidator // optional: invalidate Redis rate limit cache
+	concurrencyService    *ConcurrencyService
 	cfg                   *config.Config
 	authCacheL1           *ristretto.Cache
 	authCfg               apiKeyAuthCacheConfig
@@ -243,6 +245,10 @@ func NewAPIKeyService(
 // Called after construction (e.g. in wire) to avoid circular dependencies.
 func (s *APIKeyService) SetRateLimitCacheInvalidator(inv RateLimitCacheInvalidator) {
 	s.rateLimitCacheInvalid = inv
+}
+
+func (s *APIKeyService) SetConcurrencyService(concurrencyService *ConcurrencyService) {
+	s.concurrencyService = concurrencyService
 }
 
 func (s *APIKeyService) compileAPIKeyIPRules(apiKey *APIKey) {
@@ -413,11 +419,10 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 	rawKey := key
 	keyHash := s.hashAPIKey(rawKey)
 	keyPrefix := apiKeyDisplayPrefix(rawKey)
-	storageKey := apiKeyStoragePlaceholder(keyHash, keyPrefix)
 
 	apiKey := &APIKey{
 		UserID:      userID,
-		Key:         storageKey,
+		Key:         rawKey,
 		KeyHash:     keyHash,
 		KeyPrefix:   keyPrefix,
 		Name:        html.EscapeString(req.Name),
@@ -442,8 +447,6 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 		return nil, fmt.Errorf("create api key: %w", err)
 	}
 
-	apiKey.Key = rawKey
-	apiKey.KeyVisibleOnce = true
 	s.InvalidateAuthCacheByKey(ctx, apiKey.Key)
 	s.compileAPIKeyIPRules(apiKey)
 
@@ -456,7 +459,108 @@ func (s *APIKeyService) List(ctx context.Context, userID int64, params paginatio
 	if err != nil {
 		return nil, nil, fmt.Errorf("list api keys: %w", err)
 	}
+	s.fillCurrentConcurrency(ctx, keys)
 	return keys, pagination, nil
+}
+
+func (s *APIKeyService) fillCurrentConcurrency(ctx context.Context, keys []APIKey) {
+	if s == nil || s.concurrencyService == nil || len(keys) == 0 {
+		return
+	}
+	ids := make([]int64, 0, len(keys))
+	for i := range keys {
+		if keys[i].ID > 0 {
+			ids = append(ids, keys[i].ID)
+		}
+	}
+	counts, err := s.concurrencyService.GetAPIKeyConcurrencyBatch(ctx, ids)
+	if err != nil {
+		return
+	}
+	for i := range keys {
+		keys[i].CurrentConcurrency = counts[keys[i].ID]
+	}
+}
+
+func (s *APIKeyService) currentConcurrencyForAPIKey(ctx context.Context, apiKeyID int64) int {
+	if s == nil || s.concurrencyService == nil || apiKeyID <= 0 {
+		return 0
+	}
+	counts, err := s.concurrencyService.GetAPIKeyConcurrencyBatch(ctx, []int64{apiKeyID})
+	if err != nil {
+		return 0
+	}
+	return counts[apiKeyID]
+}
+
+// SelectDefaultImageGenerationKey returns a deterministic user-owned API key
+// that can execute image generation through the existing gateway path.
+func (s *APIKeyService) SelectDefaultImageGenerationKey(ctx context.Context, userID int64) (*APIKey, error) {
+	if userID <= 0 {
+		return nil, ErrImageGenerationAPIKeyRequired
+	}
+
+	params := pagination.PaginationParams{
+		Page:      1,
+		PageSize:  100,
+		SortBy:    "id",
+		SortOrder: pagination.SortOrderAsc,
+	}
+	filters := APIKeyListFilters{Status: StatusAPIKeyActive}
+
+	for {
+		keys, result, err := s.List(ctx, userID, params, filters)
+		if err != nil {
+			return nil, err
+		}
+		for i := range keys {
+			lookupKey := strings.TrimSpace(keys[i].Key)
+			if lookupKey == "" {
+				continue
+			}
+			apiKey, err := s.GetByKey(ctx, lookupKey)
+			if err != nil {
+				if errors.Is(err, ErrAPIKeyNotFound) {
+					continue
+				}
+				return nil, err
+			}
+			if isImageGenerationAPIKeyEligible(apiKey, userID) {
+				return apiKey, nil
+			}
+		}
+		if result == nil || params.Page >= result.Pages || len(keys) == 0 {
+			break
+		}
+		params.Page++
+	}
+
+	return nil, ErrImageGenerationAPIKeyRequired
+}
+
+func isImageGenerationAPIKeyEligible(apiKey *APIKey, userID int64) bool {
+	if apiKey == nil || apiKey.UserID != userID {
+		return false
+	}
+	if !apiKey.IsActive() || apiKey.IsExpired() || apiKey.IsQuotaExhausted() {
+		return false
+	}
+	if apiKey.User == nil || !apiKey.User.IsActive() {
+		return false
+	}
+	if apiKey.Group == nil || apiKey.GroupID == nil || !apiKey.Group.IsActive() {
+		return false
+	}
+	if !PlatformSupportsImageGenerationKey(apiKey.Group.Platform) {
+		return false
+	}
+	if !GroupAllowsImageGeneration(apiKey.Group) {
+		return false
+	}
+	if !apiKey.Group.IsSubscriptionType() && !apiKey.User.CanBindGroup(apiKey.Group.ID, apiKey.Group.IsExclusive) {
+		return false
+	}
+	return true
 }
 
 func (s *APIKeyService) VerifyOwnership(ctx context.Context, userID int64, apiKeyIDs []int64) ([]int64, error) {
@@ -478,6 +582,9 @@ func (s *APIKeyService) GetByID(ctx context.Context, id int64) (*APIKey, error) 
 		return nil, fmt.Errorf("get api key: %w", err)
 	}
 	s.compileAPIKeyIPRules(apiKey)
+	if apiKey != nil {
+		apiKey.CurrentConcurrency = s.currentConcurrencyForAPIKey(ctx, apiKey.ID)
+	}
 	return apiKey, nil
 }
 

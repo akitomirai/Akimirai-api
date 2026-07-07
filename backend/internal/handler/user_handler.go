@@ -77,10 +77,11 @@ type ChangePasswordRequest struct {
 
 // UpdateProfileRequest represents the update profile request payload
 type UpdateProfileRequest struct {
-	Username               *string  `json:"username"`
-	AvatarURL              *string  `json:"avatar_url"`
-	BalanceNotifyEnabled   *bool    `json:"balance_notify_enabled"`
-	BalanceNotifyThreshold *float64 `json:"balance_notify_threshold"`
+	Username               *string                  `json:"username"`
+	AvatarURL              *string                  `json:"avatar_url"`
+	BalanceNotifyEnabled   *bool                    `json:"balance_notify_enabled"`
+	BalanceNotifyThreshold *float64                 `json:"balance_notify_threshold"`
+	PrivacyFilterConfig    *dto.PrivacyFilterConfig `json:"privacy_filter_config"`
 }
 
 type userProfileResponse struct {
@@ -196,6 +197,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		AvatarURL:              req.AvatarURL,
 		BalanceNotifyEnabled:   req.BalanceNotifyEnabled,
 		BalanceNotifyThreshold: req.BalanceNotifyThreshold,
+		PrivacyFilterConfig:    req.PrivacyFilterConfig,
 	}
 	updatedUser, err := h.userService.UpdateProfile(c.Request.Context(), subject.UserID, svcReq)
 	if err != nil {

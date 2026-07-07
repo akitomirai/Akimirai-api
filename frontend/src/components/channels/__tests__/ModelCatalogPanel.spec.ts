@@ -71,7 +71,7 @@ const mountComponent = (props = {}) => mount(ModelCatalogPanel, {
 })
 
 describe('ModelCatalogPanel', () => {
-  it('renders model id, availability, multiplier explanation, and Quick Start entry', () => {
+  it('renders model id, availability, multiplier explanation, and key page entry', () => {
     const wrapper = mountComponent()
     const text = wrapper.text()
 
@@ -80,7 +80,8 @@ describe('ModelCatalogPanel', () => {
     expect(text).toContain('Available')
     expect(text).toContain('1.2x')
     expect(text).toContain(MODEL_MULTIPLIER_EXPLANATION)
-    expect(wrapper.html()).toContain('/quick-start')
+    expect(wrapper.html()).toContain('/keys')
+    expect(wrapper.html()).not.toContain('/quick-start')
   })
 
   it('copies the model id without exposing sensitive fields', async () => {

@@ -1,6 +1,6 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <div class="px-6 py-4 flex-shrink-0">
+    <div class="flex-shrink-0 border-b border-gray-100 px-6 py-4 dark:border-dark-700">
       <div class="flex flex-wrap items-end gap-4">
         <div class="min-w-[180px]">
           <label class="input-label">{{ t('usage.errors.model') }}</label>
@@ -40,38 +40,38 @@
     </div>
 
     <div class="min-h-0 flex-1 overflow-auto">
-      <table class="min-w-full text-sm">
-        <thead>
+      <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-dark-700">
+        <thead class="bg-gray-50 dark:bg-dark-800">
           <tr>
-            <th class="px-4 py-2 text-left">{{ t('usage.errors.model') }}</th>
-            <th class="px-4 py-2 text-left">{{ t('usage.errors.keyName') }}</th>
-            <th class="px-4 py-2 text-left">{{ t('usage.errors.endpoint') }}</th>
-            <th class="px-4 py-2 text-left">{{ t('usage.errors.status') }}</th>
-            <th class="px-4 py-2 text-left">{{ t('usage.errors.category') }}</th>
-            <th class="px-4 py-2 text-left">{{ t('usage.errors.explanation') }}</th>
-            <th class="px-4 py-2 text-left">{{ t('usage.errors.platform') }}</th>
-            <th class="px-4 py-2 text-left">{{ t('usage.errors.time') }}</th>
+            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('usage.errors.model') }}</th>
+            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('usage.errors.keyName') }}</th>
+            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('usage.errors.endpoint') }}</th>
+            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('usage.errors.status') }}</th>
+            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('usage.errors.category') }}</th>
+            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('usage.errors.explanation') }}</th>
+            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('usage.errors.platform') }}</th>
+            <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('usage.errors.time') }}</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-gray-200 bg-white dark:divide-dark-700 dark:bg-dark-900">
           <tr
             v-for="(row, i) in rows"
             :key="i"
-            class="border-t border-gray-100 dark:border-dark-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-800"
+            class="cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-800"
             @click="openDetail(row.id)"
           >
-            <td class="px-4 py-2">{{ row.model || '-' }}</td>
-            <td class="px-4 py-2">
+            <td class="px-4 py-3">{{ row.model || '-' }}</td>
+            <td class="px-4 py-3">
               <span>{{ row.key_name || '-' }}</span>
               <span
                 v-if="row.key_deleted"
                 class="ml-1 inline-flex items-center rounded px-1 py-px text-[10px] font-medium leading-tight bg-gray-100 text-gray-500 dark:bg-dark-700 dark:text-gray-400"
               >{{ t('usage.errors.keyDeleted') }}</span>
             </td>
-            <td class="px-4 py-2">{{ row.inbound_endpoint || '-' }}</td>
-            <td class="px-4 py-2"><span class="badge" :class="statusClass(row.status_code)">{{ row.status_code || '-' }}</span></td>
-            <td class="px-4 py-2">{{ t('usage.errors.categories.' + row.category) }}</td>
-            <td class="px-4 py-2 max-w-[360px]">
+            <td class="px-4 py-3">{{ row.inbound_endpoint || '-' }}</td>
+            <td class="px-4 py-3"><span class="badge" :class="statusClass(row.status_code)">{{ row.status_code || '-' }}</span></td>
+            <td class="px-4 py-3">{{ t('usage.errors.categories.' + row.category) }}</td>
+            <td class="max-w-[360px] px-4 py-3">
               <div class="space-y-1">
                 <p class="break-words text-gray-900 dark:text-dark-100" :title="row.explanation || row.message">
                   {{ row.explanation || row.message || '-' }}
@@ -107,8 +107,8 @@
                 </div>
               </div>
             </td>
-            <td class="px-4 py-2">{{ row.platform || '-' }}</td>
-            <td class="px-4 py-2">{{ formatDateTime(row.created_at) }}</td>
+            <td class="px-4 py-3">{{ row.platform || '-' }}</td>
+            <td class="px-4 py-3">{{ formatDateTime(row.created_at) }}</td>
           </tr>
           <tr v-if="!loading && rows.length === 0">
             <td colspan="8" class="px-4 py-8 text-center text-gray-400">{{ t('usage.errors.empty') }}</td>
@@ -117,7 +117,7 @@
       </table>
     </div>
 
-    <div class="flex-shrink-0">
+    <div class="flex-shrink-0 border-t border-gray-100 px-4 py-3 dark:border-dark-700">
       <Pagination :page="page" :page-size="pageSize" :total="total"
         @update:page="$emit('update:page', $event)"
         @update:pageSize="$emit('update:pageSize', $event)" />

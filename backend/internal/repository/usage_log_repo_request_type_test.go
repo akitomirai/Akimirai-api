@@ -72,6 +72,11 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 			true,
 			sqlmock.AnyArg(), // duration_ms
 			sqlmock.AnyArg(), // first_token_ms
+			sqlmock.AnyArg(), // client_transport
+			sqlmock.AnyArg(), // auth_latency_ms
+			sqlmock.AnyArg(), // routing_latency_ms
+			sqlmock.AnyArg(), // upstream_latency_ms
+			sqlmock.AnyArg(), // response_latency_ms
 			sqlmock.AnyArg(), // user_agent
 			sqlmock.AnyArg(), // ip_address
 			log.ImageCount,
@@ -155,6 +160,11 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 			false,
 			sqlmock.AnyArg(),
 			sqlmock.AnyArg(),
+			sqlmock.AnyArg(), // client_transport
+			sqlmock.AnyArg(), // auth_latency_ms
+			sqlmock.AnyArg(), // routing_latency_ms
+			sqlmock.AnyArg(), // upstream_latency_ms
+			sqlmock.AnyArg(), // response_latency_ms
 			sqlmock.AnyArg(),
 			sqlmock.AnyArg(),
 			log.ImageCount,
@@ -238,6 +248,34 @@ func TestPrepareUsageLogInsert_ArgCountMatchesTypes(t *testing.T) {
 	require.Len(t, prepared.args, len(usageLogInsertArgTypes))
 }
 
+func TestPrepareUsageLogInsert_PersistsLatencyBreakdown(t *testing.T) {
+	clientTransport := "http"
+	authLatency := 11
+	routingLatency := 22
+	upstreamLatency := 333
+	responseLatency := 444
+	prepared := prepareUsageLogInsert(&service.UsageLog{
+		UserID:            1,
+		APIKeyID:          2,
+		AccountID:         3,
+		RequestID:         "req-latency-breakdown",
+		Model:             "gpt-5",
+		RequestedModel:    "gpt-5",
+		ClientTransport:   &clientTransport,
+		AuthLatencyMs:     &authLatency,
+		RoutingLatencyMs:  &routingLatency,
+		UpstreamLatencyMs: &upstreamLatency,
+		ResponseLatencyMs: &responseLatency,
+		CreatedAt:         time.Date(2025, 1, 6, 12, 0, 0, 0, time.UTC),
+	})
+
+	require.Equal(t, sql.NullString{String: clientTransport, Valid: true}, prepared.args[31])
+	require.Equal(t, sql.NullInt64{Int64: int64(authLatency), Valid: true}, prepared.args[32])
+	require.Equal(t, sql.NullInt64{Int64: int64(routingLatency), Valid: true}, prepared.args[33])
+	require.Equal(t, sql.NullInt64{Int64: int64(upstreamLatency), Valid: true}, prepared.args[34])
+	require.Equal(t, sql.NullInt64{Int64: int64(responseLatency), Valid: true}, prepared.args[35])
+}
+
 func TestPrepareUsageLogInsert_PersistsImageSizeMetadata(t *testing.T) {
 	imageSize := "4K"
 	inputSize := "1024x1024"
@@ -259,11 +297,11 @@ func TestPrepareUsageLogInsert_PersistsImageSizeMetadata(t *testing.T) {
 		CreatedAt:          time.Date(2025, 1, 6, 12, 0, 0, 0, time.UTC),
 	})
 
-	require.Equal(t, sql.NullString{String: imageSize, Valid: true}, prepared.args[34])
-	require.Equal(t, sql.NullString{String: inputSize, Valid: true}, prepared.args[35])
-	require.Equal(t, sql.NullString{String: outputSize, Valid: true}, prepared.args[36])
-	require.Equal(t, sql.NullString{String: source, Valid: true}, prepared.args[37])
-	breakdownJSON, ok := prepared.args[38].(string)
+	require.Equal(t, sql.NullString{String: imageSize, Valid: true}, prepared.args[39])
+	require.Equal(t, sql.NullString{String: inputSize, Valid: true}, prepared.args[40])
+	require.Equal(t, sql.NullString{String: outputSize, Valid: true}, prepared.args[41])
+	require.Equal(t, sql.NullString{String: source, Valid: true}, prepared.args[42])
+	breakdownJSON, ok := prepared.args[43].(string)
 	require.True(t, ok)
 	require.JSONEq(t, `{"1K":1,"4K":1}`, breakdownJSON)
 }
@@ -786,6 +824,11 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			false,
 			sql.NullInt64{},
 			sql.NullInt64{},
+			sql.NullString{Valid: true, String: "http"},
+			sql.NullInt64{Valid: true, Int64: 11},
+			sql.NullInt64{Valid: true, Int64: 22},
+			sql.NullInt64{Valid: true, Int64: 333},
+			sql.NullInt64{Valid: true, Int64: 444},
 			sql.NullString{},
 			sql.NullString{},
 			2,
@@ -817,6 +860,16 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 		require.NotNil(t, log.ImageSizeSource)
 		require.Equal(t, "output", *log.ImageSizeSource)
 		require.Equal(t, map[string]int{"4K": 2}, log.ImageSizeBreakdown)
+		require.NotNil(t, log.ClientTransport)
+		require.Equal(t, "http", *log.ClientTransport)
+		require.NotNil(t, log.AuthLatencyMs)
+		require.Equal(t, 11, *log.AuthLatencyMs)
+		require.NotNil(t, log.RoutingLatencyMs)
+		require.Equal(t, 22, *log.RoutingLatencyMs)
+		require.NotNil(t, log.UpstreamLatencyMs)
+		require.Equal(t, 333, *log.UpstreamLatencyMs)
+		require.NotNil(t, log.ResponseLatencyMs)
+		require.Equal(t, 444, *log.ResponseLatencyMs)
 	})
 
 	t.Run("request_type_ws_v2_overrides_legacy", func(t *testing.T) {
@@ -852,6 +905,11 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			int16(service.RequestTypeWSV2),
 			false, // legacy stream
 			false, // legacy openai ws
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullString{},
+			sql.NullInt64{},
+			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullString{},
@@ -907,6 +965,11 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullString{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullString{},
 			sql.NullString{},
 			0,
 			sql.NullString{},
@@ -956,6 +1019,11 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			int16(service.RequestTypeSync),
 			false,
 			false,
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullString{},
+			sql.NullInt64{},
+			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullString{},

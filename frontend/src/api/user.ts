@@ -18,6 +18,7 @@ import type {
   AffiliateTransferResponse,
   PlatformQuotasResponse,
 } from '@/types'
+import type { PrivacyFilterConfig } from '@/utils/privacyFilter'
 
 export interface QQAvatarSuggestion {
   available: boolean
@@ -46,6 +47,7 @@ export async function updateProfile(profile: {
   balance_notify_enabled?: boolean
   balance_notify_threshold?: number | null
   balance_notify_extra_emails?: NotifyEmailEntry[]
+  privacy_filter_config?: PrivacyFilterConfig
 }): Promise<User> {
   const { data } = await apiClient.put<User>('/user', profile)
   return data

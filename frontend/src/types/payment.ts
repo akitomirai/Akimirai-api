@@ -23,6 +23,10 @@ export type PaymentType = 'alipay' | 'wxpay' | 'alipay_direct' | 'wxpay_direct' 
 
 export type OrderType = 'balance' | 'subscription'
 
+export type ExternalRedeemType = 'balance' | 'concurrency' | 'subscription' | 'invitation'
+export type ExternalFulfillmentStatus = 'pending' | 'fulfilled' | 'notify_failed' | 'failed'
+export type ExternalFulfillmentNotifyStatus = 'skipped' | 'sent' | 'failed'
+
 // ==================== Configuration ====================
 
 export interface PaymentConfig {
@@ -34,6 +38,7 @@ export interface PaymentConfig {
   order_timeout_minutes: number
   balance_disabled: boolean
   balance_recharge_multiplier: number
+  subscription_usd_to_cny_rate: number
   enabled_payment_types: PaymentType[]
   help_image_url: string
   help_text: string
@@ -42,6 +47,7 @@ export interface PaymentConfig {
 
 export interface MethodLimit {
   currency?: string
+  display_name?: string
   daily_limit: number
   daily_used: number
   daily_remaining: number
@@ -66,6 +72,8 @@ export interface CheckoutInfoResponse {
   plans: SubscriptionPlan[]
   balance_disabled: boolean
   balance_recharge_multiplier: number
+  /** Subscription CNY conversion rate (1 USD = X CNY); 0 = disabled, plan price is charged as-is */
+  subscription_usd_to_cny_rate: number
   recharge_fee_rate: number
   help_text: string
   help_image_url: string
@@ -158,6 +166,87 @@ export interface ProviderInstance {
   allow_user_refund: boolean
   limits: string
   sort_order: number
+}
+
+// ==================== External Marketplace Fulfillment ====================
+
+export interface ExternalFulfillmentSKU {
+  id: number
+  platform: string
+  sku_code: string
+  name: string
+  amount: number
+  currency: string
+  redeem_type: ExternalRedeemType | string
+  redeem_value: number
+  group_id?: number | null
+  validity_days: number
+  expires_in_days?: number | null
+  manual_url?: string | null
+  delivery_template?: string | null
+  enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface UpsertExternalFulfillmentSKURequest {
+  platform?: string
+  sku_code: string
+  name: string
+  amount?: number
+  currency?: string
+  redeem_type: ExternalRedeemType | string
+  redeem_value?: number
+  group_id?: number | null
+  validity_days?: number
+  expires_in_days?: number | null
+  manual_url?: string
+  delivery_template?: string
+  enabled?: boolean
+}
+
+export interface ExternalOrderFulfillment {
+  id: number
+  platform: string
+  platform_order_id: string
+  buyer_ref?: string | null
+  sku_code: string
+  sku_name?: string | null
+  amount: number
+  currency: string
+  redeem_code_id?: number | null
+  redeem_code?: string | null
+  redeem_type: ExternalRedeemType | string
+  redeem_value: number
+  group_id?: number | null
+  validity_days: number
+  expires_at?: string | null
+  manual_url?: string | null
+  delivery_message?: string | null
+  status: ExternalFulfillmentStatus | string
+  notify_status: ExternalFulfillmentNotifyStatus | string
+  fail_reason?: string | null
+  operator?: string | null
+  delivered_at?: string | null
+  notified_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateExternalFulfillmentRequest {
+  platform?: string
+  platform_order_id: string
+  buyer_ref?: string
+  sku_code: string
+  amount?: number
+  currency?: string
+  manual_url?: string
+  notify_feishu?: boolean
+}
+
+export interface ExternalFulfillmentResult {
+  fulfillment: ExternalOrderFulfillment
+  replay?: boolean
 }
 
 // ==================== Request / Response ====================

@@ -26,7 +26,7 @@ vi.mock('@/composables/useClipboard', () => ({
 import UseKeyModal from '../UseKeyModal.vue'
 
 describe('UseKeyModal', () => {
-  it('renders the one-time key copy guidance with masked prefix and copy actions', async () => {
+  it('renders config examples without the one-time key copy banner', async () => {
     const wrapper = mount(UseKeyModal, {
       props: {
         show: true,
@@ -49,20 +49,24 @@ describe('UseKeyModal', () => {
     })
 
     const text = wrapper.text()
-    expect(text).toContain('keys.useKeyModal.immediateCopyNotice')
-    expect(text).toContain('prod-key')
-    expect(text).toContain('sk-test********')
+    expect(text).not.toContain('keys.useKeyModal.immediateCopyNotice')
+    expect(text).not.toContain('prod-key')
+    expect(text).not.toContain('sk-test********')
+    expect(text).not.toContain('keys.useKeyModal.copyApiKey')
     const codeBlocks = wrapper.findAll('pre code').map((code) => code.text()).join('\n\n')
     expect(codeBlocks).toContain('base_url = "https://example.com/v1"')
     expect(codeBlocks).not.toContain('/v1/v1')
 
-    const copyKeyButton = wrapper.findAll('button').find((button) =>
-      button.text().includes('keys.useKeyModal.copyApiKey')
+    const copyConfigButton = wrapper.findAll('button').find((button) =>
+      button.text().includes('keys.useKeyModal.copy')
     )
-    expect(copyKeyButton).toBeDefined()
-    await copyKeyButton!.trigger('click')
+    expect(copyConfigButton).toBeDefined()
+    await copyConfigButton!.trigger('click')
 
-    expect(copyToClipboardMock).toHaveBeenCalledWith('sk-test-placeholder', 'keys.copied')
+    expect(copyToClipboardMock).toHaveBeenCalledWith(
+      expect.stringContaining('base_url = "https://example.com/v1"'),
+      'keys.copied'
+    )
   })
 
   it('renders GPT-5.5 and goals feature in OpenAI Codex config', () => {

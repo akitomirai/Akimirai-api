@@ -1,5 +1,5 @@
 ﻿<template>
-  <div class="card overflow-hidden">
+  <div :class="[framed ? 'card overflow-hidden' : 'overflow-hidden', dense ? 'usage-table-dense' : '']">
     <div
       v-if="showIpGeoToolbar"
       class="flex items-center justify-end gap-2 border-b border-gray-200 px-4 py-2 dark:border-dark-700"
@@ -24,6 +24,7 @@
         :server-side-sort="serverSideSort"
         :default-sort-key="defaultSortKey"
         :default-sort-order="defaultSortOrder"
+        :estimate-row-height="dense ? 52 : undefined"
         @sort="(key, order) => $emit('sort', key, order)"
       >
         <template #cell-user="{ row }">
@@ -55,21 +56,42 @@
         <template #cell-model="{ row }">
           <div v-if="row.model_mapping_chain && row.model_mapping_chain.includes('→')" class="space-y-0.5 text-xs">
             <div v-for="(step, i) in row.model_mapping_chain.split('→')" :key="i"
-                 class="break-all"
+                 class="flex max-w-[260px] flex-wrap items-center gap-1.5 whitespace-normal break-all"
                  :class="i === 0 ? 'font-medium text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
                  :style="i > 0 ? `padding-left: ${i * 0.75}rem` : ''">
-              <span v-if="i > 0" class="mr-0.5">→</span>{{ step }}
+              <span v-if="i > 0" class="mr-0.5">→</span>
+              <span>{{ step.trim() }}</span>
+              <span
+                v-if="i === 0 && getReasoningEffortBadgeLabel(row.reasoning_effort)"
+                class="reasoning-effort-badge"
+              >
+                {{ getReasoningEffortBadgeLabel(row.reasoning_effort) }}
+              </span>
             </div>
           </div>
           <div v-else-if="row.upstream_model && row.upstream_model !== row.model" class="space-y-0.5 text-xs">
-            <div class="break-all font-medium text-gray-900 dark:text-white">
-              {{ row.model }}
+            <div class="flex max-w-[260px] flex-wrap items-center gap-1.5 whitespace-normal break-all font-medium text-gray-900 dark:text-white">
+              <span>{{ row.model }}</span>
+              <span
+                v-if="getReasoningEffortBadgeLabel(row.reasoning_effort)"
+                class="reasoning-effort-badge"
+              >
+                {{ getReasoningEffortBadgeLabel(row.reasoning_effort) }}
+              </span>
             </div>
             <div class="break-all text-gray-500 dark:text-gray-400">
               <span class="mr-0.5">→</span>{{ row.upstream_model }}
             </div>
           </div>
-          <span v-else class="font-medium text-gray-900 dark:text-white">{{ row.model }}</span>
+          <div v-else class="flex max-w-[260px] flex-wrap items-center gap-1.5 whitespace-normal break-all">
+            <span class="font-medium text-gray-900 dark:text-white">{{ row.model }}</span>
+            <span
+              v-if="getReasoningEffortBadgeLabel(row.reasoning_effort)"
+              class="reasoning-effort-badge"
+            >
+              {{ getReasoningEffortBadgeLabel(row.reasoning_effort) }}
+            </span>
+          </div>
         </template>
 
         <template #cell-reasoning_effort="{ row }">
@@ -79,16 +101,23 @@
         </template>
 
         <template #cell-endpoint="{ row }">
-          <div class="max-w-[320px] space-y-1 text-xs">
+          <div v-if="showUpstreamEndpoint" class="max-w-[320px] space-y-1 text-xs">
             <div class="break-all text-gray-700 dark:text-gray-300">
               <span class="font-medium text-gray-500 dark:text-gray-400">{{ t('usage.inbound') }}:</span>
               <span class="ml-1">{{ row.inbound_endpoint?.trim() || '-' }}</span>
             </div>
-            <div v-if="showUpstreamEndpoint" class="break-all text-gray-700 dark:text-gray-300">
+            <div class="break-all text-gray-700 dark:text-gray-300">
               <span class="font-medium text-gray-500 dark:text-gray-400">{{ t('usage.upstream') }}:</span>
               <span class="ml-1">{{ row.upstream_endpoint?.trim() || '-' }}</span>
             </div>
           </div>
+          <span
+            v-else
+            class="block max-w-[260px] truncate text-sm text-gray-700 dark:text-gray-300"
+            :title="row.inbound_endpoint?.trim() || '-'"
+          >
+            {{ row.inbound_endpoint?.trim() || '-' }}
+          </span>
         </template>
 
         <template #cell-group="{ row }">
@@ -183,6 +212,26 @@
               A ${{ accountBilled(row).toFixed(6) }}
             </div>
           </div>
+        </template>
+
+        <template #cell-cache_hit_rate="{ row }">
+          <div v-if="getPerRequestCacheHitRatio(row) !== null" data-test="cache-hit-rate" class="w-[112px] min-w-[112px] max-w-[112px] text-left">
+            <div class="flex items-baseline justify-between gap-2 whitespace-nowrap">
+              <span class="font-semibold text-sky-600 dark:text-sky-400">
+                {{ getPerRequestCacheHitRatio(row) }}%
+              </span>
+              <span class="text-left text-xs text-gray-400 dark:text-gray-500">
+                {{ formatCacheTokens(row.cache_read_tokens || 0) }}
+              </span>
+            </div>
+            <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-sky-100 dark:bg-sky-950/50">
+              <div
+                class="h-full rounded-full bg-sky-500 dark:bg-sky-400"
+                :style="{ width: getPerRequestCacheHitProgressWidth(row) }"
+              ></div>
+            </div>
+          </div>
+          <span v-else class="text-sm text-gray-400 dark:text-gray-500">-</span>
         </template>
 
         <template #cell-first_token="{ row }">
@@ -513,6 +562,8 @@ interface Props {
   defaultSortOrder?: 'asc' | 'desc'
   showAccountBilling?: boolean
   showUpstreamEndpoint?: boolean
+  dense?: boolean
+  framed?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -521,7 +572,9 @@ const props = withDefaults(defineProps<Props>(), {
   defaultSortKey: '',
   defaultSortOrder: 'asc',
   showAccountBilling: true,
-  showUpstreamEndpoint: true
+  showUpstreamEndpoint: true,
+  dense: false,
+  framed: true,
 })
 const emit = defineEmits<{
   userClick: [userID: number, email?: string]
@@ -597,6 +650,11 @@ const formatDuration = (ms: number | null | undefined): string => {
   return `${(ms / 1000).toFixed(2)}s`
 }
 
+const getReasoningEffortBadgeLabel = (effort: string | null | undefined): string => {
+  const label = formatReasoningEffort(effort)
+  return label === '-' ? '' : label.toLowerCase()
+}
+
 // Cost tooltip functions
 const showTooltip = (event: MouseEvent, row: AdminUsageLog) => {
   const target = event.currentTarget as HTMLElement
@@ -648,4 +706,42 @@ const getPerRequestCacheHitRatio = (row: { input_tokens?: number; cache_read_tok
   if (total <= 0) return null
   return parseFloat(((read / total) * 100).toFixed(1))
 }
+
+const getPerRequestCacheHitProgressWidth = (row: { input_tokens?: number; cache_read_tokens?: number; cache_creation_tokens?: number }): string => {
+  const ratio = getPerRequestCacheHitRatio(row)
+  return `${Math.min(100, Math.max(0, ratio ?? 0))}%`
+}
 </script>
+
+<style scoped>
+.usage-table-dense :deep(thead th) {
+  padding-top: 0.625rem;
+  padding-bottom: 0.625rem;
+}
+
+.usage-table-dense :deep(tbody td) {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  vertical-align: middle;
+}
+
+.reasoning-effort-badge {
+  display: inline-flex;
+  height: 1.25rem;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0 0.375rem;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: rgb(249 115 22);
+  background-color: rgb(255 247 237);
+  box-shadow: inset 0 0 0 1px rgb(255 237 213);
+}
+
+.dark .reasoning-effort-badge {
+  color: rgb(253 186 116);
+  background-color: rgb(249 115 22 / 0.1);
+  box-shadow: inset 0 0 0 1px rgb(249 115 22 / 0.2);
+}
+</style>

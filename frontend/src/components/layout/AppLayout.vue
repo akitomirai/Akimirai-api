@@ -1,15 +1,12 @@
 <template>
-  <div class="min-h-screen bg-white dark:bg-dark-950">
-    <!-- Background Decoration -->
-    <div class="pointer-events-none fixed inset-0 bg-transparent-grid"></div>
-
+  <div class="min-h-screen bg-gray-50 dark:bg-dark-950">
     <!-- Sidebar -->
     <AppSidebar />
 
     <!-- Main Content Area -->
     <div
       class="relative min-h-screen transition-all duration-300"
-      :class="[sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-64']"
+      :class="[sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-48']"
     >
       <!-- Header -->
       <AppHeader>

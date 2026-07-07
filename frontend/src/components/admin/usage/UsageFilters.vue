@@ -1,5 +1,72 @@
 <template>
-  <div class="card p-6">
+  <div v-if="compact" class="card px-4 py-3">
+    <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+      <div class="flex flex-1 flex-wrap items-end gap-4">
+        <div ref="apiKeySearchRef" class="usage-filter-dropdown relative w-full sm:w-[220px]">
+          <label class="input-label">{{ t('usage.apiKeyFilter') }}</label>
+          <input
+            v-model="apiKeyKeyword"
+            type="text"
+            class="input pr-8"
+            :placeholder="t('admin.usage.searchApiKeyPlaceholder')"
+            @input="debounceApiKeySearch"
+            @focus="onApiKeyFocus"
+          />
+          <button
+            v-if="filters.api_key_id"
+            type="button"
+            @click="onClearApiKey"
+            class="absolute right-2 top-9 text-gray-400"
+            aria-label="Clear API key filter"
+          >
+            ✕
+          </button>
+          <div
+            v-if="showApiKeyDropdown && apiKeyResults.length > 0"
+            class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border bg-white shadow-lg dark:bg-gray-800"
+          >
+            <button
+              v-for="k in apiKeyResults"
+              :key="k.id"
+              type="button"
+              @click="selectApiKey(k)"
+              class="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <span class="truncate">{{ k.name || `#${k.id}` }}</span>
+              <span class="ml-2 text-xs text-gray-400">#{{ k.id }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="w-full sm:w-auto">
+          <label class="input-label">{{ t('admin.dashboard.timeRange') }}</label>
+          <DateRangePicker
+            v-model:start-date="filters.start_date"
+            v-model:end-date="filters.end_date"
+            @change="onCompactDateChange"
+          />
+        </div>
+      </div>
+
+      <div v-if="showActions" class="flex w-full flex-wrap items-center justify-end gap-2 xl:w-auto">
+        <button type="button" @click="$emit('refresh')" class="btn btn-secondary h-9 rounded-lg px-3 py-0">
+          {{ t('common.refresh') }}
+        </button>
+        <button type="button" @click="$emit('reset')" class="btn btn-secondary h-9 rounded-lg px-3 py-0">
+          {{ t('common.reset') }}
+        </button>
+        <slot name="after-reset" />
+        <button type="button" @click="$emit('cleanup')" class="btn btn-danger h-9 rounded-lg px-3 py-0">
+          {{ t('admin.usage.cleanup.button') }}
+        </button>
+        <button type="button" @click="$emit('export')" :disabled="exporting" class="btn btn-primary h-9 rounded-lg px-3 py-0">
+          {{ t('usage.exportExcel') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div v-else class="card p-6">
     <!-- Toolbar: left filters (multi-line) + right actions -->
     <div class="flex flex-wrap items-end justify-between gap-4">
       <!-- Left: filters (allowed to wrap to multiple rows) -->
@@ -121,22 +188,40 @@
           </div>
         </div>
 
-        <!-- Request Type Filter -->
-        <div class="w-full sm:w-auto sm:min-w-[180px]">
+        <!-- Request Type Filter (usage only) -->
+        <div v-if="mode !== 'errors'" class="w-full sm:w-auto sm:min-w-[180px]">
           <label class="input-label">{{ t('usage.type') }}</label>
           <Select v-model="filters.request_type" :options="requestTypeOptions" @change="emitChange" />
         </div>
 
-        <!-- Billing Type Filter -->
-        <div class="w-full sm:w-auto sm:min-w-[200px]">
+        <!-- Billing Type Filter (usage only) -->
+        <div v-if="mode !== 'errors'" class="w-full sm:w-auto sm:min-w-[200px]">
           <label class="input-label">{{ t('admin.usage.billingType') }}</label>
           <Select v-model="filters.billing_type" :options="billingTypeOptions" @change="emitChange" />
         </div>
 
-        <!-- Billing Mode Filter -->
-        <div class="w-full sm:w-auto sm:min-w-[200px]">
+        <!-- Billing Mode Filter (usage only) -->
+        <div v-if="mode !== 'errors'" class="w-full sm:w-auto sm:min-w-[200px]">
           <label class="input-label">{{ t('admin.usage.billingMode') }}</label>
           <Select v-model="filters.billing_mode" :options="billingModeOptions" @change="emitChange" />
+        </div>
+
+        <!-- Error Phase Filter (errors only) -->
+        <div v-if="mode === 'errors'" class="w-full sm:w-auto sm:min-w-[180px]">
+          <label class="input-label">{{ t('admin.ops.errorLog.type') }}</label>
+          <Select v-model="filters.error_phase" :options="errorPhaseOptions" @change="emitChange" />
+        </div>
+
+        <!-- Error Category Filter (errors only) -->
+        <div v-if="mode === 'errors'" class="w-full sm:w-auto sm:min-w-[180px]">
+          <label class="input-label">{{ t('usage.errors.category') }}</label>
+          <Select v-model="filters.error_category" :options="errorCategoryOptions" @change="emitChange" />
+        </div>
+
+        <!-- Status Code Filter (errors only) -->
+        <div v-if="mode === 'errors'" class="w-full sm:w-auto sm:min-w-[180px]">
+          <label class="input-label">{{ t('admin.ops.errorLog.status') }}</label>
+          <Select v-model="filters.status_code" :options="statusCodeOptions" @change="emitChange" />
         </div>
 
         <!-- Group Filter -->
@@ -156,12 +241,14 @@
           {{ t('common.reset') }}
         </button>
         <slot name="after-reset" />
-        <button type="button" @click="$emit('cleanup')" class="btn btn-danger">
-          {{ t('admin.usage.cleanup.button') }}
-        </button>
-        <button type="button" @click="$emit('export')" :disabled="exporting" class="btn btn-primary">
-          {{ t('usage.exportExcel') }}
-        </button>
+        <template v-if="mode !== 'errors'">
+          <button type="button" @click="$emit('cleanup')" class="btn btn-danger">
+            {{ t('admin.usage.cleanup.button') }}
+          </button>
+          <button type="button" @click="$emit('export')" :disabled="exporting" class="btn btn-primary">
+            {{ t('usage.exportExcel') }}
+          </button>
+        </template>
       </div>
     </div>
   </div>
@@ -172,6 +259,8 @@ import { ref, onMounted, onUnmounted, toRef, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
 import Select, { type SelectOption } from '@/components/common/Select.vue'
+import { COMMON_ERROR_STATUS_CODES } from '@/utils/errorBadges'
+import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import type { SimpleApiKey, SimpleUser } from '@/api/admin/usage'
 
 type ModelValue = Record<string, any>
@@ -183,14 +272,20 @@ interface Props {
   endDate: string
   showActions?: boolean
   modelOptions?: string[]
+  /** errors 模式:隐藏用量专属字段/按钮,显示错误类型+状态码(错误请求 tab 用) */
+  mode?: 'usage' | 'errors'
+  compact?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showActions: true
+  showActions: true,
+  mode: 'usage',
+  compact: false
 })
 const emit = defineEmits([
   'update:modelValue',
   'change',
+  'date-change',
   'refresh',
   'reset',
   'export',
@@ -243,6 +338,29 @@ const billingTypeOptions = ref<SelectOption[]>([
   { value: 1, label: t('admin.usage.billingTypeSubscription') }
 ])
 
+// 错误类型对应后端 phase 参数(与错误表"类型"徽章同语义)
+const errorPhaseOptions = computed<SelectOption[]>(() => [
+  { value: null, label: t('admin.usage.allTypes') },
+  { value: 'upstream', label: t('admin.ops.errorLog.typeUpstream') },
+  { value: 'request', label: t('admin.ops.errorLog.typeRequest') },
+  { value: 'auth', label: t('admin.ops.errorLog.typeAuth') },
+  { value: 'routing', label: t('admin.ops.errorLog.typeRouting') },
+  { value: 'internal', label: t('admin.ops.errorLog.typeInternal') },
+])
+
+// 分类码同用户端 /usage 错误筛选;"other" 无法反查为过滤条件,刻意不列
+const errorCategoryCodes = ['auth', 'rate_limit', 'quota', 'invalid_request', 'service_unavailable', 'upstream', 'internal', 'cyber']
+
+const errorCategoryOptions = computed<SelectOption[]>(() => [
+  { value: null, label: t('usage.errors.allCategories') },
+  ...errorCategoryCodes.map((c) => ({ value: c, label: t('usage.errors.categories.' + c) })),
+])
+
+const statusCodeOptions = computed<SelectOption[]>(() => [
+  { value: null, label: t('usage.errors.allStatuses') },
+  ...COMMON_ERROR_STATUS_CODES.map((c) => ({ value: c, label: String(c) })),
+])
+
 const billingModeOptions = ref<SelectOption[]>([
   { value: null, label: t('admin.usage.allBillingModes') },
   { value: 'token', label: t('admin.usage.billingModeToken') },
@@ -251,6 +369,10 @@ const billingModeOptions = ref<SelectOption[]>([
 ])
 
 const emitChange = () => emit('change')
+
+const onCompactDateChange = (range: { startDate: string; endDate: string; preset: string | null }) => {
+  emit('date-change', range)
+}
 
 const debounceUserSearch = () => {
   if (userSearchTimeout) clearTimeout(userSearchTimeout)

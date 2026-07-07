@@ -448,6 +448,9 @@ func TestForwardAsChatCompletions_StreamsUsageWithoutClientStreamOptions(t *test
 	require.Equal(t, 13, result.Usage.InputTokens)
 	require.Equal(t, 7, result.Usage.OutputTokens)
 	require.Equal(t, 5, result.Usage.CacheReadInputTokens)
+	latency, ok := c.Get(OpsUpstreamLatencyMsKey)
+	require.True(t, ok)
+	require.IsType(t, int64(0), latency)
 
 	responseBody := rec.Body.String()
 	require.Contains(t, responseBody, `"usage"`)

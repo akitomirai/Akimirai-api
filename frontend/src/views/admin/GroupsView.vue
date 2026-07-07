@@ -789,12 +789,7 @@
 
         <!-- 图片生成计费配置 -->
         <div
-          v-if="
-            createForm.platform === 'antigravity' ||
-            createForm.platform === 'gemini' ||
-            createForm.platform === 'openai' ||
-            createForm.platform === 'grok'
-          "
+          v-if="supportsImagePricingPlatform(createForm.platform)"
           class="border-t pt-4"
         >
           <label
@@ -810,6 +805,7 @@
               <input
                 v-model="createForm.allow_image_generation"
                 type="checkbox"
+                :disabled="createForm.platform === 'image'"
                 class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               {{ t("admin.groups.imagePricing.allowImageGeneration") }}
@@ -1148,7 +1144,7 @@
 
         <!-- OpenAI Messages 调度配置（仅 openai 平台） -->
         <div
-          v-if="createForm.platform === 'openai' || createForm.platform === 'grok'"
+          v-if="createForm.platform === 'openai'"
           class="border-t border-gray-200 dark:border-dark-400 pt-4 mt-4"
         >
           <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
@@ -2129,12 +2125,7 @@
 
         <!-- 图片生成计费配置 -->
         <div
-          v-if="
-            editForm.platform === 'antigravity' ||
-            editForm.platform === 'gemini' ||
-            editForm.platform === 'openai' ||
-            editForm.platform === 'grok'
-          "
+          v-if="supportsImagePricingPlatform(editForm.platform)"
           class="border-t pt-4"
         >
           <label
@@ -2150,6 +2141,7 @@
               <input
                 v-model="editForm.allow_image_generation"
                 type="checkbox"
+                :disabled="editForm.platform === 'image'"
                 class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
               {{ t("admin.groups.imagePricing.allowImageGeneration") }}
@@ -2484,7 +2476,7 @@
 
         <!-- OpenAI Messages 调度配置（仅 openai 平台） -->
         <div
-          v-if="editForm.platform === 'openai' || editForm.platform === 'grok'"
+          v-if="editForm.platform === 'openai'"
           class="border-t border-gray-200 dark:border-dark-400 pt-4 mt-4"
         >
           <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
@@ -3102,7 +3094,7 @@
                       ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
                       : group.platform === 'openai'
                         ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                      : group.platform === 'antigravity'
+                        : group.platform === 'antigravity'
                           ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
                           : group.platform === 'grok'
                             ? 'bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100'
@@ -3218,6 +3210,7 @@ import {
 } from "./groupsModelsList";
 import { createModelsListCandidatesTracker } from "./groupsModelsListCandidates";
 import { normalizeSupportedModelScopesForPlatform } from "./groupsSupportedModelScopes";
+import { supportsImagePricingPlatform } from "./groupsImagePricing";
 
 const { t } = useI18n();
 const appStore = useAppStore();
@@ -3350,20 +3343,20 @@ const exclusiveOptions = computed(() => [
 const platformOptions = computed(() => [
   { value: "anthropic", label: "Anthropic" },
   { value: "openai", label: "OpenAI" },
-  { value: "grok", label: "Grok (xAI)" },
+  { value: "image", label: t("admin.groups.platforms.image") },
+  { value: "grok", label: t("admin.groups.platforms.grok") },
   { value: "gemini", label: "Gemini" },
   { value: "antigravity", label: "Antigravity" },
-  { value: "grok", label: "Grok" },
 ]);
 
 const platformFilterOptions = computed(() => [
   { value: "", label: t("admin.groups.allPlatforms") },
   { value: "anthropic", label: "Anthropic" },
   { value: "openai", label: "OpenAI" },
-  { value: "grok", label: "Grok (xAI)" },
+  { value: "image", label: t("admin.groups.platforms.image") },
+  { value: "grok", label: t("admin.groups.platforms.grok") },
   { value: "gemini", label: "Gemini" },
   { value: "antigravity", label: "Antigravity" },
-  { value: "grok", label: "Grok" },
 ]);
 
 const editStatusOptions = computed(() => [
@@ -3451,9 +3444,21 @@ const invalidRequestFallbackOptionsForEdit = computed(() => {
 });
 
 // 复制账号的源分组选项（创建时）- 仅包含相同平台且有账号的分组
+const canCopyAccountsBetweenGroups = (
+  targetPlatform: GroupPlatform,
+  sourcePlatform: GroupPlatform,
+) => {
+  if (targetPlatform === "image" || sourcePlatform === "image") {
+    return false;
+  }
+  return targetPlatform === sourcePlatform;
+};
+
 const copyAccountsGroupOptions = computed(() => {
   const eligibleGroups = groups.value.filter(
-    (g) => g.platform === createForm.platform && (g.account_count || 0) > 0,
+    (g) =>
+      canCopyAccountsBetweenGroups(createForm.platform, g.platform) &&
+      (g.account_count || 0) > 0,
   );
   return eligibleGroups.map((g) => ({
     value: g.id,
@@ -3466,7 +3471,7 @@ const copyAccountsGroupOptionsForEdit = computed(() => {
   const currentId = editingGroup.value?.id;
   const eligibleGroups = groups.value.filter(
     (g) =>
-      g.platform === editForm.platform &&
+      canCopyAccountsBetweenGroups(editForm.platform, g.platform) &&
       (g.account_count || 0) > 0 &&
       g.id !== currentId,
   );
@@ -4224,6 +4229,8 @@ const handleCreateGroup = async () => {
     // 构建请求数据，包含模型路由配置
     const requestData = {
       ...createForm,
+      allow_image_generation:
+        createForm.platform === "image" ? true : createForm.allow_image_generation,
       daily_limit_usd: normalizeOptionalLimit(
         createForm.daily_limit_usd as number | string | null,
       ),
@@ -4242,7 +4249,7 @@ const handleCreateGroup = async () => {
         createForm.supported_model_scopes,
       ),
       messages_dispatch_model_config:
-        createForm.platform === "openai" || createForm.platform === "grok"
+        createForm.platform === "openai"
           ? messagesDispatchFormStateToConfig({
               allow_messages_dispatch: createForm.allow_messages_dispatch,
               opus_mapped_model: createForm.opus_mapped_model,
@@ -4297,7 +4304,8 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.daily_limit_usd = group.daily_limit_usd;
   editForm.weekly_limit_usd = group.weekly_limit_usd;
   editForm.monthly_limit_usd = group.monthly_limit_usd;
-  editForm.allow_image_generation = group.allow_image_generation ?? false;
+  editForm.allow_image_generation =
+    group.platform === "image" ? true : (group.allow_image_generation ?? false);
   editForm.image_rate_independent = group.image_rate_independent ?? false;
   editForm.image_rate_multiplier = group.image_rate_multiplier ?? 1;
   editForm.image_price_1k = group.image_price_1k;
@@ -4371,6 +4379,8 @@ const handleUpdateGroup = async () => {
     // 转换 fallback_group_id: null -> 0 (后端使用 0 表示清除)
     const payload = {
       ...editForm,
+      allow_image_generation:
+        editForm.platform === "image" ? true : editForm.allow_image_generation,
       daily_limit_usd: normalizeOptionalLimit(
         editForm.daily_limit_usd as number | string | null,
       ),
@@ -4395,7 +4405,7 @@ const handleUpdateGroup = async () => {
         editForm.supported_model_scopes,
       ),
       messages_dispatch_model_config:
-        editForm.platform === "openai" || editForm.platform === "grok"
+        editForm.platform === "openai"
           ? messagesDispatchFormStateToConfig({
               allow_messages_dispatch: editForm.allow_messages_dispatch,
               opus_mapped_model: editForm.opus_mapped_model,
@@ -4521,13 +4531,17 @@ watch(
 watch(
   () => createForm.platform,
   (newVal) => {
+    if (newVal === "image") {
+      createForm.allow_image_generation = true;
+      createForm.copy_accounts_from_group_ids = [];
+    }
     if (!["anthropic", "antigravity"].includes(newVal)) {
       createForm.fallback_group_id_on_invalid_request = null;
     }
-    if (newVal !== "openai" && newVal !== "grok") {
+    if (newVal !== "openai") {
       resetMessagesDispatchFormState(createForm);
     }
-    if (!["openai", "grok", "antigravity", "anthropic", "gemini"].includes(newVal)) {
+    if (!["openai", "antigravity", "anthropic", "gemini"].includes(newVal)) {
       createForm.require_oauth_only = false;
       createForm.require_privacy_set = false;
     }
@@ -4539,13 +4553,17 @@ watch(
 watch(
   () => editForm.platform,
   (newVal) => {
+    if (newVal === "image") {
+      editForm.allow_image_generation = true;
+      editForm.copy_accounts_from_group_ids = [];
+    }
     if (!["anthropic", "antigravity"].includes(newVal)) {
       editForm.fallback_group_id_on_invalid_request = null;
     }
-    if (newVal !== "openai" && newVal !== "grok") {
+    if (newVal !== "openai") {
       resetMessagesDispatchFormState(editForm);
     }
-    if (!["openai", "grok", "antigravity", "anthropic", "gemini"].includes(newVal)) {
+    if (!["openai", "antigravity", "anthropic", "gemini"].includes(newVal)) {
       editForm.require_oauth_only = false;
       editForm.require_privacy_set = false;
     }
@@ -4562,7 +4580,7 @@ watch(
     if (!['anthropic', 'antigravity'].includes(newVal)) {
       editForm.fallback_group_id_on_invalid_request = null
     }
-    if (newVal !== 'openai' && newVal !== 'grok') {
+    if (newVal !== 'openai') {
       editForm.allow_messages_dispatch = false
       editForm.default_mapped_model = ''
     }

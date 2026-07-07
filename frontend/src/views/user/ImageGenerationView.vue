@@ -18,17 +18,34 @@
           </button>
         </div>
         <div class="topbar-right">
-          <span class="topbar-pill">
-            <span class="topbar-pill-label">模式</span>
-            <span class="topbar-pill-value">{{ quotaDisplay }}</span>
-          </span>
-          <span class="topbar-pill">
-            <span class="topbar-pill-label">运行</span>
-            <span class="topbar-pill-value">{{ activeTaskCount }}</span>
-          </span>
-          <router-link class="topbar-btn" to="/image-management">
+          <div class="workbench-mode-switch" aria-label="GPTImage 模式">
+            <button class="workbench-mode-tab workbench-mode-tab-active" type="button" @click="focusComposer">
+              画廊
+            </button>
+            <button class="workbench-mode-tab" type="button" disabled title="Agent 模式即将接入">
+              Agent
+            </button>
+          </div>
+          <div class="workbench-control-strip" aria-label="GPTImage 控制区">
+            <span class="workbench-status-chip" title="当前运行模式">
+              <span class="workbench-status-dot"></span>
+              {{ quotaDisplay }}
+            </span>
+            <button class="workbench-console-btn" type="button" title="打开控制台" @click="isHistoryOpen = true">
+              <Icon name="terminal" size="sm" />
+              <span class="workbench-console-label">控制台</span>
+              <span class="workbench-count">{{ activeTaskCount }}</span>
+            </button>
+            <button class="workbench-icon-btn" type="button" title="操作指南" aria-label="操作指南" @click="showWorkbenchHelp = true">
+              <Icon name="questionCircle" size="sm" />
+            </button>
+            <button class="workbench-icon-btn" type="button" title="生成设置" aria-label="生成设置" @click="showWorkbenchSettings = true">
+              <Icon name="cog" size="sm" />
+            </button>
+          </div>
+          <router-link class="workbench-works-link" to="/image-management" title="我的作品">
             <Icon name="grid" size="sm" />
-            <span class="topbar-btn-label">我的作品</span>
+            <span class="workbench-works-label">我的作品</span>
           </router-link>
         </div>
       </div>
@@ -346,6 +363,109 @@
             </div>
           </div>
         </div>
+        <div v-if="showWorkbenchHelp" class="dialog-overlay" @click.self="showWorkbenchHelp = false">
+          <div class="workbench-help-dialog">
+            <div class="workbench-help-header">
+              <div>
+                <p class="workbench-help-kicker">GPTImage</p>
+                <h2>操作指南</h2>
+              </div>
+              <button class="workbench-help-close" type="button" title="关闭" @click="showWorkbenchHelp = false">
+                <Icon name="x" size="sm" />
+              </button>
+            </div>
+            <div class="workbench-help-body">
+              <section class="workbench-help-grid">
+                <article>
+                  <Icon name="grid" size="sm" />
+                  <strong>画廊</strong>
+                  <span>当前创作工作台，保留本地历史、参考图和生成参数。</span>
+                </article>
+                <article>
+                  <Icon name="brain" size="sm" />
+                  <strong>Agent</strong>
+                  <span>入口已预留，后续接入多轮规划和工具调用式生图。</span>
+                </article>
+                <article>
+                  <Icon name="terminal" size="sm" />
+                  <strong>控制台</strong>
+                  <span>打开历史会话，查看运行任务数量，并复用旧任务配置。</span>
+                </article>
+                <article>
+                  <Icon name="cog" size="sm" />
+                  <strong>设置</strong>
+                  <span>查看 Sub2API 图片接口、模型、请求模式和当前生成参数。</span>
+                </article>
+              </section>
+              <section class="workbench-help-steps">
+                <p>基础流程</p>
+                <ol>
+                  <li>在 API 密钥页创建绑定生图分组的 Key。</li>
+                  <li>打开设置确认接口为当前站点的 <code>/v1</code>。</li>
+                  <li>输入提示词，可粘贴或上传参考图，再提交生成。</li>
+                </ol>
+              </section>
+            </div>
+          </div>
+        </div>
+        <div v-if="showWorkbenchSettings" class="dialog-overlay" @click.self="showWorkbenchSettings = false">
+          <div class="workbench-settings-dialog">
+            <div class="workbench-help-header">
+              <div>
+                <p class="workbench-help-kicker">GPTImage</p>
+                <h2>接口与生成设置</h2>
+              </div>
+              <button class="workbench-help-close" type="button" title="关闭" @click="showWorkbenchSettings = false">
+                <Icon name="x" size="sm" />
+              </button>
+            </div>
+            <div class="workbench-settings-body">
+              <section class="settings-section">
+                <div class="settings-section-title">
+                  <Icon name="server" size="sm" />
+                  <span>Sub2API 接口</span>
+                </div>
+                <dl class="settings-list">
+                  <div><dt>API URL</dt><dd>{{ apiBaseUrl }}</dd></div>
+                  <div><dt>生成端点</dt><dd>{{ imageGenerationEndpoint }}</dd></div>
+                  <div><dt>编辑端点</dt><dd>{{ imageEditEndpoint }}</dd></div>
+                  <div><dt>API mode</dt><dd>images</dd></div>
+                  <div><dt>模型</dt><dd>{{ activeImageModel }}</dd></div>
+                  <div><dt>API Key</dt><dd>使用 API 密钥页中绑定生图分组的 Key</dd></div>
+                </dl>
+                <router-link class="settings-link" to="/keys" @click="showWorkbenchSettings = false">
+                  <Icon name="key" size="sm" />
+                  管理 API 密钥
+                </router-link>
+              </section>
+              <section class="settings-section">
+                <div class="settings-section-title">
+                  <Icon name="filter" size="sm" />
+                  <span>当前生成参数</span>
+                </div>
+                <div class="settings-chip-grid">
+                  <span><b>尺寸</b>{{ sizeDisplayLabel }}</span>
+                  <span><b>质量</b>{{ qualityDisplayLabel }}</span>
+                  <span><b>格式</b>{{ outputFormatLabel }}</span>
+                  <span><b>背景</b>{{ backgroundLabel }}</span>
+                  <span><b>审核</b>{{ moderation }}</span>
+                  <span><b>数量</b>{{ parsedCount }}</span>
+                </div>
+                <button class="settings-focus-button" type="button" @click="showWorkbenchSettings = false; focusComposerSettings()">
+                  <Icon name="edit" size="sm" />
+                  调整生成参数
+                </button>
+              </section>
+              <section class="settings-section settings-section-compact">
+                <div class="settings-section-title">
+                  <Icon name="shield" size="sm" />
+                  <span>运行边界</span>
+                </div>
+                <p>同源使用无需 CORS；请求仍走 Sub2API 的鉴权、分组权限、计费和使用记录。</p>
+              </section>
+            </div>
+          </div>
+        </div>
         <div v-if="confirmClearAll" class="dialog-overlay" @click.self="confirmClearAll = false">
           <div class="confirm-dialog">
             <h2 class="font-semibold text-lg mb-2">清空历史记录</h2>
@@ -481,6 +601,8 @@ const moderation = ref('')
 const referenceImages = ref<StoredReference[]>([])
 const referenceFiles = ref<File[]>([])
 const isHistoryOpen = ref(false)
+const showWorkbenchHelp = ref(false)
+const showWorkbenchSettings = ref(false)
 const loadingHistory = ref(false)
 const conversations = ref<ImageConversation[]>([])
 const activeConversationId = ref<string | null>(null)
@@ -538,6 +660,13 @@ const sizeDialogUsedValue = computed(() => {
 const sizeDialogUsedLabel = computed(() => sizeOptions.value.find(o => o.value === sizeDialogUsedValue.value)?.label ?? sizeDialogUsedValue.value)
 const activeConversation = computed(() => conversations.value.find(c => c.id === activeConversationId.value) ?? null)
 const sortedConversations = computed(() => [...conversations.value].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)))
+const apiBaseUrl = computed(() => {
+  if (typeof window === 'undefined') return '/v1'
+  return `${window.location.origin}/v1`
+})
+const imageGenerationEndpoint = computed(() => `${apiBaseUrl.value}/images/generations`)
+const imageEditEndpoint = computed(() => `${apiBaseUrl.value}/images/edits`)
+const activeImageModel = computed(() => imageConfig.value.default_model || 'gpt-image-2')
 const activeTaskCount = computed(() => {
   let sum = 0
   for (const c of conversations.value) {
@@ -958,6 +1087,19 @@ function onDocClick(e: MouseEvent) {
   if (!composerControlsRef.value?.contains(t)) closeSelectMenu()
 }
 
+async function focusComposer() {
+  await nextTick()
+  textareaRef.value?.focus()
+}
+
+async function focusComposerSettings() {
+  await nextTick()
+  composerControlsRef.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  window.setTimeout(() => {
+    composerControlsRef.value?.querySelector<HTMLElement>('button, input')?.focus()
+  }, 180)
+}
+
 watch(count, v => { try { localStorage.setItem(STORAGE_KEYS.lastCount, v) } catch { /* noop */ } })
 watch(size, v => { try { localStorage.setItem(STORAGE_KEYS.lastSize, v) } catch { /* noop */ } })
 watch(resolution, v => { try { localStorage.setItem(STORAGE_KEYS.lastResolution, v) } catch { /* noop */ } })
@@ -969,24 +1111,50 @@ watch(moderation, v => { try { localStorage.setItem(STORAGE_KEYS.lastModeration,
 <style scoped>
 .image-workbench { display: flex; flex-direction: column; height: calc(100dvh - 64px - 2rem); overflow: hidden; }
 /* ── Topbar ── */
-.floating-topbar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem 0.75rem; position: relative; z-index: 20; }
-.topbar-left, .topbar-right { display: flex; align-items: center; gap: 0.5rem; }
+.floating-topbar { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.625rem 0.75rem; position: relative; z-index: 20; }
+.topbar-left, .topbar-right { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.topbar-right { justify-content: flex-end; }
 .topbar-btn { display: inline-flex; align-items: center; gap: 0.375rem; height: 2.25rem; padding: 0 0.75rem; border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 500; color: #444; background: white; border: 1px solid #e5e7eb; cursor: pointer; transition: all .15s; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
 .topbar-btn:hover { border-color: #d1d5db; background: #f9fafb; }
 .topbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .topbar-btn-primary { background: #1e293b; color: white; border-color: #1e293b; }
 .topbar-btn-primary:hover { background: #334155; }
 .topbar-badge { font-size: 0.625rem; font-weight: 600; color: #9ca3af; background: #f3f4f6; border-radius: 999px; padding: 0.0625rem 0.375rem; min-width: 1.125rem; text-align: center; }
-.topbar-pill { display: inline-flex; align-items: center; gap: 0.375rem; height: 1.75rem; padding: 0 0.625rem; border-radius: 0.375rem; background: white; border: 1px solid #e5e7eb; font-size: 0.625rem; font-weight: 600; color: #9ca3af; white-space: nowrap; }
-.topbar-pill-label { letter-spacing: 0.1em; text-transform: uppercase; }
-.topbar-pill-value { font-size: 0.75rem; font-weight: 600; color: #1e293b; }
+.workbench-mode-switch { display: inline-flex; align-items: center; gap: 0.125rem; height: 2.25rem; padding: 0.1875rem; border: 1px solid #e5e7eb; border-radius: 0.75rem; background: rgba(255,255,255,.78); box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+.workbench-mode-tab { display: inline-flex; align-items: center; justify-content: center; height: 1.75rem; min-width: 3.25rem; padding: 0 0.75rem; border: 0; border-radius: 0.5625rem; background: transparent; color: #6b7280; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: background .15s, color .15s, box-shadow .15s; }
+.workbench-mode-tab:hover:not(:disabled) { color: #111827; background: rgba(255,255,255,.72); }
+.workbench-mode-tab-active { background: #fff; color: #111827; box-shadow: 0 1px 4px rgba(15,23,42,.08); }
+.workbench-mode-tab:disabled { cursor: not-allowed; opacity: .5; }
+.workbench-control-strip { display: inline-flex; align-items: center; gap: 0.25rem; height: 2.25rem; padding: 0.1875rem; border: 1px solid #e5e7eb; border-radius: 0.875rem; background: rgba(255,255,255,.84); box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+.workbench-status-chip { display: inline-flex; align-items: center; gap: 0.375rem; height: 1.75rem; padding: 0 0.625rem; border-radius: 0.625rem; color: #64748b; background: #f8fafc; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+.workbench-status-dot { width: 0.375rem; height: 0.375rem; border-radius: 999px; background: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.12); }
+.workbench-console-btn, .workbench-icon-btn, .workbench-works-link { display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; height: 1.875rem; border: 0; border-radius: 0.625rem; background: transparent; color: #64748b; font-size: 0.8125rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: background .15s, color .15s; white-space: nowrap; }
+.workbench-console-btn { padding: 0 0.625rem; }
+.workbench-icon-btn { width: 1.875rem; padding: 0; }
+.workbench-works-link { height: 2.25rem; padding: 0 0.75rem; border: 1px solid #e5e7eb; background: rgba(255,255,255,.84); box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+.workbench-console-btn:hover, .workbench-icon-btn:hover, .workbench-works-link:hover { background: #f1f5f9; color: #0f172a; }
+.workbench-count { display: inline-flex; min-width: 1.125rem; height: 1.125rem; align-items: center; justify-content: center; border-radius: 999px; padding: 0 0.3125rem; background: #eef2ff; color: #4f46e5; font-size: 0.6875rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .dark .topbar-btn { background: #1e293b; border-color: #334155; color: #d1d5db; }
 .dark .topbar-btn:hover { background: #334155; }
 .dark .topbar-btn-primary { background: white; color: #0f172a; border-color: white; }
-.dark .topbar-pill { background: #1e293b; border-color: #334155; }
-.dark .topbar-pill-value { color: #e2e8f0; }
+.dark .workbench-mode-switch, .dark .workbench-control-strip, .dark .workbench-works-link { background: rgba(30,41,59,.82); border-color: #334155; box-shadow: none; }
+.dark .workbench-mode-tab { color: #94a3b8; }
+.dark .workbench-mode-tab:hover:not(:disabled) { color: #f8fafc; background: rgba(255,255,255,.06); }
+.dark .workbench-mode-tab-active { background: rgba(255,255,255,.12); color: #fff; box-shadow: none; }
+.dark .workbench-status-chip { background: rgba(15,23,42,.7); color: #cbd5e1; }
+.dark .workbench-console-btn, .dark .workbench-icon-btn, .dark .workbench-works-link { color: #cbd5e1; }
+.dark .workbench-console-btn:hover, .dark .workbench-icon-btn:hover, .dark .workbench-works-link:hover { background: rgba(255,255,255,.08); color: #fff; }
+.dark .workbench-count { background: rgba(99,102,241,.2); color: #c4b5fd; }
 .topbar-btn-label { max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
-@media (max-width: 640px) { .topbar-btn-label { display: none; } }
+@media (max-width: 920px) {
+  .floating-topbar { align-items: flex-start; flex-wrap: wrap; }
+  .topbar-right { width: 100%; justify-content: flex-start; overflow-x: auto; padding-bottom: 0.125rem; }
+}
+@media (max-width: 640px) {
+  .topbar-btn-label, .workbench-status-chip, .workbench-console-label, .workbench-works-label { display: none; }
+  .workbench-mode-tab { min-width: auto; padding: 0 0.625rem; }
+  .workbench-console-btn { width: 1.875rem; padding: 0; }
+}
 
 /* ── Results ── */
 .results-viewport { flex: 1; min-height: 0; overflow-y: auto; padding: 1rem 0.5rem 0; }
@@ -1159,6 +1327,54 @@ watch(moderation, v => { try { localStorage.setItem(STORAGE_KEYS.lastModeration,
 .key-option-selected { border-color: #3b82f6; background: #eff6ff; }
 .dark .key-option { border-color: #44403c; background: #292524; }
 .dark .key-option-selected { border-color: #60a5fa; background: #1e3a5f; }
+
+.workbench-help-dialog, .workbench-settings-dialog { width: min(42rem, 92vw); max-height: min(42rem, 88dvh); background: white; border-radius: 1.25rem; box-shadow: 0 24px 80px rgba(15,23,42,.22); overflow: hidden; display: flex; flex-direction: column; }
+.workbench-settings-dialog { width: min(48rem, 92vw); }
+.workbench-help-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.25rem 1.25rem 0.875rem; border-bottom: 1px solid #f1f5f9; }
+.workbench-help-kicker { margin-bottom: 0.25rem; color: #0f766e; font-size: 0.75rem; font-weight: 800; }
+.workbench-help-header h2 { color: #0f172a; font-size: 1rem; font-weight: 800; }
+.workbench-help-close { width: 2rem; height: 2rem; border: 0; border-radius: 0.625rem; background: transparent; color: #94a3b8; cursor: pointer; display: grid; place-items: center; }
+.workbench-help-close:hover { background: #f1f5f9; color: #0f172a; }
+.workbench-help-body, .workbench-settings-body { display: grid; gap: 1rem; overflow-y: auto; padding: 1rem 1.25rem 1.25rem; }
+.workbench-help-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+.workbench-help-grid article { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.25rem 0.625rem; align-items: start; min-width: 0; border: 1px solid #e5e7eb; border-radius: 0.875rem; background: #f8fafc; padding: 0.875rem; }
+.workbench-help-grid svg { grid-row: span 2; margin-top: 0.125rem; color: #0f766e; }
+.workbench-help-body strong { color: #0f172a; font-size: 0.8125rem; }
+.workbench-help-body span { color: #64748b; font-size: 0.8125rem; line-height: 1.6; }
+.workbench-help-steps { border: 1px solid #e5e7eb; border-radius: 0.875rem; padding: 0.875rem 1rem; }
+.workbench-help-steps p, .settings-section-title { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.625rem; color: #0f172a; font-size: 0.8125rem; font-weight: 800; }
+.workbench-help-steps ol { margin: 0; padding-left: 1.125rem; color: #64748b; font-size: 0.8125rem; line-height: 1.75; }
+.workbench-help-steps code { border-radius: 0.25rem; background: #eef2ff; padding: 0.0625rem 0.25rem; color: #4f46e5; }
+.settings-section { display: grid; gap: 0.75rem; border: 1px solid #e5e7eb; border-radius: 0.875rem; background: #fff; padding: 0.875rem; }
+.settings-section-compact p { color: #64748b; font-size: 0.8125rem; line-height: 1.65; }
+.settings-section-title { margin-bottom: 0; }
+.settings-section-title svg { color: #0f766e; }
+.settings-list { display: grid; gap: 0.5rem; margin: 0; }
+.settings-list div { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: 0.75rem; align-items: start; border-radius: 0.625rem; background: #f8fafc; padding: 0.625rem 0.75rem; }
+.settings-list dt { color: #64748b; font-size: 0.75rem; font-weight: 800; }
+.settings-list dd { min-width: 0; margin: 0; overflow-wrap: anywhere; color: #0f172a; font-size: 0.8125rem; line-height: 1.45; }
+.settings-link, .settings-focus-button { display: inline-flex; width: fit-content; align-items: center; gap: 0.375rem; border: 1px solid #dbe4ee; border-radius: 0.625rem; background: #fff; padding: 0.5rem 0.75rem; color: #0f766e; font-size: 0.8125rem; font-weight: 800; text-decoration: none; cursor: pointer; }
+.settings-link:hover, .settings-focus-button:hover { background: #f0fdfa; border-color: #99f6e4; }
+.settings-chip-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+.settings-chip-grid span { display: grid; gap: 0.1875rem; border-radius: 0.625rem; background: #f8fafc; padding: 0.625rem 0.75rem; color: #0f172a; font-size: 0.8125rem; }
+.settings-chip-grid b { color: #64748b; font-size: 0.6875rem; }
+.dark .workbench-help-dialog, .dark .workbench-settings-dialog { background: #1c1917; border: 1px solid #292524; box-shadow: none; }
+.dark .workbench-help-header { border-color: #292524; }
+.dark .workbench-help-kicker { color: #5eead4; }
+.dark .workbench-help-header h2, .dark .workbench-help-body strong, .dark .workbench-help-steps p, .dark .settings-section-title, .dark .settings-list dd, .dark .settings-chip-grid span { color: #fafaf9; }
+.dark .workbench-help-close { color: #a8a29e; }
+.dark .workbench-help-close:hover { background: #292524; color: #fafaf9; }
+.dark .workbench-help-body span, .dark .workbench-help-steps ol, .dark .settings-section-compact p, .dark .settings-list dt, .dark .settings-chip-grid b { color: #a8a29e; }
+.dark .workbench-help-grid article, .dark .workbench-help-steps, .dark .settings-section { border-color: #292524; background: #211d1a; }
+.dark .settings-list div, .dark .settings-chip-grid span { background: #292524; }
+.dark .settings-link, .dark .settings-focus-button { border-color: #44403c; background: #292524; color: #5eead4; }
+.dark .settings-link:hover, .dark .settings-focus-button:hover { background: #1f2f2c; border-color: #0f766e; }
+.dark .workbench-help-steps code { background: #312e81; color: #c4b5fd; }
+
+@media (max-width: 640px) {
+  .workbench-help-grid, .settings-chip-grid { grid-template-columns: 1fr; }
+  .settings-list div { grid-template-columns: 1fr; gap: 0.25rem; }
+}
 
 .confirm-dialog { width: min(24rem, 92vw); background: white; border-radius: 1.5rem; padding: 1.5rem; }
 .dark .confirm-dialog { background: #1c1917; border: 1px solid #292524; }

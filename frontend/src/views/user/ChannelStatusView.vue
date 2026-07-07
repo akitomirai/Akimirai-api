@@ -10,13 +10,13 @@
       @refresh="manualReload"
     />
 
-    <MonitorCardGrid
+    <ModelStatusPanel
       :items="items"
       :window="currentWindow"
-      :countdown-seconds="countdown"
-      :loading="loading"
+      :loading="loading || modelUsageLoading"
       :detail-cache="detailCache"
-      @card-click="openDetail"
+      :usage-models="modelUsageStats"
+      @model-click="openDetail"
     />
 
     <MonitorDetailDialog
@@ -39,15 +39,17 @@ import {
   type UserMonitorView,
   type UserMonitorDetail,
 } from '@/api/channelMonitor'
+import { getDashboardModels } from '@/api/usage'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import MonitorHero, {
   type MonitorWindow,
   type OverallStatus,
 } from '@/components/user/monitor/MonitorHero.vue'
-import MonitorCardGrid from '@/components/user/monitor/MonitorCardGrid.vue'
+import ModelStatusPanel from '@/components/user/monitor/ModelStatusPanel.vue'
 import MonitorDetailDialog from '@/components/user/MonitorDetailDialog.vue'
 import { DEFAULT_INTERVAL_SECONDS, STATUS_OPERATIONAL } from '@/constants/channelMonitor'
 import { useAutoRefresh } from '@/composables/useAutoRefresh'
+import type { ModelStat } from '@/types'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -55,6 +57,8 @@ const appStore = useAppStore()
 // ── State ──
 const items = ref<UserMonitorView[]>([])
 const loading = ref(false)
+const modelUsageLoading = ref(false)
+const modelUsageStats = ref<ModelStat[]>([])
 const currentWindow = ref<MonitorWindow>('7d')
 const detailCache = reactive<Record<number, UserMonitorDetail>>({})
 const showDetail = ref(false)
@@ -86,13 +90,40 @@ const detailTitle = computed(() => {
 })
 
 // ── Loaders ──
+function formatLocalDate(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+async function loadModelUsage(silent = false) {
+  if (!silent) modelUsageLoading.value = true
+  try {
+    const today = formatLocalDate(new Date())
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const res = await getDashboardModels({
+      start_date: today,
+      end_date: today,
+      timezone,
+      model_source: 'requested',
+    })
+    modelUsageStats.value = res.models || []
+  } catch (err: unknown) {
+    console.error('[ChannelStatusView] load model usage failed:', err)
+    modelUsageStats.value = []
+  } finally {
+    if (!silent) modelUsageLoading.value = false
+  }
+}
+
 async function reload(silent = false) {
   if (abortController) abortController.abort()
   const ctrl = new AbortController()
   abortController = ctrl
   if (!silent) loading.value = true
   try {
-    const res = await listChannelMonitorViews({ signal: ctrl.signal })
+    const [res] = await Promise.all([
+      listChannelMonitorViews({ signal: ctrl.signal }),
+      loadModelUsage(true),
+    ])
     if (ctrl.signal.aborted || abortController !== ctrl) return
     items.value = res.items || []
   } catch (err: unknown) {

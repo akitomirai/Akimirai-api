@@ -132,6 +132,11 @@
           </div>
         </section>
 
+        <ProfilePrivacyFilterCard
+          v-if="user"
+          :config="user.privacy_filter_config"
+        />
+
         <section
           data-testid="profile-auth-bindings-panel"
           class="card border border-gray-100 bg-white/90 p-6 dark:border-dark-700 dark:bg-dark-900/50"
@@ -186,6 +191,7 @@ import Icon from '@/components/icons/Icon.vue'
 import ProfileAvatarCard from '@/components/user/profile/ProfileAvatarCard.vue'
 import ProfileEditForm from '@/components/user/profile/ProfileEditForm.vue'
 import ProfileIdentityBindingsSection from '@/components/user/profile/ProfileIdentityBindingsSection.vue'
+import ProfilePrivacyFilterCard from '@/components/user/profile/ProfilePrivacyFilterCard.vue'
 import type { User, UserAuthBindingStatus, UserAuthProvider, UserProfileSourceContext } from '@/types'
 import { resolveUserDisplayName } from '@/utils/userDisplay'
 

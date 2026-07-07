@@ -13,10 +13,6 @@
         </p>
       </div>
       <div class="flex flex-wrap gap-2">
-        <router-link class="btn btn-sm btn-secondary" to="/quick-start">
-          <Icon name="book" size="sm" />
-          {{ t('availableChannels.modelCatalog.quickStart', 'Quick Start') }}
-        </router-link>
         <button class="btn btn-sm btn-secondary" type="button" @click="$emit('retry')">
           <Icon name="refresh" size="sm" :class="loading ? 'animate-spin' : ''" />
           {{ t('common.refresh', 'Refresh') }}
@@ -111,7 +107,7 @@
                   <Icon name="copy" size="sm" />
                   {{ copiedModel === item.id ? t('common.copied', 'Copied') : t('common.copy', 'Copy') }}
                 </button>
-                <router-link class="btn btn-sm btn-primary" :to="quickStartLink(item)">
+                <router-link class="btn btn-sm btn-primary" to="/keys">
                   <Icon name="externalLink" size="sm" />
                   {{ t('availableChannels.modelCatalog.useModel', 'Use') }}
                 </router-link>
@@ -210,11 +206,6 @@ function sourceSummary(item: ModelCatalogItem): string {
   const groupNames = item.groups.map((group) => group.name).join(', ')
   const count = `${item.availableChannelCount} available channel(s)`
   return groupNames ? `${groupNames} / ${count}` : count
-}
-
-function quickStartLink(item: ModelCatalogItem) {
-  if (item.quickStartUrl) return item.quickStartUrl
-  return { path: '/quick-start', query: { model: item.id } }
 }
 
 async function copyModel(modelId: string) {

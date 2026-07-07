@@ -32,6 +32,8 @@ type User struct {
 	// RPMLimit 用户级每分钟请求数上限（0 = 不限制），仅在所用分组未设置 rpm_limit 时作为兜底生效。
 	RPMLimit int `json:"rpm_limit"`
 
+	PrivacyFilterConfig PrivacyFilterConfig `json:"privacy_filter_config"`
+
 	APIKeys       []APIKey           `json:"api_keys,omitempty"`
 	Subscriptions []UserSubscription `json:"subscriptions,omitempty"`
 }
@@ -65,6 +67,8 @@ type APIKey struct {
 	ExpiresAt      *time.Time `json:"expires_at"` // Expiration time (nil = never expires)
 	CreatedAt      time.Time  `json:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`
+	// CurrentConcurrency is the real-time active request count for this API key.
+	CurrentConcurrency int `json:"current_concurrency"`
 
 	// Rate limit fields
 	RateLimit5h   float64    `json:"rate_limit_5h"`
@@ -485,14 +489,6 @@ type UsageLog struct {
 	DurationMs   *int   `json:"duration_ms"`
 	FirstTokenMs *int   `json:"first_token_ms"`
 
-	// 性能观测：客户端入站传输协议
-	ClientTransport *string `json:"client_transport,omitempty"`
-	// 性能观测：各阶段延迟分解（毫秒）
-	AuthLatencyMs     *int `json:"auth_latency_ms,omitempty"`
-	RoutingLatencyMs  *int `json:"routing_latency_ms,omitempty"`
-	UpstreamLatencyMs *int `json:"upstream_latency_ms,omitempty"`
-	ResponseLatencyMs *int `json:"response_latency_ms,omitempty"`
-
 	// 图片生成字段
 	ImageCount         int            `json:"image_count"`
 	ImageSize          *string        `json:"image_size"`
@@ -641,17 +637,16 @@ type BulkAssignResult struct {
 
 // PromoCode 注册优惠码
 type PromoCode struct {
-	ID              int64      `json:"id"`
-	Code            string     `json:"code"`
-	BonusAmount     float64    `json:"bonus_amount"`
-	DiscountPercent float64    `json:"discount_percent"`
-	MaxUses         int        `json:"max_uses"`
-	UsedCount       int        `json:"used_count"`
-	Status          string     `json:"status"`
-	ExpiresAt       *time.Time `json:"expires_at"`
-	Notes           string     `json:"notes"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
+	ID          int64      `json:"id"`
+	Code        string     `json:"code"`
+	BonusAmount float64    `json:"bonus_amount"`
+	MaxUses     int        `json:"max_uses"`
+	UsedCount   int        `json:"used_count"`
+	Status      string     `json:"status"`
+	ExpiresAt   *time.Time `json:"expires_at"`
+	Notes       string     `json:"notes"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
 // PromoCodeUsage 优惠码使用记录

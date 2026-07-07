@@ -385,6 +385,16 @@ func TestAuthService_Register_ReservedEmail(t *testing.T) {
 	require.ErrorIs(t, err, ErrEmailReserved)
 }
 
+func TestAuthService_Register_BlockedLocalPartEmail(t *testing.T) {
+	repo := &userRepoStub{}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled: "true",
+	}, nil, nil)
+
+	_, _, err := service.Register(context.Background(), "root@qq.com", "password")
+	require.ErrorIs(t, err, ErrEmailReserved)
+}
+
 func TestAuthService_Register_EmailSuffixNotAllowed(t *testing.T) {
 	repo := &userRepoStub{}
 	service := newAuthService(repo, map[string]string{
@@ -428,6 +438,16 @@ func TestAuthService_SendVerifyCode_EmailSuffixNotAllowed(t *testing.T) {
 	require.Contains(t, appErr.Message, "@example.com")
 	require.Contains(t, appErr.Message, "@company.com")
 	require.Equal(t, "2", appErr.Metadata["allowed_suffix_count"])
+}
+
+func TestAuthService_SendVerifyCode_BlockedLocalPartEmail(t *testing.T) {
+	repo := &userRepoStub{}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled: "true",
+	}, nil, nil)
+
+	err := service.SendVerifyCode(context.Background(), "ROOT+signup@qq.com")
+	require.ErrorIs(t, err, ErrEmailReserved)
 }
 
 func TestAuthService_Register_CreateError(t *testing.T) {

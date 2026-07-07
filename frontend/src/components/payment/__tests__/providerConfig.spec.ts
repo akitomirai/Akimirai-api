@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { PAYMENT_CURRENCY_OPTIONS, PROVIDER_CONFIG_FIELDS, PROVIDER_SUPPORTED_TYPES } from '@/components/payment/providerConfig'
+import {
+  PAYMENT_CURRENCY_OPTIONS,
+  PROVIDER_CONFIG_FIELDS,
+  isBuiltInAlipayMethod,
+  isBuiltInWxpayMethod,
+  parseEasyPayCustomMethods,
+  serializeEasyPayCustomMethods,
+} from '@/components/payment/providerConfig'
 
 function findField(providerKey: string, key: string) {
   const fields = PROVIDER_CONFIG_FIELDS[providerKey] || []
@@ -51,15 +58,38 @@ describe('PROVIDER_CONFIG_FIELDS.stripe', () => {
   })
 })
 
-describe('PROVIDER_CONFIG_FIELDS.personal_qrcode', () => {
-  it('serves the visible Alipay and WeChat methods', () => {
-    expect(PROVIDER_SUPPORTED_TYPES.personal_qrcode).toEqual(['alipay', 'wxpay'])
+describe('EasyPay custom methods config', () => {
+  it('parses customMethods from the JSON string stored in provider config', () => {
+    expect(parseEasyPayCustomMethods(
+      '[{"type":"ldc","upstreamType":"epay","displayName":"LDC"},{"type":"usdt_trc20","upstreamType":"usdt","displayName":"USDT-TRC20"}]',
+    )).toEqual([
+      { type: 'ldc', upstreamType: 'epay', displayName: 'LDC' },
+      { type: 'usdt_trc20', upstreamType: 'usdt', displayName: 'USDT-TRC20' },
+    ])
   })
 
-  it('keeps QR payloads visible and notification secret sensitive', () => {
-    expect(findField('personal_qrcode', 'alipayQr')?.sensitive).toBe(false)
-    expect(findField('personal_qrcode', 'wxpayQr')?.sensitive).toBe(false)
-    expect(findField('personal_qrcode', 'notifySecret')?.sensitive).toBe(true)
-    expect(findField('personal_qrcode', 'notifySecret')?.optional).toBe(true)
+  it('serializes non-empty custom methods into the config string format', () => {
+    expect(serializeEasyPayCustomMethods([
+      { type: 'ldc', upstreamType: 'epay', displayName: 'LDC' },
+      { type: '  ', upstreamType: 'ignored', displayName: 'Ignored' },
+      { type: 'usdt_trc20', upstreamType: 'usdt', displayName: '' },
+    ])).toBe('[{"type":"ldc","upstreamType":"epay","displayName":"LDC"},{"type":"usdt_trc20","upstreamType":"usdt","displayName":""}]')
+  })
+
+  it('returns an empty string for invalid or empty custom methods', () => {
+    expect(parseEasyPayCustomMethods('not-json')).toEqual([])
+    expect(serializeEasyPayCustomMethods([{ type: '', upstreamType: 'epay', displayName: 'LDC' }])).toBe('')
+  })
+})
+
+describe('built-in payment method helpers', () => {
+  it('only treats exact built-in aliases as Alipay or WeChat Pay', () => {
+    expect(isBuiltInAlipayMethod('alipay')).toBe(true)
+    expect(isBuiltInAlipayMethod('alipay_direct')).toBe(true)
+    expect(isBuiltInAlipayMethod('card_alipay')).toBe(false)
+
+    expect(isBuiltInWxpayMethod('wxpay')).toBe(true)
+    expect(isBuiltInWxpayMethod('wxpay_direct')).toBe(true)
+    expect(isBuiltInWxpayMethod('card_wxpay')).toBe(false)
   })
 })

@@ -16,6 +16,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/Wei-Shaw/sub2api/internal/payment/provider"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/shopspring/decimal"
 )
 
 // --- Order Creation ---
@@ -67,20 +68,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 			return nil, err
 		}
 	}
-	promoDiscount, err := s.resolvePaymentPromoDiscount(ctx, req.PromoCode)
-	if err != nil {
-		return nil, err
-	}
-	appliedDiscount, err := calculatePaymentPromoDiscount(limitAmount, promoDiscount, methodCurrency)
-	if err != nil {
-		return nil, err
-	}
-	payBaseAmount := limitAmount
-	if appliedDiscount != nil {
-		payBaseAmount = appliedDiscount.BaseAmount
-	}
-	// Subscription plan price is direct-pay; recharge multiplier only affects credited balance.
-	payAmountStr, payAmount, err := calculateCreateOrderPayAmount(payBaseAmount, feeRate, methodCurrency)
+	payAmountStr, payAmount, err := calculateCreateOrderPayAmountForOrderType(limitAmount, feeRate, methodCurrency, req.OrderType, cfg.SubscriptionUSDToCNYRate)
 	if err != nil {
 		return nil, err
 	}
@@ -96,15 +84,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 		selectedCurrency = paymentProviderConfigCurrency(sel.ProviderKey, sel.Config)
 	}
 	if selectedCurrency != methodCurrency {
-		appliedDiscount, err = calculatePaymentPromoDiscount(limitAmount, promoDiscount, selectedCurrency)
-		if err != nil {
-			return nil, err
-		}
-		payBaseAmount = limitAmount
-		if appliedDiscount != nil {
-			payBaseAmount = appliedDiscount.BaseAmount
-		}
-		payAmountStr, payAmount, err = calculateCreateOrderPayAmount(payBaseAmount, feeRate, selectedCurrency)
+		payAmountStr, payAmount, err = calculateCreateOrderPayAmountForOrderType(limitAmount, feeRate, selectedCurrency, req.OrderType, cfg.SubscriptionUSDToCNYRate)
 		if err != nil {
 			return nil, err
 		}
@@ -119,7 +99,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	if oauthResp != nil {
 		return oauthResp, nil
 	}
-	order, err := s.createOrderInTx(ctx, req, user, plan, cfg, orderAmount, limitAmount, feeRate, payAmount, appliedDiscount, sel)
+	order, err := s.createOrderInTx(ctx, req, user, plan, cfg, orderAmount, limitAmount, feeRate, payAmount, sel)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +159,7 @@ func paymentOrderTimeoutMinutes(cfg *PaymentConfig, sel *payment.InstanceSelecti
 	return tm
 }
 
-func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, cfg *PaymentConfig, orderAmount, limitAmount, feeRate, payAmount float64, discount *calculatedPaymentPromoDiscount, sel *payment.InstanceSelection) (*dbent.PaymentOrder, error) {
+func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderRequest, user *User, plan *dbent.SubscriptionPlan, cfg *PaymentConfig, orderAmount, limitAmount, feeRate, payAmount float64, sel *payment.InstanceSelection) (*dbent.PaymentOrder, error) {
 	tx, err := s.entClient.Tx(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("begin transaction: %w", err)
@@ -229,11 +209,6 @@ func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderReq
 	}
 	if selectedProviderKey != "" {
 		b.SetProviderKey(selectedProviderKey)
-	}
-	if discount != nil {
-		b.SetPromoCode(discount.Code).
-			SetDiscountPercent(discount.Percent).
-			SetDiscountAmount(discount.DiscountAmount)
 	}
 	if providerSnapshot != nil {
 		b.SetProviderSnapshot(providerSnapshot)
@@ -327,12 +302,6 @@ func buildPaymentOrderProviderSnapshot(sel *payment.InstanceSelection, req Creat
 		if merchantID := strings.TrimSpace(sel.Config["pid"]); merchantID != "" {
 			snapshot["merchant_id"] = merchantID
 		}
-	}
-	if providerKey == payment.TypePersonalQR {
-		if accountName := strings.TrimSpace(sel.Config["accountName"]); accountName != "" {
-			snapshot["merchant_id"] = accountName
-		}
-		snapshot["currency"] = payment.DefaultPaymentCurrency
 	}
 	if providerKey == payment.TypeStripe {
 		snapshot["currency"] = paymentProviderConfigCurrency(providerKey, sel.Config)
@@ -492,6 +461,7 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 		}
 		return nil, classifyCreatePaymentError(req, sel.ProviderKey, err)
 	}
+	sanitizeCreatePaymentResponseDetails(pr)
 	_, err = s.entClient.PaymentOrder.UpdateOneID(order.ID).
 		SetNillablePaymentTradeNo(psNilIfEmpty(pr.TradeNo)).
 		SetNillablePayURL(psNilIfEmpty(pr.PayURL)).
@@ -503,15 +473,12 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 		return nil, fmt.Errorf("update order with payment details: %w", err)
 	}
 	s.writeAuditLog(ctx, order.ID, "ORDER_CREATED", fmt.Sprintf("user:%d", req.UserID), map[string]any{
-		"paymentAmount":   req.Amount,
-		"creditedAmount":  order.Amount,
-		"payAmount":       order.PayAmount,
-		"promoCode":       psStringValue(order.PromoCode),
-		"discountPercent": order.DiscountPercent,
-		"discountAmount":  order.DiscountAmount,
-		"paymentType":     req.PaymentType,
-		"orderType":       req.OrderType,
-		"paymentSource":   NormalizePaymentSource(req.PaymentSource),
+		"paymentAmount":  req.Amount,
+		"creditedAmount": order.Amount,
+		"payAmount":      order.PayAmount,
+		"paymentType":    req.PaymentType,
+		"orderType":      req.OrderType,
+		"paymentSource":  NormalizePaymentSource(req.PaymentSource),
 	})
 	resultType := pr.ResultType
 	if resultType == "" {
@@ -520,6 +487,22 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 	resp := buildCreateOrderResponse(order, req, payAmount, sel, pr, resultType)
 	resp.ResumeToken = resumeToken
 	return resp, nil
+}
+
+func sanitizeCreatePaymentResponseDetails(pr *payment.CreatePaymentResponse) {
+	if pr == nil {
+		return
+	}
+	pr.TradeNo = removePostgresTextNUL(pr.TradeNo)
+	pr.PayURL = removePostgresTextNUL(pr.PayURL)
+	pr.QRCode = removePostgresTextNUL(pr.QRCode)
+}
+
+func removePostgresTextNUL(value string) string {
+	if !strings.ContainsRune(value, 0) {
+		return value
+	}
+	return strings.ReplaceAll(value, "\x00", "")
 }
 
 func buildProviderCreatePaymentRequest(req CreateOrderRequest, sel *payment.InstanceSelection, orderID, amount, subject string) payment.CreatePaymentRequest {
@@ -655,6 +638,28 @@ func calculateCreateOrderPayAmount(limitAmount, feeRate float64, currency string
 	return payAmountStr, payAmount, nil
 }
 
+func calculateCreateOrderPayAmountForOrderType(limitAmount, feeRate float64, currency, orderType string, usdToCnyRate float64) (string, float64, error) {
+	paymentAmount := limitAmount
+	if orderType == payment.OrderTypeSubscription {
+		paymentAmount = calculateSubscriptionGatewayBaseAmount(limitAmount, usdToCnyRate, currency)
+	}
+	return calculateCreateOrderPayAmount(paymentAmount, feeRate, currency)
+}
+
+// calculateSubscriptionGatewayBaseAmount 计算订阅订单的网关扣款基数。
+// 换算是显式 opt-in：仅当管理员配置了订阅汇率（rate > 0，1 USD = rate CNY）
+// 且网关币种为 CNY 时，按 price × rate 换算；未配置时保持 price 直付的存量行为。
+func calculateSubscriptionGatewayBaseAmount(amount, usdToCnyRate float64, currency string) float64 {
+	rate := normalizeSubscriptionUSDToCNYRate(usdToCnyRate)
+	if rate <= 0 || currency != payment.DefaultPaymentCurrency {
+		return amount
+	}
+	return decimal.NewFromFloat(amount).
+		Mul(decimal.NewFromFloat(rate)).
+		Round(int32(payment.CurrencyMaxFractionDigits(currency))).
+		InexactFloat64()
+}
+
 func validateCreateOrderAmountCurrency(amount float64, currency string) error {
 	amountStr := strconv.FormatFloat(amount, 'f', -1, 64)
 	if _, err := payment.AmountToMinorUnit(amountStr, currency); err != nil {
@@ -721,29 +726,26 @@ func classifyCreatePaymentError(req CreateOrderRequest, providerKey string, err 
 
 func buildCreateOrderResponse(order *dbent.PaymentOrder, req CreateOrderRequest, payAmount float64, sel *payment.InstanceSelection, pr *payment.CreatePaymentResponse, resultType payment.CreatePaymentResultType) *CreateOrderResponse {
 	return &CreateOrderResponse{
-		OrderID:         order.ID,
-		Amount:          order.Amount,
-		PayAmount:       payAmount,
-		FeeRate:         order.FeeRate,
-		PromoCode:       psStringValue(order.PromoCode),
-		DiscountPercent: order.DiscountPercent,
-		DiscountAmount:  order.DiscountAmount,
-		Status:          OrderStatusPending,
-		ResultType:      resultType,
-		PaymentType:     req.PaymentType,
-		OutTradeNo:      order.OutTradeNo,
-		PayURL:          pr.PayURL,
-		QRCode:          pr.QRCode,
-		ClientSecret:    pr.ClientSecret,
-		IntentID:        pr.IntentID,
-		Currency:        pr.Currency,
-		CountryCode:     pr.CountryCode,
-		PaymentEnv:      pr.PaymentEnv,
-		OAuth:           pr.OAuth,
-		JSAPI:           pr.JSAPI,
-		JSAPIPayload:    pr.JSAPI,
-		ExpiresAt:       order.ExpiresAt,
-		PaymentMode:     sel.PaymentMode,
+		OrderID:      order.ID,
+		Amount:       order.Amount,
+		PayAmount:    payAmount,
+		FeeRate:      order.FeeRate,
+		Status:       OrderStatusPending,
+		ResultType:   resultType,
+		PaymentType:  req.PaymentType,
+		OutTradeNo:   order.OutTradeNo,
+		PayURL:       pr.PayURL,
+		QRCode:       pr.QRCode,
+		ClientSecret: pr.ClientSecret,
+		IntentID:     pr.IntentID,
+		Currency:     pr.Currency,
+		CountryCode:  pr.CountryCode,
+		PaymentEnv:   pr.PaymentEnv,
+		OAuth:        pr.OAuth,
+		JSAPI:        pr.JSAPI,
+		JSAPIPayload: pr.JSAPI,
+		ExpiresAt:    order.ExpiresAt,
+		PaymentMode:  sel.PaymentMode,
 	}
 }
 
@@ -762,9 +764,6 @@ func buildWeChatPaymentOAuthStartURL(req CreateOrderRequest, scope string) (stri
 	}
 	if req.PlanID > 0 {
 		q.Set("plan_id", strconv.FormatInt(req.PlanID, 10))
-	}
-	if promoCode := strings.ToUpper(strings.TrimSpace(req.PromoCode)); promoCode != "" {
-		q.Set("promo_code", promoCode)
 	}
 	if scope = strings.TrimSpace(scope); scope != "" {
 		q.Set("scope", scope)

@@ -176,6 +176,24 @@ describe('PendingOAuthCreateAccountForm', () => {
     })
   })
 
+  it('blocks reserved email local-parts before sending a verify code', async () => {
+    const wrapper = mount(PendingOAuthCreateAccountForm, {
+      props: {
+        providerName: 'LinuxDo',
+        testIdPrefix: 'linuxdo',
+        initialEmail: '',
+        isSubmitting: false
+      }
+    })
+
+    await wrapper.get('[data-testid="linuxdo-create-account-email"]').setValue('root@qq.com')
+    await wrapper.get('[data-testid="linuxdo-create-account-send-code"]').trigger('click')
+    await flushPromises()
+
+    expect(sendPendingOAuthVerifyCode).not.toHaveBeenCalled()
+    expect(showError).toHaveBeenCalledWith('auth.emailLocalPartNotAllowed')
+  })
+
   it('shows send-code failures via toast without rendering inline error text', async () => {
     sendPendingOAuthVerifyCode.mockRejectedValue(new Error('send failed'))
 

@@ -90,7 +90,15 @@ vi.mock('vue-router', () => ({
 }))
 
 const AppLayoutStub = { template: '<div><slot /></div>' }
-const UsageFiltersStub = { template: '<div><slot name="after-reset" /></div>' }
+const UsageFiltersStub = {
+  props: {
+    compact: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  template: '<div data-test="usage-filters" :data-compact="String(compact)"><slot name="after-reset" /></div>'
+}
 const UsageTableStub = {
   emits: ['userClick'],
   template: '<div data-test="usage-table"><button class="user-click" @click="$emit(\'userClick\', 2)">user</button></div>',
@@ -183,14 +191,14 @@ describe('admin UsageView distribution metric toggles', () => {
     expect((wrapper.vm as any).requestedModelStats).toEqual([{ model: 'B', total_tokens: 20 }])
   })
 
-  it('keeps model and group metric toggles independent without refetching chart data', async () => {
+  it('renders compact filters and table tabs without distribution charts', async () => {
     const wrapper = mount(UsageView, {
       global: {
         stubs: {
           AppLayout: AppLayoutStub,
           UsageStatsCards: true,
           UsageFilters: UsageFiltersStub,
-          UsageTable: true,
+          UsageTable: UsageTableStub,
           UsageExportProgress: true,
           UsageCleanupDialog: true,
           UserBalanceHistoryModal: true,
@@ -208,34 +216,11 @@ describe('admin UsageView distribution metric toggles', () => {
     vi.advanceTimersByTime(120)
     await flushPromises()
 
-    expect(getSnapshotV2).toHaveBeenCalledTimes(1)
-    const now = new Date()
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-    expect(getSnapshotV2).toHaveBeenCalledWith(expect.objectContaining({
-      start_date: formatLocalDate(yesterday),
-      end_date: formatLocalDate(now),
-      granularity: 'hour'
-    }))
-
-    const modelChart = wrapper.find('[data-test="model-chart"]')
-    const groupChart = wrapper.find('[data-test="group-chart"]')
-
-    expect(modelChart.find('.metric').text()).toBe('tokens')
-    expect(groupChart.find('.metric').text()).toBe('tokens')
-
-    await modelChart.find('.switch-metric').trigger('click')
-    await flushPromises()
-
-    expect(modelChart.find('.metric').text()).toBe('actual_cost')
-    expect(groupChart.find('.metric').text()).toBe('tokens')
-    expect(getSnapshotV2).toHaveBeenCalledTimes(1)
-
-    await groupChart.find('.switch-metric').trigger('click')
-    await flushPromises()
-
-    expect(modelChart.find('.metric').text()).toBe('actual_cost')
-    expect(groupChart.find('.metric').text()).toBe('actual_cost')
-    expect(getSnapshotV2).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('[data-test="usage-filters"]').attributes('data-compact')).toBe('true')
+    expect(wrapper.find('[data-test="model-chart"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="group-chart"]').exists()).toBe(false)
+    expect(wrapper.findAll('button.usage-record-tab')).toHaveLength(2)
+    expect(wrapper.find('[data-test="usage-table"]').exists()).toBe(true)
   })
 })
 
@@ -339,8 +324,8 @@ describe('admin UsageView errors tab filter forwarding', () => {
     vm.filters.group_id = 3
     await flushPromises()
 
-    // 切换到「错误请求」标签（第二个 .tab 按钮）触发 loadAdminErrors
-    const tabs = wrapper.findAll('button.tab')
+    // 切换到「错误请求」标签（第二个 usage-record-tab 按钮）触发 loadAdminErrors
+    const tabs = wrapper.findAll('button.usage-record-tab')
     await tabs[1].trigger('click')
     await flushPromises()
 

@@ -1,8 +1,8 @@
 <template>
-  <header class="glass sticky top-0 z-30 border-b border-gray-200/50 dark:border-dark-700/50">
-    <div class="flex h-16 items-center justify-between px-4 md:px-6">
+  <header class="sticky top-0 z-30 border-b border-gray-200 bg-white/95 dark:border-dark-800 dark:bg-dark-900/95">
+    <div class="flex h-14 items-center justify-between gap-4 px-4 md:px-5">
       <!-- Left: Mobile Menu Toggle + Page Title -->
-      <div class="flex items-center gap-4">
+      <div class="flex min-w-0 flex-1 items-center gap-4">
         <button
           @click="toggleMobileSidebar"
           class="btn-ghost btn-icon lg:hidden"
@@ -11,20 +11,42 @@
           <Icon name="menu" size="md" />
         </button>
 
-        <div class="hidden lg:block">
+        <div class="hidden min-w-0 items-baseline gap-3 lg:flex">
           <slot name="title">
-            <h1 class="text-lg font-semibold text-gray-900 dark:text-white">
+            <h1 class="shrink-0 whitespace-nowrap text-lg font-semibold text-gray-950 dark:text-white">
               {{ pageTitle }}
             </h1>
-            <p v-if="pageDescription" class="text-xs text-gray-500 dark:text-dark-400">
-              {{ pageDescription }}
-            </p>
           </slot>
+          <button
+            type="button"
+            class="header-quote"
+            :class="{ 'header-quote-loading': quoteLoading }"
+            :title="quoteTitle"
+            aria-label="Refresh quote"
+            @click="loadRandomQuote"
+          >
+            <span class="header-quote-text">{{ quoteText }}</span>
+          </button>
         </div>
       </div>
 
       <!-- Right: Announcements + Docs + Language + Subscriptions + Balance + User Dropdown -->
-      <div class="flex items-center gap-3">
+      <div class="flex shrink-0 items-center gap-3">
+        <button
+          v-if="user"
+          type="button"
+          class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors"
+          :class="isGptImageActive
+            ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white'"
+          :aria-pressed="isGptImageActive"
+          :title="isGptImageActive ? '关闭 GPTImage' : 'GPTImage'"
+          @click="handleGptImageClick"
+        >
+          <Icon :name="isGptImageActive ? 'x' : 'sparkles'" size="sm" />
+          <span class="hidden sm:inline">GPTImage</span>
+        </button>
+
         <!-- Announcement Bell -->
         <AnnouncementBell v-if="user" />
 
@@ -49,22 +71,13 @@
         <!-- Balance Display -->
         <div
           v-if="user"
-          class="hidden items-center gap-2 rounded-xl bg-primary-50 px-3 py-1.5 dark:bg-primary-900/20 sm:flex"
+          class="balance-chip hidden items-center gap-2 sm:flex"
+          :title="`${t('common.balance')}: $${user.balance?.toFixed(2) || '0.00'}`"
         >
-          <svg
-            class="h-4 w-4 text-primary-600 dark:text-primary-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="1.5"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"
-            />
-          </svg>
-          <span class="text-sm font-semibold text-primary-700 dark:text-primary-300">
+          <span class="balance-chip-icon">
+            <Icon name="dollar" size="sm" :stroke-width="2" />
+          </span>
+          <span class="balance-chip-amount">
             ${{ user.balance?.toFixed(2) || '0.00' }}
           </span>
         </div>
@@ -226,6 +239,31 @@ import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMi
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
 import Icon from '@/components/icons/Icon.vue'
 
+interface HeaderQuote {
+  text: string
+  author?: string
+  source: string
+}
+
+const fallbackQuotes: HeaderQuote[] = [
+  { text: '今天也要把小问题打包成小蛋糕。', author: 'MiraiAPI', source: 'Local' },
+  { text: '请求先排队，快乐不排队。', author: 'MiraiAPI', source: 'Local' },
+  { text: '缓存命中时，连风都轻了一点。', author: 'MiraiAPI', source: 'Local' },
+  { text: '把 bug 放进日志里，像收服一只小怪。', author: 'MiraiAPI', source: 'Local' },
+  { text: '今日份魔法值已续杯，继续开工。', author: 'MiraiAPI', source: 'Local' },
+  { text: '别慌，进度条也在努力奔跑。', author: 'MiraiAPI', source: 'Local' },
+  { text: '服务器在值班，猫耳耳机先戴好。', author: 'MiraiAPI', source: 'Local' },
+  { text: '愿你的请求一路绿灯，延迟乖乖坐下。', author: 'MiraiAPI', source: 'Local' },
+  { text: '今天的 API 也在认真发光。', author: 'MiraiAPI', source: 'Local' },
+  { text: '小小参数，大大冒险。', author: 'MiraiAPI', source: 'Local' },
+  { text: '先喝口水，再和报错讲道理。', author: 'MiraiAPI', source: 'Local' },
+  { text: '世界很大，先把这一页跑通。', author: 'MiraiAPI', source: 'Local' }
+]
+
+function pickFallbackQuote(): HeaderQuote {
+  return fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)]
+}
+
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
@@ -240,11 +278,34 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const contactInfo = computed(() => appStore.contactInfo)
 const docUrl = computed(() => appStore.docUrl)
 const avatarUrl = computed(() => user.value?.avatar_url?.trim() || '')
-
-// 只在标准模式的管理员下显示新手引导按钮
+const randomQuote = ref<HeaderQuote>(pickFallbackQuote())
+const quoteText = ref(randomQuote.value.text)
+const quoteLoading = ref(false)
+let quoteLoadSeq = 0
+let quoteRefreshTimer: number | undefined
 const showOnboardingButton = computed(() => {
   return !authStore.isSimpleMode && user.value?.role === 'admin'
 })
+
+const GPT_IMAGE_RETURN_PATH_KEY = 'sub2api:gpt-image-return-path'
+
+function isGptImagePath(path: string): boolean {
+  return path === '/images' || path.startsWith('/images/') || path.startsWith('/image-management')
+}
+
+const isGptImageActive = computed(() => {
+  return isGptImagePath(route.path)
+})
+
+const quoteTitle = computed(() => {
+  const author = randomQuote.value.author ? ` - ${randomQuote.value.author}` : ''
+  return `${randomQuote.value.text}${author} (${randomQuote.value.source})`
+})
+
+function setRandomQuote(quote: HeaderQuote) {
+  randomQuote.value = quote
+  quoteText.value = quote.text
+}
 
 const userInitials = computed(() => {
   if (!user.value) return ''
@@ -272,13 +333,20 @@ const pageTitle = computed(() => {
   return (route.meta.title as string) || ''
 })
 
-const pageDescription = computed(() => {
-  const descKey = route.meta.descriptionKey as string
-  if (descKey) {
-    return t(descKey)
+async function loadRandomQuote() {
+  const currentSeq = ++quoteLoadSeq
+  quoteLoading.value = true
+
+  try {
+    if (currentSeq === quoteLoadSeq) {
+      setRandomQuote(pickFallbackQuote())
+    }
+  } finally {
+    if (currentSeq === quoteLoadSeq) {
+      quoteLoading.value = false
+    }
   }
-  return (route.meta.description as string) || ''
-})
+}
 
 function toggleMobileSidebar() {
   appStore.toggleMobileSidebar()
@@ -290,6 +358,76 @@ function toggleDropdown() {
 
 function closeDropdown() {
   dropdownOpen.value = false
+}
+
+function getSameOriginReferrerPath(): string {
+  if (!document.referrer) return ''
+
+  try {
+    const referrerUrl = new URL(document.referrer)
+    if (referrerUrl.origin !== window.location.origin) return ''
+
+    const path = `${referrerUrl.pathname}${referrerUrl.search}${referrerUrl.hash}`
+    return path.startsWith('/') && !isGptImagePath(referrerUrl.pathname) ? path : ''
+  } catch {
+    return ''
+  }
+}
+
+function getStoredGptImageReturnPath(): string {
+  try {
+    const storedPath = window.sessionStorage.getItem(GPT_IMAGE_RETURN_PATH_KEY)?.trim() ?? ''
+    return storedPath.startsWith('/') && !isGptImagePath(storedPath.split(/[?#]/, 1)[0]) ? storedPath : ''
+  } catch {
+    return ''
+  }
+}
+
+function setStoredGptImageReturnPath(path: string) {
+  if (!path.startsWith('/') || isGptImagePath(path.split(/[?#]/, 1)[0])) return
+
+  try {
+    window.sessionStorage.setItem(GPT_IMAGE_RETURN_PATH_KEY, path)
+  } catch {
+    // Session storage can be unavailable in hardened browser modes.
+  }
+}
+
+function clearStoredGptImageReturnPath() {
+  try {
+    window.sessionStorage.removeItem(GPT_IMAGE_RETURN_PATH_KEY)
+  } catch {
+    // Session storage can be unavailable in hardened browser modes.
+  }
+}
+
+async function handleGptImageClick() {
+  if (!isGptImageActive.value) {
+    setStoredGptImageReturnPath(route.fullPath)
+    await router.push('/images')
+    return
+  }
+
+  const returnPath = getStoredGptImageReturnPath()
+  clearStoredGptImageReturnPath()
+
+  if (returnPath) {
+    await router.replace(returnPath)
+    return
+  }
+
+  const referrerPath = getSameOriginReferrerPath()
+  if (referrerPath) {
+    await router.replace(referrerPath)
+    return
+  }
+
+  if (window.history.length > 1) {
+    router.back()
+    return
+  }
+
+  await router.replace(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
 }
 
 async function handleLogout() {
@@ -316,14 +454,123 @@ function handleClickOutside(event: MouseEvent) {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  loadRandomQuote()
+  quoteRefreshTimer = window.setInterval(loadRandomQuote, 30000)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+  if (quoteRefreshTimer !== undefined) {
+    window.clearInterval(quoteRefreshTimer)
+  }
 })
 </script>
 
 <style scoped>
+.header-quote {
+  display: none;
+  min-width: 0;
+  max-width: min(34rem, 42vw);
+  align-items: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  transition:
+    color 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.header-quote::before {
+  content: '';
+  display: inline-block;
+  height: 1rem;
+  width: 1px;
+  flex: 0 0 auto;
+  margin-right: 0.75rem;
+  background: rgb(226 232 240);
+}
+
+.header-quote:hover {
+  opacity: 0.78;
+}
+
+.header-quote-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: rgb(100 116 139);
+}
+
+.header-quote-loading {
+  opacity: 0.55;
+}
+
+.balance-chip {
+  min-height: 2.25rem;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.5rem;
+  background: rgb(255 255 255);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035);
+  padding: 0 0.75rem 0 0.625rem;
+}
+
+.balance-chip-icon {
+  display: inline-flex;
+  height: 1.25rem;
+  width: 1.25rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.3125rem;
+  background: rgb(240 253 250);
+  color: rgb(15 118 110);
+}
+
+.balance-chip-amount {
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1;
+  color: rgb(15 118 110);
+  font-variant-numeric: tabular-nums;
+}
+
+.dark .header-quote {
+  background: transparent;
+}
+
+.dark .header-quote::before {
+  background: rgb(71 85 105);
+}
+
+.dark .header-quote-text {
+  color: rgb(203 213 225);
+}
+
+.dark .balance-chip {
+  border-color: rgb(51 65 85);
+  background: rgb(15 23 42);
+  box-shadow: none;
+}
+
+.dark .balance-chip-icon {
+  background: rgba(45, 212, 191, 0.13);
+  color: rgb(45 212 191);
+}
+
+.dark .balance-chip-amount {
+  color: rgb(94 234 212);
+}
+
+@media (min-width: 1280px) {
+  .header-quote {
+    display: flex;
+  }
+}
+
 .dropdown-enter-active,
 .dropdown-leave-active {
   transition: all 0.2s ease;

@@ -71,6 +71,7 @@ const DataTableStub = {
         <slot name="cell-model" :row="row" :value="row.model" />
         <slot name="cell-billing_mode" :row="row" />
         <slot name="cell-tokens" :row="row" />
+        <slot name="cell-cache_hit_rate" :row="row" />
         <slot name="cell-cost" :row="row" />
       </div>
     </div>
@@ -206,6 +207,87 @@ describe('admin UsageTable tooltip', () => {
     const text = wrapper.text()
     expect(text).toContain('claude-sonnet-4')
     expect(text).toContain('claude-sonnet-4-20250514')
+  })
+
+  it('appends lowercase reasoning effort badge to the requested model', () => {
+    const row = {
+      request_id: 'req-admin-model-reasoning',
+      model: 'gpt-5.5',
+      reasoning_effort: 'x-high',
+      actual_cost: 0,
+      total_cost: 0,
+      account_rate_multiplier: 1,
+      rate_multiplier: 1,
+      input_cost: 0,
+      output_cost: 0,
+      cache_creation_cost: 0,
+      cache_read_cost: 0,
+      input_tokens: 0,
+      output_tokens: 0,
+      cache_creation_tokens: 0,
+      cache_read_tokens: 0,
+    }
+
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [row],
+        loading: false,
+        columns: [],
+      },
+      global: {
+        stubs: {
+          DataTable: DataTableStub,
+          EmptyState: true,
+          Icon: true,
+          Teleport: true,
+        },
+      },
+    })
+
+    expect(wrapper.text()).toContain('gpt-5.5')
+    expect(wrapper.get('.reasoning-effort-badge').text()).toBe('xhigh')
+    expect(wrapper.text()).not.toContain('XHigh')
+  })
+
+  it('keeps cache hit token text in a compact fixed-width lane', () => {
+    const row = {
+      request_id: 'req-admin-cache-hit',
+      model: 'gpt-5.5',
+      actual_cost: 0,
+      total_cost: 0,
+      account_rate_multiplier: 1,
+      rate_multiplier: 1,
+      input_cost: 0,
+      output_cost: 0,
+      cache_creation_cost: 0,
+      cache_read_cost: 0,
+      input_tokens: 631,
+      output_tokens: 28,
+      cache_creation_tokens: 0,
+      cache_read_tokens: 172000,
+    }
+
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [row],
+        loading: false,
+        columns: [],
+      },
+      global: {
+        stubs: {
+          DataTable: DataTableStub,
+          EmptyState: true,
+          Icon: true,
+          Teleport: true,
+        },
+      },
+    })
+
+    const cacheCell = wrapper.get('[data-test="cache-hit-rate"]')
+    expect(cacheCell.text()).toContain('99.6%')
+    expect(cacheCell.text()).toContain('172.0K')
+    expect(cacheCell.attributes('class')).toContain('w-[112px]')
+    expect(cacheCell.attributes('class')).toContain('text-left')
   })
 
   it.each([

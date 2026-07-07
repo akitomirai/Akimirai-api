@@ -24,6 +24,12 @@
     <path d="M4.5 4.5l15 15M19.5 4.5l-15 15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
     <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none" />
   </svg>
+  <!-- Image generation -->
+  <svg v-else-if="platform === 'image'" :class="sizeClass" viewBox="0 0 24 24" fill="none">
+    <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2" />
+    <path d="M7 15l3.2-3.2 2.4 2.4 1.6-1.6L18 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+    <circle cx="16.5" cy="9.5" r="1.5" fill="currentColor" />
+  </svg>
   <!-- Fallback: generic platform icon -->
   <svg v-else :class="sizeClass" fill="currentColor" viewBox="0 0 24 24">
     <path

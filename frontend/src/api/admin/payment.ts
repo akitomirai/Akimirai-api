@@ -9,7 +9,12 @@ import type {
   PaymentOrder,
   PaymentChannel,
   SubscriptionPlan,
-  ProviderInstance
+  ProviderInstance,
+  ExternalFulfillmentSKU,
+  ExternalOrderFulfillment,
+  ExternalFulfillmentResult,
+  UpsertExternalFulfillmentSKURequest,
+  CreateExternalFulfillmentRequest
 } from '@/types/payment'
 import type { BasePaginationResponse } from '@/types'
 
@@ -24,6 +29,8 @@ export interface AdminPaymentConfig {
   enabled_payment_types: string[]
   balance_disabled: boolean
   balance_recharge_multiplier: number
+  subscription_usd_to_cny_rate: number
+  recharge_fee_rate: number
   load_balance_strategy: string
   product_name_prefix: string
   product_name_suffix: string
@@ -42,6 +49,8 @@ export interface UpdatePaymentConfigRequest {
   enabled_payment_types?: string[]
   balance_disabled?: boolean
   balance_recharge_multiplier?: number
+  subscription_usd_to_cny_rate?: number
+  recharge_fee_rate?: number
   load_balance_strategy?: string
   product_name_prefix?: string
   product_name_suffix?: string
@@ -190,6 +199,52 @@ export const adminPaymentAPI = {
   /** Delete a provider instance */
   deleteProvider(id: number) {
     return apiClient.delete(`/admin/payment/providers/${id}`)
+  },
+
+  // ==================== External Marketplace Fulfillment ====================
+
+  /** List marketplace SKU mappings */
+  listExternalFulfillmentSKUs(params?: {
+    page?: number
+    page_size?: number
+    platform?: string
+    enabled?: boolean
+    keyword?: string
+  }) {
+    return apiClient.get<BasePaginationResponse<ExternalFulfillmentSKU>>('/admin/payment/external-fulfillment-skus', { params })
+  },
+
+  /** Create or update a marketplace SKU mapping */
+  upsertExternalFulfillmentSKU(data: UpsertExternalFulfillmentSKURequest) {
+    return apiClient.post<ExternalFulfillmentSKU>('/admin/payment/external-fulfillment-skus', data)
+  },
+
+  /** Delete a marketplace SKU mapping */
+  deleteExternalFulfillmentSKU(id: number) {
+    return apiClient.delete(`/admin/payment/external-fulfillment-skus/${id}`)
+  },
+
+  /** List marketplace order fulfillments */
+  listExternalFulfillments(params?: {
+    page?: number
+    page_size?: number
+    platform?: string
+    status?: string
+    sku_code?: string
+    keyword?: string
+    notify_status?: string
+  }) {
+    return apiClient.get<BasePaginationResponse<ExternalOrderFulfillment>>('/admin/payment/external-fulfillments', { params })
+  },
+
+  /** Create a fulfillment and redeem code */
+  createExternalFulfillment(data: CreateExternalFulfillmentRequest) {
+    return apiClient.post<ExternalFulfillmentResult>('/admin/payment/external-fulfillments', data)
+  },
+
+  /** Retry Feishu notification */
+  retryExternalFulfillmentNotify(id: number) {
+    return apiClient.post<ExternalOrderFulfillment>(`/admin/payment/external-fulfillments/${id}/retry-notify`)
   }
 }
 

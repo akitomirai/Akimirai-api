@@ -112,6 +112,9 @@ func (User) Fields() []ent.Field {
 		// 用户级每分钟请求数上限（0 = 不限制）。仅当所在分组未设置 rpm_limit 时作为兜底生效。
 		field.Int("rpm_limit").
 			Default(0),
+		field.String("privacy_filter_config").
+			SchemaType(map[string]string{dialect.Postgres: "text"}).
+			Default(`{"enabled":false,"types":["ip_address","email","phone","id_card","bank_card","api_key","token","private_key","random_string"]}`),
 	}
 }
 

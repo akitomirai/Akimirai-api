@@ -20,7 +20,7 @@ func PrivacyFilter(settingService *service.SettingService) gin.HandlerFunc {
 			return
 		}
 
-		config := settingService.GetPrivacyFilterConfig(c.Request.Context())
+		config := effectivePrivacyFilterConfig(settingService.GetPrivacyFilterConfig(c.Request.Context()), c)
 		if !config.Enabled || len(config.Types) == 0 {
 			c.Next()
 			return
@@ -58,6 +58,39 @@ func PrivacyFilter(settingService *service.SettingService) gin.HandlerFunc {
 		c.Request.Header.Set("Content-Length", strconv.Itoa(len(filteredBody)))
 		c.Next()
 	}
+}
+
+func effectivePrivacyFilterConfig(globalConfig privacyfilter.Config, c *gin.Context) privacyfilter.Config {
+	globalConfig = privacyfilter.NormalizeConfig(globalConfig)
+
+	userConfig := privacyfilter.Config{}
+	if c != nil {
+		if apiKey, ok := GetAPIKeyFromContext(c); ok && apiKey != nil && apiKey.User != nil {
+			userConfig = privacyfilter.NormalizeConfig(apiKey.User.PrivacyFilterConfig)
+		}
+	}
+
+	if !globalConfig.Enabled && !userConfig.Enabled {
+		return privacyfilter.DefaultConfig()
+	}
+	if globalConfig.Enabled && !userConfig.Enabled {
+		return globalConfig
+	}
+	if !globalConfig.Enabled {
+		return userConfig
+	}
+	return privacyfilter.Config{
+		Enabled: true,
+		Types:   mergePrivacyFilterTypes(globalConfig.Types, userConfig.Types),
+	}
+}
+
+func mergePrivacyFilterTypes(groups ...[]string) []string {
+	merged := make([]string, 0)
+	for _, group := range groups {
+		merged = append(merged, group...)
+	}
+	return privacyfilter.NormalizeTypes(merged)
 }
 
 func methodMayHaveBody(method string) bool {

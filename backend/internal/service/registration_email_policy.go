@@ -11,6 +11,23 @@ var registrationEmailDomainPattern = regexp.MustCompile(
 	`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$`,
 )
 
+var registrationEmailBlockedLocalParts = map[string]struct{}{
+	"abuse":         {},
+	"admin":         {},
+	"administrator": {},
+	"daemon":        {},
+	"do-not-reply":  {},
+	"donotreply":    {},
+	"hostmaster":    {},
+	"mailer-daemon": {},
+	"no-reply":      {},
+	"noreply":       {},
+	"postmaster":    {},
+	"root":          {},
+	"system":        {},
+	"webmaster":     {},
+}
+
 // RegistrationEmailSuffix extracts normalized suffix in "@domain" form.
 func RegistrationEmailSuffix(email string) string {
 	_, domain, ok := splitEmailForPolicy(email)
@@ -18,6 +35,16 @@ func RegistrationEmailSuffix(email string) string {
 		return ""
 	}
 	return "@" + domain
+}
+
+// IsRegistrationEmailLocalPartBlocked checks whether the email local-part is reserved.
+func IsRegistrationEmailLocalPartBlocked(email string) bool {
+	local, _, ok := splitEmailForPolicy(email)
+	if !ok {
+		return false
+	}
+	_, blocked := registrationEmailBlockedLocalParts[normalizeRegistrationEmailLocalPart(local)]
+	return blocked
 }
 
 // IsRegistrationEmailSuffixAllowed checks whether an email is allowed by suffix whitelist.
@@ -138,6 +165,14 @@ func registrationEmailDomainMatchesWildcard(domain string, allowed string) bool 
 		return false
 	}
 	return domain == base || strings.HasSuffix(domain, "."+base)
+}
+
+func normalizeRegistrationEmailLocalPart(local string) string {
+	local = strings.ToLower(strings.TrimSpace(local))
+	if plusIndex := strings.Index(local, "+"); plusIndex >= 0 {
+		local = local[:plusIndex]
+	}
+	return local
 }
 
 func splitEmailForPolicy(raw string) (local string, domain string, ok bool) {

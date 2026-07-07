@@ -198,20 +198,6 @@ func TestPcGroupByPaymentType(t *testing.T) {
 			t.Fatalf("stripe with empty types should still be in stripe group, got %v", groups)
 		}
 	})
-
-	t.Run("personal qr with no supported types maps to visible wallet methods", func(t *testing.T) {
-		t.Parallel()
-		personal := makeInstance(1, payment.TypePersonalQR, "", "")
-
-		groups := pcGroupByPaymentType([]*dbent.PaymentProviderInstance{personal})
-
-		if len(groups[payment.TypeAlipay]) != 1 || groups[payment.TypeAlipay][0].ID != 1 {
-			t.Fatalf("alipay group should contain personal QR instance, got %v", groups[payment.TypeAlipay])
-		}
-		if len(groups[payment.TypeWxpay]) != 1 || groups[payment.TypeWxpay][0].ID != 1 {
-			t.Fatalf("wxpay group should contain personal QR instance, got %v", groups[payment.TypeWxpay])
-		}
-	})
 }
 
 func TestPcAggregateMethodCurrency(t *testing.T) {
@@ -269,30 +255,26 @@ func TestGetAvailableMethodLimitsOmitsMixedCurrencyMethod(t *testing.T) {
 	require.Equal(t, "PAYMENT_METHOD_CURRENCY_CONFLICT", appErr.Reason)
 }
 
-func TestGetAvailableMethodLimitsExposesPersonalQRCodeVisibleMethods(t *testing.T) {
+func TestGetAvailableMethodLimitsIncludesEasyPayCustomMethodDisplayName(t *testing.T) {
 	ctx := context.Background()
 	client := newPaymentConfigServiceTestClient(t)
 
 	_, err := client.PaymentProviderInstance.Create().
-		SetProviderKey(payment.TypePersonalQR).
-		SetName("Personal QR").
-		SetConfig(`{"alipayQr":"alipay://local-test","wxpayQr":"weixin://local-test"}`).
-		SetSupportedTypes("").
+		SetProviderKey(payment.TypeEasyPay).
+		SetName("EasyPay Custom").
+		SetConfig(`{"customMethods":"[{\"type\":\"ldc\",\"upstreamType\":\"ldc\",\"displayName\":\"LDC Pay\"}]"}`).
+		SetSupportedTypes("alipay,wxpay,ldc").
 		SetEnabled(true).
 		Save(ctx)
 	require.NoError(t, err)
 
-	svc := &PaymentConfigService{
-		entClient:   client,
-		settingRepo: &paymentConfigSettingRepoStub{values: map[string]string{}},
-	}
-
+	svc := &PaymentConfigService{entClient: client}
 	resp, err := svc.GetAvailableMethodLimits(ctx)
 	require.NoError(t, err)
-	require.Contains(t, resp.Methods, payment.TypeAlipay)
-	require.Contains(t, resp.Methods, payment.TypeWxpay)
-	require.Equal(t, payment.DefaultPaymentCurrency, resp.Methods[payment.TypeAlipay].Currency)
-	require.Equal(t, payment.DefaultPaymentCurrency, resp.Methods[payment.TypeWxpay].Currency)
+
+	limits, ok := resp.Methods["ldc"]
+	require.True(t, ok, "expected custom EasyPay method limits to be visible")
+	require.Equal(t, "LDC Pay", limits.DisplayName)
 }
 
 func TestPcComputeGlobalRange(t *testing.T) {
