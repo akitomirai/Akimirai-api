@@ -433,7 +433,7 @@ export default {
     channelManagement: 'Channels',
     channelPricing: 'Channel Pricing',
     channelMonitor: 'Channel Monitor',
-    channelStatus: 'Channel Status',
+    channelStatus: 'Model Status',
     riskControl: 'Risk Control',
   },
 
@@ -1084,15 +1084,15 @@ export default {
     relativeDaysAgo: '{n}d ago'
   },
 
-  // Channel Status (user-facing read-only view)
+  // Model Status (user-facing read-only view)
   channelStatus: {
-    title: 'Channel Status',
-    description: 'Inspect channel availability, latency and recent status',
-    searchPlaceholder: 'Search channels...',
+    title: 'Model Status',
+    description: 'Inspect model availability, latency and recent status',
+    searchPlaceholder: 'Search models...',
     allProviders: 'All Providers',
-    loadError: 'Failed to load channel status',
-    detailLoadError: 'Failed to load channel detail',
-    detailTitle: 'Channel Detail',
+    loadError: 'Failed to load model status',
+    detailLoadError: 'Failed to load model detail',
+    detailTitle: 'Model Detail',
     closeDetail: 'Close',
     windowTab: {
       '7d': '7 days',

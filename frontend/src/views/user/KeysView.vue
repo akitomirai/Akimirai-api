@@ -82,15 +82,7 @@
 
       <template #table>
         <div class="mb-4 border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-800">
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
-                {{ t('keys.integrationExamples.title') }}
-              </h3>
-              <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">
-                {{ t('keys.integrationExamples.subtitle') }}
-              </p>
-            </div>
+          <div class="flex justify-end">
             <button
               type="button"
               class="btn btn-secondary text-xs"
@@ -133,17 +125,17 @@
         >
           <template #cell-key="{ value, row }">
             <div class="flex items-center gap-2">
-              <code class="code text-xs">
+              <code class="code max-w-[220px] truncate text-xs" :title="displayApiKey(row, value)">
                 {{ displayApiKey(row, value) }}
               </code>
               <button
                 @click="copyApiKey(row)"
                 class="rounded-lg p-1 transition-colors hover:bg-gray-100 dark:hover:bg-dark-700"
-                :disabled="!canRevealApiKey(row)"
+                :disabled="!hasApiKeySecret(row)"
                 :class="
                   copiedKeyId === row.id
                     ? 'text-green-500'
-                    : !canRevealApiKey(row)
+                    : !hasApiKeySecret(row)
                     ? 'cursor-not-allowed text-gray-300 dark:text-dark-500'
                     : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                 "
@@ -407,11 +399,11 @@
               <!-- Use Key Button -->
               <button
                 @click="openUseKeyModal(row)"
-                :disabled="!canRevealApiKey(row)"
-                :title="canRevealApiKey(row) ? t('keys.useKey') : t('keys.keyShownOnce')"
+                :disabled="!hasApiKeySecret(row)"
+                :title="hasApiKeySecret(row) ? t('keys.useKey') : t('keys.keyShownOnce')"
                 :class="[
                   'flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-colors',
-                  canRevealApiKey(row)
+                  hasApiKeySecret(row)
                     ? 'text-gray-500 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400'
                     : 'cursor-not-allowed text-gray-300 dark:text-dark-500'
                 ]"
@@ -423,11 +415,11 @@
               <button
                 v-if="!publicSettings?.hide_ccs_import_button"
                 @click="importToCcswitch(row)"
-                :disabled="!canRevealApiKey(row)"
-                :title="canRevealApiKey(row) ? t('keys.importToCcSwitch') : t('keys.keyShownOnce')"
+                :disabled="!hasApiKeySecret(row)"
+                :title="hasApiKeySecret(row) ? t('keys.importToCcSwitch') : t('keys.keyShownOnce')"
                 :class="[
                   'flex flex-col items-center gap-0.5 rounded-lg p-1.5 transition-colors',
-                  canRevealApiKey(row)
+                  hasApiKeySecret(row)
                     ? 'text-gray-500 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400'
                     : 'cursor-not-allowed text-gray-300 dark:text-dark-500'
                 ]"
@@ -1548,19 +1540,27 @@ const filteredGroupOptions = computed(() => {
   })
 })
 
-const canRevealApiKey = (key: ApiKey | null | undefined) => key?.key_visible_once === true && !!key.key
+const hasApiKeySecret = (key: ApiKey | null | undefined) => Boolean(key?.key?.trim())
+const canRevealApiKey = hasApiKeySecret
+
+const shortenApiKey = (value: string) => {
+  const raw = value.trim()
+  if (raw.length <= 22) return raw
+  const headLength = raw.startsWith('sk-') ? 10 : 8
+  return `${raw.slice(0, headLength)}...${raw.slice(-6)}`
+}
 
 const displayApiKey = (key: ApiKey, fallback = '') => {
   const value = key.key || fallback
-  if (canRevealApiKey(key)) return value
-  return value || (key.key_prefix ? `${key.key_prefix}...` : '')
+  if (value) return shortenApiKey(value)
+  return key.key_prefix ? `${key.key_prefix}...` : ''
 }
 
 const apiKeySecretActionTitle = (key: ApiKey | null | undefined) =>
   canRevealApiKey(key) ? t('keys.copyToClipboard') : t('keys.keyShownOnce')
 
 const copyApiKey = async (key: ApiKey) => {
-  if (!canRevealApiKey(key)) {
+  if (!hasApiKeySecret(key)) {
     appStore.showError(t('keys.keyShownOnce'))
     return
   }
@@ -1658,7 +1658,7 @@ const loadPublicSettings = async () => {
 }
 
 const openUseKeyModal = (key: ApiKey) => {
-  if (!canRevealApiKey(key)) {
+  if (!hasApiKeySecret(key)) {
     appStore.showError(t('keys.keyShownOnce'))
     return
   }
@@ -2003,7 +2003,7 @@ const resetRateLimitUsage = async () => {
 }
 
 const importToCcswitch = (row: ApiKey) => {
-  if (!canRevealApiKey(row)) {
+  if (!hasApiKeySecret(row)) {
     appStore.showError(t('keys.keyShownOnce'))
     return
   }

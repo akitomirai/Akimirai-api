@@ -433,7 +433,7 @@ export default {
     channelManagement: '渠道管理',
     channelPricing: '渠道定价',
     channelMonitor: '渠道监控',
-    channelStatus: '渠道状态',
+    channelStatus: '模型状态',
     riskControl: '风控中心',
   },
 
@@ -1088,15 +1088,15 @@ export default {
     relativeDaysAgo: '{n} 天前'
   },
 
-  // Channel Status (user-facing read-only view)
+  // Model Status (user-facing read-only view)
   channelStatus: {
-    title: '渠道状态',
-    description: '查看渠道可用性、延迟和近期状态',
-    searchPlaceholder: '搜索渠道...',
+    title: '模型状态',
+    description: '查看模型可用性、延迟和近期状态',
+    searchPlaceholder: '搜索模型...',
     allProviders: '全部供应商',
-    loadError: '加载渠道状态失败',
-    detailLoadError: '加载渠道详情失败',
-    detailTitle: '渠道详情',
+    loadError: '加载模型状态失败',
+    detailLoadError: '加载模型详情失败',
+    detailTitle: '模型详情',
     closeDetail: '关闭',
     windowTab: {
       '7d': '7 天',

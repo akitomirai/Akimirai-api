@@ -38,10 +38,17 @@ const messages: Record<string, string> = {
   'keys.allGroups': 'All Groups',
   'keys.allStatus': 'All Status',
   'keys.columnSettings': 'Column Settings',
+  'keys.copied': 'Copied',
+  'keys.copyToClipboard': 'Copy to clipboard',
   'keys.createKey': 'Create API Key',
   'keys.created': 'Created',
   'keys.expiresAt': 'Expires',
   'keys.group': 'Group',
+  'keys.importToCcSwitch': 'Import to CCS',
+  'keys.integrationExamples.copied': 'Copied',
+  'keys.integrationExamples.copyBaseUrl': 'Copy Base URL',
+  'keys.integrationExamples.copyExample': 'Copy example',
+  'keys.keyShownOnce': 'Key shown once',
   'keys.currentConcurrency': 'Current Concurrency',
   'keys.lastUsedAt': 'Last Used',
   'keys.rateLimitColumn': 'Rate Limit',
@@ -51,6 +58,7 @@ const messages: Record<string, string> = {
   'keys.status.inactive': 'Inactive',
   'keys.status.quota_exhausted': 'Quota exhausted',
   'keys.usage': 'Usage',
+  'keys.useKey': 'Use Key',
 }
 
 vi.mock('@/api', () => ({
@@ -106,7 +114,9 @@ vi.mock('vue-i18n', async () => {
 const createApiKey = (): ApiKey => ({
   id: 1,
   user_id: 1,
-  key: 'sk-test-key',
+  key: 'sk-89ed441ca2be968c4d1e568c2fb1b1394aaf63d53eb3aced46e6045cb5b1bba9',
+  key_prefix: 'sk-89ed44',
+  key_visible_once: false,
   name: 'test-key',
   group_id: null,
   status: 'active',
@@ -156,8 +166,14 @@ const DataTableStub = {
       <div data-test="columns">{{ columns.map((col) => col.key).join(',') }}</div>
       <div v-for="row in data" :key="row.id">
         <slot name="cell-name" :value="row.name" :row="row" />
+        <div data-test="api-key">
+          <slot name="cell-key" :value="row.key" :row="row" />
+        </div>
         <div data-test="current-concurrency">
           <slot name="cell-current_concurrency" :value="row.current_concurrency" :row="row" />
+        </div>
+        <div data-test="actions">
+          <slot name="cell-actions" :row="row" />
         </div>
       </div>
       <slot name="empty" />
@@ -316,5 +332,22 @@ describe('user KeysView column settings', () => {
     const wrapper = await mountView()
 
     expect(wrapper.get('[data-test="current-concurrency"]').text()).toBe('3')
+  })
+
+  it('shortens API keys but keeps key actions enabled when the secret is returned', async () => {
+    const wrapper = await mountView()
+
+    const apiKeyCell = wrapper.get('[data-test="api-key"]')
+    expect(apiKeyCell.text()).toContain('sk-89ed441...b1bba9')
+    expect(apiKeyCell.text()).not.toContain(createApiKey().key)
+
+    const actionButtons = wrapper.get('[data-test="actions"]').findAll('button')
+    const useKeyButton = actionButtons.find((button) => button.text().includes('Use Key'))
+    const importButton = actionButtons.find((button) => button.text().includes('Import to CCS'))
+
+    expect(useKeyButton?.attributes('disabled')).toBeUndefined()
+    expect(importButton?.attributes('disabled')).toBeUndefined()
+    expect(wrapper.text()).not.toContain('keys.integrationExamples.title')
+    expect(wrapper.text()).not.toContain('keys.integrationExamples.subtitle')
   })
 })
