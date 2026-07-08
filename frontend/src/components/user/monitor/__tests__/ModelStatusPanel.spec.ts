@@ -116,13 +116,13 @@ describe('ModelStatusPanel', () => {
     expect(wrapper.text()).toContain('gpt-5.4-mini')
   })
 
-  it('uses a full-width row when only one model is visible', () => {
+  it('keeps the desktop two-column model flow when only one model is visible', () => {
     const wrapper = mountPanel({
       items: [monitor('gpt-5.5', 1)],
     })
 
     const grid = wrapper.get('[data-test="model-status-grid"]')
-    expect(grid.classes()).toContain('grid-cols-1')
-    expect(grid.classes()).not.toContain('lg:grid-cols-2')
+    expect(grid.classes()).toContain('lg:grid-cols-2')
+    expect(grid.classes()).not.toContain('grid-cols-1')
   })
 })
