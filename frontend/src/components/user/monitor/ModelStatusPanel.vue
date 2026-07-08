@@ -58,13 +58,13 @@
       </div>
     </div>
 
-    <div v-if="loading && rows.length === 0" class="grid gap-x-10 gap-y-8 lg:grid-cols-2">
+    <div v-if="loading && rows.length === 0" class="grid gap-x-10 gap-y-9 lg:grid-cols-2">
       <div v-for="i in 6" :key="i" class="animate-pulse">
-        <div class="mb-5 flex items-center justify-between">
+        <div class="mb-4 flex items-center justify-between">
           <div class="h-5 w-32 rounded bg-gray-200 dark:bg-dark-700"></div>
           <div class="h-5 w-12 rounded bg-gray-200 dark:bg-dark-700"></div>
         </div>
-        <div class="h-10 rounded bg-gray-100 dark:bg-dark-900/50"></div>
+        <div class="h-[34px] rounded bg-gray-100 dark:bg-dark-900/50"></div>
         <div class="mt-4 h-4 w-4/5 rounded bg-gray-100 dark:bg-dark-900/50"></div>
       </div>
     </div>
@@ -80,17 +80,17 @@
         v-for="row in filteredRows"
         :key="row.model"
         type="button"
-        class="group min-w-0 text-left"
+        class="group min-w-0 rounded-lg px-0.5 py-1 text-left transition-colors hover:bg-white/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 dark:hover:bg-dark-800/45"
         @click="emit('modelClick', row.primaryMonitor)"
       >
-        <div class="mb-4 flex items-center justify-between gap-3">
+        <div class="mb-5 flex items-center justify-between gap-3">
           <div class="flex min-w-0 items-center gap-2">
-            <span class="h-2.5 w-2.5 shrink-0 rounded-full" :class="modelDotClass(row.status)"></span>
-            <span class="truncate text-base font-semibold text-gray-950 dark:text-white">{{ row.model }}</span>
+            <span class="h-2 w-2 shrink-0 rounded-full" :class="modelDotClass(row.status)"></span>
+            <span class="truncate text-[15px] font-semibold text-gray-950 dark:text-white">{{ row.model }}</span>
             <span
               v-for="provider in row.providers"
               :key="provider"
-              class="rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
+              class="rounded-md px-1.5 py-0.5 text-[10px] font-semibold leading-none"
               :class="providerBadgeClass(provider)"
             >
               {{ providerLabel(provider) }}
@@ -101,11 +101,12 @@
           </span>
         </div>
 
-        <div class="flex h-12 items-end gap-[3px]">
+        <div class="flex h-[34px] items-end gap-[4px] overflow-hidden">
           <span
             v-for="(bar, idx) in row.bars"
             :key="`${row.model}-${idx}`"
-            class="min-w-[3px] flex-1 rounded-sm transition-opacity group-hover:opacity-90"
+            data-test="model-status-bar"
+            class="min-w-[3px] max-w-[8px] flex-1 rounded-[2px] transition-opacity group-hover:opacity-90"
             :class="bar.colorClass"
             :style="{ height: `${bar.heightPct}%` }"
             :title="bar.title"
@@ -117,7 +118,7 @@
           <span>{{ t('channelStatus.modelStats.now') }}</span>
         </div>
 
-        <div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-gray-500 dark:text-dark-400">
+        <div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-500 dark:text-dark-400">
           <span>{{ t('channelStatus.modelStats.successRate') }} <b>{{ formatPercent(row.availability) }}</b></span>
           <span>{{ t('channelStatus.modelStats.successFailed') }} <b>{{ formatNumber(row.successCount) }}/{{ formatNumber(row.failureCount) }}</b></span>
           <span>{{ t('channelStatus.modelStats.token24h') }} <b>{{ formatCompactNumber(row.totalTokens) }}</b></span>
@@ -206,7 +207,7 @@ const STATUS_HEIGHT: Record<string, number> = {
   degraded: 62,
   failed: 38,
   error: 38,
-  empty: 24,
+  empty: 88,
 }
 
 const legendItems = computed(() => [

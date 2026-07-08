@@ -104,6 +104,7 @@ describe('ModelStatusPanel', () => {
     expect(text).toContain('100.0M')
     expect(text).toContain('90.00%')
     expect(text).toContain('2/1')
+    expect(wrapper.findAll('[data-test="model-status-bar"]')).toHaveLength(120)
   })
 
   it('filters rows by model name', async () => {
