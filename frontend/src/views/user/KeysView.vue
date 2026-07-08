@@ -81,39 +81,6 @@
       </template>
 
       <template #table>
-        <div class="mb-4 border border-gray-200 bg-white p-4 dark:border-dark-700 dark:bg-dark-800">
-          <div class="flex justify-end">
-            <button
-              type="button"
-              class="btn btn-secondary text-xs"
-              :title="t('keys.integrationExamples.copyBaseUrl')"
-              @click="copyIntegrationBaseUrl"
-            >
-              <Icon name="clipboard" size="sm" />
-              {{ integrationOpenAIBaseUrl }}
-            </button>
-          </div>
-          <div class="mt-4 grid gap-3 lg:grid-cols-2">
-            <div
-              v-for="example in integrationExamples"
-              :key="example.id"
-              class="border border-gray-100 bg-gray-50 p-3 dark:border-dark-700 dark:bg-dark-900"
-            >
-              <div class="mb-2 flex items-center justify-between gap-2">
-                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ example.title }}</span>
-                <button
-                  type="button"
-                  class="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700 dark:hover:text-dark-200"
-                  :title="t('keys.integrationExamples.copyExample')"
-                  @click="copyIntegrationExample(example)"
-                >
-                  <Icon name="clipboard" size="sm" />
-                </button>
-              </div>
-              <pre class="max-h-40 overflow-auto whitespace-pre-wrap break-all text-xs leading-5 text-gray-700 dark:text-dark-200">{{ example.body }}</pre>
-            </div>
-          </div>
-        </div>
         <DataTable
           :columns="columns"
           :data="apiKeys"
@@ -1211,12 +1178,6 @@ interface GroupOption {
   platform: GroupPlatform
 }
 
-interface IntegrationExample {
-  id: string
-  title: string
-  body: string
-}
-
 const appStore = useAppStore()
 const onboardingStore = useOnboardingStore()
 const { copyToClipboard: clipboardCopy } = useClipboard()
@@ -1339,84 +1300,6 @@ const columnDropdownRef = ref<HTMLElement | null>(null)
 const dropdownPosition = ref<{ top?: number; bottom?: number; left: number } | null>(null)
 const groupButtonRefs = ref<Map<number, HTMLElement>>(new Map())
 let abortController: AbortController | null = null
-
-const integrationBaseUrl = computed(() => {
-  const configured = publicSettings.value?.api_base_url?.trim()
-  const fallback = typeof window === 'undefined' ? '' : window.location.origin
-  return (configured || fallback).replace(/\/+$/, '')
-})
-const integrationOpenAIBaseUrl = computed(() => `${integrationBaseUrl.value}/v1`)
-const integrationApiKeyPlaceholder = 'sk-your-api-key'
-const integrationModelPlaceholder = 'gpt-4o-mini'
-const integrationExamples = computed<IntegrationExample[]>(() => {
-  const baseURL = integrationOpenAIBaseUrl.value
-  const apiKey = integrationApiKeyPlaceholder
-  const model = integrationModelPlaceholder
-
-  return [
-    {
-      id: 'openai-sdk',
-      title: 'OpenAI SDK',
-      body: [
-        "import OpenAI from 'openai'",
-        '',
-        'const client = new OpenAI({',
-        `  baseURL: '${baseURL}',`,
-        `  apiKey: '${apiKey}',`,
-        '})',
-        '',
-        'const response = await client.chat.completions.create({',
-        `  model: '${model}',`,
-        "  messages: [{ role: 'user', content: 'Hello' }],",
-        '})'
-      ].join('\n')
-    },
-    {
-      id: 'codex',
-      title: 'Codex',
-      body: [
-        '[model_providers.sub2api]',
-        'name = "Sub2API"',
-        `base_url = "${baseURL}"`,
-        'wire_api = "chat"',
-        'env_key = "OPENAI_API_KEY"',
-        '',
-        'model_provider = "sub2api"',
-        `model = "${model}"`,
-        '',
-        `# OPENAI_API_KEY=${apiKey}`
-      ].join('\n')
-    },
-    {
-      id: 'cursor',
-      title: 'Cursor',
-      body: [
-        'Provider: OpenAI Compatible',
-        `Base URL: ${baseURL}`,
-        `API Key: ${apiKey}`,
-        `Model: ${model}`
-      ].join('\n')
-    },
-    {
-      id: 'cherry-studio',
-      title: 'Cherry Studio',
-      body: [
-        'Provider: OpenAI Compatible',
-        `API Host: ${baseURL}`,
-        `API Key: ${apiKey}`,
-        `Model: ${model}`
-      ].join('\n')
-    }
-  ]
-})
-
-const copyIntegrationBaseUrl = async () => {
-  await clipboardCopy(integrationOpenAIBaseUrl.value, t('keys.integrationExamples.copied'))
-}
-
-const copyIntegrationExample = async (example: IntegrationExample) => {
-  await clipboardCopy(example.body, t('keys.integrationExamples.copied'))
-}
 
 // Get the currently selected key for group change
 const selectedKeyForGroup = computed(() => {

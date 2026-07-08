@@ -1,21 +1,12 @@
 <template>
   <AppLayout>
-    <MonitorHero
-      :overall-status="overallStatus"
-      :interval-seconds="DEFAULT_INTERVAL_SECONDS"
-      :window="currentWindow"
-      :loading="loading"
-      :auto-refresh="autoRefresh"
-      @update:window="handleWindowChange"
-      @refresh="manualReload"
-    />
-
     <ModelStatusPanel
       :items="items"
       :window="currentWindow"
       :loading="loading || modelUsageLoading"
       :detail-cache="detailCache"
       :usage-models="modelUsageStats"
+      @refresh="manualReload"
       @model-click="openDetail"
     />
 
@@ -41,18 +32,15 @@ import {
 } from '@/api/channelMonitor'
 import { getDashboardModels } from '@/api/usage'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import MonitorHero, {
-  type MonitorWindow,
-  type OverallStatus,
-} from '@/components/user/monitor/MonitorHero.vue'
 import ModelStatusPanel from '@/components/user/monitor/ModelStatusPanel.vue'
 import MonitorDetailDialog from '@/components/user/MonitorDetailDialog.vue'
-import { DEFAULT_INTERVAL_SECONDS, STATUS_OPERATIONAL } from '@/constants/channelMonitor'
+import { DEFAULT_INTERVAL_SECONDS } from '@/constants/channelMonitor'
 import { useAutoRefresh } from '@/composables/useAutoRefresh'
 import type { ModelStat } from '@/types'
 
 const { t } = useI18n()
 const appStore = useAppStore()
+type MonitorWindow = '7d' | '15d' | '30d'
 
 // ── State ──
 const items = ref<UserMonitorView[]>([])
@@ -76,15 +64,6 @@ const autoRefresh = useAutoRefresh({
 const countdown = autoRefresh.countdown
 
 // ── Computed ──
-const overallStatus = computed<OverallStatus>(() => {
-  if (items.value.length === 0) return 'operational'
-  for (const it of items.value) {
-    if (it.primary_status === 'failed' || it.primary_status === 'error') return 'degraded'
-    if (it.primary_status !== STATUS_OPERATIONAL) return 'degraded'
-  }
-  return 'operational'
-})
-
 const detailTitle = computed(() => {
   return detailTarget.value?.name || t('channelStatus.detailTitle')
 })
@@ -163,11 +142,6 @@ async function ensureDetailsForWindow() {
 }
 
 // ── Handlers ──
-async function handleWindowChange(value: MonitorWindow) {
-  currentWindow.value = value
-  await ensureDetailsForWindow()
-}
-
 function openDetail(row: UserMonitorView) {
   detailTarget.value = row
   showDetail.value = true

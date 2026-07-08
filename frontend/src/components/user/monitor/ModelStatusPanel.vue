@@ -36,13 +36,25 @@
         </span>
       </div>
 
-      <div class="relative w-full sm:w-72">
+      <div class="flex w-full items-center gap-3 sm:w-auto">
+        <div class="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
         <input
           v-model="searchTerm"
           type="search"
           class="input h-9 w-full rounded-lg pr-9 text-sm"
           :placeholder="t('channelStatus.modelStats.searchPlaceholder')"
         />
+        </div>
+        <button
+          type="button"
+          class="btn btn-secondary h-9 px-4 text-sm"
+          :disabled="loading"
+          :title="t('common.refresh')"
+          @click="emit('refresh')"
+        >
+          <Icon name="refresh" size="sm" :class="loading ? 'animate-spin' : ''" />
+          {{ t('common.refresh') }}
+        </button>
       </div>
     </div>
 
@@ -68,7 +80,7 @@
         v-for="row in filteredRows"
         :key="row.model"
         type="button"
-        class="group rounded-lg p-1 text-left transition-colors hover:bg-white/70 dark:hover:bg-dark-800/60"
+        class="group text-left"
         @click="emit('modelClick', row.primaryMonitor)"
       >
         <div class="mb-4 flex items-center justify-between gap-3">
@@ -129,6 +141,7 @@ import type {
 } from '@/api/channelMonitor'
 import type { ModelStat } from '@/types'
 import EmptyState from '@/components/common/EmptyState.vue'
+import Icon from '@/components/icons/Icon.vue'
 import { formatCompactNumber } from '@/utils/format'
 import { useChannelMonitorFormat } from '@/composables/useChannelMonitorFormat'
 
@@ -165,6 +178,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'modelClick', item: UserMonitorView): void
+  (e: 'refresh'): void
 }>()
 
 const { t } = useI18n()
