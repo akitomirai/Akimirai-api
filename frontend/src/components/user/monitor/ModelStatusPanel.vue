@@ -75,12 +75,12 @@
       :description="t('channelStatus.empty.description')"
     />
 
-    <div v-else class="grid gap-x-10 gap-y-9 lg:grid-cols-2">
+    <div v-else data-test="model-status-grid" :class="modelGridClass">
       <button
         v-for="row in filteredRows"
         :key="row.model"
         type="button"
-        class="group text-left"
+        class="group min-w-0 text-left"
         @click="emit('modelClick', row.primaryMonitor)"
       >
         <div class="mb-4 flex items-center justify-between gap-3">
@@ -254,6 +254,11 @@ const filteredRows = computed(() => {
   if (!q) return rows.value
   return rows.value.filter(row => row.model.toLowerCase().includes(q))
 })
+
+const modelGridClass = computed(() => [
+  'grid gap-y-9',
+  filteredRows.value.length > 1 ? 'gap-x-10 lg:grid-cols-2' : 'grid-cols-1',
+])
 
 const operationalCount = computed(() => rows.value.filter(row => row.status === 'operational').length)
 const totalTokens = computed(() => rows.value.reduce((sum, row) => sum + row.totalTokens, 0))

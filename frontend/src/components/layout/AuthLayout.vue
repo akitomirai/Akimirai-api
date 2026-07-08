@@ -22,16 +22,16 @@
 
         <div class="auth-reveal auth-reveal-copy auth-hero-copy hidden lg:block">
           <p class="mb-3 text-xs font-semibold uppercase text-primary-700 dark:text-primary-300">
-            {{ t('auth.layoutHeroKicker') }}
+            {{ heroKicker }}
           </p>
-          <h1 class="auth-hero-title max-w-none whitespace-nowrap text-[2rem] font-black leading-[1.08] text-slate-950 dark:text-white xl:text-[2.15rem] 2xl:text-[2.25rem]">
-            {{ t('auth.layoutHeroTitle') }}
+          <h1 class="auth-hero-title max-w-xl text-[2rem] font-black leading-[1.08] text-slate-950 dark:text-white xl:text-[2.15rem] 2xl:text-[2.25rem]">
+            {{ heroTitle }}
           </h1>
           <p class="mt-2 text-xl font-bold text-slate-900 dark:text-white/90 xl:text-2xl">
-            {{ t('auth.layoutHeroSubtitle') }}
+            {{ heroSubtitle }}
           </p>
           <p class="mt-2 max-w-xl text-sm leading-7 text-slate-600 dark:text-dark-200 xl:text-base">
-            {{ t('auth.layoutHeroDescription') }}
+            {{ heroDescription }}
           </p>
         </div>
 
@@ -54,21 +54,6 @@
         <div class="auth-reveal auth-reveal-footer mt-6 w-full self-start text-center text-sm lg:max-w-[430px]">
           <slot name="footer" />
         </div>
-
-        <div class="auth-reveal auth-reveal-metrics auth-metrics mt-6 grid w-full self-start grid-cols-3 overflow-hidden rounded-lg border border-slate-200/80 bg-white/70 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5 lg:max-w-[620px]">
-          <div
-            v-for="metric in heroMetrics"
-            :key="metric.label"
-            class="border-r border-slate-200/80 px-5 py-4 last:border-r-0 dark:border-white/10"
-          >
-            <p class="auth-metric-value font-black tabular-nums text-slate-950 dark:text-white">{{ metric.value }}</p>
-            <p class="mt-1 text-xs font-medium text-slate-500 dark:text-dark-300">{{ metric.label }}</p>
-          </div>
-        </div>
-
-        <div class="auth-reveal auth-reveal-page-footer mt-6 w-full self-start text-center text-xs text-slate-400 dark:text-dark-500 lg:max-w-[430px]">
-          {{ t('auth.layoutFooter') }}
-        </div>
       </section>
     </div>
   </div>
@@ -83,40 +68,21 @@ import { sanitizeUrl } from '@/utils/url'
 const appStore = useAppStore()
 const { t } = useI18n()
 
-const authBrandName = computed(() => t('auth.layoutBrandName'))
+const authBrandName = computed(() => {
+  return appStore.cachedPublicSettings?.site_name?.trim() || appStore.siteName || 'Sub2API'
+})
 const siteLogo = computed(() => sanitizeUrl(appStore.siteLogo || '', { allowRelative: true, allowDataUrl: true }))
-const siteSubtitle = computed(() => t('auth.layoutHeroSubtitle'))
+const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle?.trim() || 'AI API Gateway')
 const settingsLoaded = computed(() => appStore.publicSettingsLoaded)
+const heroKicker = computed(() => 'AI API Gateway')
+const heroTitle = computed(() => authBrandName.value)
+const heroSubtitle = computed(() => siteSubtitle.value)
+const heroDescription = computed(() => translateOr('auth.signInToAccount', 'Sign in to your account to continue'))
 
-const configuredAIPlatforms = computed(() => {
-  const rawPlatforms = appStore.cachedPublicSettings?.configured_ai_platforms ?? []
-  const seen = new Set<string>()
-  return rawPlatforms
-    .map((platform) => platform.trim())
-    .filter((platform) => {
-      if (!platform || seen.has(platform)) {
-        return false
-      }
-      seen.add(platform)
-      return true
-    })
-})
-
-const platformMetricValue = computed(() => {
-  const platforms = configuredAIPlatforms.value
-  if (platforms.length === 0) {
-    return t('auth.layoutHeroMetricOneValue')
-  }
-  const visiblePlatforms = platforms.slice(0, 3)
-  const hiddenCount = platforms.length - visiblePlatforms.length
-  return `${visiblePlatforms.join(' / ')}${hiddenCount > 0 ? ` +${hiddenCount}` : ''}`
-})
-
-const heroMetrics = computed(() => [
-  { value: platformMetricValue.value, label: t('auth.layoutHeroMetricOneLabel') },
-  { value: t('auth.layoutHeroMetricTwoValue'), label: t('auth.layoutHeroMetricTwoLabel') },
-  { value: t('auth.layoutHeroMetricThreeValue'), label: t('auth.layoutHeroMetricThreeLabel') }
-])
+function translateOr(key: string, fallback: string): string {
+  const translated = t(key)
+  return translated === key ? fallback : translated
+}
 
 onMounted(() => {
   appStore.fetchPublicSettings()
@@ -171,12 +137,6 @@ onMounted(() => {
     0 0 2px rgba(255, 255, 255, 0.9);
 }
 
-.auth-metric-value {
-  font-size: clamp(1rem, 1.3vw, 1.5rem);
-  line-height: 1.1;
-  white-space: nowrap;
-}
-
 :global(.dark .auth-hero-title) {
   text-shadow:
     0 2px 18px rgba(2, 6, 23, 0.65),
@@ -204,14 +164,6 @@ onMounted(() => {
 
 .auth-reveal-footer {
   animation-delay: 1140ms;
-}
-
-.auth-reveal-metrics {
-  animation-delay: 1460ms;
-}
-
-.auth-reveal-page-footer {
-  animation-delay: 1700ms;
 }
 
 @keyframes auth-reveal-rise {

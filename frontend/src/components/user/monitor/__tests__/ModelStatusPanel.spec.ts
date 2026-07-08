@@ -63,7 +63,7 @@ function monitor(model: string, id: number): UserMonitorView {
   }
 }
 
-function mountPanel() {
+function mountPanel(propOverrides: Record<string, unknown> = {}) {
   return mount(ModelStatusPanel, {
     props: {
       items: [monitor('gpt-5.5', 1), monitor('gpt-5.4-mini', 2)],
@@ -83,6 +83,7 @@ function mountPanel() {
           actual_cost: 0.5,
         },
       ],
+      ...propOverrides,
     },
     global: {
       stubs: {
@@ -113,5 +114,15 @@ describe('ModelStatusPanel', () => {
 
     expect(wrapper.text()).not.toContain('gpt-5.5')
     expect(wrapper.text()).toContain('gpt-5.4-mini')
+  })
+
+  it('uses a full-width row when only one model is visible', () => {
+    const wrapper = mountPanel({
+      items: [monitor('gpt-5.5', 1)],
+    })
+
+    const grid = wrapper.get('[data-test="model-status-grid"]')
+    expect(grid.classes()).toContain('grid-cols-1')
+    expect(grid.classes()).not.toContain('lg:grid-cols-2')
   })
 })
