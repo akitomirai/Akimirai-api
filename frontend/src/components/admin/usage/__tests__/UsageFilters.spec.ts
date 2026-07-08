@@ -10,6 +10,7 @@ const messages: Record<string, string> = {
   'admin.usage.searchUserPlaceholder': 'Search user...',
   'usage.apiKeyFilter': 'API Key',
   'admin.usage.searchApiKeyPlaceholder': 'Search API key...',
+  'admin.dashboard.timeRange': 'Time Range',
   'usage.model': 'Model',
   'admin.usage.allModels': 'All Models',
   'admin.usage.account': 'Account',
@@ -191,5 +192,26 @@ describe('UsageFilters — model options come from prop (no dup request)', () =>
 
     const opts = (wrapper.vm as any).modelOptions as Array<{ value: string | null; label: string }>
     expect(opts.map((o) => o.value)).toEqual([null, 'claude-3', 'gpt-4o'])
+  })
+})
+
+describe('UsageFilters compact layout', () => {
+  it('keeps user and group filters before the API key filter', async () => {
+    const wrapper = mount(UsageFilters, {
+      props: {
+        modelValue: defaultFilters(),
+        exporting: false,
+        startDate: '2026-05-01',
+        endDate: '2026-05-28',
+        showActions: false,
+        modelOptions: [],
+        compact: true,
+      },
+      global: { stubs: { Select: true, DateRangePicker: true, Teleport: true } },
+    })
+    await flushPromises()
+
+    const labels = wrapper.findAll('label.input-label').map((label) => label.text())
+    expect(labels.slice(0, 4)).toEqual(['User', 'Group', 'API Key', 'Time Range'])
   })
 })
