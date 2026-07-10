@@ -596,6 +596,77 @@ func (r *usageLogRepository) getGroupStatsWithFilters(ctx context.Context, start
 	return results, nil
 }
 
+// GetAPIKeyStatsWithUsageFilters returns API-key distribution data while
+// preserving the same filter semantics as the other usage-page charts.
+func (r *usageLogRepository) GetAPIKeyStatsWithUsageFilters(ctx context.Context, startTime, endTime time.Time, filters UsageLogFilters) (results []usagestats.APIKeyStat, err error) {
+	query := `
+		SELECT
+			ul.api_key_id,
+			COALESCE(NULLIF(k.name, ''), '') AS api_key_name,
+			COUNT(*) AS requests,
+			COALESCE(SUM(ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens), 0) AS total_tokens,
+			COALESCE(SUM(ul.total_cost), 0) AS cost,
+			COALESCE(SUM(ul.actual_cost), 0) AS actual_cost
+		FROM usage_logs ul
+		LEFT JOIN api_keys k ON k.id = ul.api_key_id
+		WHERE ul.created_at >= $1 AND ul.created_at < $2
+	`
+
+	args := []any{startTime, endTime}
+	if filters.UserID > 0 {
+		query += fmt.Sprintf(" AND ul.user_id = $%d", len(args)+1)
+		args = append(args, filters.UserID)
+	}
+	if filters.APIKeyID > 0 {
+		query += fmt.Sprintf(" AND ul.api_key_id = $%d", len(args)+1)
+		args = append(args, filters.APIKeyID)
+	}
+	if filters.AccountID > 0 {
+		query += fmt.Sprintf(" AND ul.account_id = $%d", len(args)+1)
+		args = append(args, filters.AccountID)
+	}
+	if filters.GroupID > 0 {
+		query += fmt.Sprintf(" AND ul.group_id = $%d", len(args)+1)
+		args = append(args, filters.GroupID)
+	}
+	if strings.TrimSpace(filters.Model) != "" {
+		modelExpr := resolveModelDimensionExpressionWithAlias(filters.ModelFilterSource, "ul")
+		query += fmt.Sprintf(" AND %s = $%d", modelExpr, len(args)+1)
+		args = append(args, filters.Model)
+	}
+	query, args = appendRequestTypeOrStreamQueryFilter(query, args, filters.RequestType, filters.Stream)
+	if filters.BillingType != nil {
+		query += fmt.Sprintf(" AND ul.billing_type = $%d", len(args)+1)
+		args = append(args, int16(*filters.BillingType))
+	}
+	query, args = appendUsageLogBillingModeQueryFilter(query, args, filters.BillingMode, "ul")
+	query += " GROUP BY ul.api_key_id, k.name ORDER BY total_tokens DESC, ul.api_key_id ASC"
+
+	rows, err := r.sql.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+			results = nil
+		}
+	}()
+
+	results = make([]usagestats.APIKeyStat, 0)
+	for rows.Next() {
+		var row usagestats.APIKeyStat
+		if err = rows.Scan(&row.APIKeyID, &row.APIKeyName, &row.Requests, &row.TotalTokens, &row.Cost, &row.ActualCost); err != nil {
+			return nil, err
+		}
+		results = append(results, row)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
 // GetUserBreakdownStats returns per-user usage breakdown within a specific dimension.
 func (r *usageLogRepository) GetUserBreakdownStats(ctx context.Context, startTime, endTime time.Time, dim usagestats.UserBreakdownDimension, limit int) (results []usagestats.UserBreakdownItem, err error) {
 	query := `
@@ -642,8 +713,9 @@ func (r *usageLogRepository) GetUserBreakdownStats(ctx context.Context, startTim
 		args = append(args, dim.AccountID)
 	}
 	if dim.RequestType != nil {
-		query += fmt.Sprintf(" AND ul.request_type = $%d", len(args)+1)
-		args = append(args, *dim.RequestType)
+		condition, conditionArgs := buildRequestTypeFilterConditionWithAlias(len(args)+1, *dim.RequestType, "ul")
+		query += " AND " + condition
+		args = append(args, conditionArgs...)
 	}
 	if dim.Stream != nil {
 		query += fmt.Sprintf(" AND ul.stream = $%d", len(args)+1)

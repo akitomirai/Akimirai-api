@@ -33,8 +33,9 @@ type User struct {
 	// RPMLimit 用户级每分钟请求数上限（0 = 不限制），仅在所用分组未设置 rpm_limit 时作为兜底生效。
 	RPMLimit int `json:"rpm_limit"`
 
-	APIKeys       []APIKey           `json:"api_keys,omitempty"`
-	Subscriptions []UserSubscription `json:"subscriptions,omitempty"`
+	PrivacyFilterConfig PrivacyFilterConfig `json:"privacy_filter_config"`
+	APIKeys             []APIKey            `json:"api_keys,omitempty"`
+	Subscriptions       []UserSubscription  `json:"subscriptions,omitempty"`
 }
 
 // AdminUser 是管理员接口使用的 user DTO（包含敏感/内部字段）。
@@ -50,21 +51,24 @@ type AdminUser struct {
 }
 
 type APIKey struct {
-	ID          int64      `json:"id"`
-	UserID      int64      `json:"user_id"`
-	Key         string     `json:"key"`
-	Name        string     `json:"name"`
-	GroupID     *int64     `json:"group_id"`
-	Status      string     `json:"status"`
-	IPWhitelist []string   `json:"ip_whitelist"`
-	IPBlacklist []string   `json:"ip_blacklist"`
-	LastUsedAt  *time.Time `json:"last_used_at"`
-	LastUsedIP  *string    `json:"last_used_ip"`
-	Quota       float64    `json:"quota"`      // Quota limit in USD (0 = unlimited)
-	QuotaUsed   float64    `json:"quota_used"` // Used quota amount in USD
-	ExpiresAt   *time.Time `json:"expires_at"` // Expiration time (nil = never expires)
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+	ID             int64      `json:"id"`
+	UserID         int64      `json:"user_id"`
+	Key            string     `json:"key"`
+	KeyPrefix      string     `json:"key_prefix"`
+	KeyVisibleOnce bool       `json:"key_visible_once"`
+	Name           string     `json:"name"`
+	GroupID        *int64     `json:"group_id"`
+	Status         string     `json:"status"`
+	IPWhitelist    []string   `json:"ip_whitelist"`
+	IPBlacklist    []string   `json:"ip_blacklist"`
+	AllowedModels  []string   `json:"allowed_models"`
+	LastUsedAt     *time.Time `json:"last_used_at"`
+	LastUsedIP     *string    `json:"last_used_ip"`
+	Quota          float64    `json:"quota"`      // Quota limit in USD (0 = unlimited)
+	QuotaUsed      float64    `json:"quota_used"` // Used quota amount in USD
+	ExpiresAt      *time.Time `json:"expires_at"` // Expiration time (nil = never expires)
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
 	// CurrentConcurrency is the real-time active request count for this API key.
 	CurrentConcurrency int `json:"current_concurrency"`
 
@@ -545,11 +549,60 @@ type AdminUsageLog struct {
 	// AccountStatsCost 自定义定价规则计算的账号统计费用（nil 表示使用默认公式）
 	AccountStatsCost *float64 `json:"account_stats_cost,omitempty"`
 
+	ClientTransport          *string    `json:"client_transport,omitempty"`
+	AuthLatencyMs            *int       `json:"auth_latency_ms,omitempty"`
+	RoutingLatencyMs         *int       `json:"routing_latency_ms,omitempty"`
+	UpstreamLatencyMs        *int       `json:"upstream_latency_ms,omitempty"`
+	ResponseLatencyMs        *int       `json:"response_latency_ms,omitempty"`
+	RequestStartedAt         *time.Time `json:"request_started_at,omitempty"`
+	RequestTotalMs           *int       `json:"request_total_ms,omitempty"`
+	RequestBodyReadMs        *int       `json:"request_body_read_ms,omitempty"`
+	RequestBodyBytes         *int64     `json:"request_body_bytes,omitempty"`
+	UpstreamRequestWrittenMs *int       `json:"upstream_request_written_ms,omitempty"`
+	UpstreamFirstByteMs      *int       `json:"upstream_first_byte_ms,omitempty"`
+	RequestFirstTokenMs      *int       `json:"request_first_token_ms,omitempty"`
+	RouteKind                *string    `json:"route_kind,omitempty"`
+	ProxyIDSnapshot          *int64     `json:"proxy_id_snapshot,omitempty"`
+	ProxyNameSnapshot        *string    `json:"proxy_name_snapshot,omitempty"`
+	ProxyProtocolSnapshot    *string    `json:"proxy_protocol_snapshot,omitempty"`
+	RouteFingerprint         *string    `json:"route_fingerprint,omitempty"`
+	FinalUpstreamStatus      *int       `json:"final_upstream_status,omitempty"`
+	RetryCount               int        `json:"retry_count"`
+	AccountSwitchCount       int        `json:"account_switch_count"`
+
 	// IPAddress 用户请求 IP
 	IPAddress *string `json:"ip_address,omitempty"`
 
 	// Account 最小账号信息（避免泄露敏感字段）
 	Account *AccountSummary `json:"account,omitempty"`
+}
+
+type AdminUsageDiagnostics struct {
+	AdminUsageLog
+	AttemptTimeline []AdminUsageAttemptEvent `json:"attempt_timeline,omitempty"`
+}
+
+type AdminUsageAttemptEvent struct {
+	Sequence         int                     `json:"sequence"`
+	StartedMs        int                     `json:"started_ms"`
+	FinishedMs       *int                    `json:"finished_ms,omitempty"`
+	RequestWrittenMs *int                    `json:"request_written_ms,omitempty"`
+	FirstByteMs      *int                    `json:"first_byte_ms,omitempty"`
+	AccountID        int64                   `json:"account_id"`
+	AccountName      string                  `json:"account_name,omitempty"`
+	Route            AdminUsageRouteSnapshot `json:"route"`
+	UpstreamStatus   *int                    `json:"upstream_status,omitempty"`
+	Outcome          string                  `json:"outcome"`
+	ErrorCategory    string                  `json:"error_category,omitempty"`
+	Reason           string                  `json:"reason,omitempty"`
+}
+
+type AdminUsageRouteSnapshot struct {
+	Kind          string `json:"kind"`
+	ProxyID       *int64 `json:"proxy_id,omitempty"`
+	ProxyName     string `json:"proxy_name,omitempty"`
+	ProxyProtocol string `json:"proxy_protocol,omitempty"`
+	Fingerprint   string `json:"fingerprint,omitempty"`
 }
 
 type UsageCleanupFilters struct {

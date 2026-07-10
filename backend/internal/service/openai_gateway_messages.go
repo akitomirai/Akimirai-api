@@ -259,6 +259,11 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 	}
 
 	// 6. Build upstream request
+	if account.Type == AccountTypeOAuth && account.Platform != PlatformGrok {
+		// This bridge intentionally omits originator, so identity pairing must
+		// remain a no-op even when the mapped model is not a Codex model.
+		setOpenAICompatMessagesBridgeContext(c, true)
+	}
 	upstreamCtx, releaseUpstreamCtx := detachUpstreamContext(ctx)
 	var upstreamReq *http.Request
 	if account.Platform == PlatformGrok {

@@ -533,10 +533,9 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 		w := acquireOpsCaptureWriter(originalWriter)
 		defer func() {
 			// Restore the original writer before returning so outer middlewares
-			// don't observe a pooled wrapper that has been released.
-			if c.Writer == w {
-				c.Writer = originalWriter
-			}
+			// don't observe this pooled wrapper, including through an inner
+			// response-writer decorator, after it has been released.
+			c.Writer = originalWriter
 			releaseOpsCaptureWriter(w)
 		}()
 		c.Writer = w

@@ -25,4 +25,8 @@ func TestUsageStatsCacheKey_StableAndDistinct(t *testing.T) {
 	withUser := base
 	withUser.UserID = 7
 	require.NotEqual(t, k1, usageStatsCacheKey(withUser), "different user must change key")
+
+	withDiagnostics := base
+	withDiagnostics.RetryOnly = true
+	require.NotEqual(t, k1, usageStatsCacheKey(withDiagnostics), "diagnostic filters must change key")
 }

@@ -19,7 +19,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
-const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, image_input_size, image_output_size, image_size_source, image_size_breakdown, video_count, video_resolution, video_duration_seconds, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, account_stats_cost, created_at"
+const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, client_transport, auth_latency_ms, routing_latency_ms, upstream_latency_ms, response_latency_ms, request_started_at, request_total_ms, request_body_read_ms, request_body_bytes, upstream_request_written_ms, upstream_first_byte_ms, request_first_token_ms, route_kind, proxy_id_snapshot, proxy_name_snapshot, proxy_protocol_snapshot, route_fingerprint, final_upstream_status, retry_count, account_switch_count, attempt_timeline, user_agent, ip_address, image_count, image_size, image_input_size, image_output_size, image_size_source, image_size_breakdown, video_count, video_resolution, video_duration_seconds, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, account_stats_cost, created_at"
 
 func (r *usageLogRepository) GetByID(ctx context.Context, id int64) (log *service.UsageLog, err error) {
 	query := "SELECT " + usageLogSelectColumns + " FROM usage_logs WHERE id = $1"
@@ -123,6 +123,7 @@ func (r *usageLogRepository) ListWithFilters(ctx context.Context, params paginat
 		args = append(args, int16(*filters.BillingType))
 	}
 	conditions, args = appendUsageLogBillingModeWhereCondition(conditions, args, filters.BillingMode)
+	conditions, args = appendUsageLogDiagnosticsWhereConditions(conditions, args, filters)
 	if filters.StartTime != nil {
 		conditions = append(conditions, fmt.Sprintf("created_at >= $%d", len(args)+1))
 		args = append(args, *filters.StartTime)
@@ -157,8 +158,39 @@ func shouldUseFastUsageLogTotal(filters UsageLogFilters) bool {
 	if filters.ExactTotal {
 		return false
 	}
+	if filters.RouteKind != "" || filters.ProxyID > 0 || filters.RetryOnly ||
+		filters.MinRequestTotalMs != nil || filters.MinRequestFirstTokenMs != nil || filters.MinUpstreamFirstByteMs != nil {
+		return false
+	}
 	// 强选择过滤下记录集通常较小，保留精确总数。
 	return filters.UserID == 0 && filters.APIKeyID == 0 && filters.AccountID == 0
+}
+
+func appendUsageLogDiagnosticsWhereConditions(conditions []string, args []any, filters UsageLogFilters) ([]string, []any) {
+	if routeKind := strings.ToLower(strings.TrimSpace(filters.RouteKind)); routeKind != "" {
+		conditions = append(conditions, fmt.Sprintf("route_kind = $%d", len(args)+1))
+		args = append(args, routeKind)
+	}
+	if filters.ProxyID > 0 {
+		conditions = append(conditions, fmt.Sprintf("proxy_id_snapshot = $%d", len(args)+1))
+		args = append(args, filters.ProxyID)
+	}
+	if filters.RetryOnly {
+		conditions = append(conditions, "(retry_count > 0 OR account_switch_count > 0)")
+	}
+	if filters.MinRequestTotalMs != nil {
+		conditions = append(conditions, fmt.Sprintf("request_total_ms >= $%d", len(args)+1))
+		args = append(args, *filters.MinRequestTotalMs)
+	}
+	if filters.MinRequestFirstTokenMs != nil {
+		conditions = append(conditions, fmt.Sprintf("request_first_token_ms >= $%d", len(args)+1))
+		args = append(args, *filters.MinRequestFirstTokenMs)
+	}
+	if filters.MinUpstreamFirstByteMs != nil {
+		conditions = append(conditions, fmt.Sprintf("upstream_first_byte_ms >= $%d", len(args)+1))
+		args = append(args, *filters.MinUpstreamFirstByteMs)
+	}
+	return conditions, args
 }
 
 func (r *usageLogRepository) listUsageLogsWithPagination(ctx context.Context, whereClause string, args []any, params pagination.PaginationParams) ([]service.UsageLog, *pagination.PaginationResult, error) {
@@ -218,12 +250,23 @@ func usageLogOrderBy(params pagination.PaginationParams) string {
 		column = "COALESCE(NULLIF(TRIM(requested_model), ''), model)"
 	case "created_at":
 		column = "created_at"
+	case "request_started_at":
+		column = "request_started_at"
+	case "request_total_ms":
+		column = "request_total_ms"
+	case "request_first_token_ms":
+		column = "request_first_token_ms"
+	case "upstream_first_byte_ms":
+		column = "upstream_first_byte_ms"
 	default:
 		column = "id"
 	}
 
 	if column == "id" {
 		return fmt.Sprintf("id %s", sortOrder)
+	}
+	if strings.HasSuffix(column, "_ms") || column == "request_started_at" {
+		return fmt.Sprintf("%s %s NULLS LAST, id %s", column, sortOrder, sortOrder)
 	}
 	return fmt.Sprintf("%s %s, id %s", column, sortOrder, sortOrder)
 }
@@ -425,60 +468,81 @@ func (r *usageLogRepository) loadSubscriptions(ctx context.Context, ids []int64)
 
 func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, error) {
 	var (
-		id                    int64
-		userID                int64
-		apiKeyID              int64
-		accountID             int64
-		requestID             sql.NullString
-		model                 string
-		requestedModel        sql.NullString
-		upstreamModel         sql.NullString
-		groupID               sql.NullInt64
-		subscriptionID        sql.NullInt64
-		inputTokens           int
-		outputTokens          int
-		cacheCreationTokens   int
-		cacheReadTokens       int
-		cacheCreation5m       int
-		cacheCreation1h       int
-		imageOutputTokens     int
-		imageOutputCost       float64
-		inputCost             float64
-		outputCost            float64
-		cacheCreationCost     float64
-		cacheReadCost         float64
-		totalCost             float64
-		actualCost            float64
-		rateMultiplier        float64
-		accountRateMultiplier sql.NullFloat64
-		billingType           int16
-		requestTypeRaw        int16
-		stream                bool
-		openaiWSMode          bool
-		durationMs            sql.NullInt64
-		firstTokenMs          sql.NullInt64
-		userAgent             sql.NullString
-		ipAddress             sql.NullString
-		imageCount            int
-		imageSize             sql.NullString
-		imageInputSize        sql.NullString
-		imageOutputSize       sql.NullString
-		imageSizeSource       sql.NullString
-		imageSizeBreakdown    sql.NullString
-		videoCount            int
-		videoResolution       sql.NullString
-		videoDurationSeconds  sql.NullInt64
-		serviceTier           sql.NullString
-		reasoningEffort       sql.NullString
-		inboundEndpoint       sql.NullString
-		upstreamEndpoint      sql.NullString
-		cacheTTLOverridden    bool
-		channelID             sql.NullInt64
-		modelMappingChain     sql.NullString
-		billingTier           sql.NullString
-		billingMode           sql.NullString
-		accountStatsCost      sql.NullFloat64
-		createdAt             time.Time
+		id                       int64
+		userID                   int64
+		apiKeyID                 int64
+		accountID                int64
+		requestID                sql.NullString
+		model                    string
+		requestedModel           sql.NullString
+		upstreamModel            sql.NullString
+		groupID                  sql.NullInt64
+		subscriptionID           sql.NullInt64
+		inputTokens              int
+		outputTokens             int
+		cacheCreationTokens      int
+		cacheReadTokens          int
+		cacheCreation5m          int
+		cacheCreation1h          int
+		imageOutputTokens        int
+		imageOutputCost          float64
+		inputCost                float64
+		outputCost               float64
+		cacheCreationCost        float64
+		cacheReadCost            float64
+		totalCost                float64
+		actualCost               float64
+		rateMultiplier           float64
+		accountRateMultiplier    sql.NullFloat64
+		billingType              int16
+		requestTypeRaw           int16
+		stream                   bool
+		openaiWSMode             bool
+		durationMs               sql.NullInt64
+		firstTokenMs             sql.NullInt64
+		clientTransport          sql.NullString
+		authLatencyMs            sql.NullInt64
+		routingLatencyMs         sql.NullInt64
+		upstreamLatencyMs        sql.NullInt64
+		responseLatencyMs        sql.NullInt64
+		requestStartedAt         sql.NullTime
+		requestTotalMs           sql.NullInt64
+		requestBodyReadMs        sql.NullInt64
+		requestBodyBytes         sql.NullInt64
+		upstreamRequestWrittenMs sql.NullInt64
+		upstreamFirstByteMs      sql.NullInt64
+		requestFirstTokenMs      sql.NullInt64
+		routeKind                sql.NullString
+		proxyIDSnapshot          sql.NullInt64
+		proxyNameSnapshot        sql.NullString
+		proxyProtocolSnapshot    sql.NullString
+		routeFingerprint         sql.NullString
+		finalUpstreamStatus      sql.NullInt64
+		retryCount               int
+		accountSwitchCount       int
+		attemptTimeline          sql.NullString
+		userAgent                sql.NullString
+		ipAddress                sql.NullString
+		imageCount               int
+		imageSize                sql.NullString
+		imageInputSize           sql.NullString
+		imageOutputSize          sql.NullString
+		imageSizeSource          sql.NullString
+		imageSizeBreakdown       sql.NullString
+		videoCount               int
+		videoResolution          sql.NullString
+		videoDurationSeconds     sql.NullInt64
+		serviceTier              sql.NullString
+		reasoningEffort          sql.NullString
+		inboundEndpoint          sql.NullString
+		upstreamEndpoint         sql.NullString
+		cacheTTLOverridden       bool
+		channelID                sql.NullInt64
+		modelMappingChain        sql.NullString
+		billingTier              sql.NullString
+		billingMode              sql.NullString
+		accountStatsCost         sql.NullFloat64
+		createdAt                time.Time
 	)
 
 	if err := scanner.Scan(
@@ -514,6 +578,27 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		&openaiWSMode,
 		&durationMs,
 		&firstTokenMs,
+		&clientTransport,
+		&authLatencyMs,
+		&routingLatencyMs,
+		&upstreamLatencyMs,
+		&responseLatencyMs,
+		&requestStartedAt,
+		&requestTotalMs,
+		&requestBodyReadMs,
+		&requestBodyBytes,
+		&upstreamRequestWrittenMs,
+		&upstreamFirstByteMs,
+		&requestFirstTokenMs,
+		&routeKind,
+		&proxyIDSnapshot,
+		&proxyNameSnapshot,
+		&proxyProtocolSnapshot,
+		&routeFingerprint,
+		&finalUpstreamStatus,
+		&retryCount,
+		&accountSwitchCount,
+		&attemptTimeline,
 		&userAgent,
 		&ipAddress,
 		&imageCount,
@@ -567,6 +652,8 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		RequestType:           service.RequestTypeFromInt16(requestTypeRaw),
 		ImageCount:            imageCount,
 		VideoCount:            videoCount,
+		RetryCount:            retryCount,
+		AccountSwitchCount:    accountSwitchCount,
 		CacheTTLOverridden:    cacheTTLOverridden,
 		CreatedAt:             createdAt,
 	}
@@ -595,6 +682,74 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		value := int(firstTokenMs.Int64)
 		log.FirstTokenMs = &value
 	}
+	if clientTransport.Valid {
+		log.ClientTransport = &clientTransport.String
+	}
+	if authLatencyMs.Valid {
+		value := int(authLatencyMs.Int64)
+		log.AuthLatencyMs = &value
+	}
+	if routingLatencyMs.Valid {
+		value := int(routingLatencyMs.Int64)
+		log.RoutingLatencyMs = &value
+	}
+	if upstreamLatencyMs.Valid {
+		value := int(upstreamLatencyMs.Int64)
+		log.UpstreamLatencyMs = &value
+	}
+	if responseLatencyMs.Valid {
+		value := int(responseLatencyMs.Int64)
+		log.ResponseLatencyMs = &value
+	}
+	if requestStartedAt.Valid {
+		value := requestStartedAt.Time
+		log.RequestStartedAt = &value
+	}
+	if requestTotalMs.Valid {
+		value := int(requestTotalMs.Int64)
+		log.RequestTotalMs = &value
+	}
+	if requestBodyReadMs.Valid {
+		value := int(requestBodyReadMs.Int64)
+		log.RequestBodyReadMs = &value
+	}
+	if requestBodyBytes.Valid {
+		value := requestBodyBytes.Int64
+		log.RequestBodyBytes = &value
+	}
+	if upstreamRequestWrittenMs.Valid {
+		value := int(upstreamRequestWrittenMs.Int64)
+		log.UpstreamRequestWrittenMs = &value
+	}
+	if upstreamFirstByteMs.Valid {
+		value := int(upstreamFirstByteMs.Int64)
+		log.UpstreamFirstByteMs = &value
+	}
+	if requestFirstTokenMs.Valid {
+		value := int(requestFirstTokenMs.Int64)
+		log.RequestFirstTokenMs = &value
+	}
+	if routeKind.Valid {
+		log.RouteKind = &routeKind.String
+	}
+	if proxyIDSnapshot.Valid {
+		value := proxyIDSnapshot.Int64
+		log.ProxyIDSnapshot = &value
+	}
+	if proxyNameSnapshot.Valid {
+		log.ProxyNameSnapshot = &proxyNameSnapshot.String
+	}
+	if proxyProtocolSnapshot.Valid {
+		log.ProxyProtocolSnapshot = &proxyProtocolSnapshot.String
+	}
+	if routeFingerprint.Valid {
+		log.RouteFingerprint = &routeFingerprint.String
+	}
+	if finalUpstreamStatus.Valid {
+		value := int(finalUpstreamStatus.Int64)
+		log.FinalUpstreamStatus = &value
+	}
+	log.AttemptTimeline = requestAttemptTimelineFromNullJSON(attemptTimeline)
 	if userAgent.Valid {
 		log.UserAgent = &userAgent.String
 	}
@@ -694,6 +849,43 @@ func nullStringIntMapJSON(v map[string]int) any {
 		return nil
 	}
 	return string(payload)
+}
+
+func nullRequestAttemptTimelineJSON(events []service.RequestAttemptEvent) any {
+	if len(events) == 0 {
+		return nil
+	}
+	limit := len(events)
+	if limit > service.RequestDiagnosticsAttemptLimit {
+		limit = service.RequestDiagnosticsAttemptLimit
+	}
+	safeEvents := make([]service.RequestAttemptEvent, limit)
+	for i := 0; i < limit; i++ {
+		safeEvents[i] = events[i]
+		safeEvents[i].Reason = service.SanitizeRequestDiagnosticReason(events[i].Reason)
+	}
+	payload, err := json.Marshal(safeEvents)
+	if err != nil {
+		return nil
+	}
+	return string(payload)
+}
+
+func requestAttemptTimelineFromNullJSON(value sql.NullString) []service.RequestAttemptEvent {
+	if !value.Valid || strings.TrimSpace(value.String) == "" {
+		return nil
+	}
+	var events []service.RequestAttemptEvent
+	if err := json.Unmarshal([]byte(value.String), &events); err != nil || len(events) == 0 {
+		return nil
+	}
+	if len(events) > service.RequestDiagnosticsAttemptLimit {
+		events = events[:service.RequestDiagnosticsAttemptLimit]
+	}
+	for i := range events {
+		events[i].Reason = service.SanitizeRequestDiagnosticReason(events[i].Reason)
+	}
+	return events
 }
 
 func stringIntMapFromNullJSON(v sql.NullString) map[string]int {

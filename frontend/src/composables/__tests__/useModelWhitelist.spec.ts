@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+﻿import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/api/admin/accounts', () => ({
   getAntigravityDefaultModelMapping: vi.fn()
@@ -7,7 +7,7 @@ vi.mock('@/api/admin/accounts', () => ({
 import { buildModelMappingObject, getModelsByPlatform, splitModelMappingObject } from '../useModelWhitelist'
 
 describe('useModelWhitelist', () => {
-  it('openai 模型列表包含 GPT-5.4 官方快照', () => {
+  it('openai 妯″瀷鍒楄〃鍖呭惈 GPT-5.4 瀹樻柟蹇収', () => {
     const models = getModelsByPlatform('openai')
 
     expect(models).toContain('gpt-5.4')
@@ -16,7 +16,16 @@ describe('useModelWhitelist', () => {
     expect(models).toContain('codex-auto-review')
   })
 
-  it('openai 模型列表不再暴露已下线的 ChatGPT 登录 Codex 模型', () => {
+
+  it('openai model list includes the GPT-5.6 series', () => {
+    const models = getModelsByPlatform('openai')
+
+    expect(models).toContain('gpt-5.6-sol')
+    expect(models).toContain('gpt-5.6-terra')
+    expect(models).toContain('gpt-5.6-luna')
+    expect(models).toContain('gpt-5.6')
+  })
+  it('openai 妯″瀷鍒楄〃涓嶅啀鏆撮湶宸蹭笅绾跨殑 ChatGPT 鐧诲綍 Codex 妯″瀷', () => {
     const models = getModelsByPlatform('openai')
 
     expect(models).not.toContain('gpt-5')
@@ -27,7 +36,7 @@ describe('useModelWhitelist', () => {
     expect(models).not.toContain('gpt-5.2-codex')
   })
 
-  it('antigravity 模型列表包含图片模型兼容项', () => {
+  it('antigravity model list includes image-compatible aliases', () => {
     const models = getModelsByPlatform('antigravity')
 
     expect(models).toContain('gemini-2.5-flash-image')
@@ -35,14 +44,14 @@ describe('useModelWhitelist', () => {
     expect(models).toContain('gemini-3-pro-image')
   })
 
-  it('Claude 模型列表包含新发布的 Claude 模型', () => {
+  it('Claude 妯″瀷鍒楄〃鍖呭惈鏂板彂甯冪殑 Claude 妯″瀷', () => {
     expect(getModelsByPlatform('claude')).toContain('claude-fable-5')
     expect(getModelsByPlatform('antigravity')).toContain('claude-fable-5')
     expect(getModelsByPlatform('claude')).toContain('claude-opus-4-8')
     expect(getModelsByPlatform('antigravity')).toContain('claude-opus-4-8')
   })
 
-  it('xAI 模型列表包含 Grok 4.5 官方模型和别名', () => {
+  it('xAI model list includes Grok 4.5 official models and aliases', () => {
     const models = getModelsByPlatform('grok')
 
     expect(models).toContain('grok-4.5')
@@ -50,7 +59,7 @@ describe('useModelWhitelist', () => {
     expect(models).toContain('grok-build-latest')
   })
 
-  it('combined 模式支持 Grok 4.5 官方别名映射', () => {
+  it('combined 妯″紡鏀寔 Grok 4.5 瀹樻柟鍒悕鏄犲皠', () => {
     const mapping = buildModelMappingObject(
       'combined',
       ['grok-4.5'],
@@ -69,7 +78,7 @@ describe('useModelWhitelist', () => {
     })
   })
 
-  it('grok 模型列表包含 Composer 默认项和兼容别名', () => {
+  it('grok 妯″瀷鍒楄〃鍖呭惈 Composer 榛樿椤瑰拰鍏煎鍒悕', () => {
     const models = getModelsByPlatform('grok')
 
     expect(models).toContain('grok-composer-2.5-fast')
@@ -77,7 +86,7 @@ describe('useModelWhitelist', () => {
     expect(models).toContain('composer-2.5')
   })
 
-  it('gemini 模型列表包含原生生图模型', () => {
+  it('gemini 妯″瀷鍒楄〃鍖呭惈鍘熺敓鐢熷浘妯″瀷', () => {
     const models = getModelsByPlatform('gemini')
 
     expect(models).toContain('gemini-2.5-flash-image')
@@ -86,27 +95,27 @@ describe('useModelWhitelist', () => {
     expect(models.indexOf('gemini-2.5-flash-image')).toBeLessThan(models.indexOf('gemini-2.5-flash'))
   })
 
-  it('antigravity 模型列表会把新的 Gemini 图片模型排在前面', () => {
+  it('antigravity 妯″瀷鍒楄〃浼氭妸鏂扮殑 Gemini 鍥剧墖妯″瀷鎺掑湪鍓嶉潰', () => {
     const models = getModelsByPlatform('antigravity')
 
     expect(models.indexOf('gemini-3.1-flash-image')).toBeLessThan(models.indexOf('gemini-2.5-flash'))
     expect(models.indexOf('gemini-2.5-flash-image')).toBeLessThan(models.indexOf('gemini-2.5-flash-lite'))
   })
 
-  it('antigravity 模型列表包含 Gemini 3.1 Pro 通用别名', () => {
+  it('antigravity 妯″瀷鍒楄〃鍖呭惈 Gemini 3.1 Pro 閫氱敤鍒悕', () => {
     const models = getModelsByPlatform('antigravity')
 
     expect(models).toContain('gemini-3.1-pro')
   })
 
-  it('whitelist 模式会忽略通配符条目', () => {
+  it('whitelist mode ignores wildcard entries', () => {
     const mapping = buildModelMappingObject('whitelist', ['claude-*', 'gemini-3.1-flash-image'], [])
     expect(mapping).toEqual({
       'gemini-3.1-flash-image': 'gemini-3.1-flash-image'
     })
   })
 
-  it('whitelist 模式会保留 GPT-5.4 官方快照的精确映射', () => {
+  it('whitelist mode keeps GPT-5.4 official snapshot exact mappings', () => {
     const mapping = buildModelMappingObject('whitelist', ['gpt-5.4-2026-03-05'], [])
 
     expect(mapping).toEqual({
@@ -122,7 +131,7 @@ describe('useModelWhitelist', () => {
     })
   })
 
-  it('combined 模式会同时保留白名单身份映射和模型映射', () => {
+  it('combined mode keeps whitelist identity mappings and model mappings', () => {
     const mapping = buildModelMappingObject(
       'combined',
       ['gpt-5.4', 'claude-*'],
@@ -138,7 +147,7 @@ describe('useModelWhitelist', () => {
     })
   })
 
-  it('splitModelMappingObject 会把身份映射还原成白名单，其余保留为映射', () => {
+  it('splitModelMappingObject 浼氭妸韬唤鏄犲皠杩樺師鎴愮櫧鍚嶅崟锛屽叾浣欎繚鐣欎负鏄犲皠', () => {
     const parsed = splitModelMappingObject({
       'gpt-5.4': 'gpt-5.4',
       'gpt-latest': 'gpt-5.4',

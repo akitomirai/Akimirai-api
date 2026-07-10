@@ -245,6 +245,48 @@ func TestUsageLogFromService_PreservesHistoricalMissingImageSize(t *testing.T) {
 	require.NotContains(t, string(body), `"image_size":"2K"`)
 }
 
+func TestUsageDiagnosticsFromServiceAdminKeepsDiagnosticsOutOfUserDTO(t *testing.T) {
+	t.Parallel()
+
+	clientTransport := "http"
+	requestTotalMs := 1800
+	requestFirstTokenMs := 900
+	routeKind := service.RequestRouteKindProxy
+	proxyName := "jp-egress"
+	log := &service.UsageLog{
+		RequestID:           "req-admin-diagnostics",
+		Model:               "gpt-5.6-sol",
+		ClientTransport:     &clientTransport,
+		RequestTotalMs:      &requestTotalMs,
+		RequestFirstTokenMs: &requestFirstTokenMs,
+		RouteKind:           &routeKind,
+		ProxyNameSnapshot:   &proxyName,
+		RetryCount:          1,
+		AttemptTimeline: []service.RequestAttemptEvent{{
+			Sequence:  1,
+			AccountID: 3,
+			Outcome:   "network_error",
+			Reason:    "failed via http://user:pass@proxy.example.test:8080/?token=secret",
+		}},
+	}
+
+	userJSON, err := json.Marshal(UsageLogFromService(log))
+	require.NoError(t, err)
+	for _, field := range []string{"client_transport", "request_total_ms", "route_kind", "proxy_name_snapshot", "attempt_timeline"} {
+		require.NotContains(t, string(userJSON), field)
+	}
+
+	adminDTO := UsageDiagnosticsFromServiceAdmin(log)
+	adminJSON, err := json.Marshal(adminDTO)
+	require.NoError(t, err)
+	require.Contains(t, string(adminJSON), `"client_transport":"http"`)
+	require.Contains(t, string(adminJSON), `"request_total_ms":1800`)
+	require.Contains(t, string(adminJSON), `"proxy_name_snapshot":"jp-egress"`)
+	require.Contains(t, string(adminJSON), `"attempt_timeline"`)
+	require.NotContains(t, string(adminJSON), "proxy.example.test")
+	require.NotContains(t, string(adminJSON), "secret")
+}
+
 func f64Ptr(value float64) *float64 {
 	return &value
 }

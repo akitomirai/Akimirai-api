@@ -11,8 +11,12 @@ const {
   getDashboardApiKeysUsage,
   getAvailableGroups,
   getUserGroupRates,
+  getModelCatalog,
+  createKey,
+  updateKey,
   showError,
   showSuccess,
+  showInfo,
   copyToClipboard,
   isCurrentStep,
   nextStep,
@@ -22,8 +26,12 @@ const {
   getDashboardApiKeysUsage: vi.fn(),
   getAvailableGroups: vi.fn(),
   getUserGroupRates: vi.fn(),
+  getModelCatalog: vi.fn(),
+  createKey: vi.fn(),
+  updateKey: vi.fn(),
   showError: vi.fn(),
   showSuccess: vi.fn(),
+  showInfo: vi.fn(),
   copyToClipboard: vi.fn(),
   isCurrentStep: vi.fn(),
   nextStep: vi.fn(),
@@ -31,6 +39,9 @@ const {
 
 const messages: Record<string, string> = {
   'common.actions': 'Actions',
+  'common.cancel': 'Cancel',
+  'common.create': 'Create',
+  'common.edit': 'Edit',
   'common.name': 'Name',
   'common.refresh': 'Refresh',
   'common.status': 'Status',
@@ -45,6 +56,10 @@ const messages: Record<string, string> = {
   'keys.expiresAt': 'Expires',
   'keys.group': 'Group',
   'keys.importToCcSwitch': 'Import to CCS',
+  'keys.modelRestriction.label': 'Model Restriction',
+  'keys.modelRestriction.placeholder': 'Select models',
+  'keys.modelRestriction.hint': 'Leave empty to allow all',
+  'keys.modelRestriction.removedAfterGroupChange': 'Removed models',
   'keys.integrationExamples.copied': 'Copied',
   'keys.integrationExamples.copyBaseUrl': 'Copy Base URL',
   'keys.integrationExamples.copyExample': 'Copy example',
@@ -65,8 +80,8 @@ const messages: Record<string, string> = {
 vi.mock('@/api', () => ({
   keysAPI: {
     list: listKeys,
-    create: vi.fn(),
-    update: vi.fn(),
+    create: createKey,
+    update: updateKey,
     delete: vi.fn(),
     toggleStatus: vi.fn(),
   },
@@ -80,12 +95,16 @@ vi.mock('@/api', () => ({
     getAvailable: getAvailableGroups,
     getUserGroupRates,
   },
+  userChannelsAPI: {
+    getModelCatalog,
+  },
 }))
 
 vi.mock('@/stores/app', () => ({
   useAppStore: () => ({
     showError,
     showSuccess,
+    showInfo,
   }),
 }))
 
@@ -131,6 +150,7 @@ const createApiKey = (): ApiKey => ({
   created_at: '2026-06-27T00:00:00Z',
   updated_at: '2026-06-27T00:00:00Z',
   current_concurrency: 3,
+  allowed_models: [],
   rate_limit_5h: 0,
   rate_limit_1d: 0,
   rate_limit_7d: 0,
@@ -226,6 +246,20 @@ const IconStub = {
   template: '<span data-test="icon">{{ name }}</span>',
 }
 
+const BaseDialogStub = {
+  name: 'BaseDialog',
+  props: ['show', 'title'],
+  emits: ['close'],
+  template: '<section v-if="show"><slot /><slot name="footer" /></section>',
+}
+
+const ModelMultiSelectStub = {
+  name: 'ModelMultiSelect',
+  props: ['modelValue', 'options', 'loading', 'error', 'disabled'],
+  emits: ['update:modelValue'],
+  template: '<button type="button" data-test="select-model" @click="$emit(\'update:modelValue\', [\'gpt-5.6-sol\'])">Select model</button>',
+}
+
 const mountView = async () => {
   const wrapper = mount(KeysView, {
     global: {
@@ -234,7 +268,7 @@ const mountView = async () => {
         TablePageLayout: TablePageLayoutStub,
         DataTable: DataTableStub,
         Pagination: PaginationStub,
-        BaseDialog: true,
+        BaseDialog: BaseDialogStub,
         ConfirmDialog: true,
         EmptyState: true,
         Select: SelectStub,
@@ -244,6 +278,8 @@ const mountView = async () => {
         EndpointPopover: true,
         GroupBadge: true,
         GroupOptionItem: true,
+        ModelMultiSelect: ModelMultiSelectStub,
+        CcSwitchImportDialog: true,
         Teleport: true,
       },
     },
@@ -276,8 +312,12 @@ describe('user KeysView column settings', () => {
     getDashboardApiKeysUsage.mockReset()
     getAvailableGroups.mockReset()
     getUserGroupRates.mockReset()
+    getModelCatalog.mockReset()
+    createKey.mockReset()
+    updateKey.mockReset()
     showError.mockReset()
     showSuccess.mockReset()
+    showInfo.mockReset()
     copyToClipboard.mockReset()
     isCurrentStep.mockReset()
     nextStep.mockReset()
@@ -293,6 +333,9 @@ describe('user KeysView column settings', () => {
     getDashboardApiKeysUsage.mockResolvedValue({ stats: {} })
     getAvailableGroups.mockResolvedValue([])
     getUserGroupRates.mockResolvedValue({})
+    getModelCatalog.mockResolvedValue([])
+    createKey.mockResolvedValue(createApiKey())
+    updateKey.mockResolvedValue(createApiKey())
     isCurrentStep.mockReturnValue(false)
   })
 
@@ -407,14 +450,93 @@ describe('user KeysView column settings', () => {
     expect(importButton?.attributes('disabled')).toBeUndefined()
     expect(wrapper.text()).not.toContain('keys.integrationExamples.title')
     expect(wrapper.text()).not.toContain('keys.integrationExamples.subtitle')
+  })
 
-it('marks current concurrency as sortable', async () => {
+  it('marks current concurrency as sortable', async () => {
     const wrapper = await mountView()
 
     const currentConcurrencyColumn = visibleColumnMeta(wrapper).find(
       (column) => column.key === 'current_concurrency'
     )
     expect(currentConcurrencyColumn?.sortable).toBe(true)
+  })
+
+  it('opens the CCS configuration dialog before invoking the protocol handler', async () => {
+    getPublicSettings.mockResolvedValue({
+      api_base_url: 'https://api.example.com',
+      site_name: 'Sub2API',
+    })
+    listKeys.mockResolvedValueOnce({
+      items: [{
+        ...createApiKey(),
+        group_id: 1,
+        group: { id: 1, platform: 'openai' },
+      }],
+      total: 1,
+      page: 1,
+      page_size: 20,
+      pages: 1,
+    })
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const wrapper = await mountView()
+
+    const importButton = wrapper.get('[data-test="actions"]').findAll('button')
+      .find((button) => button.text().includes('Import to CCS'))
+    await importButton!.trigger('click')
+
+    const dialog = wrapper.findComponent({ name: 'CcSwitchImportDialog' })
+    expect(dialog.props('show')).toBe(true)
+    expect(openSpy).not.toHaveBeenCalled()
+
+    dialog.vm.$emit('confirm', {
+      app: 'codex',
+      name: 'Sub2API',
+      model: 'gpt-5.6-sol',
+      remoteCompaction: true,
+    })
+    await nextTick()
+
+    const openedDeeplink = String(openSpy.mock.calls[0]?.[0] || '')
+    expect(openedDeeplink).toContain('ccswitch://v1/import?')
+    expect(new URLSearchParams(openedDeeplink.split('?')[1]).get('name')).toBe('OpenAI')
+    expect(openSpy).toHaveBeenCalledWith(expect.any(String), '_self')
+    openSpy.mockRestore()
+  })
+
+  it('creates a key with allowed models and without rate-limit fields', async () => {
+    getAvailableGroups.mockResolvedValue([{
+      id: 42,
+      name: 'OpenAI',
+      description: null,
+      platform: 'openai',
+      rate_multiplier: 1,
+      subscription_type: 'standard',
+    }])
+    getModelCatalog.mockResolvedValue([{
+      model_id: 'gpt-5.6-sol',
+      groups: [{ id: 42 }],
+    }])
+    const wrapper = await mountView()
+
+    await getButtonByText(wrapper, 'Create API Key').trigger('click')
+    await wrapper.get('#key-form input[required]').setValue('restricted-key')
+    const selects = wrapper.findAllComponents({ name: 'Select' })
+    await selects.at(-1)!.vm.$emit('update:modelValue', 42)
+    await wrapper.get('[data-test="select-model"]').trigger('click')
+    await wrapper.get('#key-form').trigger('submit')
+    await flushPromises()
+
+    expect(createKey).toHaveBeenCalledWith(
+      'restricted-key',
+      42,
+      undefined,
+      [],
+      [],
+      0,
+      undefined,
+      ['gpt-5.6-sol']
+    )
+    expect(JSON.stringify(createKey.mock.calls[0])).not.toContain('rate_limit')
   })
 
   it('keeps filters and selected page size when sorting by current concurrency', async () => {

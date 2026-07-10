@@ -196,6 +196,48 @@ func matchCodexClientHeaderStrictPrefixes(value string, prefixes []string) bool 
 }
 
 // codexEngineVersionPattern 提取版本段开头的三段数字 X.Y.Z（忽略 -alpha 等后缀）。
+// PairCodexClientIdentity derives the originator paired with the final outbound
+// User-Agent. The Codex upstream rejects identities whose originator does not
+// match the first User-Agent segment.
+func PairCodexClientIdentity(userAgent string) (originator string, pairedUA string, ok bool) {
+	ua := strings.TrimSpace(userAgent)
+	slash := strings.IndexByte(ua, '/')
+	if slash <= 0 {
+		return "", "", false
+	}
+	if leading := strings.TrimSpace(ua[:slash]); isSaneCodexOriginator(leading) && IsCodexOfficialClientOriginator(leading) {
+		leading = canonicalizeCodexOriginator(leading)
+		return leading, leading + ua[slash:], true
+	}
+	if trailer := codexUATrailerName(ua); trailer != "" && !strings.ContainsRune(trailer, '/') &&
+		isSaneCodexOriginator(trailer) && IsCodexOfficialClientOriginator(trailer) {
+		trailer = canonicalizeCodexOriginator(trailer)
+		return trailer, trailer + ua[slash:], true
+	}
+	return "", "", false
+}
+
+const codexOriginatorMaxLen = 64
+
+func isSaneCodexOriginator(name string) bool {
+	if name == "" || len(name) > codexOriginatorMaxLen {
+		return false
+	}
+	for i := 0; i < len(name); i++ {
+		if c := name[i]; c < 0x20 || c > 0x7e {
+			return false
+		}
+	}
+	return true
+}
+
+func canonicalizeCodexOriginator(name string) string {
+	if lower := normalizeCodexClientHeader(name); codexOfficialClientOriginators[lower] {
+		return lower
+	}
+	return name
+}
+
 var codexEngineVersionPattern = regexp.MustCompile(`^(\d+\.\d+\.\d+)`)
 
 // ParseCodexEngineVersion 从 codex-rs 形态 UA 取引擎版本：

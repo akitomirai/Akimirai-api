@@ -639,6 +639,7 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 			req.Header.Set("User-Agent", codexCLIUserAgent)
 		}
 		setOpenAIChatGPTAccountHeaders(req.Header, credentialAccount)
+		enforceCodexIdentityHeaders(req.Header)
 	} else {
 		req.Header.Set("Authorization", "Bearer "+authToken)
 		applyOpenAICompatibleUserAgent(req, credentialAccount)
@@ -1752,7 +1753,7 @@ func (s *AccountTestService) testOpenAIImageOAuth(c *gin.Context, ctx context.Co
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("OpenAI-Beta", "responses=experimental")
-	req.Header.Set("originator", "opencode")
+	req.Header.Set("originator", "codex_cli_rs")
 	req.Header.Set("Version", codexCLIVersion)
 	if customUA := strings.TrimSpace(account.GetOpenAIUserAgent()); customUA != "" {
 		req.Header.Set("User-Agent", customUA)
@@ -1760,6 +1761,7 @@ func (s *AccountTestService) testOpenAIImageOAuth(c *gin.Context, ctx context.Co
 		req.Header.Set("User-Agent", codexCLIUserAgent)
 	}
 	setOpenAIChatGPTAccountHeaders(req.Header, account)
+	enforceCodexIdentityHeaders(req.Header)
 
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {

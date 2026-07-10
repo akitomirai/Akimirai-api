@@ -86,6 +86,38 @@ const (
 	FieldUpstreamLatencyMs = "upstream_latency_ms"
 	// FieldResponseLatencyMs holds the string denoting the response_latency_ms field in the database.
 	FieldResponseLatencyMs = "response_latency_ms"
+	// FieldRequestStartedAt holds the string denoting the request_started_at field in the database.
+	FieldRequestStartedAt = "request_started_at"
+	// FieldRequestTotalMs holds the string denoting the request_total_ms field in the database.
+	FieldRequestTotalMs = "request_total_ms"
+	// FieldRequestBodyReadMs holds the string denoting the request_body_read_ms field in the database.
+	FieldRequestBodyReadMs = "request_body_read_ms"
+	// FieldRequestBodyBytes holds the string denoting the request_body_bytes field in the database.
+	FieldRequestBodyBytes = "request_body_bytes"
+	// FieldUpstreamRequestWrittenMs holds the string denoting the upstream_request_written_ms field in the database.
+	FieldUpstreamRequestWrittenMs = "upstream_request_written_ms"
+	// FieldUpstreamFirstByteMs holds the string denoting the upstream_first_byte_ms field in the database.
+	FieldUpstreamFirstByteMs = "upstream_first_byte_ms"
+	// FieldRequestFirstTokenMs holds the string denoting the request_first_token_ms field in the database.
+	FieldRequestFirstTokenMs = "request_first_token_ms"
+	// FieldRouteKind holds the string denoting the route_kind field in the database.
+	FieldRouteKind = "route_kind"
+	// FieldProxyIDSnapshot holds the string denoting the proxy_id_snapshot field in the database.
+	FieldProxyIDSnapshot = "proxy_id_snapshot"
+	// FieldProxyNameSnapshot holds the string denoting the proxy_name_snapshot field in the database.
+	FieldProxyNameSnapshot = "proxy_name_snapshot"
+	// FieldProxyProtocolSnapshot holds the string denoting the proxy_protocol_snapshot field in the database.
+	FieldProxyProtocolSnapshot = "proxy_protocol_snapshot"
+	// FieldRouteFingerprint holds the string denoting the route_fingerprint field in the database.
+	FieldRouteFingerprint = "route_fingerprint"
+	// FieldFinalUpstreamStatus holds the string denoting the final_upstream_status field in the database.
+	FieldFinalUpstreamStatus = "final_upstream_status"
+	// FieldRetryCount holds the string denoting the retry_count field in the database.
+	FieldRetryCount = "retry_count"
+	// FieldAccountSwitchCount holds the string denoting the account_switch_count field in the database.
+	FieldAccountSwitchCount = "account_switch_count"
+	// FieldAttemptTimeline holds the string denoting the attempt_timeline field in the database.
+	FieldAttemptTimeline = "attempt_timeline"
 	// FieldUserAgent holds the string denoting the user_agent field in the database.
 	FieldUserAgent = "user_agent"
 	// FieldIPAddress holds the string denoting the ip_address field in the database.
@@ -200,6 +232,22 @@ var Columns = []string{
 	FieldRoutingLatencyMs,
 	FieldUpstreamLatencyMs,
 	FieldResponseLatencyMs,
+	FieldRequestStartedAt,
+	FieldRequestTotalMs,
+	FieldRequestBodyReadMs,
+	FieldRequestBodyBytes,
+	FieldUpstreamRequestWrittenMs,
+	FieldUpstreamFirstByteMs,
+	FieldRequestFirstTokenMs,
+	FieldRouteKind,
+	FieldProxyIDSnapshot,
+	FieldProxyNameSnapshot,
+	FieldProxyProtocolSnapshot,
+	FieldRouteFingerprint,
+	FieldFinalUpstreamStatus,
+	FieldRetryCount,
+	FieldAccountSwitchCount,
+	FieldAttemptTimeline,
 	FieldUserAgent,
 	FieldIPAddress,
 	FieldImageCount,
@@ -272,6 +320,18 @@ var (
 	DefaultStream bool
 	// ClientTransportValidator is a validator for the "client_transport" field. It is called by the builders before save.
 	ClientTransportValidator func(string) error
+	// RouteKindValidator is a validator for the "route_kind" field. It is called by the builders before save.
+	RouteKindValidator func(string) error
+	// ProxyNameSnapshotValidator is a validator for the "proxy_name_snapshot" field. It is called by the builders before save.
+	ProxyNameSnapshotValidator func(string) error
+	// ProxyProtocolSnapshotValidator is a validator for the "proxy_protocol_snapshot" field. It is called by the builders before save.
+	ProxyProtocolSnapshotValidator func(string) error
+	// RouteFingerprintValidator is a validator for the "route_fingerprint" field. It is called by the builders before save.
+	RouteFingerprintValidator func(string) error
+	// DefaultRetryCount holds the default value on creation for the "retry_count" field.
+	DefaultRetryCount int
+	// DefaultAccountSwitchCount holds the default value on creation for the "account_switch_count" field.
+	DefaultAccountSwitchCount int
 	// UserAgentValidator is a validator for the "user_agent" field. It is called by the builders before save.
 	UserAgentValidator func(string) error
 	// IPAddressValidator is a validator for the "ip_address" field. It is called by the builders before save.
@@ -482,6 +542,81 @@ func ByUpstreamLatencyMs(opts ...sql.OrderTermOption) OrderOption {
 // ByResponseLatencyMs orders the results by the response_latency_ms field.
 func ByResponseLatencyMs(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldResponseLatencyMs, opts...).ToFunc()
+}
+
+// ByRequestStartedAt orders the results by the request_started_at field.
+func ByRequestStartedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRequestStartedAt, opts...).ToFunc()
+}
+
+// ByRequestTotalMs orders the results by the request_total_ms field.
+func ByRequestTotalMs(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRequestTotalMs, opts...).ToFunc()
+}
+
+// ByRequestBodyReadMs orders the results by the request_body_read_ms field.
+func ByRequestBodyReadMs(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRequestBodyReadMs, opts...).ToFunc()
+}
+
+// ByRequestBodyBytes orders the results by the request_body_bytes field.
+func ByRequestBodyBytes(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRequestBodyBytes, opts...).ToFunc()
+}
+
+// ByUpstreamRequestWrittenMs orders the results by the upstream_request_written_ms field.
+func ByUpstreamRequestWrittenMs(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpstreamRequestWrittenMs, opts...).ToFunc()
+}
+
+// ByUpstreamFirstByteMs orders the results by the upstream_first_byte_ms field.
+func ByUpstreamFirstByteMs(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpstreamFirstByteMs, opts...).ToFunc()
+}
+
+// ByRequestFirstTokenMs orders the results by the request_first_token_ms field.
+func ByRequestFirstTokenMs(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRequestFirstTokenMs, opts...).ToFunc()
+}
+
+// ByRouteKind orders the results by the route_kind field.
+func ByRouteKind(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRouteKind, opts...).ToFunc()
+}
+
+// ByProxyIDSnapshot orders the results by the proxy_id_snapshot field.
+func ByProxyIDSnapshot(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProxyIDSnapshot, opts...).ToFunc()
+}
+
+// ByProxyNameSnapshot orders the results by the proxy_name_snapshot field.
+func ByProxyNameSnapshot(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProxyNameSnapshot, opts...).ToFunc()
+}
+
+// ByProxyProtocolSnapshot orders the results by the proxy_protocol_snapshot field.
+func ByProxyProtocolSnapshot(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProxyProtocolSnapshot, opts...).ToFunc()
+}
+
+// ByRouteFingerprint orders the results by the route_fingerprint field.
+func ByRouteFingerprint(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRouteFingerprint, opts...).ToFunc()
+}
+
+// ByFinalUpstreamStatus orders the results by the final_upstream_status field.
+func ByFinalUpstreamStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFinalUpstreamStatus, opts...).ToFunc()
+}
+
+// ByRetryCount orders the results by the retry_count field.
+func ByRetryCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRetryCount, opts...).ToFunc()
+}
+
+// ByAccountSwitchCount orders the results by the account_switch_count field.
+func ByAccountSwitchCount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAccountSwitchCount, opts...).ToFunc()
 }
 
 // ByUserAgent orders the results by the user_agent field.

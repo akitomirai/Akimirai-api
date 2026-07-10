@@ -69,10 +69,12 @@ const DataTableStub = {
     <div>
       <div v-for="row in data" :key="row.request_id">
         <slot name="cell-model" :row="row" :value="row.model" />
+        <slot name="cell-account" :row="row" />
         <slot name="cell-billing_mode" :row="row" />
         <slot name="cell-tokens" :row="row" />
         <slot name="cell-cache_hit_rate" :row="row" />
         <slot name="cell-cost" :row="row" />
+        <slot name="cell-diagnostics" :row="row" />
       </div>
     </div>
   `,
@@ -207,6 +209,39 @@ describe('admin UsageTable tooltip', () => {
     const text = wrapper.text()
     expect(text).toContain('claude-sonnet-4')
     expect(text).toContain('claude-sonnet-4-20250514')
+  })
+
+  it('shows route and retry indicators and emits diagnostics click', async () => {
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [{
+          id: 77,
+          request_id: 'req-route',
+          model: 'gpt-5.6-sol',
+          account: { id: 3, name: 'codex-jp' },
+          route_kind: 'proxy',
+          proxy_name_snapshot: 'jp-egress',
+          retry_count: 2,
+          account_switch_count: 1,
+          actual_cost: 0,
+          total_cost: 0,
+          input_cost: 0,
+          output_cost: 0,
+          rate_multiplier: 1,
+          input_tokens: 0,
+          output_tokens: 0,
+        }],
+        loading: false,
+        columns: [],
+      },
+      global: { stubs: { DataTable: DataTableStub, EmptyState: true, Teleport: true } },
+    })
+
+    expect(wrapper.text()).toContain('jp-egress')
+    expect(wrapper.text()).toContain('R2')
+    expect(wrapper.text()).toContain('S1')
+    await wrapper.find('button').trigger('click')
+    expect(wrapper.emitted('diagnosticsClick')).toEqual([[77]])
   })
 
   it('appends lowercase reasoning effort badge to the requested model', () => {

@@ -1,0 +1,134 @@
+package repository
+
+import (
+	"database/sql"
+	"testing"
+	"time"
+
+	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
+	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/stretchr/testify/require"
+)
+
+func TestPrepareUsageLogInsertIncludesDiagnosticsInCanonicalOrder(t *testing.T) {
+	startedAt := time.Unix(1_750_001_000, 0).UTC()
+	requestTotalMs := 900
+	bodyReadMs := 15
+	bodyBytes := int64(4096)
+	requestWrittenMs := 40
+	firstByteMs := 500
+	requestFirstTokenMs := 650
+	routeKind := service.RequestRouteKindProxy
+	proxyID := int64(22)
+	proxyName := "jp-route"
+	proxyProtocol := "socks5"
+	fingerprint := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+	status := 200
+	log := &service.UsageLog{
+		UserID:                   1,
+		APIKeyID:                 2,
+		AccountID:                3,
+		RequestID:                "req-diagnostics-order",
+		Model:                    "gpt-5",
+		RequestStartedAt:         &startedAt,
+		RequestTotalMs:           &requestTotalMs,
+		RequestBodyReadMs:        &bodyReadMs,
+		RequestBodyBytes:         &bodyBytes,
+		UpstreamRequestWrittenMs: &requestWrittenMs,
+		UpstreamFirstByteMs:      &firstByteMs,
+		RequestFirstTokenMs:      &requestFirstTokenMs,
+		RouteKind:                &routeKind,
+		ProxyIDSnapshot:          &proxyID,
+		ProxyNameSnapshot:        &proxyName,
+		ProxyProtocolSnapshot:    &proxyProtocol,
+		RouteFingerprint:         &fingerprint,
+		FinalUpstreamStatus:      &status,
+		RetryCount:               2,
+		AccountSwitchCount:       1,
+		AttemptTimeline: []service.RequestAttemptEvent{{
+			Sequence:      1,
+			AccountID:     3,
+			Outcome:       "network_error",
+			ErrorCategory: "network_error",
+			Reason:        "failed via http://user:pass@proxy.example.test:8080/?key=secret",
+		}},
+		CreatedAt: time.Now().UTC(),
+	}
+
+	prepared := prepareUsageLogInsert(log)
+
+	require.Len(t, prepared.args, len(usageLogInsertArgTypes))
+	require.Equal(t, &startedAt, prepared.args[36])
+	require.Equal(t, sql.NullInt64{Int64: int64(requestTotalMs), Valid: true}, prepared.args[37])
+	require.Equal(t, sql.NullInt64{Int64: int64(bodyReadMs), Valid: true}, prepared.args[38])
+	require.Equal(t, sql.NullInt64{Int64: bodyBytes, Valid: true}, prepared.args[39])
+	require.Equal(t, sql.NullInt64{Int64: int64(requestWrittenMs), Valid: true}, prepared.args[40])
+	require.Equal(t, sql.NullInt64{Int64: int64(firstByteMs), Valid: true}, prepared.args[41])
+	require.Equal(t, sql.NullInt64{Int64: int64(requestFirstTokenMs), Valid: true}, prepared.args[42])
+	require.Equal(t, sql.NullString{String: routeKind, Valid: true}, prepared.args[43])
+	require.Equal(t, sql.NullInt64{Int64: proxyID, Valid: true}, prepared.args[44])
+	require.Equal(t, sql.NullString{String: proxyName, Valid: true}, prepared.args[45])
+	require.Equal(t, sql.NullString{String: proxyProtocol, Valid: true}, prepared.args[46])
+	require.Equal(t, sql.NullString{String: fingerprint, Valid: true}, prepared.args[47])
+	require.Equal(t, sql.NullInt64{Int64: int64(status), Valid: true}, prepared.args[48])
+	require.Equal(t, 2, prepared.args[49])
+	require.Equal(t, 1, prepared.args[50])
+	timelineJSON, ok := prepared.args[51].(string)
+	require.True(t, ok)
+	require.NotContains(t, timelineJSON, "proxy.example.test")
+	require.NotContains(t, timelineJSON, "user")
+	require.NotContains(t, timelineJSON, "pass")
+	require.NotContains(t, timelineJSON, "secret")
+}
+
+func TestRequestAttemptTimelineJSONRoundTripAndCap(t *testing.T) {
+	events := make([]service.RequestAttemptEvent, service.RequestDiagnosticsAttemptLimit+4)
+	for i := range events {
+		events[i] = service.RequestAttemptEvent{Sequence: i + 1, AccountID: 7, Outcome: "http_error"}
+	}
+
+	raw, ok := nullRequestAttemptTimelineJSON(events).(string)
+	require.True(t, ok)
+	decoded := requestAttemptTimelineFromNullJSON(sql.NullString{String: raw, Valid: true})
+
+	require.Len(t, decoded, service.RequestDiagnosticsAttemptLimit)
+	require.Equal(t, 1, decoded[0].Sequence)
+	require.Equal(t, service.RequestDiagnosticsAttemptLimit, decoded[len(decoded)-1].Sequence)
+	require.Nil(t, requestAttemptTimelineFromNullJSON(sql.NullString{String: "{bad", Valid: true}))
+}
+
+func TestAppendUsageLogDiagnosticsWhereConditions(t *testing.T) {
+	minTotal := 1000
+	minFirstToken := 500
+	minFirstByte := 250
+	conditions, args := appendUsageLogDiagnosticsWhereConditions(nil, nil, UsageLogFilters{
+		RouteKind:              service.RequestRouteKindProxy,
+		ProxyID:                9,
+		RetryOnly:              true,
+		MinRequestTotalMs:      &minTotal,
+		MinRequestFirstTokenMs: &minFirstToken,
+		MinUpstreamFirstByteMs: &minFirstByte,
+	})
+
+	require.Equal(t, []string{
+		"route_kind = $1",
+		"proxy_id_snapshot = $2",
+		"(retry_count > 0 OR account_switch_count > 0)",
+		"request_total_ms >= $3",
+		"request_first_token_ms >= $4",
+		"upstream_first_byte_ms >= $5",
+	}, conditions)
+	require.Equal(t, []any{service.RequestRouteKindProxy, int64(9), 1000, 500, 250}, args)
+	require.False(t, shouldUseFastUsageLogTotal(UsageLogFilters{RetryOnly: true}))
+}
+
+func TestUsageLogOrderByDiagnosticsUsesNullsLast(t *testing.T) {
+	require.Equal(t, "request_total_ms DESC NULLS LAST, id DESC", usageLogOrderBy(pagination.PaginationParams{
+		SortBy:    "request_total_ms",
+		SortOrder: "desc",
+	}))
+	require.Equal(t, "request_started_at ASC NULLS LAST, id ASC", usageLogOrderBy(pagination.PaginationParams{
+		SortBy:    "request_started_at",
+		SortOrder: "asc",
+	}))
+}

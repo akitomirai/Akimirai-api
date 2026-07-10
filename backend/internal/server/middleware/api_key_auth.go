@@ -126,6 +126,8 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 		if abortIfAPIKeyGroupNotAllowed(c, apiKey) {
 			return
 		}
+		requestCtx := context.WithValue(c.Request.Context(), ctxkey.UserID, apiKey.User.ID)
+		c.Request = c.Request.WithContext(requestCtx)
 
 		// ── 4. SimpleMode → early return ─────────────────────────────
 

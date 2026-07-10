@@ -105,6 +105,34 @@ func TestAdminUsageListInvalidExactTotal(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, rec.Code)
 }
 
+func TestAdminUsageListDiagnosticFilters(t *testing.T) {
+	repo := &adminUsageRepoCapture{}
+	router := newAdminUsageRequestTypeTestRouter(repo)
+
+	req := httptest.NewRequest(http.MethodGet, "/admin/usage?route_kind=proxy&proxy_id=9&retry_only=true&min_request_total_ms=1000&min_request_first_token_ms=500&min_upstream_first_byte_ms=250", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "proxy", repo.listFilters.RouteKind)
+	require.Equal(t, int64(9), repo.listFilters.ProxyID)
+	require.True(t, repo.listFilters.RetryOnly)
+	require.Equal(t, 1000, *repo.listFilters.MinRequestTotalMs)
+	require.Equal(t, 500, *repo.listFilters.MinRequestFirstTokenMs)
+	require.Equal(t, 250, *repo.listFilters.MinUpstreamFirstByteMs)
+}
+
+func TestAdminUsageListRejectsInvalidDiagnosticFilter(t *testing.T) {
+	repo := &adminUsageRepoCapture{}
+	router := newAdminUsageRequestTypeTestRouter(repo)
+
+	req := httptest.NewRequest(http.MethodGet, "/admin/usage?route_kind=unknown", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
 func TestAdminUsageStatsRequestTypePriority(t *testing.T) {
 	repo := &adminUsageRepoCapture{}
 	router := newAdminUsageRequestTypeTestRouter(repo)

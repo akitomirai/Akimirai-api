@@ -154,19 +154,35 @@ type UsageLog struct {
 	// AccountStatsCost 账号统计定价预计算费用（nil = 使用默认公式 total_cost × account_rate_multiplier）
 	AccountStatsCost *float64
 
-	BillingType  int8
-	RequestType  RequestType
-	Stream       bool
-	OpenAIWSMode bool
-	DurationMs     *int
-	FirstTokenMs   *int
-	ClientTransport *string // "http" / "ws"
-	AuthLatencyMs    *int
-	RoutingLatencyMs *int
-	UpstreamLatencyMs *int
-	ResponseLatencyMs *int
-	UserAgent      *string
-	IPAddress      *string
+	BillingType              int8
+	RequestType              RequestType
+	Stream                   bool
+	OpenAIWSMode             bool
+	DurationMs               *int
+	FirstTokenMs             *int
+	ClientTransport          *string // "http" / "ws"
+	AuthLatencyMs            *int
+	RoutingLatencyMs         *int
+	UpstreamLatencyMs        *int
+	ResponseLatencyMs        *int
+	RequestStartedAt         *time.Time
+	RequestTotalMs           *int
+	RequestBodyReadMs        *int
+	RequestBodyBytes         *int64
+	UpstreamRequestWrittenMs *int
+	UpstreamFirstByteMs      *int
+	RequestFirstTokenMs      *int
+	RouteKind                *string
+	ProxyIDSnapshot          *int64
+	ProxyNameSnapshot        *string
+	ProxyProtocolSnapshot    *string
+	RouteFingerprint         *string
+	FinalUpstreamStatus      *int
+	RetryCount               int
+	AccountSwitchCount       int
+	AttemptTimeline          []RequestAttemptEvent
+	UserAgent                *string
+	IPAddress                *string
 
 	// Cache TTL Override 标记（管理员强制替换了缓存 TTL 计费）
 	CacheTTLOverridden bool

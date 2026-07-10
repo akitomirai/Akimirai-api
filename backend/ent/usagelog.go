@@ -85,6 +85,48 @@ type UsageLog struct {
 	DurationMs *int `json:"duration_ms,omitempty"`
 	// FirstTokenMs holds the value of the "first_token_ms" field.
 	FirstTokenMs *int `json:"first_token_ms,omitempty"`
+	// ClientTransport holds the value of the "client_transport" field.
+	ClientTransport *string `json:"client_transport,omitempty"`
+	// AuthLatencyMs holds the value of the "auth_latency_ms" field.
+	AuthLatencyMs *int `json:"auth_latency_ms,omitempty"`
+	// RoutingLatencyMs holds the value of the "routing_latency_ms" field.
+	RoutingLatencyMs *int `json:"routing_latency_ms,omitempty"`
+	// UpstreamLatencyMs holds the value of the "upstream_latency_ms" field.
+	UpstreamLatencyMs *int `json:"upstream_latency_ms,omitempty"`
+	// ResponseLatencyMs holds the value of the "response_latency_ms" field.
+	ResponseLatencyMs *int `json:"response_latency_ms,omitempty"`
+	// RequestStartedAt holds the value of the "request_started_at" field.
+	RequestStartedAt *time.Time `json:"request_started_at,omitempty"`
+	// RequestTotalMs holds the value of the "request_total_ms" field.
+	RequestTotalMs *int `json:"request_total_ms,omitempty"`
+	// RequestBodyReadMs holds the value of the "request_body_read_ms" field.
+	RequestBodyReadMs *int `json:"request_body_read_ms,omitempty"`
+	// RequestBodyBytes holds the value of the "request_body_bytes" field.
+	RequestBodyBytes *int64 `json:"request_body_bytes,omitempty"`
+	// UpstreamRequestWrittenMs holds the value of the "upstream_request_written_ms" field.
+	UpstreamRequestWrittenMs *int `json:"upstream_request_written_ms,omitempty"`
+	// UpstreamFirstByteMs holds the value of the "upstream_first_byte_ms" field.
+	UpstreamFirstByteMs *int `json:"upstream_first_byte_ms,omitempty"`
+	// RequestFirstTokenMs holds the value of the "request_first_token_ms" field.
+	RequestFirstTokenMs *int `json:"request_first_token_ms,omitempty"`
+	// RouteKind holds the value of the "route_kind" field.
+	RouteKind *string `json:"route_kind,omitempty"`
+	// ProxyIDSnapshot holds the value of the "proxy_id_snapshot" field.
+	ProxyIDSnapshot *int64 `json:"proxy_id_snapshot,omitempty"`
+	// ProxyNameSnapshot holds the value of the "proxy_name_snapshot" field.
+	ProxyNameSnapshot *string `json:"proxy_name_snapshot,omitempty"`
+	// ProxyProtocolSnapshot holds the value of the "proxy_protocol_snapshot" field.
+	ProxyProtocolSnapshot *string `json:"proxy_protocol_snapshot,omitempty"`
+	// RouteFingerprint holds the value of the "route_fingerprint" field.
+	RouteFingerprint *string `json:"route_fingerprint,omitempty"`
+	// FinalUpstreamStatus holds the value of the "final_upstream_status" field.
+	FinalUpstreamStatus *int `json:"final_upstream_status,omitempty"`
+	// RetryCount holds the value of the "retry_count" field.
+	RetryCount int `json:"retry_count,omitempty"`
+	// AccountSwitchCount holds the value of the "account_switch_count" field.
+	AccountSwitchCount int `json:"account_switch_count,omitempty"`
+	// AttemptTimeline holds the value of the "attempt_timeline" field.
+	AttemptTimeline []map[string]interface{} `json:"attempt_timeline,omitempty"`
 	// UserAgent holds the value of the "user_agent" field.
 	UserAgent *string `json:"user_agent,omitempty"`
 	// IPAddress holds the value of the "ip_address" field.
@@ -194,17 +236,17 @@ func (*UsageLog) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case usagelog.FieldImageSizeBreakdown:
+		case usagelog.FieldAttemptTimeline, usagelog.FieldImageSizeBreakdown:
 			values[i] = new([]byte)
 		case usagelog.FieldStream, usagelog.FieldCacheTTLOverridden:
 			values[i] = new(sql.NullBool)
 		case usagelog.FieldInputCost, usagelog.FieldOutputCost, usagelog.FieldCacheCreationCost, usagelog.FieldCacheReadCost, usagelog.FieldTotalCost, usagelog.FieldActualCost, usagelog.FieldRateMultiplier, usagelog.FieldAccountRateMultiplier:
 			values[i] = new(sql.NullFloat64)
-		case usagelog.FieldID, usagelog.FieldUserID, usagelog.FieldAPIKeyID, usagelog.FieldAccountID, usagelog.FieldChannelID, usagelog.FieldGroupID, usagelog.FieldSubscriptionID, usagelog.FieldInputTokens, usagelog.FieldOutputTokens, usagelog.FieldCacheCreationTokens, usagelog.FieldCacheReadTokens, usagelog.FieldCacheCreation5mTokens, usagelog.FieldCacheCreation1hTokens, usagelog.FieldBillingType, usagelog.FieldDurationMs, usagelog.FieldFirstTokenMs, usagelog.FieldImageCount, usagelog.FieldVideoCount, usagelog.FieldVideoDurationSeconds:
+		case usagelog.FieldID, usagelog.FieldUserID, usagelog.FieldAPIKeyID, usagelog.FieldAccountID, usagelog.FieldChannelID, usagelog.FieldGroupID, usagelog.FieldSubscriptionID, usagelog.FieldInputTokens, usagelog.FieldOutputTokens, usagelog.FieldCacheCreationTokens, usagelog.FieldCacheReadTokens, usagelog.FieldCacheCreation5mTokens, usagelog.FieldCacheCreation1hTokens, usagelog.FieldBillingType, usagelog.FieldDurationMs, usagelog.FieldFirstTokenMs, usagelog.FieldAuthLatencyMs, usagelog.FieldRoutingLatencyMs, usagelog.FieldUpstreamLatencyMs, usagelog.FieldResponseLatencyMs, usagelog.FieldRequestTotalMs, usagelog.FieldRequestBodyReadMs, usagelog.FieldRequestBodyBytes, usagelog.FieldUpstreamRequestWrittenMs, usagelog.FieldUpstreamFirstByteMs, usagelog.FieldRequestFirstTokenMs, usagelog.FieldProxyIDSnapshot, usagelog.FieldFinalUpstreamStatus, usagelog.FieldRetryCount, usagelog.FieldAccountSwitchCount, usagelog.FieldImageCount, usagelog.FieldVideoCount, usagelog.FieldVideoDurationSeconds:
 			values[i] = new(sql.NullInt64)
-		case usagelog.FieldRequestID, usagelog.FieldModel, usagelog.FieldRequestedModel, usagelog.FieldUpstreamModel, usagelog.FieldModelMappingChain, usagelog.FieldBillingTier, usagelog.FieldBillingMode, usagelog.FieldUserAgent, usagelog.FieldIPAddress, usagelog.FieldImageSize, usagelog.FieldImageInputSize, usagelog.FieldImageOutputSize, usagelog.FieldImageSizeSource, usagelog.FieldVideoResolution:
+		case usagelog.FieldRequestID, usagelog.FieldModel, usagelog.FieldRequestedModel, usagelog.FieldUpstreamModel, usagelog.FieldModelMappingChain, usagelog.FieldBillingTier, usagelog.FieldBillingMode, usagelog.FieldClientTransport, usagelog.FieldRouteKind, usagelog.FieldProxyNameSnapshot, usagelog.FieldProxyProtocolSnapshot, usagelog.FieldRouteFingerprint, usagelog.FieldUserAgent, usagelog.FieldIPAddress, usagelog.FieldImageSize, usagelog.FieldImageInputSize, usagelog.FieldImageOutputSize, usagelog.FieldImageSizeSource, usagelog.FieldVideoResolution:
 			values[i] = new(sql.NullString)
-		case usagelog.FieldCreatedAt:
+		case usagelog.FieldRequestStartedAt, usagelog.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -423,6 +465,152 @@ func (_m *UsageLog) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.FirstTokenMs = new(int)
 				*_m.FirstTokenMs = int(value.Int64)
+			}
+		case usagelog.FieldClientTransport:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field client_transport", values[i])
+			} else if value.Valid {
+				_m.ClientTransport = new(string)
+				*_m.ClientTransport = value.String
+			}
+		case usagelog.FieldAuthLatencyMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field auth_latency_ms", values[i])
+			} else if value.Valid {
+				_m.AuthLatencyMs = new(int)
+				*_m.AuthLatencyMs = int(value.Int64)
+			}
+		case usagelog.FieldRoutingLatencyMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field routing_latency_ms", values[i])
+			} else if value.Valid {
+				_m.RoutingLatencyMs = new(int)
+				*_m.RoutingLatencyMs = int(value.Int64)
+			}
+		case usagelog.FieldUpstreamLatencyMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field upstream_latency_ms", values[i])
+			} else if value.Valid {
+				_m.UpstreamLatencyMs = new(int)
+				*_m.UpstreamLatencyMs = int(value.Int64)
+			}
+		case usagelog.FieldResponseLatencyMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field response_latency_ms", values[i])
+			} else if value.Valid {
+				_m.ResponseLatencyMs = new(int)
+				*_m.ResponseLatencyMs = int(value.Int64)
+			}
+		case usagelog.FieldRequestStartedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field request_started_at", values[i])
+			} else if value.Valid {
+				_m.RequestStartedAt = new(time.Time)
+				*_m.RequestStartedAt = value.Time
+			}
+		case usagelog.FieldRequestTotalMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field request_total_ms", values[i])
+			} else if value.Valid {
+				_m.RequestTotalMs = new(int)
+				*_m.RequestTotalMs = int(value.Int64)
+			}
+		case usagelog.FieldRequestBodyReadMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field request_body_read_ms", values[i])
+			} else if value.Valid {
+				_m.RequestBodyReadMs = new(int)
+				*_m.RequestBodyReadMs = int(value.Int64)
+			}
+		case usagelog.FieldRequestBodyBytes:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field request_body_bytes", values[i])
+			} else if value.Valid {
+				_m.RequestBodyBytes = new(int64)
+				*_m.RequestBodyBytes = value.Int64
+			}
+		case usagelog.FieldUpstreamRequestWrittenMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field upstream_request_written_ms", values[i])
+			} else if value.Valid {
+				_m.UpstreamRequestWrittenMs = new(int)
+				*_m.UpstreamRequestWrittenMs = int(value.Int64)
+			}
+		case usagelog.FieldUpstreamFirstByteMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field upstream_first_byte_ms", values[i])
+			} else if value.Valid {
+				_m.UpstreamFirstByteMs = new(int)
+				*_m.UpstreamFirstByteMs = int(value.Int64)
+			}
+		case usagelog.FieldRequestFirstTokenMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field request_first_token_ms", values[i])
+			} else if value.Valid {
+				_m.RequestFirstTokenMs = new(int)
+				*_m.RequestFirstTokenMs = int(value.Int64)
+			}
+		case usagelog.FieldRouteKind:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field route_kind", values[i])
+			} else if value.Valid {
+				_m.RouteKind = new(string)
+				*_m.RouteKind = value.String
+			}
+		case usagelog.FieldProxyIDSnapshot:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field proxy_id_snapshot", values[i])
+			} else if value.Valid {
+				_m.ProxyIDSnapshot = new(int64)
+				*_m.ProxyIDSnapshot = value.Int64
+			}
+		case usagelog.FieldProxyNameSnapshot:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field proxy_name_snapshot", values[i])
+			} else if value.Valid {
+				_m.ProxyNameSnapshot = new(string)
+				*_m.ProxyNameSnapshot = value.String
+			}
+		case usagelog.FieldProxyProtocolSnapshot:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field proxy_protocol_snapshot", values[i])
+			} else if value.Valid {
+				_m.ProxyProtocolSnapshot = new(string)
+				*_m.ProxyProtocolSnapshot = value.String
+			}
+		case usagelog.FieldRouteFingerprint:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field route_fingerprint", values[i])
+			} else if value.Valid {
+				_m.RouteFingerprint = new(string)
+				*_m.RouteFingerprint = value.String
+			}
+		case usagelog.FieldFinalUpstreamStatus:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field final_upstream_status", values[i])
+			} else if value.Valid {
+				_m.FinalUpstreamStatus = new(int)
+				*_m.FinalUpstreamStatus = int(value.Int64)
+			}
+		case usagelog.FieldRetryCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field retry_count", values[i])
+			} else if value.Valid {
+				_m.RetryCount = int(value.Int64)
+			}
+		case usagelog.FieldAccountSwitchCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field account_switch_count", values[i])
+			} else if value.Valid {
+				_m.AccountSwitchCount = int(value.Int64)
+			}
+		case usagelog.FieldAttemptTimeline:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field attempt_timeline", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.AttemptTimeline); err != nil {
+					return fmt.Errorf("unmarshal field attempt_timeline: %w", err)
+				}
 			}
 		case usagelog.FieldUserAgent:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -687,6 +875,105 @@ func (_m *UsageLog) String() string {
 		builder.WriteString("first_token_ms=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	if v := _m.ClientTransport; v != nil {
+		builder.WriteString("client_transport=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.AuthLatencyMs; v != nil {
+		builder.WriteString("auth_latency_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.RoutingLatencyMs; v != nil {
+		builder.WriteString("routing_latency_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.UpstreamLatencyMs; v != nil {
+		builder.WriteString("upstream_latency_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.ResponseLatencyMs; v != nil {
+		builder.WriteString("response_latency_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.RequestStartedAt; v != nil {
+		builder.WriteString("request_started_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.RequestTotalMs; v != nil {
+		builder.WriteString("request_total_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.RequestBodyReadMs; v != nil {
+		builder.WriteString("request_body_read_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.RequestBodyBytes; v != nil {
+		builder.WriteString("request_body_bytes=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.UpstreamRequestWrittenMs; v != nil {
+		builder.WriteString("upstream_request_written_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.UpstreamFirstByteMs; v != nil {
+		builder.WriteString("upstream_first_byte_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.RequestFirstTokenMs; v != nil {
+		builder.WriteString("request_first_token_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.RouteKind; v != nil {
+		builder.WriteString("route_kind=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.ProxyIDSnapshot; v != nil {
+		builder.WriteString("proxy_id_snapshot=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.ProxyNameSnapshot; v != nil {
+		builder.WriteString("proxy_name_snapshot=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.ProxyProtocolSnapshot; v != nil {
+		builder.WriteString("proxy_protocol_snapshot=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.RouteFingerprint; v != nil {
+		builder.WriteString("route_fingerprint=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.FinalUpstreamStatus; v != nil {
+		builder.WriteString("final_upstream_status=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("retry_count=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RetryCount))
+	builder.WriteString(", ")
+	builder.WriteString("account_switch_count=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AccountSwitchCount))
+	builder.WriteString(", ")
+	builder.WriteString("attempt_timeline=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AttemptTimeline))
 	builder.WriteString(", ")
 	if v := _m.UserAgent; v != nil {
 		builder.WriteString("user_agent=")

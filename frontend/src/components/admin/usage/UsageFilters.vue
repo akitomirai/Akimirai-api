@@ -194,6 +194,12 @@
           <Select v-model="filters.model" :options="modelOptions" searchable @change="emitChange" />
         </div>
 
+        <!-- Group Filter -->
+        <div class="w-full sm:w-auto sm:min-w-[200px]">
+          <label class="input-label">{{ t('admin.usage.group') }}</label>
+          <Select v-model="filters.group_id" :options="groupOptions" searchable @change="emitChange" />
+        </div>
+
         <!-- Account Filter -->
         <div ref="accountSearchRef" class="usage-filter-dropdown relative w-full sm:w-auto sm:min-w-[220px]">
           <label class="input-label">{{ t('admin.usage.account') }}</label>
@@ -231,22 +237,39 @@
           </div>
         </div>
 
-        <!-- Request Type Filter (usage only) -->
-        <div v-if="mode !== 'errors'" class="w-full sm:w-auto sm:min-w-[180px]">
-          <label class="input-label">{{ t('usage.type') }}</label>
-          <Select v-model="filters.request_type" :options="requestTypeOptions" @change="emitChange" />
+        <div v-if="mode === 'usage'" class="w-full sm:w-auto sm:min-w-[160px]">
+          <label class="input-label">{{ t('admin.usage.diagnostics.route') }}</label>
+          <Select v-model="filters.route_kind" :options="routeKindOptions" @change="emitChange" />
         </div>
 
-        <!-- Billing Type Filter (usage only) -->
-        <div v-if="mode !== 'errors'" class="w-full sm:w-auto sm:min-w-[200px]">
-          <label class="input-label">{{ t('admin.usage.billingType') }}</label>
-          <Select v-model="filters.billing_type" :options="billingTypeOptions" @change="emitChange" />
+        <div v-if="mode === 'usage'" class="w-full sm:w-[130px]">
+          <label class="input-label">{{ t('admin.usage.diagnostics.proxyId') }}</label>
+          <input v-model.number="filters.proxy_id" type="number" min="1" class="input" @change="emitChange" />
         </div>
 
-        <!-- Billing Mode Filter (usage only；用户排行的 user-breakdown 接口不支持该维度) -->
-        <div v-if="mode === 'usage'" class="w-full sm:w-auto sm:min-w-[200px]">
-          <label class="input-label">{{ t('admin.usage.billingMode') }}</label>
-          <Select v-model="filters.billing_mode" :options="billingModeOptions" @change="emitChange" />
+        <div v-if="mode === 'usage'" class="w-full sm:w-[150px]">
+          <label class="input-label">{{ t('admin.usage.diagnostics.minTotalMs') }}</label>
+          <input v-model.number="filters.min_request_total_ms" type="number" min="0" class="input" @change="emitChange" />
+        </div>
+
+        <div v-if="mode === 'usage'" class="w-full sm:w-[150px]">
+          <label class="input-label">{{ t('admin.usage.diagnostics.minFirstTokenMs') }}</label>
+          <input v-model.number="filters.min_request_first_token_ms" type="number" min="0" class="input" @change="emitChange" />
+        </div>
+
+        <div v-if="mode === 'usage'" class="w-full sm:w-[150px]">
+          <label class="input-label">{{ t('admin.usage.diagnostics.minFirstByteMs') }}</label>
+          <input v-model.number="filters.min_upstream_first_byte_ms" type="number" min="0" class="input" @change="emitChange" />
+        </div>
+
+        <label v-if="mode === 'usage'" class="flex h-10 w-full cursor-pointer items-center gap-2 rounded-md border border-gray-200 px-3 text-sm text-gray-700 sm:w-auto dark:border-dark-700 dark:text-gray-300">
+          <input v-model="filters.retry_only" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" @change="emitChange" />
+          <span>{{ t('admin.usage.diagnostics.retryOnly') }}</span>
+        </label>
+
+        <div v-if="mode === 'errors'" class="w-full sm:w-auto sm:min-w-[220px]">
+          <label class="input-label">{{ t('admin.usage.requestId') }}</label>
+          <input v-model.trim="filters.error_request_id" type="text" class="input font-mono" @change="emitChange" />
         </div>
 
         <!-- Error Phase Filter (errors only) -->
@@ -265,12 +288,6 @@
         <div v-if="mode === 'errors'" class="w-full sm:w-auto sm:min-w-[180px]">
           <label class="input-label">{{ t('admin.ops.errorLog.status') }}</label>
           <Select v-model="filters.status_code" :options="statusCodeOptions" @change="emitChange" />
-        </div>
-
-        <!-- Group Filter -->
-        <div class="w-full sm:w-auto sm:min-w-[200px]">
-          <label class="input-label">{{ t('admin.usage.group') }}</label>
-          <Select v-model="filters.group_id" :options="groupOptions" searchable @change="emitChange" />
         </div>
 
       </div>
@@ -317,8 +334,8 @@ interface Props {
   modelOptions?: string[]
 
   /**
-   * errors mode hides usage-only fields/actions and shows error type/status code.
-   * ranking mode keeps usage filters but hides billing-mode cleanup/export actions.
+   * errors mode keeps the shared identity filters and adds error type/status fields.
+   * ranking mode keeps the shared filters but hides cleanup/export actions.
    */
   mode?: 'usage' | 'errors' | 'ranking'
   compact?: boolean
@@ -376,19 +393,10 @@ const modelOptions = computed<SelectOption[]>(() => [
   ...(props.modelOptions ?? []).map((m) => ({ value: m, label: m })),
 ])
 const groupOptions = ref<SelectOption[]>([{ value: null, label: t('admin.usage.allGroups') }])
-
-const requestTypeOptions = ref<SelectOption[]>([
-  { value: null, label: t('admin.usage.allTypes') },
-  { value: 'ws_v2', label: t('usage.ws') },
-  { value: 'stream', label: t('usage.stream') },
-  { value: 'sync', label: t('usage.sync') },
-  { value: 'cyber', label: t('usage.cyber') }
-])
-
-const billingTypeOptions = ref<SelectOption[]>([
-  { value: null, label: t('admin.usage.allBillingTypes') },
-  { value: 0, label: t('admin.usage.billingTypeBalance') },
-  { value: 1, label: t('admin.usage.billingTypeSubscription') }
+const routeKindOptions = computed<SelectOption[]>(() => [
+  { value: null, label: t('admin.usage.diagnostics.allRoutes') },
+  { value: 'direct', label: t('admin.usage.diagnostics.directRoute') },
+  { value: 'proxy', label: t('admin.usage.diagnostics.proxyRoute') },
 ])
 
 // 错误类型对应后端 phase 参数(与错误表"类型"徽章同语义)
@@ -412,14 +420,6 @@ const errorCategoryOptions = computed<SelectOption[]>(() => [
 const statusCodeOptions = computed<SelectOption[]>(() => [
   { value: null, label: t('usage.errors.allStatuses') },
   ...COMMON_ERROR_STATUS_CODES.map((c) => ({ value: c, label: String(c) })),
-])
-
-const billingModeOptions = ref<SelectOption[]>([
-  { value: null, label: t('admin.usage.allBillingModes') },
-  { value: 'token', label: t('admin.usage.billingModeToken') },
-  { value: 'per_request', label: t('admin.usage.billingModePerRequest') },
-  { value: 'image', label: t('admin.usage.billingModeImage') },
-  { value: 'video', label: t('admin.usage.billingModeVideo') }
 ])
 
 const emitChange = () => emit('change')

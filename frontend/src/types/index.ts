@@ -602,6 +602,7 @@ export interface ApiKey {
   updated_at: string
   current_concurrency: number
   group?: Group
+  allowed_models: string[]
   rate_limit_5h: number
   rate_limit_1d: number
   rate_limit_7d: number
@@ -624,6 +625,7 @@ export interface CreateApiKeyRequest {
   ip_blacklist?: string[]
   quota?: number // Quota limit in USD (0 = unlimited)
   expires_in_days?: number // Days until expiry (null = never expires)
+  allowed_models?: string[] // Empty = allow every model available to the selected group
   rate_limit_5h?: number
   rate_limit_1d?: number
   rate_limit_7d?: number
@@ -638,6 +640,7 @@ export interface UpdateApiKeyRequest {
   quota?: number // Quota limit in USD (null = no change, 0 = unlimited)
   expires_at?: string | null // Expiration time (null = no change)
   reset_quota?: boolean // Reset quota_used to 0
+  allowed_models?: string[] // Empty = allow every model available to the selected group
   rate_limit_5h?: number
   rate_limit_1d?: number
   rate_limit_7d?: number
@@ -1348,12 +1351,6 @@ export interface UsageLog {
   first_token_ms: number | null
 
   // 性能观测字段
-  client_transport?: string | null
-  auth_latency_ms?: number | null
-  routing_latency_ms?: number | null
-  upstream_latency_ms?: number | null
-  response_latency_ms?: number | null
-
   // 图片生成字段
   image_count: number
   image_size: string | null
@@ -1387,6 +1384,31 @@ export interface UsageLogAccountSummary {
   name: string
 }
 
+export type UsageRouteKind = 'direct' | 'proxy'
+
+export interface AdminUsageRouteSnapshot {
+  kind: UsageRouteKind | string
+  proxy_id?: number | null
+  proxy_name?: string | null
+  proxy_protocol?: string | null
+  fingerprint?: string | null
+}
+
+export interface AdminUsageAttemptEvent {
+  sequence: number
+  started_ms: number
+  finished_ms?: number | null
+  request_written_ms?: number | null
+  first_byte_ms?: number | null
+  account_id: number
+  account_name?: string | null
+  route: AdminUsageRouteSnapshot
+  upstream_status?: number | null
+  outcome: string
+  error_category?: string | null
+  reason?: string | null
+}
+
 export interface AdminUsageLog extends UsageLog {
   upstream_model?: string | null
   model_mapping_chain?: string | null
@@ -1400,8 +1422,33 @@ export interface AdminUsageLog extends UsageLog {
   channel_id?: number | null
   billing_tier?: string | null
 
+  client_transport?: string | null
+  auth_latency_ms?: number | null
+  routing_latency_ms?: number | null
+  upstream_latency_ms?: number | null
+  response_latency_ms?: number | null
+  request_started_at?: string | null
+  request_total_ms?: number | null
+  request_body_read_ms?: number | null
+  request_body_bytes?: number | null
+  upstream_request_written_ms?: number | null
+  upstream_first_byte_ms?: number | null
+  request_first_token_ms?: number | null
+  route_kind?: UsageRouteKind | null
+  proxy_id_snapshot?: number | null
+  proxy_name_snapshot?: string | null
+  proxy_protocol_snapshot?: string | null
+  route_fingerprint?: string | null
+  final_upstream_status?: number | null
+  retry_count?: number
+  account_switch_count?: number
+
   // Minimal account summary returned by admin APIs.
   account?: UsageLogAccountSummary
+}
+
+export interface AdminUsageDiagnostics extends AdminUsageLog {
+  attempt_timeline?: AdminUsageAttemptEvent[]
 }
 
 export interface UsageCleanupFilters {
@@ -1588,6 +1635,15 @@ export interface GroupStat {
   cost: number // 标准计费
   actual_cost: number // 实际扣除
   account_cost?: number // 账号成本（仅管理员接口返回）
+}
+
+export interface ApiKeyStat {
+  api_key_id: number
+  api_key_name: string
+  requests: number
+  total_tokens: number
+  cost: number
+  actual_cost: number
 }
 
 export interface UserBreakdownItem {

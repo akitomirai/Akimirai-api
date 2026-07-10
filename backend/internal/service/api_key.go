@@ -1,6 +1,7 @@
 package service
 
 import (
+	"strings"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
@@ -12,6 +13,7 @@ const (
 	StatusAPIKeyDisabled       = "disabled"
 	StatusAPIKeyQuotaExhausted = "quota_exhausted"
 	StatusAPIKeyExpired        = "expired"
+	APIKeyModelNotAllowedCode  = "MODEL_NOT_ALLOWED"
 )
 
 // Rate limit window durations
@@ -39,6 +41,7 @@ type APIKey struct {
 	Status         string
 	IPWhitelist    []string
 	IPBlacklist    []string
+	AllowedModels  []string
 	// 预编译的 IP 规则，用于认证热路径避免重复 ParseIP/ParseCIDR。
 	CompiledIPWhitelist *ip.CompiledIPRules `json:"-"`
 	CompiledIPBlacklist *ip.CompiledIPRules `json:"-"`
@@ -84,6 +87,42 @@ func (k *APIKey) IsActive() bool {
 // HasRateLimits returns true if any rate limit window is configured
 func (k *APIKey) HasRateLimits() bool {
 	return k.RateLimit5h > 0 || k.RateLimit1d > 0 || k.RateLimit7d > 0
+}
+
+// AllowsModel reports whether the key may use the exact requested model.
+// An empty allowlist preserves the legacy behavior and allows every group model.
+func (k *APIKey) AllowsModel(model string) bool {
+	if k == nil || len(k.AllowedModels) == 0 {
+		return true
+	}
+	model = strings.TrimSpace(model)
+	if model == "" {
+		return false
+	}
+	for _, allowed := range k.AllowedModels {
+		if allowed == model {
+			return true
+		}
+	}
+	return false
+}
+
+func APIKeyModelNotAllowedMessage(model string) string {
+	return "API key is not allowed to use model " + strings.TrimSpace(model)
+}
+
+// FilterAllowedModels removes models that the key cannot use while preserving order.
+func (k *APIKey) FilterAllowedModels(models []string) []string {
+	if k == nil || len(k.AllowedModels) == 0 {
+		return models
+	}
+	filtered := make([]string, 0, len(models))
+	for _, model := range models {
+		if k.AllowsModel(model) {
+			filtered = append(filtered, model)
+		}
+	}
+	return filtered
 }
 
 // IsExpired checks if the API key has expired

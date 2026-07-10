@@ -6,9 +6,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/sub2api/ent/account"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
@@ -786,6 +788,382 @@ func (_u *UsageLogUpdate) ClearResponseLatencyMs() *UsageLogUpdate {
 	return _u
 }
 
+// SetRequestStartedAt sets the "request_started_at" field.
+func (_u *UsageLogUpdate) SetRequestStartedAt(v time.Time) *UsageLogUpdate {
+	_u.mutation.SetRequestStartedAt(v)
+	return _u
+}
+
+// SetNillableRequestStartedAt sets the "request_started_at" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableRequestStartedAt(v *time.Time) *UsageLogUpdate {
+	if v != nil {
+		_u.SetRequestStartedAt(*v)
+	}
+	return _u
+}
+
+// ClearRequestStartedAt clears the value of the "request_started_at" field.
+func (_u *UsageLogUpdate) ClearRequestStartedAt() *UsageLogUpdate {
+	_u.mutation.ClearRequestStartedAt()
+	return _u
+}
+
+// SetRequestTotalMs sets the "request_total_ms" field.
+func (_u *UsageLogUpdate) SetRequestTotalMs(v int) *UsageLogUpdate {
+	_u.mutation.ResetRequestTotalMs()
+	_u.mutation.SetRequestTotalMs(v)
+	return _u
+}
+
+// SetNillableRequestTotalMs sets the "request_total_ms" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableRequestTotalMs(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetRequestTotalMs(*v)
+	}
+	return _u
+}
+
+// AddRequestTotalMs adds value to the "request_total_ms" field.
+func (_u *UsageLogUpdate) AddRequestTotalMs(v int) *UsageLogUpdate {
+	_u.mutation.AddRequestTotalMs(v)
+	return _u
+}
+
+// ClearRequestTotalMs clears the value of the "request_total_ms" field.
+func (_u *UsageLogUpdate) ClearRequestTotalMs() *UsageLogUpdate {
+	_u.mutation.ClearRequestTotalMs()
+	return _u
+}
+
+// SetRequestBodyReadMs sets the "request_body_read_ms" field.
+func (_u *UsageLogUpdate) SetRequestBodyReadMs(v int) *UsageLogUpdate {
+	_u.mutation.ResetRequestBodyReadMs()
+	_u.mutation.SetRequestBodyReadMs(v)
+	return _u
+}
+
+// SetNillableRequestBodyReadMs sets the "request_body_read_ms" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableRequestBodyReadMs(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetRequestBodyReadMs(*v)
+	}
+	return _u
+}
+
+// AddRequestBodyReadMs adds value to the "request_body_read_ms" field.
+func (_u *UsageLogUpdate) AddRequestBodyReadMs(v int) *UsageLogUpdate {
+	_u.mutation.AddRequestBodyReadMs(v)
+	return _u
+}
+
+// ClearRequestBodyReadMs clears the value of the "request_body_read_ms" field.
+func (_u *UsageLogUpdate) ClearRequestBodyReadMs() *UsageLogUpdate {
+	_u.mutation.ClearRequestBodyReadMs()
+	return _u
+}
+
+// SetRequestBodyBytes sets the "request_body_bytes" field.
+func (_u *UsageLogUpdate) SetRequestBodyBytes(v int64) *UsageLogUpdate {
+	_u.mutation.ResetRequestBodyBytes()
+	_u.mutation.SetRequestBodyBytes(v)
+	return _u
+}
+
+// SetNillableRequestBodyBytes sets the "request_body_bytes" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableRequestBodyBytes(v *int64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetRequestBodyBytes(*v)
+	}
+	return _u
+}
+
+// AddRequestBodyBytes adds value to the "request_body_bytes" field.
+func (_u *UsageLogUpdate) AddRequestBodyBytes(v int64) *UsageLogUpdate {
+	_u.mutation.AddRequestBodyBytes(v)
+	return _u
+}
+
+// ClearRequestBodyBytes clears the value of the "request_body_bytes" field.
+func (_u *UsageLogUpdate) ClearRequestBodyBytes() *UsageLogUpdate {
+	_u.mutation.ClearRequestBodyBytes()
+	return _u
+}
+
+// SetUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field.
+func (_u *UsageLogUpdate) SetUpstreamRequestWrittenMs(v int) *UsageLogUpdate {
+	_u.mutation.ResetUpstreamRequestWrittenMs()
+	_u.mutation.SetUpstreamRequestWrittenMs(v)
+	return _u
+}
+
+// SetNillableUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableUpstreamRequestWrittenMs(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetUpstreamRequestWrittenMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamRequestWrittenMs adds value to the "upstream_request_written_ms" field.
+func (_u *UsageLogUpdate) AddUpstreamRequestWrittenMs(v int) *UsageLogUpdate {
+	_u.mutation.AddUpstreamRequestWrittenMs(v)
+	return _u
+}
+
+// ClearUpstreamRequestWrittenMs clears the value of the "upstream_request_written_ms" field.
+func (_u *UsageLogUpdate) ClearUpstreamRequestWrittenMs() *UsageLogUpdate {
+	_u.mutation.ClearUpstreamRequestWrittenMs()
+	return _u
+}
+
+// SetUpstreamFirstByteMs sets the "upstream_first_byte_ms" field.
+func (_u *UsageLogUpdate) SetUpstreamFirstByteMs(v int) *UsageLogUpdate {
+	_u.mutation.ResetUpstreamFirstByteMs()
+	_u.mutation.SetUpstreamFirstByteMs(v)
+	return _u
+}
+
+// SetNillableUpstreamFirstByteMs sets the "upstream_first_byte_ms" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableUpstreamFirstByteMs(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetUpstreamFirstByteMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamFirstByteMs adds value to the "upstream_first_byte_ms" field.
+func (_u *UsageLogUpdate) AddUpstreamFirstByteMs(v int) *UsageLogUpdate {
+	_u.mutation.AddUpstreamFirstByteMs(v)
+	return _u
+}
+
+// ClearUpstreamFirstByteMs clears the value of the "upstream_first_byte_ms" field.
+func (_u *UsageLogUpdate) ClearUpstreamFirstByteMs() *UsageLogUpdate {
+	_u.mutation.ClearUpstreamFirstByteMs()
+	return _u
+}
+
+// SetRequestFirstTokenMs sets the "request_first_token_ms" field.
+func (_u *UsageLogUpdate) SetRequestFirstTokenMs(v int) *UsageLogUpdate {
+	_u.mutation.ResetRequestFirstTokenMs()
+	_u.mutation.SetRequestFirstTokenMs(v)
+	return _u
+}
+
+// SetNillableRequestFirstTokenMs sets the "request_first_token_ms" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableRequestFirstTokenMs(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetRequestFirstTokenMs(*v)
+	}
+	return _u
+}
+
+// AddRequestFirstTokenMs adds value to the "request_first_token_ms" field.
+func (_u *UsageLogUpdate) AddRequestFirstTokenMs(v int) *UsageLogUpdate {
+	_u.mutation.AddRequestFirstTokenMs(v)
+	return _u
+}
+
+// ClearRequestFirstTokenMs clears the value of the "request_first_token_ms" field.
+func (_u *UsageLogUpdate) ClearRequestFirstTokenMs() *UsageLogUpdate {
+	_u.mutation.ClearRequestFirstTokenMs()
+	return _u
+}
+
+// SetRouteKind sets the "route_kind" field.
+func (_u *UsageLogUpdate) SetRouteKind(v string) *UsageLogUpdate {
+	_u.mutation.SetRouteKind(v)
+	return _u
+}
+
+// SetNillableRouteKind sets the "route_kind" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableRouteKind(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetRouteKind(*v)
+	}
+	return _u
+}
+
+// ClearRouteKind clears the value of the "route_kind" field.
+func (_u *UsageLogUpdate) ClearRouteKind() *UsageLogUpdate {
+	_u.mutation.ClearRouteKind()
+	return _u
+}
+
+// SetProxyIDSnapshot sets the "proxy_id_snapshot" field.
+func (_u *UsageLogUpdate) SetProxyIDSnapshot(v int64) *UsageLogUpdate {
+	_u.mutation.ResetProxyIDSnapshot()
+	_u.mutation.SetProxyIDSnapshot(v)
+	return _u
+}
+
+// SetNillableProxyIDSnapshot sets the "proxy_id_snapshot" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableProxyIDSnapshot(v *int64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetProxyIDSnapshot(*v)
+	}
+	return _u
+}
+
+// AddProxyIDSnapshot adds value to the "proxy_id_snapshot" field.
+func (_u *UsageLogUpdate) AddProxyIDSnapshot(v int64) *UsageLogUpdate {
+	_u.mutation.AddProxyIDSnapshot(v)
+	return _u
+}
+
+// ClearProxyIDSnapshot clears the value of the "proxy_id_snapshot" field.
+func (_u *UsageLogUpdate) ClearProxyIDSnapshot() *UsageLogUpdate {
+	_u.mutation.ClearProxyIDSnapshot()
+	return _u
+}
+
+// SetProxyNameSnapshot sets the "proxy_name_snapshot" field.
+func (_u *UsageLogUpdate) SetProxyNameSnapshot(v string) *UsageLogUpdate {
+	_u.mutation.SetProxyNameSnapshot(v)
+	return _u
+}
+
+// SetNillableProxyNameSnapshot sets the "proxy_name_snapshot" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableProxyNameSnapshot(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetProxyNameSnapshot(*v)
+	}
+	return _u
+}
+
+// ClearProxyNameSnapshot clears the value of the "proxy_name_snapshot" field.
+func (_u *UsageLogUpdate) ClearProxyNameSnapshot() *UsageLogUpdate {
+	_u.mutation.ClearProxyNameSnapshot()
+	return _u
+}
+
+// SetProxyProtocolSnapshot sets the "proxy_protocol_snapshot" field.
+func (_u *UsageLogUpdate) SetProxyProtocolSnapshot(v string) *UsageLogUpdate {
+	_u.mutation.SetProxyProtocolSnapshot(v)
+	return _u
+}
+
+// SetNillableProxyProtocolSnapshot sets the "proxy_protocol_snapshot" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableProxyProtocolSnapshot(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetProxyProtocolSnapshot(*v)
+	}
+	return _u
+}
+
+// ClearProxyProtocolSnapshot clears the value of the "proxy_protocol_snapshot" field.
+func (_u *UsageLogUpdate) ClearProxyProtocolSnapshot() *UsageLogUpdate {
+	_u.mutation.ClearProxyProtocolSnapshot()
+	return _u
+}
+
+// SetRouteFingerprint sets the "route_fingerprint" field.
+func (_u *UsageLogUpdate) SetRouteFingerprint(v string) *UsageLogUpdate {
+	_u.mutation.SetRouteFingerprint(v)
+	return _u
+}
+
+// SetNillableRouteFingerprint sets the "route_fingerprint" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableRouteFingerprint(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetRouteFingerprint(*v)
+	}
+	return _u
+}
+
+// ClearRouteFingerprint clears the value of the "route_fingerprint" field.
+func (_u *UsageLogUpdate) ClearRouteFingerprint() *UsageLogUpdate {
+	_u.mutation.ClearRouteFingerprint()
+	return _u
+}
+
+// SetFinalUpstreamStatus sets the "final_upstream_status" field.
+func (_u *UsageLogUpdate) SetFinalUpstreamStatus(v int) *UsageLogUpdate {
+	_u.mutation.ResetFinalUpstreamStatus()
+	_u.mutation.SetFinalUpstreamStatus(v)
+	return _u
+}
+
+// SetNillableFinalUpstreamStatus sets the "final_upstream_status" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableFinalUpstreamStatus(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetFinalUpstreamStatus(*v)
+	}
+	return _u
+}
+
+// AddFinalUpstreamStatus adds value to the "final_upstream_status" field.
+func (_u *UsageLogUpdate) AddFinalUpstreamStatus(v int) *UsageLogUpdate {
+	_u.mutation.AddFinalUpstreamStatus(v)
+	return _u
+}
+
+// ClearFinalUpstreamStatus clears the value of the "final_upstream_status" field.
+func (_u *UsageLogUpdate) ClearFinalUpstreamStatus() *UsageLogUpdate {
+	_u.mutation.ClearFinalUpstreamStatus()
+	return _u
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (_u *UsageLogUpdate) SetRetryCount(v int) *UsageLogUpdate {
+	_u.mutation.ResetRetryCount()
+	_u.mutation.SetRetryCount(v)
+	return _u
+}
+
+// SetNillableRetryCount sets the "retry_count" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableRetryCount(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetRetryCount(*v)
+	}
+	return _u
+}
+
+// AddRetryCount adds value to the "retry_count" field.
+func (_u *UsageLogUpdate) AddRetryCount(v int) *UsageLogUpdate {
+	_u.mutation.AddRetryCount(v)
+	return _u
+}
+
+// SetAccountSwitchCount sets the "account_switch_count" field.
+func (_u *UsageLogUpdate) SetAccountSwitchCount(v int) *UsageLogUpdate {
+	_u.mutation.ResetAccountSwitchCount()
+	_u.mutation.SetAccountSwitchCount(v)
+	return _u
+}
+
+// SetNillableAccountSwitchCount sets the "account_switch_count" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableAccountSwitchCount(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetAccountSwitchCount(*v)
+	}
+	return _u
+}
+
+// AddAccountSwitchCount adds value to the "account_switch_count" field.
+func (_u *UsageLogUpdate) AddAccountSwitchCount(v int) *UsageLogUpdate {
+	_u.mutation.AddAccountSwitchCount(v)
+	return _u
+}
+
+// SetAttemptTimeline sets the "attempt_timeline" field.
+func (_u *UsageLogUpdate) SetAttemptTimeline(v []map[string]interface{}) *UsageLogUpdate {
+	_u.mutation.SetAttemptTimeline(v)
+	return _u
+}
+
+// AppendAttemptTimeline appends value to the "attempt_timeline" field.
+func (_u *UsageLogUpdate) AppendAttemptTimeline(v []map[string]interface{}) *UsageLogUpdate {
+	_u.mutation.AppendAttemptTimeline(v)
+	return _u
+}
+
+// ClearAttemptTimeline clears the value of the "attempt_timeline" field.
+func (_u *UsageLogUpdate) ClearAttemptTimeline() *UsageLogUpdate {
+	_u.mutation.ClearAttemptTimeline()
+	return _u
+}
+
 // SetUserAgent sets the "user_agent" field.
 func (_u *UsageLogUpdate) SetUserAgent(v string) *UsageLogUpdate {
 	_u.mutation.SetUserAgent(v)
@@ -1150,6 +1528,26 @@ func (_u *UsageLogUpdate) check() error {
 			return &ValidationError{Name: "client_transport", err: fmt.Errorf(`ent: validator failed for field "UsageLog.client_transport": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.RouteKind(); ok {
+		if err := usagelog.RouteKindValidator(v); err != nil {
+			return &ValidationError{Name: "route_kind", err: fmt.Errorf(`ent: validator failed for field "UsageLog.route_kind": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ProxyNameSnapshot(); ok {
+		if err := usagelog.ProxyNameSnapshotValidator(v); err != nil {
+			return &ValidationError{Name: "proxy_name_snapshot", err: fmt.Errorf(`ent: validator failed for field "UsageLog.proxy_name_snapshot": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ProxyProtocolSnapshot(); ok {
+		if err := usagelog.ProxyProtocolSnapshotValidator(v); err != nil {
+			return &ValidationError{Name: "proxy_protocol_snapshot", err: fmt.Errorf(`ent: validator failed for field "UsageLog.proxy_protocol_snapshot": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.RouteFingerprint(); ok {
+		if err := usagelog.RouteFingerprintValidator(v); err != nil {
+			return &ValidationError{Name: "route_fingerprint", err: fmt.Errorf(`ent: validator failed for field "UsageLog.route_fingerprint": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.UserAgent(); ok {
 		if err := usagelog.UserAgentValidator(v); err != nil {
 			return &ValidationError{Name: "user_agent", err: fmt.Errorf(`ent: validator failed for field "UsageLog.user_agent": %w`, err)}
@@ -1409,6 +1807,131 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.ResponseLatencyMsCleared() {
 		_spec.ClearField(usagelog.FieldResponseLatencyMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.RequestStartedAt(); ok {
+		_spec.SetField(usagelog.FieldRequestStartedAt, field.TypeTime, value)
+	}
+	if _u.mutation.RequestStartedAtCleared() {
+		_spec.ClearField(usagelog.FieldRequestStartedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.RequestTotalMs(); ok {
+		_spec.SetField(usagelog.FieldRequestTotalMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRequestTotalMs(); ok {
+		_spec.AddField(usagelog.FieldRequestTotalMs, field.TypeInt, value)
+	}
+	if _u.mutation.RequestTotalMsCleared() {
+		_spec.ClearField(usagelog.FieldRequestTotalMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.RequestBodyReadMs(); ok {
+		_spec.SetField(usagelog.FieldRequestBodyReadMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRequestBodyReadMs(); ok {
+		_spec.AddField(usagelog.FieldRequestBodyReadMs, field.TypeInt, value)
+	}
+	if _u.mutation.RequestBodyReadMsCleared() {
+		_spec.ClearField(usagelog.FieldRequestBodyReadMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.RequestBodyBytes(); ok {
+		_spec.SetField(usagelog.FieldRequestBodyBytes, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedRequestBodyBytes(); ok {
+		_spec.AddField(usagelog.FieldRequestBodyBytes, field.TypeInt64, value)
+	}
+	if _u.mutation.RequestBodyBytesCleared() {
+		_spec.ClearField(usagelog.FieldRequestBodyBytes, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.UpstreamRequestWrittenMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamRequestWrittenMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamRequestWrittenMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamRequestWrittenMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamRequestWrittenMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamRequestWrittenMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamFirstByteMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamFirstByteMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamFirstByteMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamFirstByteMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamFirstByteMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamFirstByteMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.RequestFirstTokenMs(); ok {
+		_spec.SetField(usagelog.FieldRequestFirstTokenMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRequestFirstTokenMs(); ok {
+		_spec.AddField(usagelog.FieldRequestFirstTokenMs, field.TypeInt, value)
+	}
+	if _u.mutation.RequestFirstTokenMsCleared() {
+		_spec.ClearField(usagelog.FieldRequestFirstTokenMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.RouteKind(); ok {
+		_spec.SetField(usagelog.FieldRouteKind, field.TypeString, value)
+	}
+	if _u.mutation.RouteKindCleared() {
+		_spec.ClearField(usagelog.FieldRouteKind, field.TypeString)
+	}
+	if value, ok := _u.mutation.ProxyIDSnapshot(); ok {
+		_spec.SetField(usagelog.FieldProxyIDSnapshot, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedProxyIDSnapshot(); ok {
+		_spec.AddField(usagelog.FieldProxyIDSnapshot, field.TypeInt64, value)
+	}
+	if _u.mutation.ProxyIDSnapshotCleared() {
+		_spec.ClearField(usagelog.FieldProxyIDSnapshot, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.ProxyNameSnapshot(); ok {
+		_spec.SetField(usagelog.FieldProxyNameSnapshot, field.TypeString, value)
+	}
+	if _u.mutation.ProxyNameSnapshotCleared() {
+		_spec.ClearField(usagelog.FieldProxyNameSnapshot, field.TypeString)
+	}
+	if value, ok := _u.mutation.ProxyProtocolSnapshot(); ok {
+		_spec.SetField(usagelog.FieldProxyProtocolSnapshot, field.TypeString, value)
+	}
+	if _u.mutation.ProxyProtocolSnapshotCleared() {
+		_spec.ClearField(usagelog.FieldProxyProtocolSnapshot, field.TypeString)
+	}
+	if value, ok := _u.mutation.RouteFingerprint(); ok {
+		_spec.SetField(usagelog.FieldRouteFingerprint, field.TypeString, value)
+	}
+	if _u.mutation.RouteFingerprintCleared() {
+		_spec.ClearField(usagelog.FieldRouteFingerprint, field.TypeString)
+	}
+	if value, ok := _u.mutation.FinalUpstreamStatus(); ok {
+		_spec.SetField(usagelog.FieldFinalUpstreamStatus, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedFinalUpstreamStatus(); ok {
+		_spec.AddField(usagelog.FieldFinalUpstreamStatus, field.TypeInt, value)
+	}
+	if _u.mutation.FinalUpstreamStatusCleared() {
+		_spec.ClearField(usagelog.FieldFinalUpstreamStatus, field.TypeInt)
+	}
+	if value, ok := _u.mutation.RetryCount(); ok {
+		_spec.SetField(usagelog.FieldRetryCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRetryCount(); ok {
+		_spec.AddField(usagelog.FieldRetryCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AccountSwitchCount(); ok {
+		_spec.SetField(usagelog.FieldAccountSwitchCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedAccountSwitchCount(); ok {
+		_spec.AddField(usagelog.FieldAccountSwitchCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AttemptTimeline(); ok {
+		_spec.SetField(usagelog.FieldAttemptTimeline, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedAttemptTimeline(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, usagelog.FieldAttemptTimeline, value)
+		})
+	}
+	if _u.mutation.AttemptTimelineCleared() {
+		_spec.ClearField(usagelog.FieldAttemptTimeline, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.UserAgent(); ok {
 		_spec.SetField(usagelog.FieldUserAgent, field.TypeString, value)
@@ -2401,6 +2924,382 @@ func (_u *UsageLogUpdateOne) ClearResponseLatencyMs() *UsageLogUpdateOne {
 	return _u
 }
 
+// SetRequestStartedAt sets the "request_started_at" field.
+func (_u *UsageLogUpdateOne) SetRequestStartedAt(v time.Time) *UsageLogUpdateOne {
+	_u.mutation.SetRequestStartedAt(v)
+	return _u
+}
+
+// SetNillableRequestStartedAt sets the "request_started_at" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableRequestStartedAt(v *time.Time) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetRequestStartedAt(*v)
+	}
+	return _u
+}
+
+// ClearRequestStartedAt clears the value of the "request_started_at" field.
+func (_u *UsageLogUpdateOne) ClearRequestStartedAt() *UsageLogUpdateOne {
+	_u.mutation.ClearRequestStartedAt()
+	return _u
+}
+
+// SetRequestTotalMs sets the "request_total_ms" field.
+func (_u *UsageLogUpdateOne) SetRequestTotalMs(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetRequestTotalMs()
+	_u.mutation.SetRequestTotalMs(v)
+	return _u
+}
+
+// SetNillableRequestTotalMs sets the "request_total_ms" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableRequestTotalMs(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetRequestTotalMs(*v)
+	}
+	return _u
+}
+
+// AddRequestTotalMs adds value to the "request_total_ms" field.
+func (_u *UsageLogUpdateOne) AddRequestTotalMs(v int) *UsageLogUpdateOne {
+	_u.mutation.AddRequestTotalMs(v)
+	return _u
+}
+
+// ClearRequestTotalMs clears the value of the "request_total_ms" field.
+func (_u *UsageLogUpdateOne) ClearRequestTotalMs() *UsageLogUpdateOne {
+	_u.mutation.ClearRequestTotalMs()
+	return _u
+}
+
+// SetRequestBodyReadMs sets the "request_body_read_ms" field.
+func (_u *UsageLogUpdateOne) SetRequestBodyReadMs(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetRequestBodyReadMs()
+	_u.mutation.SetRequestBodyReadMs(v)
+	return _u
+}
+
+// SetNillableRequestBodyReadMs sets the "request_body_read_ms" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableRequestBodyReadMs(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetRequestBodyReadMs(*v)
+	}
+	return _u
+}
+
+// AddRequestBodyReadMs adds value to the "request_body_read_ms" field.
+func (_u *UsageLogUpdateOne) AddRequestBodyReadMs(v int) *UsageLogUpdateOne {
+	_u.mutation.AddRequestBodyReadMs(v)
+	return _u
+}
+
+// ClearRequestBodyReadMs clears the value of the "request_body_read_ms" field.
+func (_u *UsageLogUpdateOne) ClearRequestBodyReadMs() *UsageLogUpdateOne {
+	_u.mutation.ClearRequestBodyReadMs()
+	return _u
+}
+
+// SetRequestBodyBytes sets the "request_body_bytes" field.
+func (_u *UsageLogUpdateOne) SetRequestBodyBytes(v int64) *UsageLogUpdateOne {
+	_u.mutation.ResetRequestBodyBytes()
+	_u.mutation.SetRequestBodyBytes(v)
+	return _u
+}
+
+// SetNillableRequestBodyBytes sets the "request_body_bytes" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableRequestBodyBytes(v *int64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetRequestBodyBytes(*v)
+	}
+	return _u
+}
+
+// AddRequestBodyBytes adds value to the "request_body_bytes" field.
+func (_u *UsageLogUpdateOne) AddRequestBodyBytes(v int64) *UsageLogUpdateOne {
+	_u.mutation.AddRequestBodyBytes(v)
+	return _u
+}
+
+// ClearRequestBodyBytes clears the value of the "request_body_bytes" field.
+func (_u *UsageLogUpdateOne) ClearRequestBodyBytes() *UsageLogUpdateOne {
+	_u.mutation.ClearRequestBodyBytes()
+	return _u
+}
+
+// SetUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field.
+func (_u *UsageLogUpdateOne) SetUpstreamRequestWrittenMs(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetUpstreamRequestWrittenMs()
+	_u.mutation.SetUpstreamRequestWrittenMs(v)
+	return _u
+}
+
+// SetNillableUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableUpstreamRequestWrittenMs(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetUpstreamRequestWrittenMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamRequestWrittenMs adds value to the "upstream_request_written_ms" field.
+func (_u *UsageLogUpdateOne) AddUpstreamRequestWrittenMs(v int) *UsageLogUpdateOne {
+	_u.mutation.AddUpstreamRequestWrittenMs(v)
+	return _u
+}
+
+// ClearUpstreamRequestWrittenMs clears the value of the "upstream_request_written_ms" field.
+func (_u *UsageLogUpdateOne) ClearUpstreamRequestWrittenMs() *UsageLogUpdateOne {
+	_u.mutation.ClearUpstreamRequestWrittenMs()
+	return _u
+}
+
+// SetUpstreamFirstByteMs sets the "upstream_first_byte_ms" field.
+func (_u *UsageLogUpdateOne) SetUpstreamFirstByteMs(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetUpstreamFirstByteMs()
+	_u.mutation.SetUpstreamFirstByteMs(v)
+	return _u
+}
+
+// SetNillableUpstreamFirstByteMs sets the "upstream_first_byte_ms" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableUpstreamFirstByteMs(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetUpstreamFirstByteMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamFirstByteMs adds value to the "upstream_first_byte_ms" field.
+func (_u *UsageLogUpdateOne) AddUpstreamFirstByteMs(v int) *UsageLogUpdateOne {
+	_u.mutation.AddUpstreamFirstByteMs(v)
+	return _u
+}
+
+// ClearUpstreamFirstByteMs clears the value of the "upstream_first_byte_ms" field.
+func (_u *UsageLogUpdateOne) ClearUpstreamFirstByteMs() *UsageLogUpdateOne {
+	_u.mutation.ClearUpstreamFirstByteMs()
+	return _u
+}
+
+// SetRequestFirstTokenMs sets the "request_first_token_ms" field.
+func (_u *UsageLogUpdateOne) SetRequestFirstTokenMs(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetRequestFirstTokenMs()
+	_u.mutation.SetRequestFirstTokenMs(v)
+	return _u
+}
+
+// SetNillableRequestFirstTokenMs sets the "request_first_token_ms" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableRequestFirstTokenMs(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetRequestFirstTokenMs(*v)
+	}
+	return _u
+}
+
+// AddRequestFirstTokenMs adds value to the "request_first_token_ms" field.
+func (_u *UsageLogUpdateOne) AddRequestFirstTokenMs(v int) *UsageLogUpdateOne {
+	_u.mutation.AddRequestFirstTokenMs(v)
+	return _u
+}
+
+// ClearRequestFirstTokenMs clears the value of the "request_first_token_ms" field.
+func (_u *UsageLogUpdateOne) ClearRequestFirstTokenMs() *UsageLogUpdateOne {
+	_u.mutation.ClearRequestFirstTokenMs()
+	return _u
+}
+
+// SetRouteKind sets the "route_kind" field.
+func (_u *UsageLogUpdateOne) SetRouteKind(v string) *UsageLogUpdateOne {
+	_u.mutation.SetRouteKind(v)
+	return _u
+}
+
+// SetNillableRouteKind sets the "route_kind" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableRouteKind(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetRouteKind(*v)
+	}
+	return _u
+}
+
+// ClearRouteKind clears the value of the "route_kind" field.
+func (_u *UsageLogUpdateOne) ClearRouteKind() *UsageLogUpdateOne {
+	_u.mutation.ClearRouteKind()
+	return _u
+}
+
+// SetProxyIDSnapshot sets the "proxy_id_snapshot" field.
+func (_u *UsageLogUpdateOne) SetProxyIDSnapshot(v int64) *UsageLogUpdateOne {
+	_u.mutation.ResetProxyIDSnapshot()
+	_u.mutation.SetProxyIDSnapshot(v)
+	return _u
+}
+
+// SetNillableProxyIDSnapshot sets the "proxy_id_snapshot" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableProxyIDSnapshot(v *int64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetProxyIDSnapshot(*v)
+	}
+	return _u
+}
+
+// AddProxyIDSnapshot adds value to the "proxy_id_snapshot" field.
+func (_u *UsageLogUpdateOne) AddProxyIDSnapshot(v int64) *UsageLogUpdateOne {
+	_u.mutation.AddProxyIDSnapshot(v)
+	return _u
+}
+
+// ClearProxyIDSnapshot clears the value of the "proxy_id_snapshot" field.
+func (_u *UsageLogUpdateOne) ClearProxyIDSnapshot() *UsageLogUpdateOne {
+	_u.mutation.ClearProxyIDSnapshot()
+	return _u
+}
+
+// SetProxyNameSnapshot sets the "proxy_name_snapshot" field.
+func (_u *UsageLogUpdateOne) SetProxyNameSnapshot(v string) *UsageLogUpdateOne {
+	_u.mutation.SetProxyNameSnapshot(v)
+	return _u
+}
+
+// SetNillableProxyNameSnapshot sets the "proxy_name_snapshot" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableProxyNameSnapshot(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetProxyNameSnapshot(*v)
+	}
+	return _u
+}
+
+// ClearProxyNameSnapshot clears the value of the "proxy_name_snapshot" field.
+func (_u *UsageLogUpdateOne) ClearProxyNameSnapshot() *UsageLogUpdateOne {
+	_u.mutation.ClearProxyNameSnapshot()
+	return _u
+}
+
+// SetProxyProtocolSnapshot sets the "proxy_protocol_snapshot" field.
+func (_u *UsageLogUpdateOne) SetProxyProtocolSnapshot(v string) *UsageLogUpdateOne {
+	_u.mutation.SetProxyProtocolSnapshot(v)
+	return _u
+}
+
+// SetNillableProxyProtocolSnapshot sets the "proxy_protocol_snapshot" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableProxyProtocolSnapshot(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetProxyProtocolSnapshot(*v)
+	}
+	return _u
+}
+
+// ClearProxyProtocolSnapshot clears the value of the "proxy_protocol_snapshot" field.
+func (_u *UsageLogUpdateOne) ClearProxyProtocolSnapshot() *UsageLogUpdateOne {
+	_u.mutation.ClearProxyProtocolSnapshot()
+	return _u
+}
+
+// SetRouteFingerprint sets the "route_fingerprint" field.
+func (_u *UsageLogUpdateOne) SetRouteFingerprint(v string) *UsageLogUpdateOne {
+	_u.mutation.SetRouteFingerprint(v)
+	return _u
+}
+
+// SetNillableRouteFingerprint sets the "route_fingerprint" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableRouteFingerprint(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetRouteFingerprint(*v)
+	}
+	return _u
+}
+
+// ClearRouteFingerprint clears the value of the "route_fingerprint" field.
+func (_u *UsageLogUpdateOne) ClearRouteFingerprint() *UsageLogUpdateOne {
+	_u.mutation.ClearRouteFingerprint()
+	return _u
+}
+
+// SetFinalUpstreamStatus sets the "final_upstream_status" field.
+func (_u *UsageLogUpdateOne) SetFinalUpstreamStatus(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetFinalUpstreamStatus()
+	_u.mutation.SetFinalUpstreamStatus(v)
+	return _u
+}
+
+// SetNillableFinalUpstreamStatus sets the "final_upstream_status" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableFinalUpstreamStatus(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetFinalUpstreamStatus(*v)
+	}
+	return _u
+}
+
+// AddFinalUpstreamStatus adds value to the "final_upstream_status" field.
+func (_u *UsageLogUpdateOne) AddFinalUpstreamStatus(v int) *UsageLogUpdateOne {
+	_u.mutation.AddFinalUpstreamStatus(v)
+	return _u
+}
+
+// ClearFinalUpstreamStatus clears the value of the "final_upstream_status" field.
+func (_u *UsageLogUpdateOne) ClearFinalUpstreamStatus() *UsageLogUpdateOne {
+	_u.mutation.ClearFinalUpstreamStatus()
+	return _u
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (_u *UsageLogUpdateOne) SetRetryCount(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetRetryCount()
+	_u.mutation.SetRetryCount(v)
+	return _u
+}
+
+// SetNillableRetryCount sets the "retry_count" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableRetryCount(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetRetryCount(*v)
+	}
+	return _u
+}
+
+// AddRetryCount adds value to the "retry_count" field.
+func (_u *UsageLogUpdateOne) AddRetryCount(v int) *UsageLogUpdateOne {
+	_u.mutation.AddRetryCount(v)
+	return _u
+}
+
+// SetAccountSwitchCount sets the "account_switch_count" field.
+func (_u *UsageLogUpdateOne) SetAccountSwitchCount(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetAccountSwitchCount()
+	_u.mutation.SetAccountSwitchCount(v)
+	return _u
+}
+
+// SetNillableAccountSwitchCount sets the "account_switch_count" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableAccountSwitchCount(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetAccountSwitchCount(*v)
+	}
+	return _u
+}
+
+// AddAccountSwitchCount adds value to the "account_switch_count" field.
+func (_u *UsageLogUpdateOne) AddAccountSwitchCount(v int) *UsageLogUpdateOne {
+	_u.mutation.AddAccountSwitchCount(v)
+	return _u
+}
+
+// SetAttemptTimeline sets the "attempt_timeline" field.
+func (_u *UsageLogUpdateOne) SetAttemptTimeline(v []map[string]interface{}) *UsageLogUpdateOne {
+	_u.mutation.SetAttemptTimeline(v)
+	return _u
+}
+
+// AppendAttemptTimeline appends value to the "attempt_timeline" field.
+func (_u *UsageLogUpdateOne) AppendAttemptTimeline(v []map[string]interface{}) *UsageLogUpdateOne {
+	_u.mutation.AppendAttemptTimeline(v)
+	return _u
+}
+
+// ClearAttemptTimeline clears the value of the "attempt_timeline" field.
+func (_u *UsageLogUpdateOne) ClearAttemptTimeline() *UsageLogUpdateOne {
+	_u.mutation.ClearAttemptTimeline()
+	return _u
+}
+
 // SetUserAgent sets the "user_agent" field.
 func (_u *UsageLogUpdateOne) SetUserAgent(v string) *UsageLogUpdateOne {
 	_u.mutation.SetUserAgent(v)
@@ -2778,6 +3677,26 @@ func (_u *UsageLogUpdateOne) check() error {
 			return &ValidationError{Name: "client_transport", err: fmt.Errorf(`ent: validator failed for field "UsageLog.client_transport": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.RouteKind(); ok {
+		if err := usagelog.RouteKindValidator(v); err != nil {
+			return &ValidationError{Name: "route_kind", err: fmt.Errorf(`ent: validator failed for field "UsageLog.route_kind": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ProxyNameSnapshot(); ok {
+		if err := usagelog.ProxyNameSnapshotValidator(v); err != nil {
+			return &ValidationError{Name: "proxy_name_snapshot", err: fmt.Errorf(`ent: validator failed for field "UsageLog.proxy_name_snapshot": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ProxyProtocolSnapshot(); ok {
+		if err := usagelog.ProxyProtocolSnapshotValidator(v); err != nil {
+			return &ValidationError{Name: "proxy_protocol_snapshot", err: fmt.Errorf(`ent: validator failed for field "UsageLog.proxy_protocol_snapshot": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.RouteFingerprint(); ok {
+		if err := usagelog.RouteFingerprintValidator(v); err != nil {
+			return &ValidationError{Name: "route_fingerprint", err: fmt.Errorf(`ent: validator failed for field "UsageLog.route_fingerprint": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.UserAgent(); ok {
 		if err := usagelog.UserAgentValidator(v); err != nil {
 			return &ValidationError{Name: "user_agent", err: fmt.Errorf(`ent: validator failed for field "UsageLog.user_agent": %w`, err)}
@@ -3054,6 +3973,131 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if _u.mutation.ResponseLatencyMsCleared() {
 		_spec.ClearField(usagelog.FieldResponseLatencyMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.RequestStartedAt(); ok {
+		_spec.SetField(usagelog.FieldRequestStartedAt, field.TypeTime, value)
+	}
+	if _u.mutation.RequestStartedAtCleared() {
+		_spec.ClearField(usagelog.FieldRequestStartedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.RequestTotalMs(); ok {
+		_spec.SetField(usagelog.FieldRequestTotalMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRequestTotalMs(); ok {
+		_spec.AddField(usagelog.FieldRequestTotalMs, field.TypeInt, value)
+	}
+	if _u.mutation.RequestTotalMsCleared() {
+		_spec.ClearField(usagelog.FieldRequestTotalMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.RequestBodyReadMs(); ok {
+		_spec.SetField(usagelog.FieldRequestBodyReadMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRequestBodyReadMs(); ok {
+		_spec.AddField(usagelog.FieldRequestBodyReadMs, field.TypeInt, value)
+	}
+	if _u.mutation.RequestBodyReadMsCleared() {
+		_spec.ClearField(usagelog.FieldRequestBodyReadMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.RequestBodyBytes(); ok {
+		_spec.SetField(usagelog.FieldRequestBodyBytes, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedRequestBodyBytes(); ok {
+		_spec.AddField(usagelog.FieldRequestBodyBytes, field.TypeInt64, value)
+	}
+	if _u.mutation.RequestBodyBytesCleared() {
+		_spec.ClearField(usagelog.FieldRequestBodyBytes, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.UpstreamRequestWrittenMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamRequestWrittenMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamRequestWrittenMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamRequestWrittenMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamRequestWrittenMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamRequestWrittenMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamFirstByteMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamFirstByteMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamFirstByteMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamFirstByteMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamFirstByteMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamFirstByteMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.RequestFirstTokenMs(); ok {
+		_spec.SetField(usagelog.FieldRequestFirstTokenMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRequestFirstTokenMs(); ok {
+		_spec.AddField(usagelog.FieldRequestFirstTokenMs, field.TypeInt, value)
+	}
+	if _u.mutation.RequestFirstTokenMsCleared() {
+		_spec.ClearField(usagelog.FieldRequestFirstTokenMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.RouteKind(); ok {
+		_spec.SetField(usagelog.FieldRouteKind, field.TypeString, value)
+	}
+	if _u.mutation.RouteKindCleared() {
+		_spec.ClearField(usagelog.FieldRouteKind, field.TypeString)
+	}
+	if value, ok := _u.mutation.ProxyIDSnapshot(); ok {
+		_spec.SetField(usagelog.FieldProxyIDSnapshot, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedProxyIDSnapshot(); ok {
+		_spec.AddField(usagelog.FieldProxyIDSnapshot, field.TypeInt64, value)
+	}
+	if _u.mutation.ProxyIDSnapshotCleared() {
+		_spec.ClearField(usagelog.FieldProxyIDSnapshot, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.ProxyNameSnapshot(); ok {
+		_spec.SetField(usagelog.FieldProxyNameSnapshot, field.TypeString, value)
+	}
+	if _u.mutation.ProxyNameSnapshotCleared() {
+		_spec.ClearField(usagelog.FieldProxyNameSnapshot, field.TypeString)
+	}
+	if value, ok := _u.mutation.ProxyProtocolSnapshot(); ok {
+		_spec.SetField(usagelog.FieldProxyProtocolSnapshot, field.TypeString, value)
+	}
+	if _u.mutation.ProxyProtocolSnapshotCleared() {
+		_spec.ClearField(usagelog.FieldProxyProtocolSnapshot, field.TypeString)
+	}
+	if value, ok := _u.mutation.RouteFingerprint(); ok {
+		_spec.SetField(usagelog.FieldRouteFingerprint, field.TypeString, value)
+	}
+	if _u.mutation.RouteFingerprintCleared() {
+		_spec.ClearField(usagelog.FieldRouteFingerprint, field.TypeString)
+	}
+	if value, ok := _u.mutation.FinalUpstreamStatus(); ok {
+		_spec.SetField(usagelog.FieldFinalUpstreamStatus, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedFinalUpstreamStatus(); ok {
+		_spec.AddField(usagelog.FieldFinalUpstreamStatus, field.TypeInt, value)
+	}
+	if _u.mutation.FinalUpstreamStatusCleared() {
+		_spec.ClearField(usagelog.FieldFinalUpstreamStatus, field.TypeInt)
+	}
+	if value, ok := _u.mutation.RetryCount(); ok {
+		_spec.SetField(usagelog.FieldRetryCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRetryCount(); ok {
+		_spec.AddField(usagelog.FieldRetryCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AccountSwitchCount(); ok {
+		_spec.SetField(usagelog.FieldAccountSwitchCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedAccountSwitchCount(); ok {
+		_spec.AddField(usagelog.FieldAccountSwitchCount, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AttemptTimeline(); ok {
+		_spec.SetField(usagelog.FieldAttemptTimeline, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedAttemptTimeline(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, usagelog.FieldAttemptTimeline, value)
+		})
+	}
+	if _u.mutation.AttemptTimelineCleared() {
+		_spec.ClearField(usagelog.FieldAttemptTimeline, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.UserAgent(); ok {
 		_spec.SetField(usagelog.FieldUserAgent, field.TypeString, value)

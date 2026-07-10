@@ -20,6 +20,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
+	"github.com/Wei-Shaw/sub2api/ent/externalfulfillmentsku"
+	"github.com/Wei-Shaw/sub2api/ent/externalorderfulfillment"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
@@ -88,8 +90,16 @@ func init() {
 			return nil
 		}
 	}()
+	// apikeyDescKeyHash is the schema descriptor for key_hash field.
+	apikeyDescKeyHash := apikeyFields[2].Descriptor()
+	// apikey.KeyHashValidator is a validator for the "key_hash" field. It is called by the builders before save.
+	apikey.KeyHashValidator = apikeyDescKeyHash.Validators[0].(func(string) error)
+	// apikeyDescKeyPrefix is the schema descriptor for key_prefix field.
+	apikeyDescKeyPrefix := apikeyFields[3].Descriptor()
+	// apikey.KeyPrefixValidator is a validator for the "key_prefix" field. It is called by the builders before save.
+	apikey.KeyPrefixValidator = apikeyDescKeyPrefix.Validators[0].(func(string) error)
 	// apikeyDescName is the schema descriptor for name field.
-	apikeyDescName := apikeyFields[2].Descriptor()
+	apikeyDescName := apikeyFields[4].Descriptor()
 	// apikey.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	apikey.NameValidator = func() func(string) error {
 		validators := apikeyDescName.Validators
@@ -107,41 +117,45 @@ func init() {
 		}
 	}()
 	// apikeyDescStatus is the schema descriptor for status field.
-	apikeyDescStatus := apikeyFields[4].Descriptor()
+	apikeyDescStatus := apikeyFields[6].Descriptor()
 	// apikey.DefaultStatus holds the default value on creation for the status field.
 	apikey.DefaultStatus = apikeyDescStatus.Default.(string)
 	// apikey.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	apikey.StatusValidator = apikeyDescStatus.Validators[0].(func(string) error)
+	// apikeyDescAllowedModels is the schema descriptor for allowed_models field.
+	apikeyDescAllowedModels := apikeyFields[10].Descriptor()
+	// apikey.DefaultAllowedModels holds the default value on creation for the allowed_models field.
+	apikey.DefaultAllowedModels = apikeyDescAllowedModels.Default.([]string)
 	// apikeyDescQuota is the schema descriptor for quota field.
-	apikeyDescQuota := apikeyFields[8].Descriptor()
+	apikeyDescQuota := apikeyFields[11].Descriptor()
 	// apikey.DefaultQuota holds the default value on creation for the quota field.
 	apikey.DefaultQuota = apikeyDescQuota.Default.(float64)
 	// apikeyDescQuotaUsed is the schema descriptor for quota_used field.
-	apikeyDescQuotaUsed := apikeyFields[9].Descriptor()
+	apikeyDescQuotaUsed := apikeyFields[12].Descriptor()
 	// apikey.DefaultQuotaUsed holds the default value on creation for the quota_used field.
 	apikey.DefaultQuotaUsed = apikeyDescQuotaUsed.Default.(float64)
 	// apikeyDescRateLimit5h is the schema descriptor for rate_limit_5h field.
-	apikeyDescRateLimit5h := apikeyFields[11].Descriptor()
+	apikeyDescRateLimit5h := apikeyFields[14].Descriptor()
 	// apikey.DefaultRateLimit5h holds the default value on creation for the rate_limit_5h field.
 	apikey.DefaultRateLimit5h = apikeyDescRateLimit5h.Default.(float64)
 	// apikeyDescRateLimit1d is the schema descriptor for rate_limit_1d field.
-	apikeyDescRateLimit1d := apikeyFields[12].Descriptor()
+	apikeyDescRateLimit1d := apikeyFields[15].Descriptor()
 	// apikey.DefaultRateLimit1d holds the default value on creation for the rate_limit_1d field.
 	apikey.DefaultRateLimit1d = apikeyDescRateLimit1d.Default.(float64)
 	// apikeyDescRateLimit7d is the schema descriptor for rate_limit_7d field.
-	apikeyDescRateLimit7d := apikeyFields[13].Descriptor()
+	apikeyDescRateLimit7d := apikeyFields[16].Descriptor()
 	// apikey.DefaultRateLimit7d holds the default value on creation for the rate_limit_7d field.
 	apikey.DefaultRateLimit7d = apikeyDescRateLimit7d.Default.(float64)
 	// apikeyDescUsage5h is the schema descriptor for usage_5h field.
-	apikeyDescUsage5h := apikeyFields[14].Descriptor()
+	apikeyDescUsage5h := apikeyFields[17].Descriptor()
 	// apikey.DefaultUsage5h holds the default value on creation for the usage_5h field.
 	apikey.DefaultUsage5h = apikeyDescUsage5h.Default.(float64)
 	// apikeyDescUsage1d is the schema descriptor for usage_1d field.
-	apikeyDescUsage1d := apikeyFields[15].Descriptor()
+	apikeyDescUsage1d := apikeyFields[18].Descriptor()
 	// apikey.DefaultUsage1d holds the default value on creation for the usage_1d field.
 	apikey.DefaultUsage1d = apikeyDescUsage1d.Default.(float64)
 	// apikeyDescUsage7d is the schema descriptor for usage_7d field.
-	apikeyDescUsage7d := apikeyFields[16].Descriptor()
+	apikeyDescUsage7d := apikeyFields[19].Descriptor()
 	// apikey.DefaultUsage7d holds the default value on creation for the usage_7d field.
 	apikey.DefaultUsage7d = apikeyDescUsage7d.Default.(float64)
 	accountMixin := schema.Account{}.Mixin()
@@ -924,6 +938,190 @@ func init() {
 	errorpassthroughruleDescSkipMonitoring := errorpassthroughruleFields[11].Descriptor()
 	// errorpassthroughrule.DefaultSkipMonitoring holds the default value on creation for the skip_monitoring field.
 	errorpassthroughrule.DefaultSkipMonitoring = errorpassthroughruleDescSkipMonitoring.Default.(bool)
+	externalfulfillmentskuFields := schema.ExternalFulfillmentSKU{}.Fields()
+	_ = externalfulfillmentskuFields
+	// externalfulfillmentskuDescPlatform is the schema descriptor for platform field.
+	externalfulfillmentskuDescPlatform := externalfulfillmentskuFields[0].Descriptor()
+	// externalfulfillmentsku.DefaultPlatform holds the default value on creation for the platform field.
+	externalfulfillmentsku.DefaultPlatform = externalfulfillmentskuDescPlatform.Default.(string)
+	// externalfulfillmentsku.PlatformValidator is a validator for the "platform" field. It is called by the builders before save.
+	externalfulfillmentsku.PlatformValidator = externalfulfillmentskuDescPlatform.Validators[0].(func(string) error)
+	// externalfulfillmentskuDescSkuCode is the schema descriptor for sku_code field.
+	externalfulfillmentskuDescSkuCode := externalfulfillmentskuFields[1].Descriptor()
+	// externalfulfillmentsku.SkuCodeValidator is a validator for the "sku_code" field. It is called by the builders before save.
+	externalfulfillmentsku.SkuCodeValidator = func() func(string) error {
+		validators := externalfulfillmentskuDescSkuCode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(sku_code string) error {
+			for _, fn := range fns {
+				if err := fn(sku_code); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// externalfulfillmentskuDescName is the schema descriptor for name field.
+	externalfulfillmentskuDescName := externalfulfillmentskuFields[2].Descriptor()
+	// externalfulfillmentsku.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	externalfulfillmentsku.NameValidator = func() func(string) error {
+		validators := externalfulfillmentskuDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// externalfulfillmentskuDescAmount is the schema descriptor for amount field.
+	externalfulfillmentskuDescAmount := externalfulfillmentskuFields[3].Descriptor()
+	// externalfulfillmentsku.DefaultAmount holds the default value on creation for the amount field.
+	externalfulfillmentsku.DefaultAmount = externalfulfillmentskuDescAmount.Default.(float64)
+	// externalfulfillmentskuDescCurrency is the schema descriptor for currency field.
+	externalfulfillmentskuDescCurrency := externalfulfillmentskuFields[4].Descriptor()
+	// externalfulfillmentsku.DefaultCurrency holds the default value on creation for the currency field.
+	externalfulfillmentsku.DefaultCurrency = externalfulfillmentskuDescCurrency.Default.(string)
+	// externalfulfillmentsku.CurrencyValidator is a validator for the "currency" field. It is called by the builders before save.
+	externalfulfillmentsku.CurrencyValidator = externalfulfillmentskuDescCurrency.Validators[0].(func(string) error)
+	// externalfulfillmentskuDescRedeemType is the schema descriptor for redeem_type field.
+	externalfulfillmentskuDescRedeemType := externalfulfillmentskuFields[5].Descriptor()
+	// externalfulfillmentsku.RedeemTypeValidator is a validator for the "redeem_type" field. It is called by the builders before save.
+	externalfulfillmentsku.RedeemTypeValidator = externalfulfillmentskuDescRedeemType.Validators[0].(func(string) error)
+	// externalfulfillmentskuDescRedeemValue is the schema descriptor for redeem_value field.
+	externalfulfillmentskuDescRedeemValue := externalfulfillmentskuFields[6].Descriptor()
+	// externalfulfillmentsku.DefaultRedeemValue holds the default value on creation for the redeem_value field.
+	externalfulfillmentsku.DefaultRedeemValue = externalfulfillmentskuDescRedeemValue.Default.(float64)
+	// externalfulfillmentskuDescValidityDays is the schema descriptor for validity_days field.
+	externalfulfillmentskuDescValidityDays := externalfulfillmentskuFields[8].Descriptor()
+	// externalfulfillmentsku.DefaultValidityDays holds the default value on creation for the validity_days field.
+	externalfulfillmentsku.DefaultValidityDays = externalfulfillmentskuDescValidityDays.Default.(int)
+	// externalfulfillmentskuDescEnabled is the schema descriptor for enabled field.
+	externalfulfillmentskuDescEnabled := externalfulfillmentskuFields[12].Descriptor()
+	// externalfulfillmentsku.DefaultEnabled holds the default value on creation for the enabled field.
+	externalfulfillmentsku.DefaultEnabled = externalfulfillmentskuDescEnabled.Default.(bool)
+	// externalfulfillmentskuDescCreatedAt is the schema descriptor for created_at field.
+	externalfulfillmentskuDescCreatedAt := externalfulfillmentskuFields[13].Descriptor()
+	// externalfulfillmentsku.DefaultCreatedAt holds the default value on creation for the created_at field.
+	externalfulfillmentsku.DefaultCreatedAt = externalfulfillmentskuDescCreatedAt.Default.(func() time.Time)
+	// externalfulfillmentskuDescUpdatedAt is the schema descriptor for updated_at field.
+	externalfulfillmentskuDescUpdatedAt := externalfulfillmentskuFields[14].Descriptor()
+	// externalfulfillmentsku.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	externalfulfillmentsku.DefaultUpdatedAt = externalfulfillmentskuDescUpdatedAt.Default.(func() time.Time)
+	// externalfulfillmentsku.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	externalfulfillmentsku.UpdateDefaultUpdatedAt = externalfulfillmentskuDescUpdatedAt.UpdateDefault.(func() time.Time)
+	externalorderfulfillmentFields := schema.ExternalOrderFulfillment{}.Fields()
+	_ = externalorderfulfillmentFields
+	// externalorderfulfillmentDescPlatform is the schema descriptor for platform field.
+	externalorderfulfillmentDescPlatform := externalorderfulfillmentFields[0].Descriptor()
+	// externalorderfulfillment.DefaultPlatform holds the default value on creation for the platform field.
+	externalorderfulfillment.DefaultPlatform = externalorderfulfillmentDescPlatform.Default.(string)
+	// externalorderfulfillment.PlatformValidator is a validator for the "platform" field. It is called by the builders before save.
+	externalorderfulfillment.PlatformValidator = externalorderfulfillmentDescPlatform.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescPlatformOrderID is the schema descriptor for platform_order_id field.
+	externalorderfulfillmentDescPlatformOrderID := externalorderfulfillmentFields[1].Descriptor()
+	// externalorderfulfillment.PlatformOrderIDValidator is a validator for the "platform_order_id" field. It is called by the builders before save.
+	externalorderfulfillment.PlatformOrderIDValidator = func() func(string) error {
+		validators := externalorderfulfillmentDescPlatformOrderID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(platform_order_id string) error {
+			for _, fn := range fns {
+				if err := fn(platform_order_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// externalorderfulfillmentDescBuyerRef is the schema descriptor for buyer_ref field.
+	externalorderfulfillmentDescBuyerRef := externalorderfulfillmentFields[2].Descriptor()
+	// externalorderfulfillment.BuyerRefValidator is a validator for the "buyer_ref" field. It is called by the builders before save.
+	externalorderfulfillment.BuyerRefValidator = externalorderfulfillmentDescBuyerRef.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescSkuCode is the schema descriptor for sku_code field.
+	externalorderfulfillmentDescSkuCode := externalorderfulfillmentFields[3].Descriptor()
+	// externalorderfulfillment.SkuCodeValidator is a validator for the "sku_code" field. It is called by the builders before save.
+	externalorderfulfillment.SkuCodeValidator = func() func(string) error {
+		validators := externalorderfulfillmentDescSkuCode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(sku_code string) error {
+			for _, fn := range fns {
+				if err := fn(sku_code); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// externalorderfulfillmentDescSkuName is the schema descriptor for sku_name field.
+	externalorderfulfillmentDescSkuName := externalorderfulfillmentFields[4].Descriptor()
+	// externalorderfulfillment.SkuNameValidator is a validator for the "sku_name" field. It is called by the builders before save.
+	externalorderfulfillment.SkuNameValidator = externalorderfulfillmentDescSkuName.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescAmount is the schema descriptor for amount field.
+	externalorderfulfillmentDescAmount := externalorderfulfillmentFields[5].Descriptor()
+	// externalorderfulfillment.DefaultAmount holds the default value on creation for the amount field.
+	externalorderfulfillment.DefaultAmount = externalorderfulfillmentDescAmount.Default.(float64)
+	// externalorderfulfillmentDescCurrency is the schema descriptor for currency field.
+	externalorderfulfillmentDescCurrency := externalorderfulfillmentFields[6].Descriptor()
+	// externalorderfulfillment.DefaultCurrency holds the default value on creation for the currency field.
+	externalorderfulfillment.DefaultCurrency = externalorderfulfillmentDescCurrency.Default.(string)
+	// externalorderfulfillment.CurrencyValidator is a validator for the "currency" field. It is called by the builders before save.
+	externalorderfulfillment.CurrencyValidator = externalorderfulfillmentDescCurrency.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescRedeemCode is the schema descriptor for redeem_code field.
+	externalorderfulfillmentDescRedeemCode := externalorderfulfillmentFields[8].Descriptor()
+	// externalorderfulfillment.RedeemCodeValidator is a validator for the "redeem_code" field. It is called by the builders before save.
+	externalorderfulfillment.RedeemCodeValidator = externalorderfulfillmentDescRedeemCode.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescRedeemType is the schema descriptor for redeem_type field.
+	externalorderfulfillmentDescRedeemType := externalorderfulfillmentFields[9].Descriptor()
+	// externalorderfulfillment.RedeemTypeValidator is a validator for the "redeem_type" field. It is called by the builders before save.
+	externalorderfulfillment.RedeemTypeValidator = externalorderfulfillmentDescRedeemType.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescRedeemValue is the schema descriptor for redeem_value field.
+	externalorderfulfillmentDescRedeemValue := externalorderfulfillmentFields[10].Descriptor()
+	// externalorderfulfillment.DefaultRedeemValue holds the default value on creation for the redeem_value field.
+	externalorderfulfillment.DefaultRedeemValue = externalorderfulfillmentDescRedeemValue.Default.(float64)
+	// externalorderfulfillmentDescValidityDays is the schema descriptor for validity_days field.
+	externalorderfulfillmentDescValidityDays := externalorderfulfillmentFields[12].Descriptor()
+	// externalorderfulfillment.DefaultValidityDays holds the default value on creation for the validity_days field.
+	externalorderfulfillment.DefaultValidityDays = externalorderfulfillmentDescValidityDays.Default.(int)
+	// externalorderfulfillmentDescStatus is the schema descriptor for status field.
+	externalorderfulfillmentDescStatus := externalorderfulfillmentFields[16].Descriptor()
+	// externalorderfulfillment.DefaultStatus holds the default value on creation for the status field.
+	externalorderfulfillment.DefaultStatus = externalorderfulfillmentDescStatus.Default.(string)
+	// externalorderfulfillment.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	externalorderfulfillment.StatusValidator = externalorderfulfillmentDescStatus.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescNotifyStatus is the schema descriptor for notify_status field.
+	externalorderfulfillmentDescNotifyStatus := externalorderfulfillmentFields[17].Descriptor()
+	// externalorderfulfillment.DefaultNotifyStatus holds the default value on creation for the notify_status field.
+	externalorderfulfillment.DefaultNotifyStatus = externalorderfulfillmentDescNotifyStatus.Default.(string)
+	// externalorderfulfillment.NotifyStatusValidator is a validator for the "notify_status" field. It is called by the builders before save.
+	externalorderfulfillment.NotifyStatusValidator = externalorderfulfillmentDescNotifyStatus.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescOperator is the schema descriptor for operator field.
+	externalorderfulfillmentDescOperator := externalorderfulfillmentFields[19].Descriptor()
+	// externalorderfulfillment.OperatorValidator is a validator for the "operator" field. It is called by the builders before save.
+	externalorderfulfillment.OperatorValidator = externalorderfulfillmentDescOperator.Validators[0].(func(string) error)
+	// externalorderfulfillmentDescCreatedAt is the schema descriptor for created_at field.
+	externalorderfulfillmentDescCreatedAt := externalorderfulfillmentFields[22].Descriptor()
+	// externalorderfulfillment.DefaultCreatedAt holds the default value on creation for the created_at field.
+	externalorderfulfillment.DefaultCreatedAt = externalorderfulfillmentDescCreatedAt.Default.(func() time.Time)
+	// externalorderfulfillmentDescUpdatedAt is the schema descriptor for updated_at field.
+	externalorderfulfillmentDescUpdatedAt := externalorderfulfillmentFields[23].Descriptor()
+	// externalorderfulfillment.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	externalorderfulfillment.DefaultUpdatedAt = externalorderfulfillmentDescUpdatedAt.Default.(func() time.Time)
+	// externalorderfulfillment.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	externalorderfulfillment.UpdateDefaultUpdatedAt = externalorderfulfillmentDescUpdatedAt.UpdateDefault.(func() time.Time)
 	groupMixin := schema.Group{}.Mixin()
 	groupMixinHooks1 := groupMixin[1].Hooks()
 	group.Hooks[0] = groupMixinHooks1[0]
@@ -1193,70 +1391,82 @@ func init() {
 	paymentorderDescFeeRate := paymentorderFields[6].Descriptor()
 	// paymentorder.DefaultFeeRate holds the default value on creation for the fee_rate field.
 	paymentorder.DefaultFeeRate = paymentorderDescFeeRate.Default.(float64)
+	// paymentorderDescPromoCode is the schema descriptor for promo_code field.
+	paymentorderDescPromoCode := paymentorderFields[7].Descriptor()
+	// paymentorder.PromoCodeValidator is a validator for the "promo_code" field. It is called by the builders before save.
+	paymentorder.PromoCodeValidator = paymentorderDescPromoCode.Validators[0].(func(string) error)
+	// paymentorderDescDiscountPercent is the schema descriptor for discount_percent field.
+	paymentorderDescDiscountPercent := paymentorderFields[8].Descriptor()
+	// paymentorder.DefaultDiscountPercent holds the default value on creation for the discount_percent field.
+	paymentorder.DefaultDiscountPercent = paymentorderDescDiscountPercent.Default.(float64)
+	// paymentorderDescDiscountAmount is the schema descriptor for discount_amount field.
+	paymentorderDescDiscountAmount := paymentorderFields[9].Descriptor()
+	// paymentorder.DefaultDiscountAmount holds the default value on creation for the discount_amount field.
+	paymentorder.DefaultDiscountAmount = paymentorderDescDiscountAmount.Default.(float64)
 	// paymentorderDescRechargeCode is the schema descriptor for recharge_code field.
-	paymentorderDescRechargeCode := paymentorderFields[7].Descriptor()
+	paymentorderDescRechargeCode := paymentorderFields[10].Descriptor()
 	// paymentorder.RechargeCodeValidator is a validator for the "recharge_code" field. It is called by the builders before save.
 	paymentorder.RechargeCodeValidator = paymentorderDescRechargeCode.Validators[0].(func(string) error)
 	// paymentorderDescOutTradeNo is the schema descriptor for out_trade_no field.
-	paymentorderDescOutTradeNo := paymentorderFields[8].Descriptor()
+	paymentorderDescOutTradeNo := paymentorderFields[11].Descriptor()
 	// paymentorder.DefaultOutTradeNo holds the default value on creation for the out_trade_no field.
 	paymentorder.DefaultOutTradeNo = paymentorderDescOutTradeNo.Default.(string)
 	// paymentorder.OutTradeNoValidator is a validator for the "out_trade_no" field. It is called by the builders before save.
 	paymentorder.OutTradeNoValidator = paymentorderDescOutTradeNo.Validators[0].(func(string) error)
 	// paymentorderDescPaymentType is the schema descriptor for payment_type field.
-	paymentorderDescPaymentType := paymentorderFields[9].Descriptor()
+	paymentorderDescPaymentType := paymentorderFields[12].Descriptor()
 	// paymentorder.PaymentTypeValidator is a validator for the "payment_type" field. It is called by the builders before save.
 	paymentorder.PaymentTypeValidator = paymentorderDescPaymentType.Validators[0].(func(string) error)
 	// paymentorderDescPaymentTradeNo is the schema descriptor for payment_trade_no field.
-	paymentorderDescPaymentTradeNo := paymentorderFields[10].Descriptor()
+	paymentorderDescPaymentTradeNo := paymentorderFields[13].Descriptor()
 	// paymentorder.PaymentTradeNoValidator is a validator for the "payment_trade_no" field. It is called by the builders before save.
 	paymentorder.PaymentTradeNoValidator = paymentorderDescPaymentTradeNo.Validators[0].(func(string) error)
 	// paymentorderDescOrderType is the schema descriptor for order_type field.
-	paymentorderDescOrderType := paymentorderFields[14].Descriptor()
+	paymentorderDescOrderType := paymentorderFields[17].Descriptor()
 	// paymentorder.DefaultOrderType holds the default value on creation for the order_type field.
 	paymentorder.DefaultOrderType = paymentorderDescOrderType.Default.(string)
 	// paymentorder.OrderTypeValidator is a validator for the "order_type" field. It is called by the builders before save.
 	paymentorder.OrderTypeValidator = paymentorderDescOrderType.Validators[0].(func(string) error)
 	// paymentorderDescProviderInstanceID is the schema descriptor for provider_instance_id field.
-	paymentorderDescProviderInstanceID := paymentorderFields[18].Descriptor()
+	paymentorderDescProviderInstanceID := paymentorderFields[21].Descriptor()
 	// paymentorder.ProviderInstanceIDValidator is a validator for the "provider_instance_id" field. It is called by the builders before save.
 	paymentorder.ProviderInstanceIDValidator = paymentorderDescProviderInstanceID.Validators[0].(func(string) error)
 	// paymentorderDescProviderKey is the schema descriptor for provider_key field.
-	paymentorderDescProviderKey := paymentorderFields[19].Descriptor()
+	paymentorderDescProviderKey := paymentorderFields[22].Descriptor()
 	// paymentorder.ProviderKeyValidator is a validator for the "provider_key" field. It is called by the builders before save.
 	paymentorder.ProviderKeyValidator = paymentorderDescProviderKey.Validators[0].(func(string) error)
 	// paymentorderDescStatus is the schema descriptor for status field.
-	paymentorderDescStatus := paymentorderFields[21].Descriptor()
+	paymentorderDescStatus := paymentorderFields[24].Descriptor()
 	// paymentorder.DefaultStatus holds the default value on creation for the status field.
 	paymentorder.DefaultStatus = paymentorderDescStatus.Default.(string)
 	// paymentorder.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	paymentorder.StatusValidator = paymentorderDescStatus.Validators[0].(func(string) error)
 	// paymentorderDescRefundAmount is the schema descriptor for refund_amount field.
-	paymentorderDescRefundAmount := paymentorderFields[22].Descriptor()
+	paymentorderDescRefundAmount := paymentorderFields[25].Descriptor()
 	// paymentorder.DefaultRefundAmount holds the default value on creation for the refund_amount field.
 	paymentorder.DefaultRefundAmount = paymentorderDescRefundAmount.Default.(float64)
 	// paymentorderDescForceRefund is the schema descriptor for force_refund field.
-	paymentorderDescForceRefund := paymentorderFields[25].Descriptor()
+	paymentorderDescForceRefund := paymentorderFields[28].Descriptor()
 	// paymentorder.DefaultForceRefund holds the default value on creation for the force_refund field.
 	paymentorder.DefaultForceRefund = paymentorderDescForceRefund.Default.(bool)
 	// paymentorderDescRefundRequestedBy is the schema descriptor for refund_requested_by field.
-	paymentorderDescRefundRequestedBy := paymentorderFields[28].Descriptor()
+	paymentorderDescRefundRequestedBy := paymentorderFields[31].Descriptor()
 	// paymentorder.RefundRequestedByValidator is a validator for the "refund_requested_by" field. It is called by the builders before save.
 	paymentorder.RefundRequestedByValidator = paymentorderDescRefundRequestedBy.Validators[0].(func(string) error)
 	// paymentorderDescClientIP is the schema descriptor for client_ip field.
-	paymentorderDescClientIP := paymentorderFields[34].Descriptor()
+	paymentorderDescClientIP := paymentorderFields[37].Descriptor()
 	// paymentorder.ClientIPValidator is a validator for the "client_ip" field. It is called by the builders before save.
 	paymentorder.ClientIPValidator = paymentorderDescClientIP.Validators[0].(func(string) error)
 	// paymentorderDescSrcHost is the schema descriptor for src_host field.
-	paymentorderDescSrcHost := paymentorderFields[35].Descriptor()
+	paymentorderDescSrcHost := paymentorderFields[38].Descriptor()
 	// paymentorder.SrcHostValidator is a validator for the "src_host" field. It is called by the builders before save.
 	paymentorder.SrcHostValidator = paymentorderDescSrcHost.Validators[0].(func(string) error)
 	// paymentorderDescCreatedAt is the schema descriptor for created_at field.
-	paymentorderDescCreatedAt := paymentorderFields[37].Descriptor()
+	paymentorderDescCreatedAt := paymentorderFields[40].Descriptor()
 	// paymentorder.DefaultCreatedAt holds the default value on creation for the created_at field.
 	paymentorder.DefaultCreatedAt = paymentorderDescCreatedAt.Default.(func() time.Time)
 	// paymentorderDescUpdatedAt is the schema descriptor for updated_at field.
-	paymentorderDescUpdatedAt := paymentorderFields[38].Descriptor()
+	paymentorderDescUpdatedAt := paymentorderFields[41].Descriptor()
 	// paymentorder.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	paymentorder.DefaultUpdatedAt = paymentorderDescUpdatedAt.Default.(func() time.Time)
 	// paymentorder.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -1460,26 +1670,30 @@ func init() {
 	promocodeDescBonusAmount := promocodeFields[1].Descriptor()
 	// promocode.DefaultBonusAmount holds the default value on creation for the bonus_amount field.
 	promocode.DefaultBonusAmount = promocodeDescBonusAmount.Default.(float64)
+	// promocodeDescDiscountPercent is the schema descriptor for discount_percent field.
+	promocodeDescDiscountPercent := promocodeFields[2].Descriptor()
+	// promocode.DefaultDiscountPercent holds the default value on creation for the discount_percent field.
+	promocode.DefaultDiscountPercent = promocodeDescDiscountPercent.Default.(float64)
 	// promocodeDescMaxUses is the schema descriptor for max_uses field.
-	promocodeDescMaxUses := promocodeFields[2].Descriptor()
+	promocodeDescMaxUses := promocodeFields[3].Descriptor()
 	// promocode.DefaultMaxUses holds the default value on creation for the max_uses field.
 	promocode.DefaultMaxUses = promocodeDescMaxUses.Default.(int)
 	// promocodeDescUsedCount is the schema descriptor for used_count field.
-	promocodeDescUsedCount := promocodeFields[3].Descriptor()
+	promocodeDescUsedCount := promocodeFields[4].Descriptor()
 	// promocode.DefaultUsedCount holds the default value on creation for the used_count field.
 	promocode.DefaultUsedCount = promocodeDescUsedCount.Default.(int)
 	// promocodeDescStatus is the schema descriptor for status field.
-	promocodeDescStatus := promocodeFields[4].Descriptor()
+	promocodeDescStatus := promocodeFields[5].Descriptor()
 	// promocode.DefaultStatus holds the default value on creation for the status field.
 	promocode.DefaultStatus = promocodeDescStatus.Default.(string)
 	// promocode.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	promocode.StatusValidator = promocodeDescStatus.Validators[0].(func(string) error)
 	// promocodeDescCreatedAt is the schema descriptor for created_at field.
-	promocodeDescCreatedAt := promocodeFields[7].Descriptor()
+	promocodeDescCreatedAt := promocodeFields[8].Descriptor()
 	// promocode.DefaultCreatedAt holds the default value on creation for the created_at field.
 	promocode.DefaultCreatedAt = promocodeDescCreatedAt.Default.(func() time.Time)
 	// promocodeDescUpdatedAt is the schema descriptor for updated_at field.
-	promocodeDescUpdatedAt := promocodeFields[8].Descriptor()
+	promocodeDescUpdatedAt := promocodeFields[9].Descriptor()
 	// promocode.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	promocode.DefaultUpdatedAt = promocodeDescUpdatedAt.Default.(func() time.Time)
 	// promocode.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -1948,48 +2162,76 @@ func init() {
 	usagelogDescStream := usagelogFields[28].Descriptor()
 	// usagelog.DefaultStream holds the default value on creation for the stream field.
 	usagelog.DefaultStream = usagelogDescStream.Default.(bool)
+	// usagelogDescClientTransport is the schema descriptor for client_transport field.
+	usagelogDescClientTransport := usagelogFields[31].Descriptor()
+	// usagelog.ClientTransportValidator is a validator for the "client_transport" field. It is called by the builders before save.
+	usagelog.ClientTransportValidator = usagelogDescClientTransport.Validators[0].(func(string) error)
+	// usagelogDescRouteKind is the schema descriptor for route_kind field.
+	usagelogDescRouteKind := usagelogFields[43].Descriptor()
+	// usagelog.RouteKindValidator is a validator for the "route_kind" field. It is called by the builders before save.
+	usagelog.RouteKindValidator = usagelogDescRouteKind.Validators[0].(func(string) error)
+	// usagelogDescProxyNameSnapshot is the schema descriptor for proxy_name_snapshot field.
+	usagelogDescProxyNameSnapshot := usagelogFields[45].Descriptor()
+	// usagelog.ProxyNameSnapshotValidator is a validator for the "proxy_name_snapshot" field. It is called by the builders before save.
+	usagelog.ProxyNameSnapshotValidator = usagelogDescProxyNameSnapshot.Validators[0].(func(string) error)
+	// usagelogDescProxyProtocolSnapshot is the schema descriptor for proxy_protocol_snapshot field.
+	usagelogDescProxyProtocolSnapshot := usagelogFields[46].Descriptor()
+	// usagelog.ProxyProtocolSnapshotValidator is a validator for the "proxy_protocol_snapshot" field. It is called by the builders before save.
+	usagelog.ProxyProtocolSnapshotValidator = usagelogDescProxyProtocolSnapshot.Validators[0].(func(string) error)
+	// usagelogDescRouteFingerprint is the schema descriptor for route_fingerprint field.
+	usagelogDescRouteFingerprint := usagelogFields[47].Descriptor()
+	// usagelog.RouteFingerprintValidator is a validator for the "route_fingerprint" field. It is called by the builders before save.
+	usagelog.RouteFingerprintValidator = usagelogDescRouteFingerprint.Validators[0].(func(string) error)
+	// usagelogDescRetryCount is the schema descriptor for retry_count field.
+	usagelogDescRetryCount := usagelogFields[49].Descriptor()
+	// usagelog.DefaultRetryCount holds the default value on creation for the retry_count field.
+	usagelog.DefaultRetryCount = usagelogDescRetryCount.Default.(int)
+	// usagelogDescAccountSwitchCount is the schema descriptor for account_switch_count field.
+	usagelogDescAccountSwitchCount := usagelogFields[50].Descriptor()
+	// usagelog.DefaultAccountSwitchCount holds the default value on creation for the account_switch_count field.
+	usagelog.DefaultAccountSwitchCount = usagelogDescAccountSwitchCount.Default.(int)
 	// usagelogDescUserAgent is the schema descriptor for user_agent field.
-	usagelogDescUserAgent := usagelogFields[31].Descriptor()
+	usagelogDescUserAgent := usagelogFields[52].Descriptor()
 	// usagelog.UserAgentValidator is a validator for the "user_agent" field. It is called by the builders before save.
 	usagelog.UserAgentValidator = usagelogDescUserAgent.Validators[0].(func(string) error)
 	// usagelogDescIPAddress is the schema descriptor for ip_address field.
-	usagelogDescIPAddress := usagelogFields[32].Descriptor()
+	usagelogDescIPAddress := usagelogFields[53].Descriptor()
 	// usagelog.IPAddressValidator is a validator for the "ip_address" field. It is called by the builders before save.
 	usagelog.IPAddressValidator = usagelogDescIPAddress.Validators[0].(func(string) error)
 	// usagelogDescImageCount is the schema descriptor for image_count field.
-	usagelogDescImageCount := usagelogFields[33].Descriptor()
+	usagelogDescImageCount := usagelogFields[54].Descriptor()
 	// usagelog.DefaultImageCount holds the default value on creation for the image_count field.
 	usagelog.DefaultImageCount = usagelogDescImageCount.Default.(int)
 	// usagelogDescImageSize is the schema descriptor for image_size field.
-	usagelogDescImageSize := usagelogFields[34].Descriptor()
+	usagelogDescImageSize := usagelogFields[55].Descriptor()
 	// usagelog.ImageSizeValidator is a validator for the "image_size" field. It is called by the builders before save.
 	usagelog.ImageSizeValidator = usagelogDescImageSize.Validators[0].(func(string) error)
 	// usagelogDescImageInputSize is the schema descriptor for image_input_size field.
-	usagelogDescImageInputSize := usagelogFields[35].Descriptor()
+	usagelogDescImageInputSize := usagelogFields[56].Descriptor()
 	// usagelog.ImageInputSizeValidator is a validator for the "image_input_size" field. It is called by the builders before save.
 	usagelog.ImageInputSizeValidator = usagelogDescImageInputSize.Validators[0].(func(string) error)
 	// usagelogDescImageOutputSize is the schema descriptor for image_output_size field.
-	usagelogDescImageOutputSize := usagelogFields[36].Descriptor()
+	usagelogDescImageOutputSize := usagelogFields[57].Descriptor()
 	// usagelog.ImageOutputSizeValidator is a validator for the "image_output_size" field. It is called by the builders before save.
 	usagelog.ImageOutputSizeValidator = usagelogDescImageOutputSize.Validators[0].(func(string) error)
 	// usagelogDescImageSizeSource is the schema descriptor for image_size_source field.
-	usagelogDescImageSizeSource := usagelogFields[37].Descriptor()
+	usagelogDescImageSizeSource := usagelogFields[58].Descriptor()
 	// usagelog.ImageSizeSourceValidator is a validator for the "image_size_source" field. It is called by the builders before save.
 	usagelog.ImageSizeSourceValidator = usagelogDescImageSizeSource.Validators[0].(func(string) error)
 	// usagelogDescVideoCount is the schema descriptor for video_count field.
-	usagelogDescVideoCount := usagelogFields[39].Descriptor()
+	usagelogDescVideoCount := usagelogFields[60].Descriptor()
 	// usagelog.DefaultVideoCount holds the default value on creation for the video_count field.
 	usagelog.DefaultVideoCount = usagelogDescVideoCount.Default.(int)
 	// usagelogDescVideoResolution is the schema descriptor for video_resolution field.
-	usagelogDescVideoResolution := usagelogFields[40].Descriptor()
+	usagelogDescVideoResolution := usagelogFields[61].Descriptor()
 	// usagelog.VideoResolutionValidator is a validator for the "video_resolution" field. It is called by the builders before save.
 	usagelog.VideoResolutionValidator = usagelogDescVideoResolution.Validators[0].(func(string) error)
 	// usagelogDescCacheTTLOverridden is the schema descriptor for cache_ttl_overridden field.
-	usagelogDescCacheTTLOverridden := usagelogFields[42].Descriptor()
+	usagelogDescCacheTTLOverridden := usagelogFields[63].Descriptor()
 	// usagelog.DefaultCacheTTLOverridden holds the default value on creation for the cache_ttl_overridden field.
 	usagelog.DefaultCacheTTLOverridden = usagelogDescCacheTTLOverridden.Default.(bool)
 	// usagelogDescCreatedAt is the schema descriptor for created_at field.
-	usagelogDescCreatedAt := usagelogFields[43].Descriptor()
+	usagelogDescCreatedAt := usagelogFields[64].Descriptor()
 	// usagelog.DefaultCreatedAt holds the default value on creation for the created_at field.
 	usagelog.DefaultCreatedAt = usagelogDescCreatedAt.Default.(func() time.Time)
 	userMixin := schema.User{}.Mixin()
@@ -2111,6 +2353,10 @@ func init() {
 	userDescRpmLimit := userFields[20].Descriptor()
 	// user.DefaultRpmLimit holds the default value on creation for the rpm_limit field.
 	user.DefaultRpmLimit = userDescRpmLimit.Default.(int)
+	// userDescPrivacyFilterConfig is the schema descriptor for privacy_filter_config field.
+	userDescPrivacyFilterConfig := userFields[21].Descriptor()
+	// user.DefaultPrivacyFilterConfig holds the default value on creation for the privacy_filter_config field.
+	user.DefaultPrivacyFilterConfig = userDescPrivacyFilterConfig.Default.(string)
 	userallowedgroupFields := schema.UserAllowedGroup{}.Fields()
 	_ = userallowedgroupFields
 	// userallowedgroupDescCreatedAt is the schema descriptor for created_at field.

@@ -91,6 +91,7 @@ func APIKeyFromService(k *service.APIKey) *APIKey {
 		Status:             k.Status,
 		IPWhitelist:        k.IPWhitelist,
 		IPBlacklist:        k.IPBlacklist,
+		AllowedModels:      k.AllowedModels,
 		LastUsedAt:         k.LastUsedAt,
 		LastUsedIP:         k.LastUsedIP,
 		Quota:              k.Quota,
@@ -671,16 +672,76 @@ func UsageLogFromServiceAdmin(l *service.UsageLog) *AdminUsageLog {
 	usageLog := usageLogFromServiceUser(l)
 	usageLog.UpstreamEndpoint = l.UpstreamEndpoint
 	return &AdminUsageLog{
-		UsageLog:              usageLog,
-		UpstreamModel:         l.UpstreamModel,
-		ChannelID:             l.ChannelID,
-		ModelMappingChain:     l.ModelMappingChain,
-		BillingTier:           l.BillingTier,
-		AccountRateMultiplier: l.AccountRateMultiplier,
-		AccountStatsCost:      l.AccountStatsCost,
-		IPAddress:             l.IPAddress,
-		Account:               AccountSummaryFromService(l.Account),
+		UsageLog:                 usageLog,
+		UpstreamModel:            l.UpstreamModel,
+		ChannelID:                l.ChannelID,
+		ModelMappingChain:        l.ModelMappingChain,
+		BillingTier:              l.BillingTier,
+		AccountRateMultiplier:    l.AccountRateMultiplier,
+		AccountStatsCost:         l.AccountStatsCost,
+		ClientTransport:          l.ClientTransport,
+		AuthLatencyMs:            l.AuthLatencyMs,
+		RoutingLatencyMs:         l.RoutingLatencyMs,
+		UpstreamLatencyMs:        l.UpstreamLatencyMs,
+		ResponseLatencyMs:        l.ResponseLatencyMs,
+		RequestStartedAt:         l.RequestStartedAt,
+		RequestTotalMs:           l.RequestTotalMs,
+		RequestBodyReadMs:        l.RequestBodyReadMs,
+		RequestBodyBytes:         l.RequestBodyBytes,
+		UpstreamRequestWrittenMs: l.UpstreamRequestWrittenMs,
+		UpstreamFirstByteMs:      l.UpstreamFirstByteMs,
+		RequestFirstTokenMs:      l.RequestFirstTokenMs,
+		RouteKind:                l.RouteKind,
+		ProxyIDSnapshot:          l.ProxyIDSnapshot,
+		ProxyNameSnapshot:        l.ProxyNameSnapshot,
+		ProxyProtocolSnapshot:    l.ProxyProtocolSnapshot,
+		RouteFingerprint:         l.RouteFingerprint,
+		FinalUpstreamStatus:      l.FinalUpstreamStatus,
+		RetryCount:               l.RetryCount,
+		AccountSwitchCount:       l.AccountSwitchCount,
+		IPAddress:                l.IPAddress,
+		Account:                  AccountSummaryFromService(l.Account),
 	}
+}
+
+func UsageDiagnosticsFromServiceAdmin(l *service.UsageLog) *AdminUsageDiagnostics {
+	adminLog := UsageLogFromServiceAdmin(l)
+	if adminLog == nil {
+		return nil
+	}
+	result := &AdminUsageDiagnostics{AdminUsageLog: *adminLog}
+	if len(l.AttemptTimeline) == 0 {
+		return result
+	}
+	limit := len(l.AttemptTimeline)
+	if limit > service.RequestDiagnosticsAttemptLimit {
+		limit = service.RequestDiagnosticsAttemptLimit
+	}
+	result.AttemptTimeline = make([]AdminUsageAttemptEvent, 0, limit)
+	for i := 0; i < limit; i++ {
+		event := l.AttemptTimeline[i]
+		result.AttemptTimeline = append(result.AttemptTimeline, AdminUsageAttemptEvent{
+			Sequence:         event.Sequence,
+			StartedMs:        event.StartedMs,
+			FinishedMs:       event.FinishedMs,
+			RequestWrittenMs: event.RequestWrittenMs,
+			FirstByteMs:      event.FirstByteMs,
+			AccountID:        event.AccountID,
+			AccountName:      event.AccountName,
+			Route: AdminUsageRouteSnapshot{
+				Kind:          event.Route.Kind,
+				ProxyID:       event.Route.ProxyID,
+				ProxyName:     event.Route.ProxyName,
+				ProxyProtocol: event.Route.ProxyProtocol,
+				Fingerprint:   event.Route.Fingerprint,
+			},
+			UpstreamStatus: event.UpstreamStatus,
+			Outcome:        event.Outcome,
+			ErrorCategory:  event.ErrorCategory,
+			Reason:         service.SanitizeRequestDiagnosticReason(event.Reason),
+		})
+	}
+	return result
 }
 
 func UsageCleanupTaskFromService(task *service.UsageCleanupTask) *UsageCleanupTask {

@@ -55,6 +55,27 @@ var usageLogInsertArgTypes = [...]string{
 	"boolean",     // openai_ws_mode
 	"integer",     // duration_ms
 	"integer",     // first_token_ms
+	"text",        // client_transport
+	"integer",     // auth_latency_ms
+	"integer",     // routing_latency_ms
+	"integer",     // upstream_latency_ms
+	"integer",     // response_latency_ms
+	"timestamptz", // request_started_at
+	"integer",     // request_total_ms
+	"integer",     // request_body_read_ms
+	"bigint",      // request_body_bytes
+	"integer",     // upstream_request_written_ms
+	"integer",     // upstream_first_byte_ms
+	"integer",     // request_first_token_ms
+	"text",        // route_kind
+	"bigint",      // proxy_id_snapshot
+	"text",        // proxy_name_snapshot
+	"text",        // proxy_protocol_snapshot
+	"text",        // route_fingerprint
+	"integer",     // final_upstream_status
+	"integer",     // retry_count
+	"integer",     // account_switch_count
+	"jsonb",       // attempt_timeline
 	"text",        // user_agent
 	"text",        // ip_address
 	"integer",     // image_count
@@ -247,6 +268,27 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			openai_ws_mode,
 			duration_ms,
 			first_token_ms,
+			client_transport,
+			auth_latency_ms,
+			routing_latency_ms,
+			upstream_latency_ms,
+			response_latency_ms,
+			request_started_at,
+			request_total_ms,
+			request_body_read_ms,
+			request_body_bytes,
+			upstream_request_written_ms,
+			upstream_first_byte_ms,
+			request_first_token_ms,
+			route_kind,
+			proxy_id_snapshot,
+			proxy_name_snapshot,
+			proxy_protocol_snapshot,
+			route_fingerprint,
+			final_upstream_status,
+			retry_count,
+			account_switch_count,
+			attempt_timeline,
 			user_agent,
 			ip_address,
 			image_count,
@@ -275,7 +317,7 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
 			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53
+			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 		RETURNING id, created_at
@@ -698,6 +740,27 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 			openai_ws_mode,
 			duration_ms,
 			first_token_ms,
+			client_transport,
+			auth_latency_ms,
+			routing_latency_ms,
+			upstream_latency_ms,
+			response_latency_ms,
+			request_started_at,
+			request_total_ms,
+			request_body_read_ms,
+			request_body_bytes,
+			upstream_request_written_ms,
+			upstream_first_byte_ms,
+			request_first_token_ms,
+			route_kind,
+			proxy_id_snapshot,
+			proxy_name_snapshot,
+			proxy_protocol_snapshot,
+			route_fingerprint,
+			final_upstream_status,
+			retry_count,
+			account_switch_count,
+			attempt_timeline,
 			user_agent,
 			ip_address,
 			image_count,
@@ -722,7 +785,7 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 			created_at
 		) AS (VALUES `)
 
-	args := make([]any, 0, len(keys)*53)
+	args := make([]any, 0, len(keys)*(len(usageLogInsertArgTypes)+1))
 	argPos := 1
 	for idx, key := range keys {
 		if idx > 0 {
@@ -782,6 +845,27 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				openai_ws_mode,
 				duration_ms,
 				first_token_ms,
+				client_transport,
+				auth_latency_ms,
+				routing_latency_ms,
+				upstream_latency_ms,
+				response_latency_ms,
+				request_started_at,
+				request_total_ms,
+				request_body_read_ms,
+				request_body_bytes,
+				upstream_request_written_ms,
+				upstream_first_byte_ms,
+				request_first_token_ms,
+				route_kind,
+				proxy_id_snapshot,
+				proxy_name_snapshot,
+				proxy_protocol_snapshot,
+				route_fingerprint,
+				final_upstream_status,
+				retry_count,
+				account_switch_count,
+				attempt_timeline,
 				user_agent,
 				ip_address,
 				image_count,
@@ -837,6 +921,27 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				openai_ws_mode,
 				duration_ms,
 				first_token_ms,
+				client_transport,
+				auth_latency_ms,
+				routing_latency_ms,
+				upstream_latency_ms,
+				response_latency_ms,
+				request_started_at,
+				request_total_ms,
+				request_body_read_ms,
+				request_body_bytes,
+				upstream_request_written_ms,
+				upstream_first_byte_ms,
+				request_first_token_ms,
+				route_kind,
+				proxy_id_snapshot,
+				proxy_name_snapshot,
+				proxy_protocol_snapshot,
+				route_fingerprint,
+				final_upstream_status,
+				retry_count,
+				account_switch_count,
+				attempt_timeline,
 				user_agent,
 				ip_address,
 				image_count,
@@ -932,6 +1037,27 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			openai_ws_mode,
 			duration_ms,
 			first_token_ms,
+			client_transport,
+			auth_latency_ms,
+			routing_latency_ms,
+			upstream_latency_ms,
+			response_latency_ms,
+			request_started_at,
+			request_total_ms,
+			request_body_read_ms,
+			request_body_bytes,
+			upstream_request_written_ms,
+			upstream_first_byte_ms,
+			request_first_token_ms,
+			route_kind,
+			proxy_id_snapshot,
+			proxy_name_snapshot,
+			proxy_protocol_snapshot,
+			route_fingerprint,
+			final_upstream_status,
+			retry_count,
+			account_switch_count,
+			attempt_timeline,
 			user_agent,
 			ip_address,
 			image_count,
@@ -956,7 +1082,7 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			created_at
 		) AS (VALUES `)
 
-	args := make([]any, 0, len(preparedList)*53)
+	args := make([]any, 0, len(preparedList)*len(usageLogInsertArgTypes))
 	argPos := 1
 	for idx, prepared := range preparedList {
 		if idx > 0 {
@@ -1013,6 +1139,27 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			openai_ws_mode,
 			duration_ms,
 			first_token_ms,
+			client_transport,
+			auth_latency_ms,
+			routing_latency_ms,
+			upstream_latency_ms,
+			response_latency_ms,
+			request_started_at,
+			request_total_ms,
+			request_body_read_ms,
+			request_body_bytes,
+			upstream_request_written_ms,
+			upstream_first_byte_ms,
+			request_first_token_ms,
+			route_kind,
+			proxy_id_snapshot,
+			proxy_name_snapshot,
+			proxy_protocol_snapshot,
+			route_fingerprint,
+			final_upstream_status,
+			retry_count,
+			account_switch_count,
+			attempt_timeline,
 			user_agent,
 			ip_address,
 			image_count,
@@ -1068,6 +1215,27 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			openai_ws_mode,
 			duration_ms,
 			first_token_ms,
+			client_transport,
+			auth_latency_ms,
+			routing_latency_ms,
+			upstream_latency_ms,
+			response_latency_ms,
+			request_started_at,
+			request_total_ms,
+			request_body_read_ms,
+			request_body_bytes,
+			upstream_request_written_ms,
+			upstream_first_byte_ms,
+			request_first_token_ms,
+			route_kind,
+			proxy_id_snapshot,
+			proxy_name_snapshot,
+			proxy_protocol_snapshot,
+			route_fingerprint,
+			final_upstream_status,
+			retry_count,
+			account_switch_count,
+			attempt_timeline,
 			user_agent,
 			ip_address,
 			image_count,
@@ -1131,6 +1299,27 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			openai_ws_mode,
 			duration_ms,
 			first_token_ms,
+			client_transport,
+			auth_latency_ms,
+			routing_latency_ms,
+			upstream_latency_ms,
+			response_latency_ms,
+			request_started_at,
+			request_total_ms,
+			request_body_read_ms,
+			request_body_bytes,
+			upstream_request_written_ms,
+			upstream_first_byte_ms,
+			request_first_token_ms,
+			route_kind,
+			proxy_id_snapshot,
+			proxy_name_snapshot,
+			proxy_protocol_snapshot,
+			route_fingerprint,
+			final_upstream_status,
+			retry_count,
+			account_switch_count,
+			attempt_timeline,
 			user_agent,
 			ip_address,
 			image_count,
@@ -1159,7 +1348,7 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
 			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53
+			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 	`, prepared.args...)
@@ -1183,6 +1372,24 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 	subscriptionID := nullInt64(log.SubscriptionID)
 	duration := nullInt(log.DurationMs)
 	firstToken := nullInt(log.FirstTokenMs)
+	clientTransport := nullString(log.ClientTransport)
+	authLatency := nullInt(log.AuthLatencyMs)
+	routingLatency := nullInt(log.RoutingLatencyMs)
+	upstreamLatency := nullInt(log.UpstreamLatencyMs)
+	responseLatency := nullInt(log.ResponseLatencyMs)
+	requestTotal := nullInt(log.RequestTotalMs)
+	requestBodyRead := nullInt(log.RequestBodyReadMs)
+	requestBodyBytes := nullInt64(log.RequestBodyBytes)
+	upstreamRequestWritten := nullInt(log.UpstreamRequestWrittenMs)
+	upstreamFirstByte := nullInt(log.UpstreamFirstByteMs)
+	requestFirstToken := nullInt(log.RequestFirstTokenMs)
+	routeKind := nullString(log.RouteKind)
+	proxyIDSnapshot := nullInt64(log.ProxyIDSnapshot)
+	proxyNameSnapshot := nullString(log.ProxyNameSnapshot)
+	proxyProtocolSnapshot := nullString(log.ProxyProtocolSnapshot)
+	routeFingerprint := nullString(log.RouteFingerprint)
+	finalUpstreamStatus := nullInt(log.FinalUpstreamStatus)
+	attemptTimeline := nullRequestAttemptTimelineJSON(log.AttemptTimeline)
 	userAgent := nullString(log.UserAgent)
 	ipAddress := nullString(log.IPAddress)
 	imageSize := nullString(log.ImageSize)
@@ -1248,6 +1455,27 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 			log.OpenAIWSMode,
 			duration,
 			firstToken,
+			clientTransport,
+			authLatency,
+			routingLatency,
+			upstreamLatency,
+			responseLatency,
+			log.RequestStartedAt,
+			requestTotal,
+			requestBodyRead,
+			requestBodyBytes,
+			upstreamRequestWritten,
+			upstreamFirstByte,
+			requestFirstToken,
+			routeKind,
+			proxyIDSnapshot,
+			proxyNameSnapshot,
+			proxyProtocolSnapshot,
+			routeFingerprint,
+			finalUpstreamStatus,
+			log.RetryCount,
+			log.AccountSwitchCount,
+			attemptTimeline,
 			userAgent,
 			ipAddress,
 			log.ImageCount,

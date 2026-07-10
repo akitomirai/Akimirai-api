@@ -55,7 +55,7 @@ describe('AppSidebar header styles', () => {
 })
 
 describe('AppSidebar navigation visibility', () => {
-  it('keeps GPTImage out of the sidebar while preserving store and order entries', () => {
+  it('keeps GPTImage out of the sidebar and consolidates orders into the store', () => {
     expect(componentSource).not.toContain("path: '/images'")
     expect(componentSource).not.toContain("path: '/image-management'")
 
@@ -63,8 +63,17 @@ describe('AppSidebar navigation visibility', () => {
     const ordersItem = componentSource.match(/\{ path: '\/orders'[\s\S]*?\}/)?.[0] ?? ''
 
     expect(purchaseItem).toContain("label: t('nav.buySubscription')")
-    expect(ordersItem).toContain("label: t('nav.myOrders')")
+    expect(ordersItem).toBe('')
     expect(purchaseItem).not.toContain('featureFlag')
-    expect(ordersItem).not.toContain('featureFlag')
+  })
+
+  it('removes channel status from personal navigation while keeping the admin monitor', () => {
+    expect(componentSource).not.toContain("{ path: '/monitor'")
+    expect(componentSource).toContain("{ path: '/admin/channels/monitor'")
+  })
+
+  it('removes the user subscription entry while keeping subscription management', () => {
+    expect(componentSource).not.toContain("{ path: '/subscriptions'")
+    expect(componentSource).toContain("{ path: '/admin/subscriptions'")
   })
 })

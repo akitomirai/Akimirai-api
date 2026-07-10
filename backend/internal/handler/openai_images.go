@@ -74,6 +74,9 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		return
 	}
 	requestModel := parsed.Model
+	if parsed.Multipart && middleware2.RejectAPIKeyModel(c, apiKey, requestModel) {
+		return
+	}
 
 	reqLog = reqLog.With(
 		zap.String("model", requestModel),

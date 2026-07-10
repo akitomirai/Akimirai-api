@@ -50,6 +50,7 @@ const messages: Record<string, string> = {
   'usage.tabs.errors': 'Error Requests',
   'usage.errors.disabled': 'Error request records are not enabled',
   'usage.apiKeyFilter': 'API Key',
+  'usage.apiKeyDistribution': 'API Key Distribution',
   'usage.model': 'Model',
   'usage.reasoningEffort': 'Reasoning Effort',
   'usage.endpoint': 'Endpoint',
@@ -82,6 +83,7 @@ const messages: Record<string, string> = {
   'admin.usage.billingModePerRequest': 'Per request',
   'admin.usage.billingModeImage': 'Image',
   'admin.usage.allGroups': 'All groups',
+  'admin.usage.group': 'Group',
   'admin.usage.allModels': 'All models',
   'usage.ws': 'WS',
   'usage.stream': 'Stream',
@@ -153,6 +155,10 @@ const UsageTableStub = {
 const UserErrorRequestsTableStub = {
   template: '<div data-test="error-requests-table" />',
 }
+const EntityDistributionChartStub = {
+  props: ['title', 'entityLabel', 'items'],
+  template: '<div data-test="api-key-distribution-chart">{{ title }} {{ entityLabel }} {{ items.map((item) => item.label).join(",") }}</div>',
+}
 
 const usageLog = {
   id: 1,
@@ -214,6 +220,10 @@ function mountUsageView() {
         UsageStatsCards: UsageStatsCardsStub,
         UsageTable: UsageTableStub,
         UserErrorRequestsTable: UserErrorRequestsTableStub,
+        EntityDistributionChart: EntityDistributionChartStub,
+        ModelDistributionChart: { template: '<div data-test="model-distribution-chart" />' },
+        EndpointDistributionChart: { template: '<div data-test="endpoint-distribution-chart" />' },
+        TokenUsageTrend: { template: '<div data-test="token-usage-trend" />' },
       },
     },
   })
@@ -260,45 +270,48 @@ describe('user UsageView', () => {
       granularity: 'hour',
       trend: [],
       groups: [],
+      api_keys: [{ api_key_id: 1, api_key_name: 'demo-key', requests: 1, total_tokens: 30, cost: 0.1, actual_cost: 0.08 }],
     })
     listMyErrorRequests.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 20, pages: 0 })
     list.mockResolvedValue({ items: [{ id: 1, name: 'demo-key' }] })
     getAvailable.mockResolvedValue([{ id: 1, name: 'default' }])
   })
 
-  it('loads compact usage data without chart requests on first render', async () => {
+  it('loads usage with only API key distribution and the three requested filters', async () => {
     const wrapper = mountUsageView()
     await flushPromises()
 
     expect(query).toHaveBeenCalled()
     expect(getStats).toHaveBeenCalled()
     expect(list).toHaveBeenCalledWith(1, 100)
-    expect(getAvailable).not.toHaveBeenCalled()
-    expect(getDashboardModels).not.toHaveBeenCalled()
-    expect(getDashboardSnapshotV2).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('Usage')
-    expect(wrapper.text()).toContain('Error Requests')
+    expect(getAvailable).toHaveBeenCalled()
+    expect(getDashboardModels).toHaveBeenCalled()
+    expect(getDashboardSnapshotV2).toHaveBeenCalledWith(expect.objectContaining({
+      include_trend: false,
+      include_model_stats: false,
+      include_group_stats: false,
+      include_api_key_stats: true,
+    }))
+
+    expect(wrapper.get('[data-test="api-key-distribution-chart"]').text()).toContain('demo-key')
+    expect(wrapper.find('[data-test="model-distribution-chart"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="endpoint-distribution-chart"]').exists()).toBe(false)
+    expect(wrapper.find('[data-test="token-usage-trend"]').exists()).toBe(false)
+
+    const filterLabels = wrapper.findAll('label.input-label').map((label) => label.text())
+    expect(filterLabels).toEqual(['API Key', 'Model', 'Group'])
 
     const table = wrapper.get('[data-test="usage-table"]')
-    expect(table.attributes('data-dense')).toBe('true')
-    expect(table.attributes('data-framed')).toBe('false')
-    expect(table.text()).toContain('Cache Hit Rate')
-    expect(table.text()).not.toContain('IP')
-    expect(table.text()).not.toContain('Reasoning Effort')
-    expect(table.text()).not.toContain('All groups')
+    expect(table.text()).toContain('req-user-1')
   })
 
-  it('keeps the error requests tab visible when the feature is disabled', async () => {
+  it('hides the error requests tab when the feature is disabled', async () => {
     const wrapper = mountUsageView()
     await flushPromises()
 
     const errorTab = wrapper.findAll('button').find((button) => button.text().includes('Error Requests'))
-    expect(errorTab).toBeTruthy()
-
-    await errorTab!.trigger('click')
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('Error request records are not enabled')
+    expect(errorTab).toBeUndefined()
+    expect(wrapper.find('[data-test="error-requests-table"]').exists()).toBe(false)
     expect(listMyErrorRequests).not.toHaveBeenCalled()
   })
 

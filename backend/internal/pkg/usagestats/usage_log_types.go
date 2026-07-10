@@ -133,6 +133,17 @@ type GroupStat struct {
 	AccountCost float64 `json:"account_cost"` // 账号成本
 }
 
+// APIKeyStat represents user-safe usage statistics for a single API key.
+// It intentionally carries the display name only, never the key secret or prefix.
+type APIKeyStat struct {
+	APIKeyID    int64   `json:"api_key_id"`
+	APIKeyName  string  `json:"api_key_name"`
+	Requests    int64   `json:"requests"`
+	TotalTokens int64   `json:"total_tokens"`
+	Cost        float64 `json:"cost"`
+	ActualCost  float64 `json:"actual_cost"`
+}
+
 // UserUsageTrendPoint represents user usage trend data point
 type UserUsageTrendPoint struct {
 	Date       string  `json:"date"`
@@ -272,13 +283,19 @@ type UsageLogFilters struct {
 	GroupID   int64
 	Model     string
 	// ModelFilterSource controls how Model is matched. Empty preserves raw usage_logs.model semantics.
-	ModelFilterSource string
-	RequestType       *int16
-	Stream            *bool
-	BillingType       *int8
-	BillingMode       string
-	StartTime         *time.Time
-	EndTime           *time.Time
+	ModelFilterSource      string
+	RequestType            *int16
+	Stream                 *bool
+	BillingType            *int8
+	BillingMode            string
+	RouteKind              string
+	ProxyID                int64
+	RetryOnly              bool
+	MinRequestTotalMs      *int
+	MinRequestFirstTokenMs *int
+	MinUpstreamFirstByteMs *int
+	StartTime              *time.Time
+	EndTime                *time.Time
 	// ExactTotal requests exact COUNT(*) for pagination. Default false for fast large-table paging.
 	ExactTotal bool
 }

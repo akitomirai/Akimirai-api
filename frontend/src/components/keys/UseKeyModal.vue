@@ -180,13 +180,6 @@
     <template #footer>
       <div class="flex flex-wrap justify-end gap-2">
         <button
-          @click="goTo('/usage')"
-          class="btn btn-secondary"
-        >
-          <Icon name="chart" size="sm" />
-          {{ t('keys.useKeyModal.viewUsage') }}
-        </button>
-        <button
           @click="emit('close')"
           class="btn btn-secondary"
         >
@@ -200,7 +193,6 @@
 <script setup lang="ts">
 import { ref, computed, h, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useClipboard } from '@/composables/useClipboard'
@@ -238,7 +230,6 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const { t } = useI18n()
-const router = useRouter()
 const { copyToClipboard: clipboardCopy } = useClipboard()
 
 const copiedIndex = ref<number | null>(null)
@@ -622,8 +613,8 @@ function generateOpenAIFiles(baseUrl: string, apiKey: string): FileConfig[] {
 
   // config.toml content
   const configContent = `model_provider = "OpenAI"
-model = "gpt-5.5"
-review_model = "gpt-5.5"
+model = "gpt-5.6-sol"
+review_model = "gpt-5.6-sol"
 model_reasoning_effort = "xhigh"
 disable_response_storage = true
 network_access = "enabled"
@@ -662,8 +653,8 @@ function generateOpenAIWsFiles(baseUrl: string, apiKey: string): FileConfig[] {
 
   // config.toml content with WebSocket v2
   const configContent = `model_provider = "OpenAI"
-model = "gpt-5.5"
-review_model = "gpt-5.5"
+model = "gpt-5.6-sol"
+review_model = "gpt-5.6-sol"
 model_reasoning_effort = "xhigh"
 disable_response_storage = true
 network_access = "enabled"
@@ -724,6 +715,23 @@ function generateOpenCodeConfig(platform: string, baseUrl: string, apiKey: strin
         xhigh: {}
       }
     },
+    'gpt-5.6': {
+      name: 'GPT-5.6 (Sol)',
+      limit: {
+        context: 1050000,
+        output: 128000
+      },
+      options: {
+        store: false
+      },
+      variants: {
+        low: {},
+        medium: {},
+        high: {},
+        xhigh: {},
+        max: {}
+      }
+    },
     'gpt-5.6-sol': {
       name: 'GPT-5.6 Sol',
       limit: {
@@ -737,7 +745,8 @@ function generateOpenCodeConfig(platform: string, baseUrl: string, apiKey: strin
         low: {},
         medium: {},
         high: {},
-        xhigh: {}
+        xhigh: {},
+        max: {}
       }
     },
     'gpt-5.6-terra': {
@@ -753,7 +762,8 @@ function generateOpenCodeConfig(platform: string, baseUrl: string, apiKey: strin
         low: {},
         medium: {},
         high: {},
-        xhigh: {}
+        xhigh: {},
+        max: {}
       }
     },
     'gpt-5.6-luna': {
@@ -769,7 +779,8 @@ function generateOpenCodeConfig(platform: string, baseUrl: string, apiKey: strin
         low: {},
         medium: {},
         high: {},
-        xhigh: {}
+        xhigh: {},
+        max: {}
       }
     },
     'gpt-5.5': {
@@ -1214,10 +1225,5 @@ const copyGptImageConfig = async () => {
 const openGptImage = () => {
   emit('close')
   window.location.href = '/images'
-}
-
-const goTo = (path: string) => {
-  emit('close')
-  router.push(path)
 }
 </script>

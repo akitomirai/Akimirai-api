@@ -185,6 +185,9 @@ func (h *UsageHandler) List(c *gin.Context) {
 		EndTime:     endTime,
 		ExactTotal:  exactTotal,
 	}
+	if !applyAdminUsageDiagnosticFilters(c, &filters) {
+		return
+	}
 
 	records, result, err := h.usageService.ListWithFilters(c.Request.Context(), params, filters)
 	if err != nil {
@@ -323,6 +326,9 @@ func (h *UsageHandler) Stats(c *gin.Context) {
 		BillingMode: billingMode,
 		StartTime:   &startTime,
 		EndTime:     &endTime,
+	}
+	if !applyAdminUsageDiagnosticFilters(c, &filters) {
+		return
 	}
 
 	var stats *usagestats.UsageStats

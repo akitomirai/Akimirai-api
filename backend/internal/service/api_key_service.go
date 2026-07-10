@@ -22,13 +22,15 @@ import (
 )
 
 var (
-	ErrAPIKeyNotFound     = infraerrors.NotFound("API_KEY_NOT_FOUND", "api key not found")
-	ErrGroupNotAllowed    = infraerrors.Forbidden("GROUP_NOT_ALLOWED", "user is not allowed to bind this group")
-	ErrAPIKeyExists       = infraerrors.Conflict("API_KEY_EXISTS", "api key already exists")
-	ErrAPIKeyTooShort     = infraerrors.BadRequest("API_KEY_TOO_SHORT", "api key must be at least 16 characters")
-	ErrAPIKeyInvalidChars = infraerrors.BadRequest("API_KEY_INVALID_CHARS", "api key can only contain letters, numbers, underscores, and hyphens")
-	ErrAPIKeyRateLimited  = infraerrors.TooManyRequests("API_KEY_RATE_LIMITED", "too many failed attempts, please try again later")
-	ErrInvalidIPPattern   = infraerrors.BadRequest("INVALID_IP_PATTERN", "invalid IP or CIDR pattern")
+	ErrAPIKeyNotFound             = infraerrors.NotFound("API_KEY_NOT_FOUND", "api key not found")
+	ErrGroupNotAllowed            = infraerrors.Forbidden("GROUP_NOT_ALLOWED", "user is not allowed to bind this group")
+	ErrAPIKeyExists               = infraerrors.Conflict("API_KEY_EXISTS", "api key already exists")
+	ErrAPIKeyTooShort             = infraerrors.BadRequest("API_KEY_TOO_SHORT", "api key must be at least 16 characters")
+	ErrAPIKeyInvalidChars         = infraerrors.BadRequest("API_KEY_INVALID_CHARS", "api key can only contain letters, numbers, underscores, and hyphens")
+	ErrAPIKeyRateLimited          = infraerrors.TooManyRequests("API_KEY_RATE_LIMITED", "too many failed attempts, please try again later")
+	ErrInvalidIPPattern           = infraerrors.BadRequest("INVALID_IP_PATTERN", "invalid IP or CIDR pattern")
+	ErrAPIKeyAllowedModelsTooMany = infraerrors.BadRequest("API_KEY_ALLOWED_MODELS_TOO_MANY", "api key model limit contains too many models")
+	ErrAPIKeyAllowedModelTooLong  = infraerrors.BadRequest("API_KEY_ALLOWED_MODEL_TOO_LONG", "api key model name is too long")
 	// ErrAPIKeyExpired        = infraerrors.Forbidden("API_KEY_EXPIRED", "api key has expired")
 	ErrAPIKeyExpired = infraerrors.Forbidden("API_KEY_EXPIRED", "api key 已过期")
 	// ErrAPIKeyQuotaExhausted = infraerrors.TooManyRequests("API_KEY_QUOTA_EXHAUSTED", "api key quota exhausted")
@@ -43,6 +45,8 @@ var (
 
 const (
 	apiKeyMaxErrorsPerHour = 20
+	apiKeyMaxAllowedModels = 200
+	apiKeyMaxModelNameLen  = 200
 	apiKeyLastUsedMinTouch = 30 * time.Second
 	// DB 写失败后的短退避，避免请求路径持续同步重试造成写风暴与高延迟。
 	apiKeyLastUsedFailBackoff = 5 * time.Second
@@ -158,11 +162,12 @@ type APIKeyAuthCacheInvalidator interface {
 
 // CreateAPIKeyRequest 创建API Key请求
 type CreateAPIKeyRequest struct {
-	Name        string   `json:"name"`
-	GroupID     *int64   `json:"group_id"`
-	CustomKey   *string  `json:"custom_key"`   // 可选的自定义key
-	IPWhitelist []string `json:"ip_whitelist"` // IP 白名单
-	IPBlacklist []string `json:"ip_blacklist"` // IP 黑名单
+	Name          string   `json:"name"`
+	GroupID       *int64   `json:"group_id"`
+	CustomKey     *string  `json:"custom_key"`   // 可选的自定义key
+	IPWhitelist   []string `json:"ip_whitelist"` // IP 白名单
+	IPBlacklist   []string `json:"ip_blacklist"` // IP 黑名单
+	AllowedModels []string `json:"allowed_models"`
 
 	// Quota fields
 	Quota         float64 `json:"quota"`           // Quota limit in USD (0 = unlimited)
@@ -176,11 +181,12 @@ type CreateAPIKeyRequest struct {
 
 // UpdateAPIKeyRequest 更新API Key请求
 type UpdateAPIKeyRequest struct {
-	Name        *string  `json:"name"`
-	GroupID     *int64   `json:"group_id"`
-	Status      *string  `json:"status"`
-	IPWhitelist []string `json:"ip_whitelist"` // IP 白名单（空数组清空）
-	IPBlacklist []string `json:"ip_blacklist"` // IP 黑名单（空数组清空）
+	Name          *string   `json:"name"`
+	GroupID       *int64    `json:"group_id"`
+	Status        *string   `json:"status"`
+	IPWhitelist   []string  `json:"ip_whitelist"` // IP 白名单（空数组清空）
+	IPBlacklist   []string  `json:"ip_blacklist"` // IP 黑名单（空数组清空）
+	AllowedModels *[]string `json:"allowed_models"`
 
 	// Quota fields
 	Quota           *float64   `json:"quota"`       // Quota limit in USD (nil = no change, 0 = unlimited)
@@ -257,6 +263,29 @@ func (s *APIKeyService) compileAPIKeyIPRules(apiKey *APIKey) {
 	}
 	apiKey.CompiledIPWhitelist = ip.CompileIPRules(apiKey.IPWhitelist)
 	apiKey.CompiledIPBlacklist = ip.CompileIPRules(apiKey.IPBlacklist)
+}
+
+func NormalizeAPIKeyAllowedModels(models []string) ([]string, error) {
+	normalized := make([]string, 0, len(models))
+	seen := make(map[string]struct{}, len(models))
+	for _, model := range models {
+		model = strings.TrimSpace(model)
+		if model == "" {
+			continue
+		}
+		if len(model) > apiKeyMaxModelNameLen {
+			return nil, ErrAPIKeyAllowedModelTooLong
+		}
+		if _, exists := seen[model]; exists {
+			continue
+		}
+		if len(normalized) >= apiKeyMaxAllowedModels {
+			return nil, ErrAPIKeyAllowedModelsTooMany
+		}
+		seen[model] = struct{}{}
+		normalized = append(normalized, model)
+	}
+	return normalized, nil
 }
 
 // GenerateKey 生成随机API Key
@@ -341,6 +370,10 @@ func (s *APIKeyService) canUserBindGroup(ctx context.Context, user *User, group 
 
 // Create 创建API Key
 func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIKeyRequest) (*APIKey, error) {
+	allowedModels, err := NormalizeAPIKeyAllowedModels(req.AllowedModels)
+	if err != nil {
+		return nil, err
+	}
 	// 验证用户存在
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
@@ -421,20 +454,21 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 	keyPrefix := apiKeyDisplayPrefix(rawKey)
 
 	apiKey := &APIKey{
-		UserID:      userID,
-		Key:         rawKey,
-		KeyHash:     keyHash,
-		KeyPrefix:   keyPrefix,
-		Name:        html.EscapeString(req.Name),
-		GroupID:     req.GroupID,
-		Status:      StatusActive,
-		IPWhitelist: req.IPWhitelist,
-		IPBlacklist: req.IPBlacklist,
-		Quota:       req.Quota,
-		QuotaUsed:   0,
-		RateLimit5h: req.RateLimit5h,
-		RateLimit1d: req.RateLimit1d,
-		RateLimit7d: req.RateLimit7d,
+		UserID:        userID,
+		Key:           rawKey,
+		KeyHash:       keyHash,
+		KeyPrefix:     keyPrefix,
+		Name:          html.EscapeString(req.Name),
+		GroupID:       req.GroupID,
+		Status:        StatusActive,
+		IPWhitelist:   req.IPWhitelist,
+		IPBlacklist:   req.IPBlacklist,
+		AllowedModels: allowedModels,
+		Quota:         req.Quota,
+		QuotaUsed:     0,
+		RateLimit5h:   req.RateLimit5h,
+		RateLimit1d:   req.RateLimit1d,
+		RateLimit7d:   req.RateLimit7d,
 	}
 
 	// Set expiration time if specified
@@ -768,6 +802,13 @@ func (s *APIKeyService) Update(ctx context.Context, id int64, userID int64, req 
 	// 更新 IP 限制（空数组会清空设置）
 	apiKey.IPWhitelist = req.IPWhitelist
 	apiKey.IPBlacklist = req.IPBlacklist
+	if req.AllowedModels != nil {
+		allowedModels, err := NormalizeAPIKeyAllowedModels(*req.AllowedModels)
+		if err != nil {
+			return nil, err
+		}
+		apiKey.AllowedModels = allowedModels
+	}
 
 	// Update rate limit configuration
 	if req.RateLimit5h != nil {

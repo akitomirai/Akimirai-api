@@ -34,8 +34,8 @@
             <!-- Recharge Account Card -->
             <div class="card p-5">
               <p class="text-xs font-medium text-gray-400 dark:text-gray-500">{{ t('payment.rechargeAccount') }}</p>
-              <p class="mt-1 text-base font-semibold text-gray-900 dark:text-white">{{ user?.username || '' }}</p>
-              <p class="mt-0.5 text-sm font-medium text-green-600 dark:text-green-400">{{ t('payment.currentBalance') }}: {{ user?.balance?.toFixed(2) || '0.00' }}</p>
+              <p class="mt-1 text-base font-semibold text-gray-900 dark:text-white">{{ accountDisplayName }}</p>
+              <p class="mt-0.5 text-sm font-medium text-green-600 dark:text-green-400">{{ t('payment.currentBalance') }}: {{ formatBalance(Number(user?.balance || 0)) }}</p>
             </div>
             <div v-if="enabledMethods.length === 0" class="card py-16 text-center">
               <p class="text-gray-500 dark:text-gray-400">{{ t('payment.notAvailable') }}</p>
@@ -184,7 +184,18 @@
                 <p class="text-gray-500 dark:text-gray-400">{{ t('payment.noPlans') }}</p>
               </div>
               <div v-else :class="planGridClass">
-                <SubscriptionPlanCard v-for="plan in checkout.plans" :key="plan.id" :plan="plan" :active-subscriptions="activeSubscriptions" @select="selectPlan" />
+                <SubscriptionPlanCard
+                  v-for="plan in checkout.plans"
+                  :key="plan.id"
+                  :plan="plan"
+                  :active-subscriptions="activeSubscriptions"
+                  :balance="user?.balance"
+                  :show-balance-action="true"
+                  :balance-action-loading="balancePurchasePlanId === plan.id"
+                  @select="selectPlan"
+                  @balance-subscribe="handleBalanceSubscribe"
+                  @recharge="goRechargeForPlan"
+                />
               </div>
               <!-- Active subscriptions (compact, below plan list) -->
               <div v-if="activeSubscriptions.length > 0">
@@ -212,8 +223,11 @@
               </div>
             </template>
           </template>
+          <template v-else-if="activeTab === 'orders'">
+            <UserOrdersPanel />
+          </template>
         </template>
-        <div v-if="(checkout.help_text || checkout.help_image_url) && paymentPhase === 'select' && !selectedPlan" class="card p-4">
+        <div v-if="activeTab !== 'orders' && (checkout.help_text || checkout.help_image_url) && paymentPhase === 'select' && !selectedPlan" class="card p-4">
           <div class="flex flex-col items-center gap-3">
             <img v-if="checkout.help_image_url" :src="checkout.help_image_url" alt=""
               class="h-40 max-w-full cursor-pointer rounded-lg object-contain transition-opacity hover:opacity-80"
@@ -234,7 +248,18 @@
             </button>
             <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{{ t('payment.selectPlan') }}</h3>
             <div class="space-y-4">
-              <SubscriptionPlanCard v-for="plan in renewalPlans" :key="plan.id" :plan="plan" :active-subscriptions="activeSubscriptions" @select="selectPlanFromModal" />
+              <SubscriptionPlanCard
+                v-for="plan in renewalPlans"
+                :key="plan.id"
+                :plan="plan"
+                :active-subscriptions="activeSubscriptions"
+                :balance="user?.balance"
+                :show-balance-action="true"
+                :balance-action-loading="balancePurchasePlanId === plan.id"
+                @select="selectPlanFromModal"
+                @balance-subscribe="handleBalanceSubscribe"
+                @recharge="goRechargeForPlan"
+              />
             </div>
           </div>
         </div>
@@ -282,6 +307,7 @@ import {
 import { platformAccentBarClass, platformBadgeLightClass, platformBadgeClass, platformTextClass, platformLabel } from '@/utils/platformColors'
 import SubscriptionPlanCard from '@/components/payment/SubscriptionPlanCard.vue'
 import PaymentStatusPanel from '@/components/payment/PaymentStatusPanel.vue'
+import UserOrdersPanel from '@/components/payment/UserOrdersPanel.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { DEFAULT_PAYMENT_CURRENCY, formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
 import type { PaymentMethodOption } from '@/components/payment/PaymentMethodSelector.vue'
@@ -299,6 +325,13 @@ const appStore = useAppStore()
 
 const user = computed(() => authStore.user)
 const activeSubscriptions = computed(() => subscriptionStore.activeSubscriptions)
+const accountDisplayName = computed(() => {
+  const username = user.value?.username?.trim()
+  if (username) return username
+  const email = user.value?.email?.trim() || ''
+  const qqMatch = email.match(/^(\d+)@qq\.com$/i)
+  return qqMatch ? `QQ ${qqMatch[1]}` : email
+})
 
 function getDaysRemaining(expiresAt: string): number {
   const diff = new Date(expiresAt).getTime() - Date.now()
@@ -317,10 +350,13 @@ const loading = ref(true)
 const submitting = ref(false)
 const errorMessage = ref('')
 const errorHintMessage = ref('')
-const activeTab = ref<'recharge' | 'subscription'>('recharge')
+type StoreTab = 'recharge' | 'subscription' | 'orders'
+
+const activeTab = ref<StoreTab>('recharge')
 const amount = ref<number | null>(null)
 const selectedMethod = ref('')
 const selectedPlan = ref<SubscriptionPlan | null>(null)
+const balancePurchasePlanId = ref<number | null>(null)
 const previewImage = ref('')
 
 const paymentPhase = ref<'select' | 'paying'>('select')
@@ -498,9 +534,10 @@ const checkout = ref<CheckoutInfoResponse>({
 })
 
 const tabs = computed(() => {
-  const result: { key: 'recharge' | 'subscription'; label: string }[] = []
+  const result: { key: StoreTab; label: string }[] = []
   if (!checkout.value.balance_disabled) result.push({ key: 'recharge', label: t('payment.tabTopUp') })
   result.push({ key: 'subscription', label: t('payment.tabSubscribe') })
+  result.push({ key: 'orders', label: t('payment.tabOrders') })
   return result
 })
 
@@ -747,6 +784,48 @@ function selectPlanFromModal(plan: SubscriptionPlan) {
 function closeRenewalModal() {
   showRenewalModal.value = false
   renewGroupId.value = null
+}
+
+function roundBalance(value: number): number {
+  return Math.round(Number(value || 0) * 100) / 100
+}
+
+function formatBalance(value: number): string {
+  return `$${roundBalance(value).toFixed(2)}`
+}
+
+function goRechargeForPlan(plan: SubscriptionPlan) {
+  const shortfall = Math.max(0, roundBalance(Number(plan.price || 0) - Number(user.value?.balance || 0)))
+  appStore.showWarning(t('payment.balanceInsufficientWithShortfall', { amount: formatBalance(shortfall) }))
+  selectedPlan.value = null
+  activeTab.value = 'recharge'
+  void router.push({ path: '/purchase', query: { tab: 'recharge' } })
+}
+
+async function handleBalanceSubscribe(plan: SubscriptionPlan) {
+  if (!plan || balancePurchasePlanId.value !== null) return
+  const shortfall = Math.max(0, roundBalance(Number(plan.price || 0) - Number(user.value?.balance || 0)))
+  if (shortfall > 0) {
+    goRechargeForPlan(plan)
+    return
+  }
+
+  balancePurchasePlanId.value = plan.id
+  try {
+    const result = await subscriptionStore.purchaseWithBalance(plan.id)
+    await Promise.all([
+      authStore.refreshUser(),
+      subscriptionStore.fetchActiveSubscriptions(true),
+    ])
+    appStore.showSuccess(t('payment.balanceSubscribeSuccess', {
+      amount: formatBalance(result.price),
+      balance: formatBalance(result.balance_after),
+    }))
+  } catch (error: unknown) {
+    appStore.showError(extractI18nErrorMessage(error, t, 'payment.errors', t('payment.balanceSubscribeFailed')))
+  } finally {
+    balancePurchasePlanId.value = null
+  }
 }
 
 async function handleSubmitRecharge() {
@@ -1132,7 +1211,9 @@ onMounted(async () => {
       activeTab.value = 'subscription'
     }
     // Handle renewal navigation: ?tab=subscription&group=123
-    if (route.query.tab === 'subscription') {
+    if (route.query.tab === 'orders') {
+      activeTab.value = 'orders'
+    } else if (route.query.tab === 'subscription') {
       activeTab.value = 'subscription'
       if (route.query.group) {
         const groupId = Number(route.query.group)

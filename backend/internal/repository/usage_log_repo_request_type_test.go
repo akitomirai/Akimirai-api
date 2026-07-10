@@ -38,68 +38,11 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 		OpenAIWSMode:   false,
 		CreatedAt:      createdAt,
 	}
+	expectedLog := *log
+	expected := prepareUsageLogInsert(&expectedLog)
 
 	mock.ExpectQuery("INSERT INTO usage_logs").
-		WithArgs(
-			log.UserID,
-			log.APIKeyID,
-			log.AccountID,
-			log.RequestID,
-			log.Model,
-			log.RequestedModel,
-			sqlmock.AnyArg(), // upstream_model
-			sqlmock.AnyArg(), // group_id
-			sqlmock.AnyArg(), // subscription_id
-			log.InputTokens,
-			log.OutputTokens,
-			log.CacheCreationTokens,
-			log.CacheReadTokens,
-			log.CacheCreation5mTokens,
-			log.CacheCreation1hTokens,
-			log.ImageOutputTokens,
-			log.ImageOutputCost,
-			log.InputCost,
-			log.OutputCost,
-			log.CacheCreationCost,
-			log.CacheReadCost,
-			log.TotalCost,
-			log.ActualCost,
-			log.RateMultiplier,
-			log.AccountRateMultiplier,
-			log.BillingType,
-			int16(service.RequestTypeWSV2),
-			true,
-			true,
-			sqlmock.AnyArg(), // duration_ms
-			sqlmock.AnyArg(), // first_token_ms
-			sqlmock.AnyArg(), // client_transport
-			sqlmock.AnyArg(), // auth_latency_ms
-			sqlmock.AnyArg(), // routing_latency_ms
-			sqlmock.AnyArg(), // upstream_latency_ms
-			sqlmock.AnyArg(), // response_latency_ms
-			sqlmock.AnyArg(), // user_agent
-			sqlmock.AnyArg(), // ip_address
-			log.ImageCount,
-			sqlmock.AnyArg(), // image_size
-			sqlmock.AnyArg(), // image_input_size
-			sqlmock.AnyArg(), // image_output_size
-			sqlmock.AnyArg(), // image_size_source
-			sqlmock.AnyArg(), // image_size_breakdown
-			sqlmock.AnyArg(), // video_count
-			sqlmock.AnyArg(), // video_resolution
-			sqlmock.AnyArg(), // video_duration_seconds
-			sqlmock.AnyArg(), // service_tier
-			sqlmock.AnyArg(), // reasoning_effort
-			sqlmock.AnyArg(), // inbound_endpoint
-			sqlmock.AnyArg(), // upstream_endpoint
-			log.CacheTTLOverridden,
-			sqlmock.AnyArg(), // channel_id
-			sqlmock.AnyArg(), // model_mapping_chain
-			sqlmock.AnyArg(), // billing_tier
-			sqlmock.AnyArg(), // billing_mode
-			sqlmock.AnyArg(), // account_stats_cost
-			createdAt,
-		).
+		WithArgs(anySliceToDriverValues(expected.args)...).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(99), createdAt))
 
 	inserted, err := repo.Create(context.Background(), log)
@@ -129,68 +72,11 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 		ServiceTier:    &serviceTier,
 		CreatedAt:      createdAt,
 	}
+	expectedLog := *log
+	expected := prepareUsageLogInsert(&expectedLog)
 
 	mock.ExpectQuery("INSERT INTO usage_logs").
-		WithArgs(
-			log.UserID,
-			log.APIKeyID,
-			log.AccountID,
-			log.RequestID,
-			log.Model,
-			log.RequestedModel,
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			log.InputTokens,
-			log.OutputTokens,
-			log.CacheCreationTokens,
-			log.CacheReadTokens,
-			log.CacheCreation5mTokens,
-			log.CacheCreation1hTokens,
-			log.ImageOutputTokens,
-			log.ImageOutputCost,
-			log.InputCost,
-			log.OutputCost,
-			log.CacheCreationCost,
-			log.CacheReadCost,
-			log.TotalCost,
-			log.ActualCost,
-			log.RateMultiplier,
-			log.AccountRateMultiplier,
-			log.BillingType,
-			int16(service.RequestTypeSync),
-			false,
-			false,
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(), // client_transport
-			sqlmock.AnyArg(), // auth_latency_ms
-			sqlmock.AnyArg(), // routing_latency_ms
-			sqlmock.AnyArg(), // upstream_latency_ms
-			sqlmock.AnyArg(), // response_latency_ms
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			log.ImageCount,
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(), // image_input_size
-			sqlmock.AnyArg(), // image_output_size
-			sqlmock.AnyArg(), // image_size_source
-			sqlmock.AnyArg(), // image_size_breakdown
-			sqlmock.AnyArg(), // video_count
-			sqlmock.AnyArg(), // video_resolution
-			sqlmock.AnyArg(), // video_duration_seconds
-			serviceTier,
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			log.CacheTTLOverridden,
-			sqlmock.AnyArg(), // channel_id
-			sqlmock.AnyArg(), // model_mapping_chain
-			sqlmock.AnyArg(), // billing_tier
-			sqlmock.AnyArg(), // billing_mode
-			sqlmock.AnyArg(), // account_stats_cost
-			createdAt,
-		).
+		WithArgs(anySliceToDriverValues(expected.args)...).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(int64(100), createdAt))
 
 	inserted, err := repo.Create(context.Background(), log)
@@ -303,11 +189,11 @@ func TestPrepareUsageLogInsert_PersistsImageSizeMetadata(t *testing.T) {
 		CreatedAt:          time.Date(2025, 1, 6, 12, 0, 0, 0, time.UTC),
 	})
 
-	require.Equal(t, sql.NullString{String: imageSize, Valid: true}, prepared.args[39])
-	require.Equal(t, sql.NullString{String: inputSize, Valid: true}, prepared.args[40])
-	require.Equal(t, sql.NullString{String: outputSize, Valid: true}, prepared.args[41])
-	require.Equal(t, sql.NullString{String: source, Valid: true}, prepared.args[42])
-	breakdownJSON, ok := prepared.args[43].(string)
+	require.Equal(t, sql.NullString{String: imageSize, Valid: true}, prepared.args[55])
+	require.Equal(t, sql.NullString{String: inputSize, Valid: true}, prepared.args[56])
+	require.Equal(t, sql.NullString{String: outputSize, Valid: true}, prepared.args[57])
+	require.Equal(t, sql.NullString{String: source, Valid: true}, prepared.args[58])
+	breakdownJSON, ok := prepared.args[59].(string)
 	require.True(t, ok)
 	require.JSONEq(t, `{"1K":1,"4K":1}`, breakdownJSON)
 }
@@ -813,6 +699,7 @@ func (s usageLogScannerStub) Scan(dest ...any) error {
 func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 	t.Run("image_size_metadata_is_scanned", func(t *testing.T) {
 		now := time.Now().UTC()
+		startedAt := now.Add(-time.Second)
 		log, err := scanUsageLog(usageLogScannerStub{values: []any{
 			int64(4),
 			int64(13),
@@ -840,6 +727,22 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullInt64{Valid: true, Int64: 22},
 			sql.NullInt64{Valid: true, Int64: 333},
 			sql.NullInt64{Valid: true, Int64: 444},
+			sql.NullTime{Valid: true, Time: startedAt},
+			sql.NullInt64{Valid: true, Int64: 1000},
+			sql.NullInt64{Valid: true, Int64: 12},
+			sql.NullInt64{Valid: true, Int64: 2048},
+			sql.NullInt64{Valid: true, Int64: 30},
+			sql.NullInt64{Valid: true, Int64: 500},
+			sql.NullInt64{Valid: true, Int64: 650},
+			sql.NullString{Valid: true, String: service.RequestRouteKindProxy},
+			sql.NullInt64{Valid: true, Int64: 91},
+			sql.NullString{Valid: true, String: "jp-route"},
+			sql.NullString{Valid: true, String: "socks5"},
+			sql.NullString{Valid: true, String: "abcdef"},
+			sql.NullInt64{Valid: true, Int64: 200},
+			1,
+			1,
+			sql.NullString{Valid: true, String: `[{"sequence":1,"started_ms":1,"account_id":33,"route":{"kind":"proxy"},"outcome":"http_error"}]`},
 			sql.NullString{},
 			sql.NullString{},
 			2,
@@ -884,6 +787,22 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 		require.Equal(t, 333, *log.UpstreamLatencyMs)
 		require.NotNil(t, log.ResponseLatencyMs)
 		require.Equal(t, 444, *log.ResponseLatencyMs)
+		require.Equal(t, startedAt, *log.RequestStartedAt)
+		require.Equal(t, 1000, *log.RequestTotalMs)
+		require.Equal(t, 12, *log.RequestBodyReadMs)
+		require.Equal(t, int64(2048), *log.RequestBodyBytes)
+		require.Equal(t, 30, *log.UpstreamRequestWrittenMs)
+		require.Equal(t, 500, *log.UpstreamFirstByteMs)
+		require.Equal(t, 650, *log.RequestFirstTokenMs)
+		require.Equal(t, service.RequestRouteKindProxy, *log.RouteKind)
+		require.Equal(t, int64(91), *log.ProxyIDSnapshot)
+		require.Equal(t, "jp-route", *log.ProxyNameSnapshot)
+		require.Equal(t, "socks5", *log.ProxyProtocolSnapshot)
+		require.Equal(t, "abcdef", *log.RouteFingerprint)
+		require.Equal(t, 200, *log.FinalUpstreamStatus)
+		require.Equal(t, 1, log.RetryCount)
+		require.Equal(t, 1, log.AccountSwitchCount)
+		require.Len(t, log.AttemptTimeline, 1)
 	})
 
 	t.Run("request_type_ws_v2_overrides_legacy", func(t *testing.T) {
@@ -926,6 +845,22 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullInt64{},
+			sql.NullTime{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullString{},
+			sql.NullInt64{},
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullInt64{},
+			0,
+			0,
+			sql.NullString{},
 			sql.NullString{},
 			sql.NullString{},
 			0,
@@ -986,6 +921,22 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullInt64{},
+			sql.NullTime{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullString{},
+			sql.NullInt64{},
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullInt64{},
+			0,
+			0,
+			sql.NullString{},
 			sql.NullString{},
 			sql.NullString{},
 			0,
@@ -1046,6 +997,22 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullInt64{},
+			sql.NullTime{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullString{},
+			sql.NullInt64{},
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullInt64{},
+			0,
+			0,
+			sql.NullString{},
 			sql.NullString{},
 			sql.NullString{},
 			0,

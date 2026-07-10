@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
@@ -55,7 +55,7 @@ function makeUser(overrides: { subscriptions?: UserSubscription[] } = {}) {
   return { id: 99, email: 'u@example.com', ...overrides } as any
 }
 
-/** 鎸傝浇骞惰Е鍙?show锛歠alse 鈫?true锛岀‘淇?watch 琚縺娲?*/
+/** 挂载并触发 show：false -> true，确保 watch 被激活 */
 async function mountAndOpen(extraProps: Record<string, unknown> = {}) {
   const w = mount(UserPlatformQuotaModal, {
     props: { show: false, user: makeUser(), ...extraProps },
@@ -74,12 +74,12 @@ beforeEach(() => {
 })
 
 describe('UserPlatformQuotaModal', () => {
-  it('鎸傝浇骞?show=true 鏃惰皟鐢?getPlatformQuotas', async () => {
+  it('挂载并 show=true 时调用 getPlatformQuotas', async () => {
     await mountAndOpen()
     expect(apiMocks.getPlatformQuotas).toHaveBeenCalledWith(99)
   })
 
-  it('绌烘暟鎹覆鏌?5 涓?platform 琛?, async () => {
+  it('空数据渲染 5 个 platform 行', async () => {
     const w = await mountAndOpen()
     const html = w.html()
     expect(html).toContain('anthropic')
@@ -89,7 +89,7 @@ describe('UserPlatformQuotaModal', () => {
     expect(html).toContain('grok')
   })
 
-  it('宸叉湁鏁版嵁姝ｇ‘濉厖 limit input', async () => {
+  it('已有数据正确填充 limit input', async () => {
     apiMocks.getPlatformQuotas.mockResolvedValueOnce({
       platform_quotas: [
         { platform: 'anthropic', daily_limit_usd: 10, weekly_limit_usd: null, monthly_limit_usd: null,
@@ -98,13 +98,13 @@ describe('UserPlatformQuotaModal', () => {
     })
     const w = await mountAndOpen()
     const inputs = w.findAll('input[type=number]')
-    // 4 platforms 脳 3 windows = 12 inputs
+    // 5 platforms x 3 windows = 15 inputs
     expect(inputs.length).toBe(15)
-    // 绗竴涓?input 鏄?anthropic.daily = 10
+    // 第一个 input 是 anthropic.daily = 10
     expect((inputs[0].element as HTMLInputElement).value).toBe('10')
   })
 
-  it('淇濆瓨鎻愪氦瀹屾暣 5 platform payload', async () => {
+  it('保存提交完整 5 platform payload', async () => {
     apiMocks.getPlatformQuotas.mockResolvedValueOnce({
       platform_quotas: [
         { platform: 'openai', daily_limit_usd: null, weekly_limit_usd: 20, monthly_limit_usd: null,
@@ -112,7 +112,7 @@ describe('UserPlatformQuotaModal', () => {
       ],
     })
     const w = await mountAndOpen()
-    // 鎵惧埌銆屼繚瀛樸€嶆寜閽紙鍖呭惈涓枃銆屼繚瀛樸€嶅瓧鏍风殑鎸夐挳锛?    const buttons = w.findAll('button')
+    const buttons = w.findAll('button')
     const saveBtn = buttons.find((b) => b.text() === 'admin.users.platformQuota.save')
     expect(saveBtn).toBeTruthy()
     await saveBtn!.trigger('click')
@@ -125,7 +125,7 @@ describe('UserPlatformQuotaModal', () => {
     expect(openai.weekly_limit_usd).toBe(20)
   })
 
-  it('鍏ㄩ儴娓呯┖鎶婃墍鏈?limit 缃?null锛堢‘璁ら€氳繃锛?, async () => {
+  it('全部清空把所有 limit 置 null（确认通过）', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     apiMocks.getPlatformQuotas.mockResolvedValueOnce({
       platform_quotas: [
@@ -147,7 +147,7 @@ describe('UserPlatformQuotaModal', () => {
     confirmSpy.mockRestore()
   })
 
-  it('鍏ㄩ儴娓呯┖ confirm 鍙栨秷鍒欎繚鎸佸師鍊?, async () => {
+  it('全部清空 confirm 取消则保持原值', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     apiMocks.getPlatformQuotas.mockResolvedValueOnce({
       platform_quotas: [
@@ -160,17 +160,17 @@ describe('UserPlatformQuotaModal', () => {
     await clearBtn!.trigger('click')
     await flushPromises()
     expect(confirmSpy).toHaveBeenCalledTimes(1)
-    // anthropic daily 搴斾繚鎸?10锛堟湭琚竻绌猴級
+    // anthropic daily 应保持 10（未被清空）
     const inputs = w.findAll('input[type=number]')
     const dailyVal = (inputs[0].element as HTMLInputElement).value
     expect(dailyVal).toBe('10')
     confirmSpy.mockRestore()
   })
 
-  it('閲嶇疆鎸夐挳 confirm 鍙栨秷鍒欎笉璋冪敤 API', async () => {
+  it('重置按钮 confirm 取消则不调用 API', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
     const w = await mountAndOpen()
-    const resetBtns = w.findAll('button').filter((b) => b.text() === '鈫?)
+    const resetBtns = w.findAll('button').filter((b) => b.text() === '↻')
     expect(resetBtns.length).toBeGreaterThan(0)
     await resetBtns[0].trigger('click')
     await flushPromises()
@@ -178,11 +178,11 @@ describe('UserPlatformQuotaModal', () => {
     confirmSpy.mockRestore()
   })
 
-  it('閲嶇疆鎸夐挳 confirm 纭鍒欒皟鐢?API', async () => {
+  it('重置按钮 confirm 确认则调用 API', async () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
     const w = await mountAndOpen()
-    const resetBtns = w.findAll('button').filter((b) => b.text() === '鈫?)
-    await resetBtns[0].trigger('click') // 绗竴涓槸 anthropic.daily
+    const resetBtns = w.findAll('button').filter((b) => b.text() === '↻')
+    await resetBtns[0].trigger('click') // 第一个是 anthropic.daily
     await flushPromises()
     expect(apiMocks.resetPlatformQuotaWindow).toHaveBeenCalledWith(99, 'anthropic', 'daily')
     confirmSpy.mockRestore()

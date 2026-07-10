@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from '../client'
-import type { AdminUsageLog, UsageQueryParams, PaginatedResponse, UsageRequestType } from '@/types'
+import type { AdminUsageDiagnostics, AdminUsageLog, UsageQueryParams, PaginatedResponse, UsageRequestType, UsageRouteKind } from '@/types'
 import type { EndpointStat } from '@/types'
 
 // ==================== Types ====================
@@ -86,10 +86,17 @@ export interface AdminUsageQueryParams extends UsageQueryParams {
   billing_mode?: string
   sort_by?: string
   sort_order?: 'asc' | 'desc'
+  route_kind?: UsageRouteKind | null
+  proxy_id?: number | null
+  retry_only?: boolean | null
+  min_request_total_ms?: number | null
+  min_request_first_token_ms?: number | null
+  min_upstream_first_byte_ms?: number | null
   // 错误请求 tab 专属筛选(仅传给错误列表接口;共用同一 filters 对象)
   error_phase?: string | null
   error_category?: string | null
   status_code?: number | null
+  error_request_id?: string | null
 }
 
 // ==================== API Functions ====================
@@ -128,10 +135,21 @@ export async function getStats(params: {
   end_date?: string
   timezone?: string
   nocache?: number
+  route_kind?: UsageRouteKind | null
+  proxy_id?: number | null
+  retry_only?: boolean | null
+  min_request_total_ms?: number | null
+  min_request_first_token_ms?: number | null
+  min_upstream_first_byte_ms?: number | null
 }): Promise<AdminUsageStatsResponse> {
   const { data } = await apiClient.get<AdminUsageStatsResponse>('/admin/usage/stats', {
     params
   })
+  return data
+}
+
+export async function getDiagnostics(usageId: number): Promise<AdminUsageDiagnostics> {
+  const { data } = await apiClient.get<AdminUsageDiagnostics>(`/admin/usage/${usageId}/diagnostics`)
   return data
 }
 
@@ -207,6 +225,7 @@ export async function cancelCleanupTask(taskId: number): Promise<{ id: number; s
 export const adminUsageAPI = {
   list,
   getStats,
+  getDiagnostics,
   searchUsers,
   searchApiKeys,
   listCleanupTasks,

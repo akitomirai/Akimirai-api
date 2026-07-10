@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 
 import UsageView from '../UsageView.vue'
 
-const { list, getStats, getSnapshotV2, getById, getModelStats, listErrorLogs } = vi.hoisted(() => {
+const { list, getStats, getSnapshotV2, getById, getModelStats, getUserBreakdown, listErrorLogs } = vi.hoisted(() => {
   vi.stubGlobal('localStorage', {
     getItem: vi.fn(() => null),
     setItem: vi.fn(),
@@ -16,6 +16,7 @@ const { list, getStats, getSnapshotV2, getById, getModelStats, listErrorLogs } =
     getSnapshotV2: vi.fn(),
     getById: vi.fn(),
     getModelStats: vi.fn(),
+    getUserBreakdown: vi.fn(),
     listErrorLogs: vi.fn(),
   }
 })
@@ -43,6 +44,7 @@ vi.mock('@/api/admin', () => ({
     dashboard: {
       getSnapshotV2,
       getModelStats,
+      getUserBreakdown,
     },
     users: {
       getById,
@@ -58,6 +60,10 @@ vi.mock('@/api/admin/usage', () => ({
 
 vi.mock('@/api/admin/ops', () => ({
   listErrorLogs,
+}))
+
+vi.mock('@/components/admin/usage/UsageDiagnosticsDrawer.vue', () => ({
+  default: { props: ['show', 'usageId'], emits: ['update:show', 'openErrors'], template: '<div />' },
 }))
 
 vi.mock('@/stores/app', () => ({
@@ -109,12 +115,13 @@ const ModelDistributionChartStub = {
     </div>
   `,
 }
-const GroupDistributionChartStub = {
-  props: ['metric'],
+const EntityDistributionChartStub = {
+  props: ['metric', 'items'],
   emits: ['update:metric'],
   template: `
-    <div data-test="group-chart">
+    <div data-test="user-chart">
       <span class="metric">{{ metric }}</span>
+      <span class="items">{{ items.length }}</span>
       <button class="switch-metric" @click="$emit('update:metric', 'actual_cost')">switch</button>
     </div>
   `,
@@ -128,6 +135,7 @@ describe('admin UsageView distribution metric toggles', () => {
     getSnapshotV2.mockReset()
     getById.mockReset()
     getModelStats.mockReset()
+    getUserBreakdown.mockReset()
 
     list.mockResolvedValue({
       items: [],
@@ -150,6 +158,7 @@ describe('admin UsageView distribution metric toggles', () => {
       groups: [],
     })
     getModelStats.mockResolvedValue({ models: [] })
+    getUserBreakdown.mockResolvedValue({ users: [] })
   })
 
   afterEach(() => {
@@ -165,9 +174,9 @@ describe('admin UsageView distribution metric toggles', () => {
         AppLayout: AppLayoutStub, UsageStatsCards: true, UsageFilters: UsageFiltersStub,
         UsageTable: true, UsageExportProgress: true, UsageCleanupDialog: true,
         UserBalanceHistoryModal: true, AuditLogModal: true, Pagination: true, Select: true,
-        DateRangePicker: true, Icon: true, TokenUsageTrend: true,
-        ModelDistributionChart: ModelDistributionChartStub, GroupDistributionChart: GroupDistributionChartStub,
-        EndpointDistributionChart: true, UserTokenRanking: true,
+        DateRangePicker: true, Icon: true,
+        EntityDistributionChart: EntityDistributionChartStub,
+        ModelDistributionChart: ModelDistributionChartStub, UserTokenRanking: true,
       } },
     })
     vi.advanceTimersByTime(120)
@@ -187,7 +196,21 @@ describe('admin UsageView distribution metric toggles', () => {
     expect((wrapper.vm as any).requestedModelStats).toEqual([{ model: 'B', total_tokens: 20 }])
   })
 
-  it('keeps model and group metric toggles independent without refetching chart data', async () => {
+  it('renders only user and model distributions without requesting retired snapshot charts', async () => {
+    getUserBreakdown.mockResolvedValueOnce({
+      users: [{
+        user_id: 7,
+        email: 'user@test.com',
+        requests: 3,
+        input_tokens: 10,
+        output_tokens: 20,
+        cache_tokens: 0,
+        total_tokens: 30,
+        cost: 0.3,
+        actual_cost: 0.2,
+        account_cost: 0.1,
+      }],
+    })
     const wrapper = mount(UsageView, {
       global: {
         stubs: {
@@ -202,9 +225,8 @@ describe('admin UsageView distribution metric toggles', () => {
           Select: true,
           DateRangePicker: true,
           Icon: true,
-          TokenUsageTrend: true,
+          EntityDistributionChart: EntityDistributionChartStub,
           ModelDistributionChart: ModelDistributionChartStub,
-          GroupDistributionChart: GroupDistributionChartStub,
           UserTokenRanking: true,
         },
       },
@@ -213,34 +235,36 @@ describe('admin UsageView distribution metric toggles', () => {
     vi.advanceTimersByTime(120)
     await flushPromises()
 
-    expect(getSnapshotV2).toHaveBeenCalledTimes(1)
+    expect(getSnapshotV2).not.toHaveBeenCalled()
     const now = new Date()
     const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-    expect(getSnapshotV2).toHaveBeenCalledWith(expect.objectContaining({
+    expect(getUserBreakdown).toHaveBeenCalledWith(expect.objectContaining({
       start_date: formatLocalDate(yesterday),
       end_date: formatLocalDate(now),
-      granularity: 'hour'
+      limit: 200,
+      sort_by: 'total_tokens',
     }))
 
     const modelChart = wrapper.find('[data-test="model-chart"]')
-    const groupChart = wrapper.find('[data-test="group-chart"]')
+    const userChart = wrapper.find('[data-test="user-chart"]')
 
     expect(modelChart.find('.metric').text()).toBe('tokens')
-    expect(groupChart.find('.metric').text()).toBe('tokens')
+    expect(userChart.find('.metric').text()).toBe('tokens')
+    expect(userChart.find('.items').text()).toBe('1')
 
     await modelChart.find('.switch-metric').trigger('click')
     await flushPromises()
 
     expect(modelChart.find('.metric').text()).toBe('actual_cost')
-    expect(groupChart.find('.metric').text()).toBe('tokens')
-    expect(getSnapshotV2).toHaveBeenCalledTimes(1)
+    expect(userChart.find('.metric').text()).toBe('tokens')
+    expect(getUserBreakdown).toHaveBeenCalledTimes(1)
 
-    await groupChart.find('.switch-metric').trigger('click')
+    await userChart.find('.switch-metric').trigger('click')
     await flushPromises()
 
     expect(modelChart.find('.metric').text()).toBe('actual_cost')
-    expect(groupChart.find('.metric').text()).toBe('actual_cost')
-    expect(getSnapshotV2).toHaveBeenCalledTimes(1)
+    expect(userChart.find('.metric').text()).toBe('actual_cost')
+    expect(getUserBreakdown).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -251,6 +275,7 @@ describe('admin UsageView handleUserClick', () => {
     getStats.mockReset()
     getSnapshotV2.mockReset()
     getById.mockReset()
+    getUserBreakdown.mockReset()
 
     list.mockResolvedValue({ items: [], total: 0, pages: 0 })
     getStats.mockResolvedValue({
@@ -258,6 +283,7 @@ describe('admin UsageView handleUserClick', () => {
       total_cache_tokens: 0, total_tokens: 0, total_cost: 0, total_actual_cost: 0, average_duration_ms: 0,
     })
     getSnapshotV2.mockResolvedValue({ trend: [], models: [], groups: [] })
+    getUserBreakdown.mockResolvedValue({ users: [] })
   })
 
   afterEach(() => {
@@ -308,6 +334,7 @@ describe('admin UsageView errors tab filter forwarding', () => {
     getStats.mockReset()
     getSnapshotV2.mockReset()
     getModelStats.mockReset()
+    getUserBreakdown.mockReset()
     listErrorLogs.mockReset()
 
     list.mockResolvedValue({ items: [], total: 0, pages: 0 })
@@ -317,6 +344,7 @@ describe('admin UsageView errors tab filter forwarding', () => {
     })
     getSnapshotV2.mockResolvedValue({ trend: [], models: [], groups: [] })
     getModelStats.mockResolvedValue({ models: [] })
+    getUserBreakdown.mockResolvedValue({ users: [] })
     listErrorLogs.mockResolvedValue({ items: [], total: 0, pages: 0 })
   })
 
@@ -366,6 +394,7 @@ describe('admin UsageView ranking tab', () => {
     getStats.mockReset()
     getSnapshotV2.mockReset()
     getModelStats.mockReset()
+    getUserBreakdown.mockReset()
 
     list.mockResolvedValue({ items: [], total: 0, pages: 0 })
     getStats.mockResolvedValue({
@@ -374,6 +403,7 @@ describe('admin UsageView ranking tab', () => {
     })
     getSnapshotV2.mockResolvedValue({ trend: [], models: [], groups: [] })
     getModelStats.mockResolvedValue({ models: [] })
+    getUserBreakdown.mockResolvedValue({ users: [] })
   })
 
   afterEach(() => {

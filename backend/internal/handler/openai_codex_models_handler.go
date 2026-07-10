@@ -36,18 +36,30 @@ func (h *OpenAIGatewayHandler) CodexModels(c *gin.Context) {
 		return
 	}
 
-	manifest, err := h.gatewayService.FetchCodexModelsManifest(c.Request.Context(), account, c.Query("client_version"), c.GetHeader("If-None-Match"))
+	ifNoneMatch := c.GetHeader("If-None-Match")
+	if len(apiKey.AllowedModels) > 0 {
+		ifNoneMatch = ""
+	}
+	manifest, err := h.gatewayService.FetchCodexModelsManifest(c.Request.Context(), account, c.Query("client_version"), ifNoneMatch)
 	if err != nil {
 		h.errorResponse(c, infraerrors.Code(err), "upstream_error", infraerrors.Message(err))
 		return
 	}
 
-	if manifest.ETag != "" {
+	if manifest.ETag != "" && len(apiKey.AllowedModels) == 0 {
 		c.Header("ETag", manifest.ETag)
 	}
 	if manifest.NotModified {
 		c.Status(http.StatusNotModified)
 		return
 	}
-	c.Data(http.StatusOK, "application/json", manifest.Body)
+	body, err := filterCodexModelsManifest(manifest.Body, apiKey)
+	if err != nil {
+		h.errorResponse(c, http.StatusBadGateway, "upstream_error", "Invalid Codex models manifest")
+		return
+	}
+	if len(apiKey.AllowedModels) > 0 {
+		c.Header("Cache-Control", "private, no-store")
+	}
+	c.Data(http.StatusOK, "application/json", body)
 }

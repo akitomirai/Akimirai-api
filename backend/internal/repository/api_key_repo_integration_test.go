@@ -39,10 +39,11 @@ func (s *APIKeyRepoSuite) TestCreate() {
 	user := s.mustCreateUser("create@test.com")
 
 	key := &service.APIKey{
-		UserID: user.ID,
-		Key:    "sk-create-test",
-		Name:   "Test Key",
-		Status: service.StatusActive,
+		UserID:        user.ID,
+		Key:           "sk-create-test",
+		Name:          "Test Key",
+		Status:        service.StatusActive,
+		AllowedModels: []string{"gpt-5.6-sol", "gemini-2.5-pro"},
 	}
 
 	err := s.repo.Create(s.ctx, key)
@@ -52,6 +53,7 @@ func (s *APIKeyRepoSuite) TestCreate() {
 	got, err := s.repo.GetByID(s.ctx, key.ID)
 	s.Require().NoError(err, "GetByID")
 	s.Require().Equal("sk-create-test", got.Key)
+	s.Require().Equal(key.AllowedModels, got.AllowedModels)
 }
 
 func (s *APIKeyRepoSuite) TestGetByID_NotFound() {

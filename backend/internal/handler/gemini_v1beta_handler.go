@@ -48,7 +48,7 @@ func (h *GatewayHandler) GeminiV1BetaListModels(c *gin.Context) {
 
 	// 强制 antigravity 模式：返回 antigravity 支持的模型列表
 	if forcePlatform == service.PlatformAntigravity {
-		c.JSON(http.StatusOK, antigravity.FallbackGeminiModelsList())
+		writeFilteredGeminiModels(c, apiKey, antigravity.FallbackGeminiModelsList())
 		return
 	}
 
@@ -58,7 +58,7 @@ func (h *GatewayHandler) GeminiV1BetaListModels(c *gin.Context) {
 		hasAntigravity, _ := h.geminiCompatService.HasAntigravityAccounts(c.Request.Context(), apiKey.GroupID)
 		if hasAntigravity {
 			// antigravity 账户使用静态模型列表
-			c.JSON(http.StatusOK, gemini.FallbackModelsList())
+			writeFilteredGeminiModels(c, apiKey, gemini.FallbackModelsList())
 			return
 		}
 		markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
@@ -72,10 +72,17 @@ func (h *GatewayHandler) GeminiV1BetaListModels(c *gin.Context) {
 		return
 	}
 	if shouldFallbackGeminiModels(res) {
-		c.JSON(http.StatusOK, gemini.FallbackModelsList())
+		writeFilteredGeminiModels(c, apiKey, gemini.FallbackModelsList())
 		return
 	}
-	writeUpstreamResponse(c, res)
+	filteredBody, err := filterGeminiModelsBody(res.Body, apiKey)
+	if err != nil {
+		googleError(c, http.StatusBadGateway, "Invalid upstream models response")
+		return
+	}
+	filteredResponse := *res
+	filteredResponse.Body = filteredBody
+	writeUpstreamResponse(c, &filteredResponse)
 }
 
 // GeminiV1BetaGetModel proxies:
@@ -651,6 +658,15 @@ func googleError(c *gin.Context, status int, message string) {
 			"status":  googleapi.HTTPStatusToGoogleStatus(status),
 		},
 	})
+}
+
+func writeFilteredGeminiModels(c *gin.Context, apiKey *service.APIKey, value any) {
+	body, err := filterGeminiModelsValue(value, apiKey)
+	if err != nil {
+		googleError(c, http.StatusInternalServerError, "Failed to build models response")
+		return
+	}
+	c.Data(http.StatusOK, "application/json", body)
 }
 
 func writeUpstreamResponse(c *gin.Context, res *service.UpstreamHTTPResult) {

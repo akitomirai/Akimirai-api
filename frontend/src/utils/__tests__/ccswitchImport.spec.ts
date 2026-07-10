@@ -12,60 +12,130 @@ function paramsFromDeeplink(deeplink: string): URLSearchParams {
 
 describe('ccswitchImport utils', () => {
   it('defaults OpenAI CC Switch imports to the current Codex model', () => {
-    expect(OPENAI_CC_SWITCH_CODEX_MODEL).toBe('gpt-5.5')
+    expect(OPENAI_CC_SWITCH_CODEX_MODEL).toBe('gpt-5.6-sol')
   })
 
   const baseInput = {
     baseUrl: 'https://api.example.com',
     providerName: 'Sub2API',
     apiKey: 'sk-test',
-    usageScript: 'return true'
+    usageScript: 'return true',
+    model: 'gpt-5.6-sol'
   }
 
-  it('adds the Codex model parameter for OpenAI imports', () => {
+  it('encodes an explicit Codex app and main model', () => {
     const params = paramsFromDeeplink(
       buildCcSwitchImportDeeplink({
         ...baseInput,
         platform: 'openai',
-        clientType: 'claude'
+        app: 'codex'
       })
     )
 
     expect(params.get('resource')).toBe('provider')
     expect(params.get('app')).toBe('codex')
+    expect(params.get('enabled')).toBe('true')
     expect(params.get('endpoint')).toBe(baseInput.baseUrl)
     expect(params.get('model')).toBe(OPENAI_CC_SWITCH_CODEX_MODEL)
     expect(atob(params.get('usageScript') || '')).toBe(baseInput.usageScript)
   })
 
+  it('enables Codex remote compaction through the CC Switch OpenAI name gate', () => {
+    const params = paramsFromDeeplink(
+      buildCcSwitchImportDeeplink({
+        ...baseInput,
+        app: 'codex',
+        providerName: 'Aki',
+        remoteCompaction: true
+      })
+    )
+
+    expect(params.get('name')).toBe('OpenAI')
+  })
+
+  it('preserves the provider name when Codex remote compaction is disabled', () => {
+    const params = paramsFromDeeplink(
+      buildCcSwitchImportDeeplink({
+        ...baseInput,
+        app: 'codex',
+        providerName: 'Aki',
+        remoteCompaction: false
+      })
+    )
+
+    expect(params.get('name')).toBe('Aki')
+  })
+
   it.each([
-    { platform: 'anthropic' as GroupPlatform, clientType: 'claude' as const, app: 'claude' },
-    { platform: 'gemini' as GroupPlatform, clientType: 'gemini' as const, app: 'gemini' }
-  ])('does not add a model parameter for $platform imports', ({ platform, clientType, app }) => {
+    { platform: 'anthropic' as GroupPlatform, app: 'claude' as const },
+    { platform: 'gemini' as GroupPlatform, app: 'gemini' as const }
+  ])('preserves the explicit $app target for $platform imports', ({ platform, app }) => {
     const params = paramsFromDeeplink(
       buildCcSwitchImportDeeplink({
         ...baseInput,
         platform,
-        clientType
+        app
       })
     )
 
     expect(params.get('app')).toBe(app)
     expect(params.get('endpoint')).toBe(baseInput.baseUrl)
-    expect(params.has('model')).toBe(false)
+    expect(params.get('model')).toBe(baseInput.model)
   })
 
-  it('keeps Antigravity imports on the selected client endpoint without a model parameter', () => {
+  it('keeps Antigravity imports on the dedicated endpoint', () => {
     const params = paramsFromDeeplink(
       buildCcSwitchImportDeeplink({
         ...baseInput,
         platform: 'antigravity',
-        clientType: 'gemini'
+        app: 'gemini'
       })
     )
 
     expect(params.get('app')).toBe('gemini')
     expect(params.get('endpoint')).toBe(`${baseInput.baseUrl}/antigravity`)
-    expect(params.has('model')).toBe(false)
+    expect(params.get('model')).toBe(baseInput.model)
+  })
+
+  it('adds Claude family models only for Claude imports', () => {
+    const params = paramsFromDeeplink(
+      buildCcSwitchImportDeeplink({
+        ...baseInput,
+        platform: 'anthropic',
+        app: 'claude',
+        haikuModel: 'claude-haiku',
+        sonnetModel: 'claude-sonnet',
+        opusModel: 'claude-opus'
+      })
+    )
+
+    expect(params.get('haikuModel')).toBe('claude-haiku')
+    expect(params.get('sonnetModel')).toBe('claude-sonnet')
+    expect(params.get('opusModel')).toBe('claude-opus')
+  })
+
+  it('does not leak Claude family fields into other apps', () => {
+    const params = paramsFromDeeplink(
+      buildCcSwitchImportDeeplink({
+        ...baseInput,
+        app: 'codex',
+        haikuModel: 'ignored'
+      })
+    )
+
+    expect(params.has('haikuModel')).toBe(false)
+  })
+
+  it('ignores remote compaction for non-Codex imports', () => {
+    const params = paramsFromDeeplink(
+      buildCcSwitchImportDeeplink({
+        ...baseInput,
+        app: 'gemini',
+        providerName: 'Gemini Relay',
+        remoteCompaction: true
+      })
+    )
+
+    expect(params.get('name')).toBe('Gemini Relay')
   })
 })

@@ -14,55 +14,17 @@
                 @change="onDateRangeChange"
               />
             </div>
-            <div class="ml-auto flex items-center gap-2">
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.dashboard.granularity') }}:</span>
-              <div class="w-28">
-                <Select v-model="granularity" :options="granularityOptions" @change="loadChartData" />
-              </div>
-            </div>
           </div>
         </div>
 
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <ModelDistributionChart
-            v-model:metric="modelDistributionMetric"
-            :model-stats="requestedModelStats"
-            :loading="modelStatsLoading"
-            :show-source-toggle="false"
-            :show-metric-toggle="true"
-            :enable-breakdown="false"
-            :show-account-cost="false"
-            :start-date="startDate"
-            :end-date="endDate"
-          />
-          <GroupDistributionChart
-            v-model:metric="groupDistributionMetric"
-            :group-stats="groupStats"
+          <EntityDistributionChart
+            v-model:metric="apiKeyDistributionMetric"
+            :title="t('usage.apiKeyDistribution')"
+            :entity-label="t('usage.apiKeyFilter')"
+            :items="apiKeyDistributionItems"
             :loading="chartsLoading"
-            :show-metric-toggle="true"
-            :enable-breakdown="false"
-            :show-account-cost="false"
-            :start-date="startDate"
-            :end-date="endDate"
           />
-        </div>
-
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <EndpointDistributionChart
-            v-model:source="endpointDistributionSource"
-            v-model:metric="endpointDistributionMetric"
-            :endpoint-stats="inboundEndpointStats"
-            :upstream-endpoint-stats="upstreamEndpointStats"
-            :endpoint-path-stats="endpointPathStats"
-            :loading="endpointStatsLoading"
-            :show-source-toggle="false"
-            :show-metric-toggle="true"
-            :enable-breakdown="false"
-            :title="t('usage.endpointDistribution')"
-            :start-date="startDate"
-            :end-date="endDate"
-          />
-          <TokenUsageTrend :trend-data="trendData" :loading="chartsLoading" />
         </div>
       </div>
 
@@ -106,18 +68,6 @@
             <div class="w-full sm:w-auto sm:min-w-[200px]">
               <label class="input-label">{{ t('admin.usage.group') }}</label>
               <Select v-model="filters.group_id" :options="groupOptions" searchable @change="applyFilters" />
-            </div>
-            <div class="w-full sm:w-auto sm:min-w-[180px]">
-              <label class="input-label">{{ t('usage.type') }}</label>
-              <Select v-model="filters.request_type" :options="requestTypeOptions" @change="applyFilters" />
-            </div>
-            <div class="w-full sm:w-auto sm:min-w-[200px]">
-              <label class="input-label">{{ t('admin.usage.billingType') }}</label>
-              <Select v-model="filters.billing_type" :options="billingTypeOptions" @change="applyFilters" />
-            </div>
-            <div class="w-full sm:w-auto sm:min-w-[200px]">
-              <label class="input-label">{{ t('admin.usage.billingMode') }}</label>
-              <Select v-model="filters.billing_mode" :options="billingModeOptions" @change="applyFilters" />
             </div>
           </div>
 
@@ -213,7 +163,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { keysAPI, usageAPI, userGroupsAPI } from '@/api'
@@ -223,23 +173,18 @@ import Select, { type SelectOption } from '@/components/common/Select.vue'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import UsageStatsCards from '@/components/admin/usage/UsageStatsCards.vue'
 import UsageTable from '@/components/admin/usage/UsageTable.vue'
-import ModelDistributionChart from '@/components/charts/ModelDistributionChart.vue'
-import GroupDistributionChart from '@/components/charts/GroupDistributionChart.vue'
-import EndpointDistributionChart from '@/components/charts/EndpointDistributionChart.vue'
-import TokenUsageTrend from '@/components/charts/TokenUsageTrend.vue'
+import EntityDistributionChart from '@/components/charts/EntityDistributionChart.vue'
 import Icon from '@/components/icons/Icon.vue'
 import UserErrorRequestsTable from '@/components/user/UserErrorRequestsTable.vue'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 import { formatReasoningEffort } from '@/utils/format'
 import { BILLING_MODE_IMAGE, getBillingModeLabel } from '@/utils/billingMode'
-import { resolveUsageRequestType, requestTypeToLegacyStream } from '@/utils/usageRequestType'
+import { resolveUsageRequestType } from '@/utils/usageRequestType'
 import type {
   ApiKey,
-  EndpointStat,
+  ApiKeyStat,
   Group,
-  GroupStat,
   ModelStat,
-  TrendDataPoint,
   UsageLog,
   UsageQueryParams,
   UsageStatsResponse,
@@ -252,21 +197,13 @@ const { t } = useI18n()
 const appStore = useAppStore()
 
 type DistributionMetric = 'tokens' | 'actual_cost'
-type EndpointSource = 'inbound' | 'upstream' | 'path'
 
 const usageStats = ref<UsageStatsResponse | null>(null)
 const usageLogs = ref<UsageLog[]>([])
-const trendData = ref<TrendDataPoint[]>([])
-const requestedModelStats = ref<ModelStat[]>([])
-const groupStats = ref<GroupStat[]>([])
-const inboundEndpointStats = ref<EndpointStat[]>([])
-const upstreamEndpointStats = ref<EndpointStat[]>([])
-const endpointPathStats = ref<EndpointStat[]>([])
+const apiKeyStats = ref<ApiKeyStat[]>([])
 
 const loading = ref(false)
 const chartsLoading = ref(false)
-const modelStatsLoading = ref(false)
-const endpointStatsLoading = ref(false)
 const exporting = ref(false)
 const errorRows = ref<UserErrorRequest[]>([])
 const errorLoading = ref(false)
@@ -344,19 +281,13 @@ const startDate = ref(defaultRange.start)
 const endDate = ref(defaultRange.end)
 const granularity = ref<'day' | 'hour'>(getGranularityForRange(startDate.value, endDate.value))
 
-const modelDistributionMetric = ref<DistributionMetric>('tokens')
-const groupDistributionMetric = ref<DistributionMetric>('tokens')
-const endpointDistributionMetric = ref<DistributionMetric>('tokens')
-const endpointDistributionSource = ref<EndpointSource>('inbound')
+const apiKeyDistributionMetric = ref<DistributionMetric>('tokens')
 const activeTab = ref<'usage' | 'errors'>('usage')
 const errorViewEnabled = computed(() => appStore.cachedPublicSettings?.allow_user_view_error_requests ?? false)
 
 const filters = ref<UsageQueryParams>({
   start_date: startDate.value,
   end_date: endDate.value,
-  request_type: undefined,
-  billing_type: null,
-  billing_mode: null,
 })
 
 const pagination = reactive({
@@ -368,29 +299,6 @@ const sortState = reactive({
   sort_by: 'created_at',
   sort_order: 'desc' as 'asc' | 'desc',
 })
-
-const granularityOptions = computed<SelectOption[]>(() => [
-  { value: 'day', label: t('admin.dashboard.day') },
-  { value: 'hour', label: t('admin.dashboard.hour') },
-])
-const requestTypeOptions = computed<SelectOption[]>(() => [
-  { value: null, label: t('admin.usage.allTypes') },
-  { value: 'ws_v2', label: t('usage.ws') },
-  { value: 'stream', label: t('usage.stream') },
-  { value: 'sync', label: t('usage.sync') },
-])
-const billingTypeOptions = computed<SelectOption[]>(() => [
-  { value: null, label: t('admin.usage.allBillingTypes') },
-  { value: 0, label: t('admin.usage.billingTypeBalance') },
-  { value: 1, label: t('admin.usage.billingTypeSubscription') },
-])
-const billingModeOptions = computed<SelectOption[]>(() => [
-  { value: null, label: t('admin.usage.allBillingModes') },
-  { value: 'token', label: t('admin.usage.billingModeToken') },
-  { value: 'per_request', label: t('admin.usage.billingModePerRequest') },
-  { value: 'image', label: t('admin.usage.billingModeImage') },
-  { value: 'video', label: t('admin.usage.billingModeVideo') },
-])
 
 const apiKeys = ref<ApiKey[]>([])
 const groups = ref<Group[]>([])
@@ -408,15 +316,20 @@ const modelOptions = computed<SelectOption[]>(() => [
   { value: null, label: t('admin.usage.allModels') },
   ...modelOptionValues.value.map((model) => ({ value: model, label: model })),
 ])
+const apiKeyDistributionItems = computed(() => apiKeyStats.value.map((stat) => ({
+  id: stat.api_key_id,
+  label: stat.api_key_name || t('usage.apiKeyFallback', { id: stat.api_key_id }),
+  requests: stat.requests,
+  total_tokens: stat.total_tokens,
+  cost: stat.cost,
+  actual_cost: stat.actual_cost,
+})))
 
 const normalizedFilters = computed<UsageQueryParams>(() => {
-  const requestType = filters.value.request_type
-  const legacyStream = requestType ? requestTypeToLegacyStream(requestType) : filters.value.stream
   return {
     ...filters.value,
     start_date: startDate.value,
     end_date: endDate.value,
-    stream: legacyStream === null ? undefined : legacyStream,
   }
 })
 
@@ -452,42 +365,28 @@ const loadLogs = async () => {
 
 const loadStats = async () => {
   const seq = ++statsReqSeq
-  endpointStatsLoading.value = true
   try {
     const stats = await usageAPI.getStats(normalizedFilters.value)
     if (seq !== statsReqSeq) return
     usageStats.value = stats
-    inboundEndpointStats.value = stats.endpoints || []
-    upstreamEndpointStats.value = []
-    endpointPathStats.value = []
   } catch (error) {
     if (seq !== statsReqSeq) return
     console.error('Failed to load usage stats:', error)
-    inboundEndpointStats.value = []
-    upstreamEndpointStats.value = []
-    endpointPathStats.value = []
-  } finally {
-    if (seq === statsReqSeq) endpointStatsLoading.value = false
   }
 }
 
-const loadModelStats = async () => {
+const loadModelOptions = async () => {
   const seq = ++modelStatsReqSeq
-  modelStatsLoading.value = true
   try {
     const response = await usageAPI.getDashboardModels({
       ...normalizedFilters.value,
       model_source: 'requested',
     })
     if (seq !== modelStatsReqSeq) return
-    requestedModelStats.value = response.models || []
     refreshModelOptions(response.models || [])
   } catch (error) {
     if (seq !== modelStatsReqSeq) return
     console.error('Failed to load model stats:', error)
-    requestedModelStats.value = []
-  } finally {
-    if (seq === modelStatsReqSeq) modelStatsLoading.value = false
   }
 }
 
@@ -498,18 +397,17 @@ const loadChartData = async () => {
     const snapshot = await usageAPI.getDashboardSnapshotV2({
       ...normalizedFilters.value,
       granularity: granularity.value,
-      include_trend: true,
+      include_trend: false,
       include_model_stats: false,
-      include_group_stats: true,
+      include_group_stats: false,
+      include_api_key_stats: true,
     })
     if (seq !== chartReqSeq) return
-    trendData.value = snapshot.trend || []
-    groupStats.value = snapshot.groups || []
+    apiKeyStats.value = snapshot.api_keys || []
   } catch (error) {
     if (seq !== chartReqSeq) return
     console.error('Failed to load chart data:', error)
-    trendData.value = []
-    groupStats.value = []
+    apiKeyStats.value = []
   } finally {
     if (seq === chartReqSeq) chartsLoading.value = false
   }
@@ -529,7 +427,7 @@ const applyFilters = () => {
   pagination.page = 1
   void loadLogs()
   void loadStats()
-  void loadModelStats()
+  void loadModelOptions()
   void loadChartData()
   resetErrorRows()
 }
@@ -537,7 +435,7 @@ const applyFilters = () => {
 const refreshData = () => {
   void loadLogs()
   void loadStats()
-  void loadModelStats()
+  void loadModelOptions()
   void loadChartData()
   if (activeTab.value === 'errors') void loadErrors()
 }
@@ -549,9 +447,6 @@ const resetFilters = () => {
   filters.value = {
     start_date: range.start,
     end_date: range.end,
-    request_type: undefined,
-    billing_type: null,
-    billing_mode: null,
   }
   granularity.value = getGranularityForRange(range.start, range.end)
   applyFilters()
@@ -884,7 +779,4 @@ onUnmounted(() => {
   document.removeEventListener('click', handleColumnClickOutside)
 })
 
-watch(endpointDistributionSource, () => {
-  // Endpoint source switching is handled by the chart component using already loaded stats.
-})
 </script>

@@ -31,6 +31,12 @@ type OpenAIRecordUsageInput struct {
 	IPAddress          string // 请求的客户端 IP 地址
 	RequestPayloadHash string
 	APIKeyService      APIKeyQuotaUpdater
+	ClientTransport    *string
+	AuthLatencyMs      *int
+	RoutingLatencyMs   *int
+	UpstreamLatencyMs  *int
+	ResponseLatencyMs  *int
+	Diagnostics        *RequestDiagnosticsSnapshot
 	QuotaPlatform      string // user×platform quota platform resolved by the handler before async billing.
 	// CyberBlocked 为 true 时把该用量行标记为 cyber（request_type=cyber），计费逻辑不变。
 	CyberBlocked bool
@@ -119,9 +125,9 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		ApplyOpenAIImageBillingResolution(result)
 	}
 
-	// 计算实际的新输入token（减去缓存读取的token）
-	// 因为 input_tokens 包含了 cache_read_tokens，而缓存读取的token不应按输入价格计费
-	actualInputTokens := result.Usage.InputTokens - result.Usage.CacheReadInputTokens
+	// OpenAI input_tokens is the total input bucket, including cache reads and writes.
+	// Split the three buckets so cache-write tokens are not billed as ordinary input twice.
+	actualInputTokens := result.Usage.InputTokens - result.Usage.CacheReadInputTokens - result.Usage.CacheCreationInputTokens
 	if actualInputTokens < 0 {
 		actualInputTokens = 0
 	}
@@ -274,6 +280,12 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	usageLog.OpenAIWSMode = result.OpenAIWSMode
 	usageLog.DurationMs = &durationMs
 	usageLog.FirstTokenMs = result.FirstTokenMs
+	usageLog.ClientTransport = input.ClientTransport
+	usageLog.AuthLatencyMs = input.AuthLatencyMs
+	usageLog.RoutingLatencyMs = input.RoutingLatencyMs
+	usageLog.UpstreamLatencyMs = input.UpstreamLatencyMs
+	usageLog.ResponseLatencyMs = input.ResponseLatencyMs
+	applyRequestDiagnosticsToUsageLog(usageLog, input.Diagnostics, account)
 	usageLog.CreatedAt = time.Now()
 	// 设置渠道信息
 	usageLog.ChannelID = optionalInt64Ptr(input.ChannelID)
@@ -353,6 +365,42 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.openai_gateway")
 
 	return nil
+}
+
+func applyRequestDiagnosticsToUsageLog(usageLog *UsageLog, diagnostics *RequestDiagnosticsSnapshot, account *Account) {
+	if usageLog == nil {
+		return
+	}
+	route := RequestRouteSnapshotFromAccount(account)
+	if diagnostics != nil {
+		if !diagnostics.RequestStartedAt.IsZero() {
+			startedAt := diagnostics.RequestStartedAt
+			usageLog.RequestStartedAt = &startedAt
+		}
+		usageLog.RequestTotalMs = cloneInt(diagnostics.RequestTotalMs)
+		usageLog.RequestBodyReadMs = cloneInt(diagnostics.RequestBodyReadMs)
+		usageLog.RequestBodyBytes = cloneInt64(diagnostics.RequestBodyBytes)
+		usageLog.UpstreamRequestWrittenMs = cloneInt(diagnostics.UpstreamRequestWrittenMs)
+		usageLog.UpstreamFirstByteMs = cloneInt(diagnostics.UpstreamFirstByteMs)
+		usageLog.RequestFirstTokenMs = cloneInt(diagnostics.RequestFirstTokenMs)
+		usageLog.FinalUpstreamStatus = cloneInt(diagnostics.FinalUpstreamStatus)
+		usageLog.RetryCount = diagnostics.RetryCount
+		usageLog.AccountSwitchCount = diagnostics.AccountSwitchCount
+		if diagnostics.Route.Kind != "" {
+			route = cloneRequestRouteSnapshot(diagnostics.Route)
+		}
+		if len(diagnostics.AttemptTimeline) > 0 {
+			usageLog.AttemptTimeline = make([]RequestAttemptEvent, len(diagnostics.AttemptTimeline))
+			for i := range diagnostics.AttemptTimeline {
+				usageLog.AttemptTimeline[i] = cloneRequestAttemptEvent(diagnostics.AttemptTimeline[i])
+			}
+		}
+	}
+	usageLog.RouteKind = optionalTrimmedStringPtr(route.Kind)
+	usageLog.ProxyIDSnapshot = cloneInt64(route.ProxyID)
+	usageLog.ProxyNameSnapshot = optionalTrimmedStringPtr(route.ProxyName)
+	usageLog.ProxyProtocolSnapshot = optionalTrimmedStringPtr(route.ProxyProtocol)
+	usageLog.RouteFingerprint = optionalTrimmedStringPtr(route.Fingerprint)
 }
 
 func (s *OpenAIGatewayService) calculateOpenAIRecordUsageCost(

@@ -1,12 +1,12 @@
 ﻿<template>
   <div class="card p-4">
-    <div class="mb-4 flex items-center justify-between gap-3">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+    <div class="mb-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <h3 class="whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
         {{ !enableRankingView || activeView === 'model_distribution'
           ? t('admin.dashboard.modelDistribution')
           : t('admin.dashboard.spendingRankingTitle') }}
       </h3>
-      <div class="flex flex-wrap items-center justify-end gap-2">
+      <div class="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
         <div
           v-if="showSourceToggle"
           class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 dark:border-gray-700 dark:bg-dark-800"

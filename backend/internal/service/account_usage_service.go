@@ -712,6 +712,7 @@ func (s *AccountUsageService) probeOpenAICodexSnapshot(ctx context.Context, acco
 			req.Header.Set("User-Agent", strings.TrimSpace(fp.UserAgent))
 		}
 	}
+	enforceCodexIdentityHeaders(req.Header)
 	setOpenAIChatGPTAccountHeaders(req.Header, account)
 
 	proxyURL := ""

@@ -136,6 +136,57 @@ func (UsageLog) Fields() []ent.Field {
 		field.Int("response_latency_ms").
 			Optional().
 			Nillable(),
+		field.Time("request_started_at").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
+		field.Int("request_total_ms").
+			Optional().
+			Nillable(),
+		field.Int("request_body_read_ms").
+			Optional().
+			Nillable(),
+		field.Int64("request_body_bytes").
+			Optional().
+			Nillable(),
+		field.Int("upstream_request_written_ms").
+			Optional().
+			Nillable(),
+		field.Int("upstream_first_byte_ms").
+			Optional().
+			Nillable(),
+		field.Int("request_first_token_ms").
+			Optional().
+			Nillable(),
+		field.String("route_kind").
+			MaxLen(16).
+			Optional().
+			Nillable(),
+		field.Int64("proxy_id_snapshot").
+			Optional().
+			Nillable(),
+		field.String("proxy_name_snapshot").
+			MaxLen(255).
+			Optional().
+			Nillable(),
+		field.String("proxy_protocol_snapshot").
+			MaxLen(16).
+			Optional().
+			Nillable(),
+		field.String("route_fingerprint").
+			MaxLen(64).
+			Optional().
+			Nillable(),
+		field.Int("final_upstream_status").
+			Optional().
+			Nillable(),
+		field.Int("retry_count").
+			Default(0),
+		field.Int("account_switch_count").
+			Default(0),
+		field.JSON("attempt_timeline", []map[string]any{}).
+			Optional().
+			SchemaType(map[string]string{dialect.Postgres: "jsonb"}),
 		field.String("user_agent").
 			MaxLen(512).
 			Optional().
@@ -237,6 +288,10 @@ func (UsageLog) Indexes() []ent.Index {
 		// 复合索引用于时间范围查询
 		index.Fields("user_id", "created_at"),
 		index.Fields("api_key_id", "created_at"),
+		index.Fields("proxy_id_snapshot", "created_at").
+			Annotations(entsql.IndexWhere("proxy_id_snapshot IS NOT NULL")),
+		index.Fields("route_kind", "created_at").
+			Annotations(entsql.IndexWhere("route_kind IS NOT NULL")),
 		// 分组维度时间范围查询（线上由 SQL 迁移创建 group_id IS NOT NULL 的部分索引）
 		index.Fields("group_id", "created_at"),
 	}

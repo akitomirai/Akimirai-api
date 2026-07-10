@@ -96,9 +96,18 @@ type cachedOpenAIQuotaAutoPauseSettings struct {
 	expiresAt int64
 }
 
+type cachedPrivacyFilterConfig struct {
+	config    PrivacyFilterConfig
+	expiresAt int64
+}
+
 const openAICodexUserAgentCacheTTL = 60 * time.Second
 const openAICodexUserAgentErrorTTL = 5 * time.Second
 const openAICodexUserAgentDBTimeout = 5 * time.Second
+
+const privacyFilterConfigCacheTTL = 60 * time.Second
+const privacyFilterConfigErrorTTL = 5 * time.Second
+const privacyFilterConfigDBTimeout = 5 * time.Second
 
 const codexRestrictionPolicyCacheTTL = 60 * time.Second
 const codexRestrictionPolicyDBTimeout = 5 * time.Second
@@ -889,4 +898,56 @@ func (s *SettingService) SetOpenAIQuotaAutoPauseSettings(settings OpsOpenAIAccou
 		settings:  settings,
 		expiresAt: time.Now().Add(openAIQuotaAutoPauseSettingsCacheTTL).UnixNano(),
 	})
+}
+
+func (s *SettingService) GetPrivacyFilterConfig(ctx context.Context) PrivacyFilterConfig {
+	fallback := DefaultPrivacyFilterConfig()
+	if s == nil || s.settingRepo == nil {
+		return fallback
+	}
+	if cached, ok := s.privacyFilterConfigCache.Load().(*cachedPrivacyFilterConfig); ok && cached != nil {
+		if time.Now().UnixNano() < cached.expiresAt {
+			return cached.config
+		}
+	}
+
+	result, _, _ := s.privacyFilterConfigSF.Do("privacy_filter_config", func() (any, error) {
+		if cached, ok := s.privacyFilterConfigCache.Load().(*cachedPrivacyFilterConfig); ok && cached != nil {
+			if time.Now().UnixNano() < cached.expiresAt {
+				return cached.config, nil
+			}
+		}
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		dbCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), privacyFilterConfigDBTimeout)
+		defer cancel()
+
+		raw, err := s.settingRepo.GetValue(dbCtx, SettingKeyPrivacyFilterConfig)
+		if err != nil {
+			ttl := privacyFilterConfigErrorTTL
+			if errors.Is(err, ErrSettingNotFound) {
+				ttl = privacyFilterConfigCacheTTL
+			} else {
+				slog.Warn("failed to get privacy filter config", "error", err)
+			}
+			s.privacyFilterConfigCache.Store(&cachedPrivacyFilterConfig{
+				config:    fallback,
+				expiresAt: time.Now().Add(ttl).UnixNano(),
+			})
+			return fallback, nil
+		}
+
+		config := ParsePrivacyFilterConfig(raw)
+		s.privacyFilterConfigCache.Store(&cachedPrivacyFilterConfig{
+			config:    config,
+			expiresAt: time.Now().Add(privacyFilterConfigCacheTTL).UnixNano(),
+		})
+		return config, nil
+	})
+
+	if config, ok := result.(PrivacyFilterConfig); ok {
+		return config
+	}
+	return fallback
 }

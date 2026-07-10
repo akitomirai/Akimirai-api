@@ -491,6 +491,222 @@ func (_c *UsageLogCreate) SetNillableResponseLatencyMs(v *int) *UsageLogCreate {
 	return _c
 }
 
+// SetRequestStartedAt sets the "request_started_at" field.
+func (_c *UsageLogCreate) SetRequestStartedAt(v time.Time) *UsageLogCreate {
+	_c.mutation.SetRequestStartedAt(v)
+	return _c
+}
+
+// SetNillableRequestStartedAt sets the "request_started_at" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableRequestStartedAt(v *time.Time) *UsageLogCreate {
+	if v != nil {
+		_c.SetRequestStartedAt(*v)
+	}
+	return _c
+}
+
+// SetRequestTotalMs sets the "request_total_ms" field.
+func (_c *UsageLogCreate) SetRequestTotalMs(v int) *UsageLogCreate {
+	_c.mutation.SetRequestTotalMs(v)
+	return _c
+}
+
+// SetNillableRequestTotalMs sets the "request_total_ms" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableRequestTotalMs(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetRequestTotalMs(*v)
+	}
+	return _c
+}
+
+// SetRequestBodyReadMs sets the "request_body_read_ms" field.
+func (_c *UsageLogCreate) SetRequestBodyReadMs(v int) *UsageLogCreate {
+	_c.mutation.SetRequestBodyReadMs(v)
+	return _c
+}
+
+// SetNillableRequestBodyReadMs sets the "request_body_read_ms" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableRequestBodyReadMs(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetRequestBodyReadMs(*v)
+	}
+	return _c
+}
+
+// SetRequestBodyBytes sets the "request_body_bytes" field.
+func (_c *UsageLogCreate) SetRequestBodyBytes(v int64) *UsageLogCreate {
+	_c.mutation.SetRequestBodyBytes(v)
+	return _c
+}
+
+// SetNillableRequestBodyBytes sets the "request_body_bytes" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableRequestBodyBytes(v *int64) *UsageLogCreate {
+	if v != nil {
+		_c.SetRequestBodyBytes(*v)
+	}
+	return _c
+}
+
+// SetUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field.
+func (_c *UsageLogCreate) SetUpstreamRequestWrittenMs(v int) *UsageLogCreate {
+	_c.mutation.SetUpstreamRequestWrittenMs(v)
+	return _c
+}
+
+// SetNillableUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableUpstreamRequestWrittenMs(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetUpstreamRequestWrittenMs(*v)
+	}
+	return _c
+}
+
+// SetUpstreamFirstByteMs sets the "upstream_first_byte_ms" field.
+func (_c *UsageLogCreate) SetUpstreamFirstByteMs(v int) *UsageLogCreate {
+	_c.mutation.SetUpstreamFirstByteMs(v)
+	return _c
+}
+
+// SetNillableUpstreamFirstByteMs sets the "upstream_first_byte_ms" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableUpstreamFirstByteMs(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetUpstreamFirstByteMs(*v)
+	}
+	return _c
+}
+
+// SetRequestFirstTokenMs sets the "request_first_token_ms" field.
+func (_c *UsageLogCreate) SetRequestFirstTokenMs(v int) *UsageLogCreate {
+	_c.mutation.SetRequestFirstTokenMs(v)
+	return _c
+}
+
+// SetNillableRequestFirstTokenMs sets the "request_first_token_ms" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableRequestFirstTokenMs(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetRequestFirstTokenMs(*v)
+	}
+	return _c
+}
+
+// SetRouteKind sets the "route_kind" field.
+func (_c *UsageLogCreate) SetRouteKind(v string) *UsageLogCreate {
+	_c.mutation.SetRouteKind(v)
+	return _c
+}
+
+// SetNillableRouteKind sets the "route_kind" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableRouteKind(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetRouteKind(*v)
+	}
+	return _c
+}
+
+// SetProxyIDSnapshot sets the "proxy_id_snapshot" field.
+func (_c *UsageLogCreate) SetProxyIDSnapshot(v int64) *UsageLogCreate {
+	_c.mutation.SetProxyIDSnapshot(v)
+	return _c
+}
+
+// SetNillableProxyIDSnapshot sets the "proxy_id_snapshot" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableProxyIDSnapshot(v *int64) *UsageLogCreate {
+	if v != nil {
+		_c.SetProxyIDSnapshot(*v)
+	}
+	return _c
+}
+
+// SetProxyNameSnapshot sets the "proxy_name_snapshot" field.
+func (_c *UsageLogCreate) SetProxyNameSnapshot(v string) *UsageLogCreate {
+	_c.mutation.SetProxyNameSnapshot(v)
+	return _c
+}
+
+// SetNillableProxyNameSnapshot sets the "proxy_name_snapshot" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableProxyNameSnapshot(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetProxyNameSnapshot(*v)
+	}
+	return _c
+}
+
+// SetProxyProtocolSnapshot sets the "proxy_protocol_snapshot" field.
+func (_c *UsageLogCreate) SetProxyProtocolSnapshot(v string) *UsageLogCreate {
+	_c.mutation.SetProxyProtocolSnapshot(v)
+	return _c
+}
+
+// SetNillableProxyProtocolSnapshot sets the "proxy_protocol_snapshot" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableProxyProtocolSnapshot(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetProxyProtocolSnapshot(*v)
+	}
+	return _c
+}
+
+// SetRouteFingerprint sets the "route_fingerprint" field.
+func (_c *UsageLogCreate) SetRouteFingerprint(v string) *UsageLogCreate {
+	_c.mutation.SetRouteFingerprint(v)
+	return _c
+}
+
+// SetNillableRouteFingerprint sets the "route_fingerprint" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableRouteFingerprint(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetRouteFingerprint(*v)
+	}
+	return _c
+}
+
+// SetFinalUpstreamStatus sets the "final_upstream_status" field.
+func (_c *UsageLogCreate) SetFinalUpstreamStatus(v int) *UsageLogCreate {
+	_c.mutation.SetFinalUpstreamStatus(v)
+	return _c
+}
+
+// SetNillableFinalUpstreamStatus sets the "final_upstream_status" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableFinalUpstreamStatus(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetFinalUpstreamStatus(*v)
+	}
+	return _c
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (_c *UsageLogCreate) SetRetryCount(v int) *UsageLogCreate {
+	_c.mutation.SetRetryCount(v)
+	return _c
+}
+
+// SetNillableRetryCount sets the "retry_count" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableRetryCount(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetRetryCount(*v)
+	}
+	return _c
+}
+
+// SetAccountSwitchCount sets the "account_switch_count" field.
+func (_c *UsageLogCreate) SetAccountSwitchCount(v int) *UsageLogCreate {
+	_c.mutation.SetAccountSwitchCount(v)
+	return _c
+}
+
+// SetNillableAccountSwitchCount sets the "account_switch_count" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableAccountSwitchCount(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetAccountSwitchCount(*v)
+	}
+	return _c
+}
+
+// SetAttemptTimeline sets the "attempt_timeline" field.
+func (_c *UsageLogCreate) SetAttemptTimeline(v []map[string]interface{}) *UsageLogCreate {
+	_c.mutation.SetAttemptTimeline(v)
+	return _c
+}
+
 // SetUserAgent sets the "user_agent" field.
 func (_c *UsageLogCreate) SetUserAgent(v string) *UsageLogCreate {
 	_c.mutation.SetUserAgent(v)
@@ -785,6 +1001,14 @@ func (_c *UsageLogCreate) defaults() {
 		v := usagelog.DefaultStream
 		_c.mutation.SetStream(v)
 	}
+	if _, ok := _c.mutation.RetryCount(); !ok {
+		v := usagelog.DefaultRetryCount
+		_c.mutation.SetRetryCount(v)
+	}
+	if _, ok := _c.mutation.AccountSwitchCount(); !ok {
+		v := usagelog.DefaultAccountSwitchCount
+		_c.mutation.SetAccountSwitchCount(v)
+	}
 	if _, ok := _c.mutation.ImageCount(); !ok {
 		v := usagelog.DefaultImageCount
 		_c.mutation.SetImageCount(v)
@@ -904,6 +1128,32 @@ func (_c *UsageLogCreate) check() error {
 		if err := usagelog.ClientTransportValidator(v); err != nil {
 			return &ValidationError{Name: "client_transport", err: fmt.Errorf(`ent: validator failed for field "UsageLog.client_transport": %w`, err)}
 		}
+	}
+	if v, ok := _c.mutation.RouteKind(); ok {
+		if err := usagelog.RouteKindValidator(v); err != nil {
+			return &ValidationError{Name: "route_kind", err: fmt.Errorf(`ent: validator failed for field "UsageLog.route_kind": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.ProxyNameSnapshot(); ok {
+		if err := usagelog.ProxyNameSnapshotValidator(v); err != nil {
+			return &ValidationError{Name: "proxy_name_snapshot", err: fmt.Errorf(`ent: validator failed for field "UsageLog.proxy_name_snapshot": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.ProxyProtocolSnapshot(); ok {
+		if err := usagelog.ProxyProtocolSnapshotValidator(v); err != nil {
+			return &ValidationError{Name: "proxy_protocol_snapshot", err: fmt.Errorf(`ent: validator failed for field "UsageLog.proxy_protocol_snapshot": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.RouteFingerprint(); ok {
+		if err := usagelog.RouteFingerprintValidator(v); err != nil {
+			return &ValidationError{Name: "route_fingerprint", err: fmt.Errorf(`ent: validator failed for field "UsageLog.route_fingerprint": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.RetryCount(); !ok {
+		return &ValidationError{Name: "retry_count", err: errors.New(`ent: missing required field "UsageLog.retry_count"`)}
+	}
+	if _, ok := _c.mutation.AccountSwitchCount(); !ok {
+		return &ValidationError{Name: "account_switch_count", err: errors.New(`ent: missing required field "UsageLog.account_switch_count"`)}
 	}
 	if v, ok := _c.mutation.UserAgent(); ok {
 		if err := usagelog.UserAgentValidator(v); err != nil {
@@ -1111,6 +1361,70 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ResponseLatencyMs(); ok {
 		_spec.SetField(usagelog.FieldResponseLatencyMs, field.TypeInt, value)
 		_node.ResponseLatencyMs = &value
+	}
+	if value, ok := _c.mutation.RequestStartedAt(); ok {
+		_spec.SetField(usagelog.FieldRequestStartedAt, field.TypeTime, value)
+		_node.RequestStartedAt = &value
+	}
+	if value, ok := _c.mutation.RequestTotalMs(); ok {
+		_spec.SetField(usagelog.FieldRequestTotalMs, field.TypeInt, value)
+		_node.RequestTotalMs = &value
+	}
+	if value, ok := _c.mutation.RequestBodyReadMs(); ok {
+		_spec.SetField(usagelog.FieldRequestBodyReadMs, field.TypeInt, value)
+		_node.RequestBodyReadMs = &value
+	}
+	if value, ok := _c.mutation.RequestBodyBytes(); ok {
+		_spec.SetField(usagelog.FieldRequestBodyBytes, field.TypeInt64, value)
+		_node.RequestBodyBytes = &value
+	}
+	if value, ok := _c.mutation.UpstreamRequestWrittenMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamRequestWrittenMs, field.TypeInt, value)
+		_node.UpstreamRequestWrittenMs = &value
+	}
+	if value, ok := _c.mutation.UpstreamFirstByteMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamFirstByteMs, field.TypeInt, value)
+		_node.UpstreamFirstByteMs = &value
+	}
+	if value, ok := _c.mutation.RequestFirstTokenMs(); ok {
+		_spec.SetField(usagelog.FieldRequestFirstTokenMs, field.TypeInt, value)
+		_node.RequestFirstTokenMs = &value
+	}
+	if value, ok := _c.mutation.RouteKind(); ok {
+		_spec.SetField(usagelog.FieldRouteKind, field.TypeString, value)
+		_node.RouteKind = &value
+	}
+	if value, ok := _c.mutation.ProxyIDSnapshot(); ok {
+		_spec.SetField(usagelog.FieldProxyIDSnapshot, field.TypeInt64, value)
+		_node.ProxyIDSnapshot = &value
+	}
+	if value, ok := _c.mutation.ProxyNameSnapshot(); ok {
+		_spec.SetField(usagelog.FieldProxyNameSnapshot, field.TypeString, value)
+		_node.ProxyNameSnapshot = &value
+	}
+	if value, ok := _c.mutation.ProxyProtocolSnapshot(); ok {
+		_spec.SetField(usagelog.FieldProxyProtocolSnapshot, field.TypeString, value)
+		_node.ProxyProtocolSnapshot = &value
+	}
+	if value, ok := _c.mutation.RouteFingerprint(); ok {
+		_spec.SetField(usagelog.FieldRouteFingerprint, field.TypeString, value)
+		_node.RouteFingerprint = &value
+	}
+	if value, ok := _c.mutation.FinalUpstreamStatus(); ok {
+		_spec.SetField(usagelog.FieldFinalUpstreamStatus, field.TypeInt, value)
+		_node.FinalUpstreamStatus = &value
+	}
+	if value, ok := _c.mutation.RetryCount(); ok {
+		_spec.SetField(usagelog.FieldRetryCount, field.TypeInt, value)
+		_node.RetryCount = value
+	}
+	if value, ok := _c.mutation.AccountSwitchCount(); ok {
+		_spec.SetField(usagelog.FieldAccountSwitchCount, field.TypeInt, value)
+		_node.AccountSwitchCount = value
+	}
+	if value, ok := _c.mutation.AttemptTimeline(); ok {
+		_spec.SetField(usagelog.FieldAttemptTimeline, field.TypeJSON, value)
+		_node.AttemptTimeline = value
 	}
 	if value, ok := _c.mutation.UserAgent(); ok {
 		_spec.SetField(usagelog.FieldUserAgent, field.TypeString, value)
@@ -1958,6 +2272,342 @@ func (u *UsageLogUpsert) AddResponseLatencyMs(v int) *UsageLogUpsert {
 // ClearResponseLatencyMs clears the value of the "response_latency_ms" field.
 func (u *UsageLogUpsert) ClearResponseLatencyMs() *UsageLogUpsert {
 	u.SetNull(usagelog.FieldResponseLatencyMs)
+	return u
+}
+
+// SetRequestStartedAt sets the "request_started_at" field.
+func (u *UsageLogUpsert) SetRequestStartedAt(v time.Time) *UsageLogUpsert {
+	u.Set(usagelog.FieldRequestStartedAt, v)
+	return u
+}
+
+// UpdateRequestStartedAt sets the "request_started_at" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateRequestStartedAt() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldRequestStartedAt)
+	return u
+}
+
+// ClearRequestStartedAt clears the value of the "request_started_at" field.
+func (u *UsageLogUpsert) ClearRequestStartedAt() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldRequestStartedAt)
+	return u
+}
+
+// SetRequestTotalMs sets the "request_total_ms" field.
+func (u *UsageLogUpsert) SetRequestTotalMs(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldRequestTotalMs, v)
+	return u
+}
+
+// UpdateRequestTotalMs sets the "request_total_ms" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateRequestTotalMs() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldRequestTotalMs)
+	return u
+}
+
+// AddRequestTotalMs adds v to the "request_total_ms" field.
+func (u *UsageLogUpsert) AddRequestTotalMs(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldRequestTotalMs, v)
+	return u
+}
+
+// ClearRequestTotalMs clears the value of the "request_total_ms" field.
+func (u *UsageLogUpsert) ClearRequestTotalMs() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldRequestTotalMs)
+	return u
+}
+
+// SetRequestBodyReadMs sets the "request_body_read_ms" field.
+func (u *UsageLogUpsert) SetRequestBodyReadMs(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldRequestBodyReadMs, v)
+	return u
+}
+
+// UpdateRequestBodyReadMs sets the "request_body_read_ms" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateRequestBodyReadMs() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldRequestBodyReadMs)
+	return u
+}
+
+// AddRequestBodyReadMs adds v to the "request_body_read_ms" field.
+func (u *UsageLogUpsert) AddRequestBodyReadMs(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldRequestBodyReadMs, v)
+	return u
+}
+
+// ClearRequestBodyReadMs clears the value of the "request_body_read_ms" field.
+func (u *UsageLogUpsert) ClearRequestBodyReadMs() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldRequestBodyReadMs)
+	return u
+}
+
+// SetRequestBodyBytes sets the "request_body_bytes" field.
+func (u *UsageLogUpsert) SetRequestBodyBytes(v int64) *UsageLogUpsert {
+	u.Set(usagelog.FieldRequestBodyBytes, v)
+	return u
+}
+
+// UpdateRequestBodyBytes sets the "request_body_bytes" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateRequestBodyBytes() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldRequestBodyBytes)
+	return u
+}
+
+// AddRequestBodyBytes adds v to the "request_body_bytes" field.
+func (u *UsageLogUpsert) AddRequestBodyBytes(v int64) *UsageLogUpsert {
+	u.Add(usagelog.FieldRequestBodyBytes, v)
+	return u
+}
+
+// ClearRequestBodyBytes clears the value of the "request_body_bytes" field.
+func (u *UsageLogUpsert) ClearRequestBodyBytes() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldRequestBodyBytes)
+	return u
+}
+
+// SetUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field.
+func (u *UsageLogUpsert) SetUpstreamRequestWrittenMs(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldUpstreamRequestWrittenMs, v)
+	return u
+}
+
+// UpdateUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateUpstreamRequestWrittenMs() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldUpstreamRequestWrittenMs)
+	return u
+}
+
+// AddUpstreamRequestWrittenMs adds v to the "upstream_request_written_ms" field.
+func (u *UsageLogUpsert) AddUpstreamRequestWrittenMs(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldUpstreamRequestWrittenMs, v)
+	return u
+}
+
+// ClearUpstreamRequestWrittenMs clears the value of the "upstream_request_written_ms" field.
+func (u *UsageLogUpsert) ClearUpstreamRequestWrittenMs() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldUpstreamRequestWrittenMs)
+	return u
+}
+
+// SetUpstreamFirstByteMs sets the "upstream_first_byte_ms" field.
+func (u *UsageLogUpsert) SetUpstreamFirstByteMs(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldUpstreamFirstByteMs, v)
+	return u
+}
+
+// UpdateUpstreamFirstByteMs sets the "upstream_first_byte_ms" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateUpstreamFirstByteMs() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldUpstreamFirstByteMs)
+	return u
+}
+
+// AddUpstreamFirstByteMs adds v to the "upstream_first_byte_ms" field.
+func (u *UsageLogUpsert) AddUpstreamFirstByteMs(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldUpstreamFirstByteMs, v)
+	return u
+}
+
+// ClearUpstreamFirstByteMs clears the value of the "upstream_first_byte_ms" field.
+func (u *UsageLogUpsert) ClearUpstreamFirstByteMs() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldUpstreamFirstByteMs)
+	return u
+}
+
+// SetRequestFirstTokenMs sets the "request_first_token_ms" field.
+func (u *UsageLogUpsert) SetRequestFirstTokenMs(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldRequestFirstTokenMs, v)
+	return u
+}
+
+// UpdateRequestFirstTokenMs sets the "request_first_token_ms" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateRequestFirstTokenMs() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldRequestFirstTokenMs)
+	return u
+}
+
+// AddRequestFirstTokenMs adds v to the "request_first_token_ms" field.
+func (u *UsageLogUpsert) AddRequestFirstTokenMs(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldRequestFirstTokenMs, v)
+	return u
+}
+
+// ClearRequestFirstTokenMs clears the value of the "request_first_token_ms" field.
+func (u *UsageLogUpsert) ClearRequestFirstTokenMs() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldRequestFirstTokenMs)
+	return u
+}
+
+// SetRouteKind sets the "route_kind" field.
+func (u *UsageLogUpsert) SetRouteKind(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldRouteKind, v)
+	return u
+}
+
+// UpdateRouteKind sets the "route_kind" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateRouteKind() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldRouteKind)
+	return u
+}
+
+// ClearRouteKind clears the value of the "route_kind" field.
+func (u *UsageLogUpsert) ClearRouteKind() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldRouteKind)
+	return u
+}
+
+// SetProxyIDSnapshot sets the "proxy_id_snapshot" field.
+func (u *UsageLogUpsert) SetProxyIDSnapshot(v int64) *UsageLogUpsert {
+	u.Set(usagelog.FieldProxyIDSnapshot, v)
+	return u
+}
+
+// UpdateProxyIDSnapshot sets the "proxy_id_snapshot" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateProxyIDSnapshot() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldProxyIDSnapshot)
+	return u
+}
+
+// AddProxyIDSnapshot adds v to the "proxy_id_snapshot" field.
+func (u *UsageLogUpsert) AddProxyIDSnapshot(v int64) *UsageLogUpsert {
+	u.Add(usagelog.FieldProxyIDSnapshot, v)
+	return u
+}
+
+// ClearProxyIDSnapshot clears the value of the "proxy_id_snapshot" field.
+func (u *UsageLogUpsert) ClearProxyIDSnapshot() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldProxyIDSnapshot)
+	return u
+}
+
+// SetProxyNameSnapshot sets the "proxy_name_snapshot" field.
+func (u *UsageLogUpsert) SetProxyNameSnapshot(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldProxyNameSnapshot, v)
+	return u
+}
+
+// UpdateProxyNameSnapshot sets the "proxy_name_snapshot" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateProxyNameSnapshot() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldProxyNameSnapshot)
+	return u
+}
+
+// ClearProxyNameSnapshot clears the value of the "proxy_name_snapshot" field.
+func (u *UsageLogUpsert) ClearProxyNameSnapshot() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldProxyNameSnapshot)
+	return u
+}
+
+// SetProxyProtocolSnapshot sets the "proxy_protocol_snapshot" field.
+func (u *UsageLogUpsert) SetProxyProtocolSnapshot(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldProxyProtocolSnapshot, v)
+	return u
+}
+
+// UpdateProxyProtocolSnapshot sets the "proxy_protocol_snapshot" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateProxyProtocolSnapshot() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldProxyProtocolSnapshot)
+	return u
+}
+
+// ClearProxyProtocolSnapshot clears the value of the "proxy_protocol_snapshot" field.
+func (u *UsageLogUpsert) ClearProxyProtocolSnapshot() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldProxyProtocolSnapshot)
+	return u
+}
+
+// SetRouteFingerprint sets the "route_fingerprint" field.
+func (u *UsageLogUpsert) SetRouteFingerprint(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldRouteFingerprint, v)
+	return u
+}
+
+// UpdateRouteFingerprint sets the "route_fingerprint" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateRouteFingerprint() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldRouteFingerprint)
+	return u
+}
+
+// ClearRouteFingerprint clears the value of the "route_fingerprint" field.
+func (u *UsageLogUpsert) ClearRouteFingerprint() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldRouteFingerprint)
+	return u
+}
+
+// SetFinalUpstreamStatus sets the "final_upstream_status" field.
+func (u *UsageLogUpsert) SetFinalUpstreamStatus(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldFinalUpstreamStatus, v)
+	return u
+}
+
+// UpdateFinalUpstreamStatus sets the "final_upstream_status" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateFinalUpstreamStatus() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldFinalUpstreamStatus)
+	return u
+}
+
+// AddFinalUpstreamStatus adds v to the "final_upstream_status" field.
+func (u *UsageLogUpsert) AddFinalUpstreamStatus(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldFinalUpstreamStatus, v)
+	return u
+}
+
+// ClearFinalUpstreamStatus clears the value of the "final_upstream_status" field.
+func (u *UsageLogUpsert) ClearFinalUpstreamStatus() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldFinalUpstreamStatus)
+	return u
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (u *UsageLogUpsert) SetRetryCount(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldRetryCount, v)
+	return u
+}
+
+// UpdateRetryCount sets the "retry_count" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateRetryCount() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldRetryCount)
+	return u
+}
+
+// AddRetryCount adds v to the "retry_count" field.
+func (u *UsageLogUpsert) AddRetryCount(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldRetryCount, v)
+	return u
+}
+
+// SetAccountSwitchCount sets the "account_switch_count" field.
+func (u *UsageLogUpsert) SetAccountSwitchCount(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldAccountSwitchCount, v)
+	return u
+}
+
+// UpdateAccountSwitchCount sets the "account_switch_count" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateAccountSwitchCount() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldAccountSwitchCount)
+	return u
+}
+
+// AddAccountSwitchCount adds v to the "account_switch_count" field.
+func (u *UsageLogUpsert) AddAccountSwitchCount(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldAccountSwitchCount, v)
+	return u
+}
+
+// SetAttemptTimeline sets the "attempt_timeline" field.
+func (u *UsageLogUpsert) SetAttemptTimeline(v []map[string]interface{}) *UsageLogUpsert {
+	u.Set(usagelog.FieldAttemptTimeline, v)
+	return u
+}
+
+// UpdateAttemptTimeline sets the "attempt_timeline" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateAttemptTimeline() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldAttemptTimeline)
+	return u
+}
+
+// ClearAttemptTimeline clears the value of the "attempt_timeline" field.
+func (u *UsageLogUpsert) ClearAttemptTimeline() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldAttemptTimeline)
 	return u
 }
 
@@ -2989,6 +3639,398 @@ func (u *UsageLogUpsertOne) UpdateResponseLatencyMs() *UsageLogUpsertOne {
 func (u *UsageLogUpsertOne) ClearResponseLatencyMs() *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearResponseLatencyMs()
+	})
+}
+
+// SetRequestStartedAt sets the "request_started_at" field.
+func (u *UsageLogUpsertOne) SetRequestStartedAt(v time.Time) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRequestStartedAt(v)
+	})
+}
+
+// UpdateRequestStartedAt sets the "request_started_at" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateRequestStartedAt() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRequestStartedAt()
+	})
+}
+
+// ClearRequestStartedAt clears the value of the "request_started_at" field.
+func (u *UsageLogUpsertOne) ClearRequestStartedAt() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRequestStartedAt()
+	})
+}
+
+// SetRequestTotalMs sets the "request_total_ms" field.
+func (u *UsageLogUpsertOne) SetRequestTotalMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRequestTotalMs(v)
+	})
+}
+
+// AddRequestTotalMs adds v to the "request_total_ms" field.
+func (u *UsageLogUpsertOne) AddRequestTotalMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddRequestTotalMs(v)
+	})
+}
+
+// UpdateRequestTotalMs sets the "request_total_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateRequestTotalMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRequestTotalMs()
+	})
+}
+
+// ClearRequestTotalMs clears the value of the "request_total_ms" field.
+func (u *UsageLogUpsertOne) ClearRequestTotalMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRequestTotalMs()
+	})
+}
+
+// SetRequestBodyReadMs sets the "request_body_read_ms" field.
+func (u *UsageLogUpsertOne) SetRequestBodyReadMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRequestBodyReadMs(v)
+	})
+}
+
+// AddRequestBodyReadMs adds v to the "request_body_read_ms" field.
+func (u *UsageLogUpsertOne) AddRequestBodyReadMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddRequestBodyReadMs(v)
+	})
+}
+
+// UpdateRequestBodyReadMs sets the "request_body_read_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateRequestBodyReadMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRequestBodyReadMs()
+	})
+}
+
+// ClearRequestBodyReadMs clears the value of the "request_body_read_ms" field.
+func (u *UsageLogUpsertOne) ClearRequestBodyReadMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRequestBodyReadMs()
+	})
+}
+
+// SetRequestBodyBytes sets the "request_body_bytes" field.
+func (u *UsageLogUpsertOne) SetRequestBodyBytes(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRequestBodyBytes(v)
+	})
+}
+
+// AddRequestBodyBytes adds v to the "request_body_bytes" field.
+func (u *UsageLogUpsertOne) AddRequestBodyBytes(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddRequestBodyBytes(v)
+	})
+}
+
+// UpdateRequestBodyBytes sets the "request_body_bytes" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateRequestBodyBytes() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRequestBodyBytes()
+	})
+}
+
+// ClearRequestBodyBytes clears the value of the "request_body_bytes" field.
+func (u *UsageLogUpsertOne) ClearRequestBodyBytes() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRequestBodyBytes()
+	})
+}
+
+// SetUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field.
+func (u *UsageLogUpsertOne) SetUpstreamRequestWrittenMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamRequestWrittenMs(v)
+	})
+}
+
+// AddUpstreamRequestWrittenMs adds v to the "upstream_request_written_ms" field.
+func (u *UsageLogUpsertOne) AddUpstreamRequestWrittenMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamRequestWrittenMs(v)
+	})
+}
+
+// UpdateUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateUpstreamRequestWrittenMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamRequestWrittenMs()
+	})
+}
+
+// ClearUpstreamRequestWrittenMs clears the value of the "upstream_request_written_ms" field.
+func (u *UsageLogUpsertOne) ClearUpstreamRequestWrittenMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamRequestWrittenMs()
+	})
+}
+
+// SetUpstreamFirstByteMs sets the "upstream_first_byte_ms" field.
+func (u *UsageLogUpsertOne) SetUpstreamFirstByteMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamFirstByteMs(v)
+	})
+}
+
+// AddUpstreamFirstByteMs adds v to the "upstream_first_byte_ms" field.
+func (u *UsageLogUpsertOne) AddUpstreamFirstByteMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamFirstByteMs(v)
+	})
+}
+
+// UpdateUpstreamFirstByteMs sets the "upstream_first_byte_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateUpstreamFirstByteMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamFirstByteMs()
+	})
+}
+
+// ClearUpstreamFirstByteMs clears the value of the "upstream_first_byte_ms" field.
+func (u *UsageLogUpsertOne) ClearUpstreamFirstByteMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamFirstByteMs()
+	})
+}
+
+// SetRequestFirstTokenMs sets the "request_first_token_ms" field.
+func (u *UsageLogUpsertOne) SetRequestFirstTokenMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRequestFirstTokenMs(v)
+	})
+}
+
+// AddRequestFirstTokenMs adds v to the "request_first_token_ms" field.
+func (u *UsageLogUpsertOne) AddRequestFirstTokenMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddRequestFirstTokenMs(v)
+	})
+}
+
+// UpdateRequestFirstTokenMs sets the "request_first_token_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateRequestFirstTokenMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRequestFirstTokenMs()
+	})
+}
+
+// ClearRequestFirstTokenMs clears the value of the "request_first_token_ms" field.
+func (u *UsageLogUpsertOne) ClearRequestFirstTokenMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRequestFirstTokenMs()
+	})
+}
+
+// SetRouteKind sets the "route_kind" field.
+func (u *UsageLogUpsertOne) SetRouteKind(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRouteKind(v)
+	})
+}
+
+// UpdateRouteKind sets the "route_kind" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateRouteKind() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRouteKind()
+	})
+}
+
+// ClearRouteKind clears the value of the "route_kind" field.
+func (u *UsageLogUpsertOne) ClearRouteKind() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRouteKind()
+	})
+}
+
+// SetProxyIDSnapshot sets the "proxy_id_snapshot" field.
+func (u *UsageLogUpsertOne) SetProxyIDSnapshot(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyIDSnapshot(v)
+	})
+}
+
+// AddProxyIDSnapshot adds v to the "proxy_id_snapshot" field.
+func (u *UsageLogUpsertOne) AddProxyIDSnapshot(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddProxyIDSnapshot(v)
+	})
+}
+
+// UpdateProxyIDSnapshot sets the "proxy_id_snapshot" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateProxyIDSnapshot() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyIDSnapshot()
+	})
+}
+
+// ClearProxyIDSnapshot clears the value of the "proxy_id_snapshot" field.
+func (u *UsageLogUpsertOne) ClearProxyIDSnapshot() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyIDSnapshot()
+	})
+}
+
+// SetProxyNameSnapshot sets the "proxy_name_snapshot" field.
+func (u *UsageLogUpsertOne) SetProxyNameSnapshot(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyNameSnapshot(v)
+	})
+}
+
+// UpdateProxyNameSnapshot sets the "proxy_name_snapshot" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateProxyNameSnapshot() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyNameSnapshot()
+	})
+}
+
+// ClearProxyNameSnapshot clears the value of the "proxy_name_snapshot" field.
+func (u *UsageLogUpsertOne) ClearProxyNameSnapshot() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyNameSnapshot()
+	})
+}
+
+// SetProxyProtocolSnapshot sets the "proxy_protocol_snapshot" field.
+func (u *UsageLogUpsertOne) SetProxyProtocolSnapshot(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyProtocolSnapshot(v)
+	})
+}
+
+// UpdateProxyProtocolSnapshot sets the "proxy_protocol_snapshot" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateProxyProtocolSnapshot() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyProtocolSnapshot()
+	})
+}
+
+// ClearProxyProtocolSnapshot clears the value of the "proxy_protocol_snapshot" field.
+func (u *UsageLogUpsertOne) ClearProxyProtocolSnapshot() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyProtocolSnapshot()
+	})
+}
+
+// SetRouteFingerprint sets the "route_fingerprint" field.
+func (u *UsageLogUpsertOne) SetRouteFingerprint(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRouteFingerprint(v)
+	})
+}
+
+// UpdateRouteFingerprint sets the "route_fingerprint" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateRouteFingerprint() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRouteFingerprint()
+	})
+}
+
+// ClearRouteFingerprint clears the value of the "route_fingerprint" field.
+func (u *UsageLogUpsertOne) ClearRouteFingerprint() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRouteFingerprint()
+	})
+}
+
+// SetFinalUpstreamStatus sets the "final_upstream_status" field.
+func (u *UsageLogUpsertOne) SetFinalUpstreamStatus(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetFinalUpstreamStatus(v)
+	})
+}
+
+// AddFinalUpstreamStatus adds v to the "final_upstream_status" field.
+func (u *UsageLogUpsertOne) AddFinalUpstreamStatus(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddFinalUpstreamStatus(v)
+	})
+}
+
+// UpdateFinalUpstreamStatus sets the "final_upstream_status" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateFinalUpstreamStatus() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateFinalUpstreamStatus()
+	})
+}
+
+// ClearFinalUpstreamStatus clears the value of the "final_upstream_status" field.
+func (u *UsageLogUpsertOne) ClearFinalUpstreamStatus() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearFinalUpstreamStatus()
+	})
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (u *UsageLogUpsertOne) SetRetryCount(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRetryCount(v)
+	})
+}
+
+// AddRetryCount adds v to the "retry_count" field.
+func (u *UsageLogUpsertOne) AddRetryCount(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddRetryCount(v)
+	})
+}
+
+// UpdateRetryCount sets the "retry_count" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateRetryCount() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRetryCount()
+	})
+}
+
+// SetAccountSwitchCount sets the "account_switch_count" field.
+func (u *UsageLogUpsertOne) SetAccountSwitchCount(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetAccountSwitchCount(v)
+	})
+}
+
+// AddAccountSwitchCount adds v to the "account_switch_count" field.
+func (u *UsageLogUpsertOne) AddAccountSwitchCount(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddAccountSwitchCount(v)
+	})
+}
+
+// UpdateAccountSwitchCount sets the "account_switch_count" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateAccountSwitchCount() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateAccountSwitchCount()
+	})
+}
+
+// SetAttemptTimeline sets the "attempt_timeline" field.
+func (u *UsageLogUpsertOne) SetAttemptTimeline(v []map[string]interface{}) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetAttemptTimeline(v)
+	})
+}
+
+// UpdateAttemptTimeline sets the "attempt_timeline" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateAttemptTimeline() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateAttemptTimeline()
+	})
+}
+
+// ClearAttemptTimeline clears the value of the "attempt_timeline" field.
+func (u *UsageLogUpsertOne) ClearAttemptTimeline() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearAttemptTimeline()
 	})
 }
 
@@ -4222,6 +5264,398 @@ func (u *UsageLogUpsertBulk) UpdateResponseLatencyMs() *UsageLogUpsertBulk {
 func (u *UsageLogUpsertBulk) ClearResponseLatencyMs() *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearResponseLatencyMs()
+	})
+}
+
+// SetRequestStartedAt sets the "request_started_at" field.
+func (u *UsageLogUpsertBulk) SetRequestStartedAt(v time.Time) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRequestStartedAt(v)
+	})
+}
+
+// UpdateRequestStartedAt sets the "request_started_at" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateRequestStartedAt() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRequestStartedAt()
+	})
+}
+
+// ClearRequestStartedAt clears the value of the "request_started_at" field.
+func (u *UsageLogUpsertBulk) ClearRequestStartedAt() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRequestStartedAt()
+	})
+}
+
+// SetRequestTotalMs sets the "request_total_ms" field.
+func (u *UsageLogUpsertBulk) SetRequestTotalMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRequestTotalMs(v)
+	})
+}
+
+// AddRequestTotalMs adds v to the "request_total_ms" field.
+func (u *UsageLogUpsertBulk) AddRequestTotalMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddRequestTotalMs(v)
+	})
+}
+
+// UpdateRequestTotalMs sets the "request_total_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateRequestTotalMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRequestTotalMs()
+	})
+}
+
+// ClearRequestTotalMs clears the value of the "request_total_ms" field.
+func (u *UsageLogUpsertBulk) ClearRequestTotalMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRequestTotalMs()
+	})
+}
+
+// SetRequestBodyReadMs sets the "request_body_read_ms" field.
+func (u *UsageLogUpsertBulk) SetRequestBodyReadMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRequestBodyReadMs(v)
+	})
+}
+
+// AddRequestBodyReadMs adds v to the "request_body_read_ms" field.
+func (u *UsageLogUpsertBulk) AddRequestBodyReadMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddRequestBodyReadMs(v)
+	})
+}
+
+// UpdateRequestBodyReadMs sets the "request_body_read_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateRequestBodyReadMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRequestBodyReadMs()
+	})
+}
+
+// ClearRequestBodyReadMs clears the value of the "request_body_read_ms" field.
+func (u *UsageLogUpsertBulk) ClearRequestBodyReadMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRequestBodyReadMs()
+	})
+}
+
+// SetRequestBodyBytes sets the "request_body_bytes" field.
+func (u *UsageLogUpsertBulk) SetRequestBodyBytes(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRequestBodyBytes(v)
+	})
+}
+
+// AddRequestBodyBytes adds v to the "request_body_bytes" field.
+func (u *UsageLogUpsertBulk) AddRequestBodyBytes(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddRequestBodyBytes(v)
+	})
+}
+
+// UpdateRequestBodyBytes sets the "request_body_bytes" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateRequestBodyBytes() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRequestBodyBytes()
+	})
+}
+
+// ClearRequestBodyBytes clears the value of the "request_body_bytes" field.
+func (u *UsageLogUpsertBulk) ClearRequestBodyBytes() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRequestBodyBytes()
+	})
+}
+
+// SetUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field.
+func (u *UsageLogUpsertBulk) SetUpstreamRequestWrittenMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamRequestWrittenMs(v)
+	})
+}
+
+// AddUpstreamRequestWrittenMs adds v to the "upstream_request_written_ms" field.
+func (u *UsageLogUpsertBulk) AddUpstreamRequestWrittenMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamRequestWrittenMs(v)
+	})
+}
+
+// UpdateUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateUpstreamRequestWrittenMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamRequestWrittenMs()
+	})
+}
+
+// ClearUpstreamRequestWrittenMs clears the value of the "upstream_request_written_ms" field.
+func (u *UsageLogUpsertBulk) ClearUpstreamRequestWrittenMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamRequestWrittenMs()
+	})
+}
+
+// SetUpstreamFirstByteMs sets the "upstream_first_byte_ms" field.
+func (u *UsageLogUpsertBulk) SetUpstreamFirstByteMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamFirstByteMs(v)
+	})
+}
+
+// AddUpstreamFirstByteMs adds v to the "upstream_first_byte_ms" field.
+func (u *UsageLogUpsertBulk) AddUpstreamFirstByteMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamFirstByteMs(v)
+	})
+}
+
+// UpdateUpstreamFirstByteMs sets the "upstream_first_byte_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateUpstreamFirstByteMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamFirstByteMs()
+	})
+}
+
+// ClearUpstreamFirstByteMs clears the value of the "upstream_first_byte_ms" field.
+func (u *UsageLogUpsertBulk) ClearUpstreamFirstByteMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamFirstByteMs()
+	})
+}
+
+// SetRequestFirstTokenMs sets the "request_first_token_ms" field.
+func (u *UsageLogUpsertBulk) SetRequestFirstTokenMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRequestFirstTokenMs(v)
+	})
+}
+
+// AddRequestFirstTokenMs adds v to the "request_first_token_ms" field.
+func (u *UsageLogUpsertBulk) AddRequestFirstTokenMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddRequestFirstTokenMs(v)
+	})
+}
+
+// UpdateRequestFirstTokenMs sets the "request_first_token_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateRequestFirstTokenMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRequestFirstTokenMs()
+	})
+}
+
+// ClearRequestFirstTokenMs clears the value of the "request_first_token_ms" field.
+func (u *UsageLogUpsertBulk) ClearRequestFirstTokenMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRequestFirstTokenMs()
+	})
+}
+
+// SetRouteKind sets the "route_kind" field.
+func (u *UsageLogUpsertBulk) SetRouteKind(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRouteKind(v)
+	})
+}
+
+// UpdateRouteKind sets the "route_kind" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateRouteKind() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRouteKind()
+	})
+}
+
+// ClearRouteKind clears the value of the "route_kind" field.
+func (u *UsageLogUpsertBulk) ClearRouteKind() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRouteKind()
+	})
+}
+
+// SetProxyIDSnapshot sets the "proxy_id_snapshot" field.
+func (u *UsageLogUpsertBulk) SetProxyIDSnapshot(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyIDSnapshot(v)
+	})
+}
+
+// AddProxyIDSnapshot adds v to the "proxy_id_snapshot" field.
+func (u *UsageLogUpsertBulk) AddProxyIDSnapshot(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddProxyIDSnapshot(v)
+	})
+}
+
+// UpdateProxyIDSnapshot sets the "proxy_id_snapshot" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateProxyIDSnapshot() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyIDSnapshot()
+	})
+}
+
+// ClearProxyIDSnapshot clears the value of the "proxy_id_snapshot" field.
+func (u *UsageLogUpsertBulk) ClearProxyIDSnapshot() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyIDSnapshot()
+	})
+}
+
+// SetProxyNameSnapshot sets the "proxy_name_snapshot" field.
+func (u *UsageLogUpsertBulk) SetProxyNameSnapshot(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyNameSnapshot(v)
+	})
+}
+
+// UpdateProxyNameSnapshot sets the "proxy_name_snapshot" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateProxyNameSnapshot() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyNameSnapshot()
+	})
+}
+
+// ClearProxyNameSnapshot clears the value of the "proxy_name_snapshot" field.
+func (u *UsageLogUpsertBulk) ClearProxyNameSnapshot() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyNameSnapshot()
+	})
+}
+
+// SetProxyProtocolSnapshot sets the "proxy_protocol_snapshot" field.
+func (u *UsageLogUpsertBulk) SetProxyProtocolSnapshot(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetProxyProtocolSnapshot(v)
+	})
+}
+
+// UpdateProxyProtocolSnapshot sets the "proxy_protocol_snapshot" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateProxyProtocolSnapshot() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateProxyProtocolSnapshot()
+	})
+}
+
+// ClearProxyProtocolSnapshot clears the value of the "proxy_protocol_snapshot" field.
+func (u *UsageLogUpsertBulk) ClearProxyProtocolSnapshot() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearProxyProtocolSnapshot()
+	})
+}
+
+// SetRouteFingerprint sets the "route_fingerprint" field.
+func (u *UsageLogUpsertBulk) SetRouteFingerprint(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRouteFingerprint(v)
+	})
+}
+
+// UpdateRouteFingerprint sets the "route_fingerprint" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateRouteFingerprint() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRouteFingerprint()
+	})
+}
+
+// ClearRouteFingerprint clears the value of the "route_fingerprint" field.
+func (u *UsageLogUpsertBulk) ClearRouteFingerprint() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRouteFingerprint()
+	})
+}
+
+// SetFinalUpstreamStatus sets the "final_upstream_status" field.
+func (u *UsageLogUpsertBulk) SetFinalUpstreamStatus(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetFinalUpstreamStatus(v)
+	})
+}
+
+// AddFinalUpstreamStatus adds v to the "final_upstream_status" field.
+func (u *UsageLogUpsertBulk) AddFinalUpstreamStatus(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddFinalUpstreamStatus(v)
+	})
+}
+
+// UpdateFinalUpstreamStatus sets the "final_upstream_status" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateFinalUpstreamStatus() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateFinalUpstreamStatus()
+	})
+}
+
+// ClearFinalUpstreamStatus clears the value of the "final_upstream_status" field.
+func (u *UsageLogUpsertBulk) ClearFinalUpstreamStatus() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearFinalUpstreamStatus()
+	})
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (u *UsageLogUpsertBulk) SetRetryCount(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRetryCount(v)
+	})
+}
+
+// AddRetryCount adds v to the "retry_count" field.
+func (u *UsageLogUpsertBulk) AddRetryCount(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddRetryCount(v)
+	})
+}
+
+// UpdateRetryCount sets the "retry_count" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateRetryCount() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRetryCount()
+	})
+}
+
+// SetAccountSwitchCount sets the "account_switch_count" field.
+func (u *UsageLogUpsertBulk) SetAccountSwitchCount(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetAccountSwitchCount(v)
+	})
+}
+
+// AddAccountSwitchCount adds v to the "account_switch_count" field.
+func (u *UsageLogUpsertBulk) AddAccountSwitchCount(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddAccountSwitchCount(v)
+	})
+}
+
+// UpdateAccountSwitchCount sets the "account_switch_count" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateAccountSwitchCount() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateAccountSwitchCount()
+	})
+}
+
+// SetAttemptTimeline sets the "attempt_timeline" field.
+func (u *UsageLogUpsertBulk) SetAttemptTimeline(v []map[string]interface{}) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetAttemptTimeline(v)
+	})
+}
+
+// UpdateAttemptTimeline sets the "attempt_timeline" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateAttemptTimeline() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateAttemptTimeline()
+	})
+}
+
+// ClearAttemptTimeline clears the value of the "attempt_timeline" field.
+func (u *UsageLogUpsertBulk) ClearAttemptTimeline() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearAttemptTimeline()
 	})
 }
 

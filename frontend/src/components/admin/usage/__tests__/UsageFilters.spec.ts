@@ -31,6 +31,15 @@ const messages: Record<string, string> = {
   'admin.usage.billingModeImage': 'Image',
   'admin.usage.group': 'Group',
   'admin.usage.allGroups': 'All Groups',
+  'admin.usage.diagnostics.route': 'Route',
+  'admin.usage.diagnostics.allRoutes': 'All routes',
+  'admin.usage.diagnostics.directRoute': 'Direct',
+  'admin.usage.diagnostics.proxyRoute': 'Proxy',
+  'admin.usage.diagnostics.proxyId': 'Proxy ID',
+  'admin.usage.diagnostics.minTotalMs': 'Min total (ms)',
+  'admin.usage.diagnostics.minFirstTokenMs': 'Min first token (ms)',
+  'admin.usage.diagnostics.minFirstByteMs': 'Min first byte (ms)',
+  'admin.usage.diagnostics.retryOnly': 'Retries only',
   'common.refresh': 'Refresh',
   'common.reset': 'Reset',
   'admin.usage.cleanup.button': 'Cleanup',
@@ -79,6 +88,12 @@ const defaultFilters = () => ({
   group_id: null,
   start_date: '',
   end_date: '',
+  route_kind: null,
+  proxy_id: null,
+  retry_only: false,
+  min_request_total_ms: null,
+  min_request_first_token_ms: null,
+  min_upstream_first_byte_ms: null,
 })
 
 function mountFilters(filters = defaultFilters()) {
@@ -192,6 +207,30 @@ describe('UsageFilters — model options come from prop (no dup request)', () =>
 
     const opts = (wrapper.vm as any).modelOptions as Array<{ value: string | null; label: string }>
     expect(opts.map((o) => o.value)).toEqual([null, 'claude-3', 'gpt-4o'])
+  })
+})
+
+describe('UsageFilters usage-mode fields', () => {
+  it('shows identity and lightweight diagnostic filters', async () => {
+    const wrapper = mountFilters()
+    await flushPromises()
+
+    const labels = wrapper.findAll('label.input-label').map((label) => label.text())
+    expect(labels).toEqual([
+      'User',
+      'API Key',
+      'Model',
+      'Group',
+      'Account',
+      'Route',
+      'Proxy ID',
+      'Min total (ms)',
+      'Min first token (ms)',
+      'Min first byte (ms)',
+    ])
+    expect(labels).not.toContain('Type')
+    expect(labels).not.toContain('Billing Type')
+    expect(labels).not.toContain('Billing Mode')
   })
 })
 

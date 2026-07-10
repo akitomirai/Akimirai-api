@@ -3,17 +3,10 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 
 const copyToClipboardMock = vi.hoisted(() => vi.fn().mockResolvedValue(true))
-const routerPushMock = vi.hoisted(() => vi.fn())
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => key
-  })
-}))
-
-vi.mock('vue-router', () => ({
-  useRouter: () => ({
-    push: routerPushMock
   })
 }))
 
@@ -53,6 +46,7 @@ describe('UseKeyModal', () => {
     expect(text).not.toContain('prod-key')
     expect(text).not.toContain('sk-test********')
     expect(text).not.toContain('keys.useKeyModal.copyApiKey')
+    expect(text).not.toContain('keys.useKeyModal.viewUsage')
     const codeBlocks = wrapper.findAll('pre code').map((code) => code.text()).join('\n\n')
     expect(codeBlocks).toContain('base_url = "https://example.com/v1"')
     expect(codeBlocks).not.toContain('/v1/v1')
@@ -69,7 +63,7 @@ describe('UseKeyModal', () => {
     )
   })
 
-  it('renders GPT-5.5 and goals feature in OpenAI Codex config', () => {
+  it('renders GPT-5.6 Sol and goals feature in OpenAI Codex config', () => {
     const wrapper = mount(UseKeyModal, {
       props: {
         show: true,
@@ -93,15 +87,15 @@ describe('UseKeyModal', () => {
     const configToml = codeBlocks.find((content) => content.includes('model_provider = "OpenAI"'))
 
     expect(configToml).toBeDefined()
-    expect(configToml).toContain('model = "gpt-5.5"')
-    expect(configToml).toContain('review_model = "gpt-5.5"')
+    expect(configToml).toContain('model = "gpt-5.6-sol"')
+    expect(configToml).toContain('review_model = "gpt-5.6-sol"')
     expect(configToml).not.toContain('model = "gpt-5.4"')
     expect(configToml).not.toContain('model_context_window')
     expect(configToml).not.toContain('model_auto_compact_token_limit')
     expect(configToml).toContain('[features]\ngoals = true')
   })
 
-  it('renders GPT-5.5 and goals feature in OpenAI Codex WebSocket config', async () => {
+  it('renders GPT-5.6 Sol and goals feature in OpenAI Codex WebSocket config', async () => {
     const wrapper = mount(UseKeyModal, {
       props: {
         show: true,
@@ -133,8 +127,8 @@ describe('UseKeyModal', () => {
     const configToml = codeBlocks.find((content) => content.includes('supports_websockets = true'))
 
     expect(configToml).toBeDefined()
-    expect(configToml).toContain('model = "gpt-5.5"')
-    expect(configToml).toContain('review_model = "gpt-5.5"')
+    expect(configToml).toContain('model = "gpt-5.6-sol"')
+    expect(configToml).toContain('review_model = "gpt-5.6-sol"')
     expect(configToml).not.toContain('model = "gpt-5.4"')
     expect(configToml).not.toContain('model_context_window')
     expect(configToml).not.toContain('model_auto_compact_token_limit')
@@ -173,6 +167,38 @@ describe('UseKeyModal', () => {
     expect(codeBlock.exists()).toBe(true)
     expect(codeBlock.text()).toContain('"name": "GPT-5.4 Mini"')
     expect(codeBlock.text()).not.toContain('"name": "GPT-5.4 Nano"')
+  })
+
+  it('renders the GPT-5.6 alias and max variants in OpenCode config', async () => {
+    const wrapper = mount(UseKeyModal, {
+      props: {
+        show: true,
+        apiKey: 'sk-test',
+        baseUrl: 'https://example.com/v1',
+        platform: 'openai'
+      },
+      global: {
+        stubs: {
+          BaseDialog: { template: '<div><slot /><slot name="footer" /></div>' },
+          Icon: { template: '<span />' }
+        }
+      }
+    })
+
+    const opencodeTab = wrapper.findAll('button').find((button) =>
+      button.text().includes('keys.useKeyModal.cliTabs.opencode')
+    )
+    expect(opencodeTab).toBeDefined()
+    await opencodeTab!.trigger('click')
+    await nextTick()
+
+    const models = JSON.parse(wrapper.find('pre code').text()).provider.openai.models
+    for (const model of ['gpt-5.6', 'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna']) {
+      expect(models[model]).toBeDefined()
+      expect(models[model].variants).toHaveProperty('max')
+      expect(models[model].variants).toHaveProperty('xhigh')
+    }
+    expect(models['gpt-5.6'].name).toBe('GPT-5.6 (Sol)')
   })
 
   it('renders Claude Fable 5 OpenCode config with adaptive thinking', async () => {

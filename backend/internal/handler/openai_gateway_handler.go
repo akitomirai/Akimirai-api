@@ -159,6 +159,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	setOpenAIClientTransportHTTP(c)
 
 	requestStart := time.Now()
+	requestDiagnostics := beginOpenAIRequestDiagnostics(c, requestStart)
 
 	// Get apiKey and user from context (set by ApiKeyAuth middleware)
 	apiKey, ok := middleware2.GetAPIKeyFromContext(c)
@@ -184,7 +185,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	}
 
 	// Read request body
-	body, err := readLenientJSONRequestBodyWithPrealloc(c.Request, h.cfg)
+	body, err := h.readOpenAIRequestBodyWithDiagnostics(c, requestDiagnostics)
 	if err != nil {
 		if maxErr, ok := extractMaxBytesError(err); ok {
 			h.errorResponse(c, http.StatusRequestEntityTooLarge, "invalid_request_error", buildBodyTooLargeMessage(maxErr.Limit))
@@ -395,6 +396,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 			zap.Float64("load_skew", scheduleDecision.LoadSkew),
 		)
 		account := selection.Account
+		requestDiagnostics.SelectAccount(account)
 		sessionHash = ensureOpenAIPoolModeSessionHash(sessionHash, account)
 		reqLog.Debug("openai.account_selected", zap.Int64("account_id", account.ID), zap.String("account_name", account.Name))
 		setOpsSelectedAccount(c, account.ID, account.Platform)
@@ -535,6 +537,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		aRoutingLatencyMs := getContextIntPtr(c, service.OpsRoutingLatencyMsKey)
 		aUpstreamLatencyMs := getContextIntPtr(c, service.OpsUpstreamLatencyMsKey)
 		aResponseLatencyMs := getContextIntPtr(c, service.OpsResponseLatencyMsKey)
+		diagnosticsSnapshot := snapshotOpenAIRequestDiagnostics(requestDiagnostics, forwardStart, result, account)
 
 		// 使用量记录通过有界 worker 池提交，避免请求热路径创建无界 goroutine。
 		cyberBlocked := service.GetOpsCyberPolicy(c) != nil
@@ -559,6 +562,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 				RoutingLatencyMs:   aRoutingLatencyMs,
 				UpstreamLatencyMs:  aUpstreamLatencyMs,
 				ResponseLatencyMs:  aResponseLatencyMs,
+				Diagnostics:        diagnosticsSnapshot,
 			}); err != nil {
 				logger.L().With(
 					zap.String("component", "handler.openai_gateway.responses"),
@@ -720,6 +724,7 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 	defer h.recoverAnthropicMessagesPanic(c, &streamStarted)
 
 	requestStart := time.Now()
+	requestDiagnostics := beginOpenAIRequestDiagnostics(c, requestStart)
 
 	apiKey, ok := middleware2.GetAPIKeyFromContext(c)
 	if !ok {
@@ -751,7 +756,7 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 		return
 	}
 
-	body, err := readLenientJSONRequestBodyWithPrealloc(c.Request, h.cfg)
+	body, err := h.readOpenAIRequestBodyWithDiagnostics(c, requestDiagnostics)
 	if err != nil {
 		if maxErr, ok := extractMaxBytesError(err); ok {
 			h.anthropicErrorResponse(c, http.StatusRequestEntityTooLarge, "invalid_request_error", buildBodyTooLargeMessage(maxErr.Limit))
@@ -889,6 +894,7 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 			return
 		}
 		account := selection.Account
+		requestDiagnostics.SelectAccount(account)
 		sessionHash = ensureOpenAIPoolModeSessionHash(sessionHash, account)
 		reqLog.Debug("openai_messages.account_selected", zap.Int64("account_id", account.ID), zap.String("account_name", account.Name))
 		_ = scheduleDecision
@@ -1023,6 +1029,7 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 		bRoutingLatencyMs := getContextIntPtr(c, service.OpsRoutingLatencyMsKey)
 		bUpstreamLatencyMs := getContextIntPtr(c, service.OpsUpstreamLatencyMsKey)
 		bResponseLatencyMs := getContextIntPtr(c, service.OpsResponseLatencyMsKey)
+		diagnosticsSnapshot := snapshotOpenAIRequestDiagnostics(requestDiagnostics, forwardStart, result, account)
 
 		cyberBlocked := service.GetOpsCyberPolicy(c) != nil
 		h.submitOpenAIUsageRecordTask(c.Request.Context(), result, func(ctx context.Context) {
@@ -1046,6 +1053,7 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 				RoutingLatencyMs:   bRoutingLatencyMs,
 				UpstreamLatencyMs:  bUpstreamLatencyMs,
 				ResponseLatencyMs:  bResponseLatencyMs,
+				Diagnostics:        diagnosticsSnapshot,
 			}); err != nil {
 				logger.L().With(
 					zap.String("component", "handler.openai_gateway.messages"),
@@ -1348,6 +1356,11 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, "model is required in first response.create payload")
 		return
 	}
+	if !apiKey.AllowsModel(reqModel) {
+		service.MarkOpsClientBusinessLimited(c, service.OpsClientBusinessLimitedReasonLocalFeatureGate)
+		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, service.APIKeyModelNotAllowedCode+": "+service.APIKeyModelNotAllowedMessage(reqModel))
+		return
+	}
 	previousResponseID := strings.TrimSpace(gjson.GetBytes(firstMessage, "previous_response_id").String())
 	previousResponseIDKind := service.ClassifyOpenAIPreviousResponseIDKind(previousResponseID)
 	if previousResponseID != "" && previousResponseIDKind == service.OpenAIPreviousResponseIDKindMessageID {
@@ -1557,6 +1570,10 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 				}
 				if model == "" {
 					model = reqModel
+				}
+				if !apiKey.AllowsModel(model) {
+					service.MarkOpsClientBusinessLimited(c, service.OpsClientBusinessLimitedReasonLocalFeatureGate)
+					return service.NewOpenAIWSClientCloseError(coderws.StatusPolicyViolation, service.APIKeyModelNotAllowedCode+": "+service.APIKeyModelNotAllowedMessage(model), nil)
 				}
 				if decision := h.checkContentModeration(c, reqLog, apiKey, subject, service.ContentModerationProtocolOpenAIResponses, model, payload); decision != nil && decision.Blocked {
 					writeContentModerationWSError(ctx, wsConn, decision)

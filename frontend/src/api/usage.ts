@@ -12,6 +12,7 @@ import type {
   TrendDataPoint,
   ModelStat,
   GroupStat,
+  ApiKeyStat,
   UsageRequestType,
   UserErrorRequest,
   UserErrorRequestDetail,
@@ -105,6 +106,7 @@ export interface UsageDashboardSnapshotV2Params extends TrendParams {
   include_trend?: boolean
   include_model_stats?: boolean
   include_group_stats?: boolean
+  include_api_key_stats?: boolean
 }
 
 export interface UsageDashboardSnapshotV2Response {
@@ -115,6 +117,7 @@ export interface UsageDashboardSnapshotV2Response {
   trend?: TrendDataPoint[]
   models?: ModelStat[]
   groups?: GroupStat[]
+  api_keys?: ApiKeyStat[]
 }
 
 /**

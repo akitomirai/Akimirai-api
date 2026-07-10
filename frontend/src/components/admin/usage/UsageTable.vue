@@ -1,6 +1,6 @@
 
 <template>
-  <div :class="[flat ? '' : (framed ? 'card overflow-hidden' : 'overflow-hidden'), dense ? 'usage-table-dense' : '']"
+  <div :class="[flat ? '' : (framed ? 'card overflow-hidden' : 'overflow-hidden'), dense ? 'usage-table-dense' : '']">
     <div
       v-if="showIpGeoToolbar"
       class="flex items-center justify-end gap-2 border-b border-gray-200 px-4 py-2 dark:border-dark-700"
@@ -51,7 +51,22 @@
         </template>
 
         <template #cell-account="{ row }">
-          <span class="text-sm text-gray-900 dark:text-white">{{ row.account?.name || '-' }}</span>
+          <div class="min-w-[140px] space-y-1">
+            <span class="text-sm text-gray-900 dark:text-white">{{ row.account?.name || '-' }}</span>
+            <div v-if="row.route_kind" class="flex flex-wrap items-center gap-1 text-[11px]">
+              <span class="rounded px-1.5 py-0.5 font-medium" :class="row.route_kind === 'proxy'
+                ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300'
+                : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'">
+                {{ row.route_kind === 'proxy' ? (row.proxy_name_snapshot || t('admin.usage.diagnostics.proxyRoute')) : t('admin.usage.diagnostics.directRoute') }}
+              </span>
+              <span v-if="(row.retry_count ?? 0) > 0" class="rounded bg-amber-100 px-1.5 py-0.5 font-medium text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+                R{{ row.retry_count }}
+              </span>
+              <span v-if="(row.account_switch_count ?? 0) > 0" class="rounded bg-violet-100 px-1.5 py-0.5 font-medium text-violet-700 dark:bg-violet-500/20 dark:text-violet-300">
+                S{{ row.account_switch_count }}
+              </span>
+            </div>
+          </div>
         </template>
 
         <template #cell-model="{ row }">
@@ -250,21 +265,19 @@
           <div class="flex items-stretch gap-2">
             <span
               class="w-1 shrink-0 rounded-full"
-              :class="row.first_token_ms != null
-                ? ['bg-gradient-to-b from-40% to-60%', LATENCY_BAR_FROM_CLASSES[firstTokenSeverity(row.first_token_ms)], LATENCY_BAR_TO_CLASSES[durationSeverity(row.duration_ms ?? 0)]]
-                : LATENCY_BAR_CLASSES[durationSeverity(row.duration_ms ?? 0)]"
+              :class="displayFirstTokenMs(row) != null
+                ? ['bg-gradient-to-b from-40% to-60%', LATENCY_BAR_FROM_CLASSES[firstTokenSeverity(displayFirstTokenMs(row) ?? 0)], LATENCY_BAR_TO_CLASSES[durationSeverity(displayTotalMs(row) ?? 0)]]
+                : LATENCY_BAR_CLASSES[durationSeverity(displayTotalMs(row) ?? 0)]"
               aria-hidden="true"
             ></span>
             <div class="grid grid-cols-[max-content_max-content] items-baseline gap-x-2 gap-y-0.5 text-xs">
               <span class="text-gray-400 dark:text-gray-500">{{ t('usage.latencyFirstToken') }}</span>
-              <span v-if="row.first_token_ms != null" class="font-medium tabular-nums" :class="LATENCY_TEXT_CLASSES[firstTokenSeverity(row.first_token_ms)]">{{ formatDuration(row.first_token_ms) }}</span>
+              <span v-if="displayFirstTokenMs(row) != null" class="font-medium tabular-nums" :class="LATENCY_TEXT_CLASSES[firstTokenSeverity(displayFirstTokenMs(row) ?? 0)]">{{ formatDuration(displayFirstTokenMs(row)) }}</span>
               <span v-else class="text-gray-400 dark:text-gray-500">-</span>
               <span class="text-gray-400 dark:text-gray-500">{{ t('usage.latencyDuration') }}</span>
-              <span class="font-medium tabular-nums" :class="LATENCY_TEXT_CLASSES[durationSeverity(row.duration_ms ?? 0)]">{{ formatDuration(row.duration_ms) }}</span>
+              <span class="font-medium tabular-nums" :class="LATENCY_TEXT_CLASSES[durationSeverity(displayTotalMs(row) ?? 0)]">{{ formatDuration(displayTotalMs(row)) }}</span>
             </div>
           </div>
-        </template>
-
         </template>
 
         <template #cell-created_at="{ value }">
@@ -284,7 +297,17 @@
           <span v-else class="text-sm text-gray-400 dark:text-gray-500">-</span>
         </template>
 
-        <template #empty><EmptyState :message="t('usage.noRecords')" /></template>
+        <template #cell-diagnostics="{ row }">
+          <button
+            type="button"
+            class="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-primary-50 hover:text-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:hover:bg-primary-500/10 dark:hover:text-primary-300"
+            :title="t('admin.usage.diagnostics.open')"
+            @click="$emit('diagnosticsClick', row.id)"
+          >
+            <Icon name="search" size="sm" />
+          </button>
+        </template>
+
       </DataTable>
     </div>
   </div>
@@ -489,6 +512,26 @@
               <span class="text-gray-400">{{ t('usage.responseLatency') }}</span>
               <span class="font-medium text-white">{{ formatDuration(tooltipData.response_latency_ms) }}</span>
             </div>
+            <div v-if="tooltipData?.request_body_read_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('admin.usage.diagnostics.bodyRead') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(tooltipData.request_body_read_ms) }}</span>
+            </div>
+            <div v-if="tooltipData?.upstream_request_written_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('admin.usage.diagnostics.requestWritten') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(tooltipData.upstream_request_written_ms) }}</span>
+            </div>
+            <div v-if="tooltipData?.upstream_first_byte_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('admin.usage.diagnostics.firstByte') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(tooltipData.upstream_first_byte_ms) }}</span>
+            </div>
+            <div v-if="tooltipData?.request_first_token_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('admin.usage.diagnostics.firstToken') }}</span>
+              <span class="font-medium text-amber-300">{{ formatDuration(tooltipData.request_first_token_ms) }}</span>
+            </div>
+            <div v-if="tooltipData?.request_total_ms != null" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('admin.usage.diagnostics.totalDuration') }}</span>
+              <span class="font-medium text-white">{{ formatDuration(tooltipData.request_total_ms) }}</span>
+            </div>
             <div v-if="tooltipData?.duration_ms != null" class="flex items-center justify-between gap-4">
               <span class="text-gray-400">{{ t('usage.duration') }}</span>
               <span class="font-medium text-white">{{ formatDuration(tooltipData.duration_ms) }}</span>
@@ -578,7 +621,6 @@ function accountBilled(row: { total_cost?: number | null; account_stats_cost?: n
 
 
 import DataTable from '@/components/common/DataTable.vue'
-import EmptyState from '@/components/common/EmptyState.vue'
 import IpGeoCell from '@/components/common/IpGeoCell.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { fetchBatch, getEntry } from '@/utils/ipGeoLookup'
@@ -619,6 +661,7 @@ const emit = defineEmits<{
   userClick: [userID: number, email?: string]
   sort: [key: string, order: 'asc' | 'desc']
   ipGeoBatchFailed: []
+  diagnosticsClick: [usageID: number]
 }>()
 const { t } = useI18n()
 const showAccountBilling = props.showAccountBilling
@@ -693,6 +736,9 @@ const formatDuration = (ms: number | null | undefined): string => {
   return `${Math.floor(totalSec / 3600)}h ${Math.floor((totalSec % 3600) / 60)}m`
 }
 
+const displayFirstTokenMs = (row: AdminUsageLog): number | null => row.request_first_token_ms ?? row.first_token_ms ?? null
+const displayTotalMs = (row: AdminUsageLog): number | null => row.request_total_ms ?? row.duration_ms ?? null
+
 const getReasoningEffortBadgeLabel = (effort: string | null | undefined): string => {
   const label = formatReasoningEffort(effort)
   return label === '-' ? '' : label.toLowerCase()
@@ -729,14 +775,19 @@ const hideTokenTooltip = () => {
 }
 
 /** 鏄惁鍖呭惈寤惰繜鍒嗚В淇℃伅 */
-const hasLatencyBreakdown = (row: { client_transport?: string | null; auth_latency_ms?: number | null; routing_latency_ms?: number | null; upstream_latency_ms?: number | null; response_latency_ms?: number | null } | null | undefined): boolean => {
+const hasLatencyBreakdown = (row: AdminUsageLog | null | undefined): boolean => {
   if (!row) return false
   return (
     row.client_transport != null ||
     row.auth_latency_ms != null ||
     row.routing_latency_ms != null ||
     row.upstream_latency_ms != null ||
-    row.response_latency_ms != null
+    row.response_latency_ms != null ||
+    row.request_body_read_ms != null ||
+    row.upstream_request_written_ms != null ||
+    row.upstream_first_byte_ms != null ||
+    row.request_first_token_ms != null ||
+    row.request_total_ms != null
   )
 }
 

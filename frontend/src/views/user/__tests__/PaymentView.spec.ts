@@ -674,7 +674,7 @@ describe('PaymentView WeChat JSAPI flow', () => {
     expect(showError).not.toHaveBeenCalled()
     expect(window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)).toContain('weixin://wxpay/bizpayurl?pr=fallback-native')
     expect(wrapper.html()).toContain('payment-status-panel-stub')
-    expect(wrapper.text()).toContain('payment.createOrder')
+    expect(wrapper.text()).not.toContain('payment.createOrder')
   })
 
   it('uses balance for subscription without creating a provider order', async () => {
@@ -712,7 +712,7 @@ describe('PaymentView WeChat JSAPI flow', () => {
     expect(createOrder).not.toHaveBeenCalled()
   })
 
-  it('renders the compact store page with account balance plans subscriptions and recent orders', async () => {
+  it('renders the marketplace tabs with the account summary', async () => {
     routeState.query = {}
     authState.user.balance = 42.5
     subscriptionState.activeSubscriptions = [{ id: 9 }]
@@ -749,12 +749,31 @@ describe('PaymentView WeChat JSAPI flow', () => {
     await flushPromises()
 
     const text = wrapper.text()
-    expect(text).toContain('payment.storeSubtitle')
     expect(text).toContain('$42.50')
     expect(text).toContain('payment.rechargeAccount')
-    expect(text).toContain('payment.recentOrders')
     expect(text).toContain('payment.tabTopUp')
     expect(text).toContain('payment.tabSubscribe')
+    expect(text).toContain('payment.tabOrders')
+  })
+
+  it('opens the orders tab from a marketplace deep link', async () => {
+    routeState.query = { tab: 'orders' }
+    getCheckoutInfo.mockResolvedValue(checkoutInfoWithPlansFixture())
+
+    const wrapper = shallowMount(PaymentView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          UserOrdersPanel: { template: '<div data-testid="orders-panel" />' },
+          Teleport: true,
+          Transition: false,
+        },
+      },
+    })
+    await flushPromises()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="orders-panel"]').exists()).toBe(true)
   })
 
   it('falls back to QQ display name when username is empty', async () => {

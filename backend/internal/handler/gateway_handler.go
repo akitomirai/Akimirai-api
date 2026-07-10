@@ -1008,8 +1008,12 @@ func (h *GatewayHandler) Models(c *gin.Context) {
 	if apiKey != nil && apiKey.Group != nil && apiKey.Group.CustomModelsListEnabled() {
 		fallbackModels := defaultModelIDsForPlatform(platform)
 		availableModels = filterModelsByCustomList(customModelsListSource(platform, availableModels, fallbackModels), fallbackModels, apiKey.Group.ModelsListConfig.Models)
+		availableModels = apiKey.FilterAllowedModels(availableModels)
 		writeCustomModelsList(c, platform, availableModels)
 		return
+	}
+	if apiKey != nil {
+		availableModels = apiKey.FilterAllowedModels(availableModels)
 	}
 
 	if len(availableModels) > 0 {
@@ -1019,24 +1023,51 @@ func (h *GatewayHandler) Models(c *gin.Context) {
 
 	// Fallback to default models
 	if platform == service.PlatformOpenAI || platform == service.PlatformGrok {
+		models := openai.DefaultModels
+		if apiKey != nil && len(apiKey.AllowedModels) > 0 {
+			models = make([]openai.Model, 0, len(openai.DefaultModels))
+			for _, model := range openai.DefaultModels {
+				if apiKey.AllowsModel(model.ID) {
+					models = append(models, model)
+				}
+			}
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"object": "list",
-			"data":   openai.DefaultModels,
+			"data":   models,
 		})
 		return
 	}
 
 	if platform == service.PlatformGemini {
+		models := geminicli.DefaultModels
+		if apiKey != nil && len(apiKey.AllowedModels) > 0 {
+			models = make([]geminicli.Model, 0, len(geminicli.DefaultModels))
+			for _, model := range geminicli.DefaultModels {
+				if apiKey.AllowsModel(model.ID) {
+					models = append(models, model)
+				}
+			}
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"object": "list",
-			"data":   geminicli.DefaultModels,
+			"data":   models,
 		})
 		return
 	}
 
+	models := claude.DefaultModels
+	if apiKey != nil && len(apiKey.AllowedModels) > 0 {
+		models = make([]claude.Model, 0, len(claude.DefaultModels))
+		for _, model := range claude.DefaultModels {
+			if apiKey.AllowsModel(model.ID) {
+				models = append(models, model)
+			}
+		}
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"object": "list",
-		"data":   claude.DefaultModels,
+		"data":   models,
 	})
 }
 
@@ -1208,9 +1239,20 @@ func mergeModelIDs(primary, secondary []string) []string {
 // AntigravityModels 返回 Antigravity 支持的全部模型
 // GET /antigravity/models
 func (h *GatewayHandler) AntigravityModels(c *gin.Context) {
+	apiKey, _ := middleware2.GetAPIKeyFromContext(c)
+	models := antigravity.DefaultModels()
+	if apiKey != nil && len(apiKey.AllowedModels) > 0 {
+		filtered := make([]antigravity.ClaudeModel, 0, len(models))
+		for _, model := range models {
+			if apiKey.AllowsModel(model.ID) {
+				filtered = append(filtered, model)
+			}
+		}
+		models = filtered
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"object": "list",
-		"data":   antigravity.DefaultModels(),
+		"data":   models,
 	})
 }
 
