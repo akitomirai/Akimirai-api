@@ -22,13 +22,14 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
+	"github.com/Wei-Shaw/sub2api/ent/batchimageevent"
+	"github.com/Wei-Shaw/sub2api/ent/batchimageitem"
+	"github.com/Wei-Shaw/sub2api/ent/batchimagejob"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitor"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitordailyrollup"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorhistory"
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
-	"github.com/Wei-Shaw/sub2api/ent/externalfulfillmentsku"
-	"github.com/Wei-Shaw/sub2api/ent/externalorderfulfillment"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
@@ -75,6 +76,12 @@ type Client struct {
 	AuthIdentity *AuthIdentityClient
 	// AuthIdentityChannel is the client for interacting with the AuthIdentityChannel builders.
 	AuthIdentityChannel *AuthIdentityChannelClient
+	// BatchImageEvent is the client for interacting with the BatchImageEvent builders.
+	BatchImageEvent *BatchImageEventClient
+	// BatchImageItem is the client for interacting with the BatchImageItem builders.
+	BatchImageItem *BatchImageItemClient
+	// BatchImageJob is the client for interacting with the BatchImageJob builders.
+	BatchImageJob *BatchImageJobClient
 	// ChannelMonitor is the client for interacting with the ChannelMonitor builders.
 	ChannelMonitor *ChannelMonitorClient
 	// ChannelMonitorDailyRollup is the client for interacting with the ChannelMonitorDailyRollup builders.
@@ -85,10 +92,6 @@ type Client struct {
 	ChannelMonitorRequestTemplate *ChannelMonitorRequestTemplateClient
 	// ErrorPassthroughRule is the client for interacting with the ErrorPassthroughRule builders.
 	ErrorPassthroughRule *ErrorPassthroughRuleClient
-	// ExternalFulfillmentSKU is the client for interacting with the ExternalFulfillmentSKU builders.
-	ExternalFulfillmentSKU *ExternalFulfillmentSKUClient
-	// ExternalOrderFulfillment is the client for interacting with the ExternalOrderFulfillment builders.
-	ExternalOrderFulfillment *ExternalOrderFulfillmentClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
 	// IdempotencyRecord is the client for interacting with the IdempotencyRecord builders.
@@ -153,13 +156,14 @@ func (c *Client) init() {
 	c.AnnouncementRead = NewAnnouncementReadClient(c.config)
 	c.AuthIdentity = NewAuthIdentityClient(c.config)
 	c.AuthIdentityChannel = NewAuthIdentityChannelClient(c.config)
+	c.BatchImageEvent = NewBatchImageEventClient(c.config)
+	c.BatchImageItem = NewBatchImageItemClient(c.config)
+	c.BatchImageJob = NewBatchImageJobClient(c.config)
 	c.ChannelMonitor = NewChannelMonitorClient(c.config)
 	c.ChannelMonitorDailyRollup = NewChannelMonitorDailyRollupClient(c.config)
 	c.ChannelMonitorHistory = NewChannelMonitorHistoryClient(c.config)
 	c.ChannelMonitorRequestTemplate = NewChannelMonitorRequestTemplateClient(c.config)
 	c.ErrorPassthroughRule = NewErrorPassthroughRuleClient(c.config)
-	c.ExternalFulfillmentSKU = NewExternalFulfillmentSKUClient(c.config)
-	c.ExternalOrderFulfillment = NewExternalOrderFulfillmentClient(c.config)
 	c.Group = NewGroupClient(c.config)
 	c.IdempotencyRecord = NewIdempotencyRecordClient(c.config)
 	c.IdentityAdoptionDecision = NewIdentityAdoptionDecisionClient(c.config)
@@ -282,13 +286,14 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		AnnouncementRead:              NewAnnouncementReadClient(cfg),
 		AuthIdentity:                  NewAuthIdentityClient(cfg),
 		AuthIdentityChannel:           NewAuthIdentityChannelClient(cfg),
+		BatchImageEvent:               NewBatchImageEventClient(cfg),
+		BatchImageItem:                NewBatchImageItemClient(cfg),
+		BatchImageJob:                 NewBatchImageJobClient(cfg),
 		ChannelMonitor:                NewChannelMonitorClient(cfg),
 		ChannelMonitorDailyRollup:     NewChannelMonitorDailyRollupClient(cfg),
 		ChannelMonitorHistory:         NewChannelMonitorHistoryClient(cfg),
 		ChannelMonitorRequestTemplate: NewChannelMonitorRequestTemplateClient(cfg),
 		ErrorPassthroughRule:          NewErrorPassthroughRuleClient(cfg),
-		ExternalFulfillmentSKU:        NewExternalFulfillmentSKUClient(cfg),
-		ExternalOrderFulfillment:      NewExternalOrderFulfillmentClient(cfg),
 		Group:                         NewGroupClient(cfg),
 		IdempotencyRecord:             NewIdempotencyRecordClient(cfg),
 		IdentityAdoptionDecision:      NewIdentityAdoptionDecisionClient(cfg),
@@ -338,13 +343,14 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		AnnouncementRead:              NewAnnouncementReadClient(cfg),
 		AuthIdentity:                  NewAuthIdentityClient(cfg),
 		AuthIdentityChannel:           NewAuthIdentityChannelClient(cfg),
+		BatchImageEvent:               NewBatchImageEventClient(cfg),
+		BatchImageItem:                NewBatchImageItemClient(cfg),
+		BatchImageJob:                 NewBatchImageJobClient(cfg),
 		ChannelMonitor:                NewChannelMonitorClient(cfg),
 		ChannelMonitorDailyRollup:     NewChannelMonitorDailyRollupClient(cfg),
 		ChannelMonitorHistory:         NewChannelMonitorHistoryClient(cfg),
 		ChannelMonitorRequestTemplate: NewChannelMonitorRequestTemplateClient(cfg),
 		ErrorPassthroughRule:          NewErrorPassthroughRuleClient(cfg),
-		ExternalFulfillmentSKU:        NewExternalFulfillmentSKUClient(cfg),
-		ExternalOrderFulfillment:      NewExternalOrderFulfillmentClient(cfg),
 		Group:                         NewGroupClient(cfg),
 		IdempotencyRecord:             NewIdempotencyRecordClient(cfg),
 		IdentityAdoptionDecision:      NewIdentityAdoptionDecisionClient(cfg),
@@ -398,15 +404,15 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.APIKey, c.Account, c.AccountGroup, c.Announcement, c.AnnouncementRead,
-		c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
-		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
-		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule,
-		c.ExternalFulfillmentSKU, c.ExternalOrderFulfillment, c.Group,
-		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
-		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
-		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
-		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
-		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.AuthIdentity, c.AuthIdentityChannel, c.BatchImageEvent, c.BatchImageItem,
+		c.BatchImageJob, c.ChannelMonitor, c.ChannelMonitorDailyRollup,
+		c.ChannelMonitorHistory, c.ChannelMonitorRequestTemplate,
+		c.ErrorPassthroughRule, c.Group, c.IdempotencyRecord,
+		c.IdentityAdoptionDecision, c.PaymentAuditLog, c.PaymentOrder,
+		c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage,
+		c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
+		c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog, c.User,
+		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
 		c.UserPlatformQuota, c.UserSubscription,
 	} {
 		n.Use(hooks...)
@@ -418,15 +424,15 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.APIKey, c.Account, c.AccountGroup, c.Announcement, c.AnnouncementRead,
-		c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
-		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
-		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule,
-		c.ExternalFulfillmentSKU, c.ExternalOrderFulfillment, c.Group,
-		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
-		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
-		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
-		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
-		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.AuthIdentity, c.AuthIdentityChannel, c.BatchImageEvent, c.BatchImageItem,
+		c.BatchImageJob, c.ChannelMonitor, c.ChannelMonitorDailyRollup,
+		c.ChannelMonitorHistory, c.ChannelMonitorRequestTemplate,
+		c.ErrorPassthroughRule, c.Group, c.IdempotencyRecord,
+		c.IdentityAdoptionDecision, c.PaymentAuditLog, c.PaymentOrder,
+		c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage,
+		c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
+		c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog, c.User,
+		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
 		c.UserPlatformQuota, c.UserSubscription,
 	} {
 		n.Intercept(interceptors...)
@@ -450,6 +456,12 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.AuthIdentity.mutate(ctx, m)
 	case *AuthIdentityChannelMutation:
 		return c.AuthIdentityChannel.mutate(ctx, m)
+	case *BatchImageEventMutation:
+		return c.BatchImageEvent.mutate(ctx, m)
+	case *BatchImageItemMutation:
+		return c.BatchImageItem.mutate(ctx, m)
+	case *BatchImageJobMutation:
+		return c.BatchImageJob.mutate(ctx, m)
 	case *ChannelMonitorMutation:
 		return c.ChannelMonitor.mutate(ctx, m)
 	case *ChannelMonitorDailyRollupMutation:
@@ -460,10 +472,6 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ChannelMonitorRequestTemplate.mutate(ctx, m)
 	case *ErrorPassthroughRuleMutation:
 		return c.ErrorPassthroughRule.mutate(ctx, m)
-	case *ExternalFulfillmentSKUMutation:
-		return c.ExternalFulfillmentSKU.mutate(ctx, m)
-	case *ExternalOrderFulfillmentMutation:
-		return c.ExternalOrderFulfillment.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
 	case *IdempotencyRecordMutation:
@@ -1689,6 +1697,405 @@ func (c *AuthIdentityChannelClient) mutate(ctx context.Context, m *AuthIdentityC
 	}
 }
 
+// BatchImageEventClient is a client for the BatchImageEvent schema.
+type BatchImageEventClient struct {
+	config
+}
+
+// NewBatchImageEventClient returns a client for the BatchImageEvent from the given config.
+func NewBatchImageEventClient(c config) *BatchImageEventClient {
+	return &BatchImageEventClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `batchimageevent.Hooks(f(g(h())))`.
+func (c *BatchImageEventClient) Use(hooks ...Hook) {
+	c.hooks.BatchImageEvent = append(c.hooks.BatchImageEvent, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `batchimageevent.Intercept(f(g(h())))`.
+func (c *BatchImageEventClient) Intercept(interceptors ...Interceptor) {
+	c.inters.BatchImageEvent = append(c.inters.BatchImageEvent, interceptors...)
+}
+
+// Create returns a builder for creating a BatchImageEvent entity.
+func (c *BatchImageEventClient) Create() *BatchImageEventCreate {
+	mutation := newBatchImageEventMutation(c.config, OpCreate)
+	return &BatchImageEventCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of BatchImageEvent entities.
+func (c *BatchImageEventClient) CreateBulk(builders ...*BatchImageEventCreate) *BatchImageEventCreateBulk {
+	return &BatchImageEventCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *BatchImageEventClient) MapCreateBulk(slice any, setFunc func(*BatchImageEventCreate, int)) *BatchImageEventCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &BatchImageEventCreateBulk{err: fmt.Errorf("calling to BatchImageEventClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*BatchImageEventCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &BatchImageEventCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for BatchImageEvent.
+func (c *BatchImageEventClient) Update() *BatchImageEventUpdate {
+	mutation := newBatchImageEventMutation(c.config, OpUpdate)
+	return &BatchImageEventUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BatchImageEventClient) UpdateOne(_m *BatchImageEvent) *BatchImageEventUpdateOne {
+	mutation := newBatchImageEventMutation(c.config, OpUpdateOne, withBatchImageEvent(_m))
+	return &BatchImageEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BatchImageEventClient) UpdateOneID(id int64) *BatchImageEventUpdateOne {
+	mutation := newBatchImageEventMutation(c.config, OpUpdateOne, withBatchImageEventID(id))
+	return &BatchImageEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for BatchImageEvent.
+func (c *BatchImageEventClient) Delete() *BatchImageEventDelete {
+	mutation := newBatchImageEventMutation(c.config, OpDelete)
+	return &BatchImageEventDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BatchImageEventClient) DeleteOne(_m *BatchImageEvent) *BatchImageEventDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BatchImageEventClient) DeleteOneID(id int64) *BatchImageEventDeleteOne {
+	builder := c.Delete().Where(batchimageevent.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BatchImageEventDeleteOne{builder}
+}
+
+// Query returns a query builder for BatchImageEvent.
+func (c *BatchImageEventClient) Query() *BatchImageEventQuery {
+	return &BatchImageEventQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBatchImageEvent},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a BatchImageEvent entity by its id.
+func (c *BatchImageEventClient) Get(ctx context.Context, id int64) (*BatchImageEvent, error) {
+	return c.Query().Where(batchimageevent.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BatchImageEventClient) GetX(ctx context.Context, id int64) *BatchImageEvent {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *BatchImageEventClient) Hooks() []Hook {
+	return c.hooks.BatchImageEvent
+}
+
+// Interceptors returns the client interceptors.
+func (c *BatchImageEventClient) Interceptors() []Interceptor {
+	return c.inters.BatchImageEvent
+}
+
+func (c *BatchImageEventClient) mutate(ctx context.Context, m *BatchImageEventMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BatchImageEventCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BatchImageEventUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BatchImageEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BatchImageEventDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown BatchImageEvent mutation op: %q", m.Op())
+	}
+}
+
+// BatchImageItemClient is a client for the BatchImageItem schema.
+type BatchImageItemClient struct {
+	config
+}
+
+// NewBatchImageItemClient returns a client for the BatchImageItem from the given config.
+func NewBatchImageItemClient(c config) *BatchImageItemClient {
+	return &BatchImageItemClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `batchimageitem.Hooks(f(g(h())))`.
+func (c *BatchImageItemClient) Use(hooks ...Hook) {
+	c.hooks.BatchImageItem = append(c.hooks.BatchImageItem, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `batchimageitem.Intercept(f(g(h())))`.
+func (c *BatchImageItemClient) Intercept(interceptors ...Interceptor) {
+	c.inters.BatchImageItem = append(c.inters.BatchImageItem, interceptors...)
+}
+
+// Create returns a builder for creating a BatchImageItem entity.
+func (c *BatchImageItemClient) Create() *BatchImageItemCreate {
+	mutation := newBatchImageItemMutation(c.config, OpCreate)
+	return &BatchImageItemCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of BatchImageItem entities.
+func (c *BatchImageItemClient) CreateBulk(builders ...*BatchImageItemCreate) *BatchImageItemCreateBulk {
+	return &BatchImageItemCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *BatchImageItemClient) MapCreateBulk(slice any, setFunc func(*BatchImageItemCreate, int)) *BatchImageItemCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &BatchImageItemCreateBulk{err: fmt.Errorf("calling to BatchImageItemClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*BatchImageItemCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &BatchImageItemCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for BatchImageItem.
+func (c *BatchImageItemClient) Update() *BatchImageItemUpdate {
+	mutation := newBatchImageItemMutation(c.config, OpUpdate)
+	return &BatchImageItemUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BatchImageItemClient) UpdateOne(_m *BatchImageItem) *BatchImageItemUpdateOne {
+	mutation := newBatchImageItemMutation(c.config, OpUpdateOne, withBatchImageItem(_m))
+	return &BatchImageItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BatchImageItemClient) UpdateOneID(id int64) *BatchImageItemUpdateOne {
+	mutation := newBatchImageItemMutation(c.config, OpUpdateOne, withBatchImageItemID(id))
+	return &BatchImageItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for BatchImageItem.
+func (c *BatchImageItemClient) Delete() *BatchImageItemDelete {
+	mutation := newBatchImageItemMutation(c.config, OpDelete)
+	return &BatchImageItemDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BatchImageItemClient) DeleteOne(_m *BatchImageItem) *BatchImageItemDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BatchImageItemClient) DeleteOneID(id int64) *BatchImageItemDeleteOne {
+	builder := c.Delete().Where(batchimageitem.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BatchImageItemDeleteOne{builder}
+}
+
+// Query returns a query builder for BatchImageItem.
+func (c *BatchImageItemClient) Query() *BatchImageItemQuery {
+	return &BatchImageItemQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBatchImageItem},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a BatchImageItem entity by its id.
+func (c *BatchImageItemClient) Get(ctx context.Context, id int64) (*BatchImageItem, error) {
+	return c.Query().Where(batchimageitem.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BatchImageItemClient) GetX(ctx context.Context, id int64) *BatchImageItem {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *BatchImageItemClient) Hooks() []Hook {
+	return c.hooks.BatchImageItem
+}
+
+// Interceptors returns the client interceptors.
+func (c *BatchImageItemClient) Interceptors() []Interceptor {
+	return c.inters.BatchImageItem
+}
+
+func (c *BatchImageItemClient) mutate(ctx context.Context, m *BatchImageItemMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BatchImageItemCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BatchImageItemUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BatchImageItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BatchImageItemDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown BatchImageItem mutation op: %q", m.Op())
+	}
+}
+
+// BatchImageJobClient is a client for the BatchImageJob schema.
+type BatchImageJobClient struct {
+	config
+}
+
+// NewBatchImageJobClient returns a client for the BatchImageJob from the given config.
+func NewBatchImageJobClient(c config) *BatchImageJobClient {
+	return &BatchImageJobClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `batchimagejob.Hooks(f(g(h())))`.
+func (c *BatchImageJobClient) Use(hooks ...Hook) {
+	c.hooks.BatchImageJob = append(c.hooks.BatchImageJob, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `batchimagejob.Intercept(f(g(h())))`.
+func (c *BatchImageJobClient) Intercept(interceptors ...Interceptor) {
+	c.inters.BatchImageJob = append(c.inters.BatchImageJob, interceptors...)
+}
+
+// Create returns a builder for creating a BatchImageJob entity.
+func (c *BatchImageJobClient) Create() *BatchImageJobCreate {
+	mutation := newBatchImageJobMutation(c.config, OpCreate)
+	return &BatchImageJobCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of BatchImageJob entities.
+func (c *BatchImageJobClient) CreateBulk(builders ...*BatchImageJobCreate) *BatchImageJobCreateBulk {
+	return &BatchImageJobCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *BatchImageJobClient) MapCreateBulk(slice any, setFunc func(*BatchImageJobCreate, int)) *BatchImageJobCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &BatchImageJobCreateBulk{err: fmt.Errorf("calling to BatchImageJobClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*BatchImageJobCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &BatchImageJobCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for BatchImageJob.
+func (c *BatchImageJobClient) Update() *BatchImageJobUpdate {
+	mutation := newBatchImageJobMutation(c.config, OpUpdate)
+	return &BatchImageJobUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *BatchImageJobClient) UpdateOne(_m *BatchImageJob) *BatchImageJobUpdateOne {
+	mutation := newBatchImageJobMutation(c.config, OpUpdateOne, withBatchImageJob(_m))
+	return &BatchImageJobUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *BatchImageJobClient) UpdateOneID(id int64) *BatchImageJobUpdateOne {
+	mutation := newBatchImageJobMutation(c.config, OpUpdateOne, withBatchImageJobID(id))
+	return &BatchImageJobUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for BatchImageJob.
+func (c *BatchImageJobClient) Delete() *BatchImageJobDelete {
+	mutation := newBatchImageJobMutation(c.config, OpDelete)
+	return &BatchImageJobDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *BatchImageJobClient) DeleteOne(_m *BatchImageJob) *BatchImageJobDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *BatchImageJobClient) DeleteOneID(id int64) *BatchImageJobDeleteOne {
+	builder := c.Delete().Where(batchimagejob.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &BatchImageJobDeleteOne{builder}
+}
+
+// Query returns a query builder for BatchImageJob.
+func (c *BatchImageJobClient) Query() *BatchImageJobQuery {
+	return &BatchImageJobQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeBatchImageJob},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a BatchImageJob entity by its id.
+func (c *BatchImageJobClient) Get(ctx context.Context, id int64) (*BatchImageJob, error) {
+	return c.Query().Where(batchimagejob.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *BatchImageJobClient) GetX(ctx context.Context, id int64) *BatchImageJob {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *BatchImageJobClient) Hooks() []Hook {
+	return c.hooks.BatchImageJob
+}
+
+// Interceptors returns the client interceptors.
+func (c *BatchImageJobClient) Interceptors() []Interceptor {
+	return c.inters.BatchImageJob
+}
+
+func (c *BatchImageJobClient) mutate(ctx context.Context, m *BatchImageJobMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&BatchImageJobCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&BatchImageJobUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&BatchImageJobUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&BatchImageJobDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown BatchImageJob mutation op: %q", m.Op())
+	}
+}
+
 // ChannelMonitorClient is a client for the ChannelMonitor schema.
 type ChannelMonitorClient struct {
 	config
@@ -2447,272 +2854,6 @@ func (c *ErrorPassthroughRuleClient) mutate(ctx context.Context, m *ErrorPassthr
 		return (&ErrorPassthroughRuleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown ErrorPassthroughRule mutation op: %q", m.Op())
-	}
-}
-
-// ExternalFulfillmentSKUClient is a client for the ExternalFulfillmentSKU schema.
-type ExternalFulfillmentSKUClient struct {
-	config
-}
-
-// NewExternalFulfillmentSKUClient returns a client for the ExternalFulfillmentSKU from the given config.
-func NewExternalFulfillmentSKUClient(c config) *ExternalFulfillmentSKUClient {
-	return &ExternalFulfillmentSKUClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `externalfulfillmentsku.Hooks(f(g(h())))`.
-func (c *ExternalFulfillmentSKUClient) Use(hooks ...Hook) {
-	c.hooks.ExternalFulfillmentSKU = append(c.hooks.ExternalFulfillmentSKU, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `externalfulfillmentsku.Intercept(f(g(h())))`.
-func (c *ExternalFulfillmentSKUClient) Intercept(interceptors ...Interceptor) {
-	c.inters.ExternalFulfillmentSKU = append(c.inters.ExternalFulfillmentSKU, interceptors...)
-}
-
-// Create returns a builder for creating a ExternalFulfillmentSKU entity.
-func (c *ExternalFulfillmentSKUClient) Create() *ExternalFulfillmentSKUCreate {
-	mutation := newExternalFulfillmentSKUMutation(c.config, OpCreate)
-	return &ExternalFulfillmentSKUCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of ExternalFulfillmentSKU entities.
-func (c *ExternalFulfillmentSKUClient) CreateBulk(builders ...*ExternalFulfillmentSKUCreate) *ExternalFulfillmentSKUCreateBulk {
-	return &ExternalFulfillmentSKUCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *ExternalFulfillmentSKUClient) MapCreateBulk(slice any, setFunc func(*ExternalFulfillmentSKUCreate, int)) *ExternalFulfillmentSKUCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &ExternalFulfillmentSKUCreateBulk{err: fmt.Errorf("calling to ExternalFulfillmentSKUClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*ExternalFulfillmentSKUCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &ExternalFulfillmentSKUCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for ExternalFulfillmentSKU.
-func (c *ExternalFulfillmentSKUClient) Update() *ExternalFulfillmentSKUUpdate {
-	mutation := newExternalFulfillmentSKUMutation(c.config, OpUpdate)
-	return &ExternalFulfillmentSKUUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *ExternalFulfillmentSKUClient) UpdateOne(_m *ExternalFulfillmentSKU) *ExternalFulfillmentSKUUpdateOne {
-	mutation := newExternalFulfillmentSKUMutation(c.config, OpUpdateOne, withExternalFulfillmentSKU(_m))
-	return &ExternalFulfillmentSKUUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *ExternalFulfillmentSKUClient) UpdateOneID(id int64) *ExternalFulfillmentSKUUpdateOne {
-	mutation := newExternalFulfillmentSKUMutation(c.config, OpUpdateOne, withExternalFulfillmentSKUID(id))
-	return &ExternalFulfillmentSKUUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for ExternalFulfillmentSKU.
-func (c *ExternalFulfillmentSKUClient) Delete() *ExternalFulfillmentSKUDelete {
-	mutation := newExternalFulfillmentSKUMutation(c.config, OpDelete)
-	return &ExternalFulfillmentSKUDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *ExternalFulfillmentSKUClient) DeleteOne(_m *ExternalFulfillmentSKU) *ExternalFulfillmentSKUDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *ExternalFulfillmentSKUClient) DeleteOneID(id int64) *ExternalFulfillmentSKUDeleteOne {
-	builder := c.Delete().Where(externalfulfillmentsku.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &ExternalFulfillmentSKUDeleteOne{builder}
-}
-
-// Query returns a query builder for ExternalFulfillmentSKU.
-func (c *ExternalFulfillmentSKUClient) Query() *ExternalFulfillmentSKUQuery {
-	return &ExternalFulfillmentSKUQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeExternalFulfillmentSKU},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a ExternalFulfillmentSKU entity by its id.
-func (c *ExternalFulfillmentSKUClient) Get(ctx context.Context, id int64) (*ExternalFulfillmentSKU, error) {
-	return c.Query().Where(externalfulfillmentsku.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *ExternalFulfillmentSKUClient) GetX(ctx context.Context, id int64) *ExternalFulfillmentSKU {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// Hooks returns the client hooks.
-func (c *ExternalFulfillmentSKUClient) Hooks() []Hook {
-	return c.hooks.ExternalFulfillmentSKU
-}
-
-// Interceptors returns the client interceptors.
-func (c *ExternalFulfillmentSKUClient) Interceptors() []Interceptor {
-	return c.inters.ExternalFulfillmentSKU
-}
-
-func (c *ExternalFulfillmentSKUClient) mutate(ctx context.Context, m *ExternalFulfillmentSKUMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&ExternalFulfillmentSKUCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&ExternalFulfillmentSKUUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&ExternalFulfillmentSKUUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&ExternalFulfillmentSKUDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown ExternalFulfillmentSKU mutation op: %q", m.Op())
-	}
-}
-
-// ExternalOrderFulfillmentClient is a client for the ExternalOrderFulfillment schema.
-type ExternalOrderFulfillmentClient struct {
-	config
-}
-
-// NewExternalOrderFulfillmentClient returns a client for the ExternalOrderFulfillment from the given config.
-func NewExternalOrderFulfillmentClient(c config) *ExternalOrderFulfillmentClient {
-	return &ExternalOrderFulfillmentClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `externalorderfulfillment.Hooks(f(g(h())))`.
-func (c *ExternalOrderFulfillmentClient) Use(hooks ...Hook) {
-	c.hooks.ExternalOrderFulfillment = append(c.hooks.ExternalOrderFulfillment, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `externalorderfulfillment.Intercept(f(g(h())))`.
-func (c *ExternalOrderFulfillmentClient) Intercept(interceptors ...Interceptor) {
-	c.inters.ExternalOrderFulfillment = append(c.inters.ExternalOrderFulfillment, interceptors...)
-}
-
-// Create returns a builder for creating a ExternalOrderFulfillment entity.
-func (c *ExternalOrderFulfillmentClient) Create() *ExternalOrderFulfillmentCreate {
-	mutation := newExternalOrderFulfillmentMutation(c.config, OpCreate)
-	return &ExternalOrderFulfillmentCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of ExternalOrderFulfillment entities.
-func (c *ExternalOrderFulfillmentClient) CreateBulk(builders ...*ExternalOrderFulfillmentCreate) *ExternalOrderFulfillmentCreateBulk {
-	return &ExternalOrderFulfillmentCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *ExternalOrderFulfillmentClient) MapCreateBulk(slice any, setFunc func(*ExternalOrderFulfillmentCreate, int)) *ExternalOrderFulfillmentCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &ExternalOrderFulfillmentCreateBulk{err: fmt.Errorf("calling to ExternalOrderFulfillmentClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*ExternalOrderFulfillmentCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &ExternalOrderFulfillmentCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for ExternalOrderFulfillment.
-func (c *ExternalOrderFulfillmentClient) Update() *ExternalOrderFulfillmentUpdate {
-	mutation := newExternalOrderFulfillmentMutation(c.config, OpUpdate)
-	return &ExternalOrderFulfillmentUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *ExternalOrderFulfillmentClient) UpdateOne(_m *ExternalOrderFulfillment) *ExternalOrderFulfillmentUpdateOne {
-	mutation := newExternalOrderFulfillmentMutation(c.config, OpUpdateOne, withExternalOrderFulfillment(_m))
-	return &ExternalOrderFulfillmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *ExternalOrderFulfillmentClient) UpdateOneID(id int64) *ExternalOrderFulfillmentUpdateOne {
-	mutation := newExternalOrderFulfillmentMutation(c.config, OpUpdateOne, withExternalOrderFulfillmentID(id))
-	return &ExternalOrderFulfillmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for ExternalOrderFulfillment.
-func (c *ExternalOrderFulfillmentClient) Delete() *ExternalOrderFulfillmentDelete {
-	mutation := newExternalOrderFulfillmentMutation(c.config, OpDelete)
-	return &ExternalOrderFulfillmentDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *ExternalOrderFulfillmentClient) DeleteOne(_m *ExternalOrderFulfillment) *ExternalOrderFulfillmentDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *ExternalOrderFulfillmentClient) DeleteOneID(id int64) *ExternalOrderFulfillmentDeleteOne {
-	builder := c.Delete().Where(externalorderfulfillment.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &ExternalOrderFulfillmentDeleteOne{builder}
-}
-
-// Query returns a query builder for ExternalOrderFulfillment.
-func (c *ExternalOrderFulfillmentClient) Query() *ExternalOrderFulfillmentQuery {
-	return &ExternalOrderFulfillmentQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeExternalOrderFulfillment},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a ExternalOrderFulfillment entity by its id.
-func (c *ExternalOrderFulfillmentClient) Get(ctx context.Context, id int64) (*ExternalOrderFulfillment, error) {
-	return c.Query().Where(externalorderfulfillment.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *ExternalOrderFulfillmentClient) GetX(ctx context.Context, id int64) *ExternalOrderFulfillment {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// Hooks returns the client hooks.
-func (c *ExternalOrderFulfillmentClient) Hooks() []Hook {
-	return c.hooks.ExternalOrderFulfillment
-}
-
-// Interceptors returns the client interceptors.
-func (c *ExternalOrderFulfillmentClient) Interceptors() []Interceptor {
-	return c.inters.ExternalOrderFulfillment
-}
-
-func (c *ExternalOrderFulfillmentClient) mutate(ctx context.Context, m *ExternalOrderFulfillmentMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&ExternalOrderFulfillmentCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&ExternalOrderFulfillmentUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&ExternalOrderFulfillmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&ExternalOrderFulfillmentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown ExternalOrderFulfillment mutation op: %q", m.Op())
 	}
 }
 
@@ -6526,9 +6667,9 @@ func (c *UserSubscriptionClient) mutate(ctx context.Context, m *UserSubscription
 type (
 	hooks struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
-		AuthIdentityChannel, ChannelMonitor, ChannelMonitorDailyRollup,
-		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
-		ExternalFulfillmentSKU, ExternalOrderFulfillment, Group, IdempotencyRecord,
+		AuthIdentityChannel, BatchImageEvent, BatchImageItem, BatchImageJob,
+		ChannelMonitor, ChannelMonitorDailyRollup, ChannelMonitorHistory,
+		ChannelMonitorRequestTemplate, ErrorPassthroughRule, Group, IdempotencyRecord,
 		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
 		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
 		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
@@ -6537,9 +6678,9 @@ type (
 	}
 	inters struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
-		AuthIdentityChannel, ChannelMonitor, ChannelMonitorDailyRollup,
-		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
-		ExternalFulfillmentSKU, ExternalOrderFulfillment, Group, IdempotencyRecord,
+		AuthIdentityChannel, BatchImageEvent, BatchImageItem, BatchImageJob,
+		ChannelMonitor, ChannelMonitorDailyRollup, ChannelMonitorHistory,
+		ChannelMonitorRequestTemplate, ErrorPassthroughRule, Group, IdempotencyRecord,
 		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
 		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
 		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,

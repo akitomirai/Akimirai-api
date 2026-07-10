@@ -1,4 +1,5 @@
 <template>
+
   <div v-if="compact" class="card px-4 py-3">
     <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
       <div class="flex flex-1 flex-wrap items-end gap-4">
@@ -107,7 +108,8 @@
     </div>
   </div>
 
-  <div v-else class="card p-6">
+  <div v-else :class="flat ? 'p-4 sm:p-6' : 'card p-6'">
+
     <!-- Toolbar: left filters (multi-line) + right actions -->
     <div class="flex flex-wrap items-end justify-between gap-4">
       <!-- Left: filters (allowed to wrap to multiple rows) -->
@@ -241,8 +243,8 @@
           <Select v-model="filters.billing_type" :options="billingTypeOptions" @change="emitChange" />
         </div>
 
-        <!-- Billing Mode Filter (usage only) -->
-        <div v-if="mode !== 'errors'" class="w-full sm:w-auto sm:min-w-[200px]">
+        <!-- Billing Mode Filter (usage only；用户排行的 user-breakdown 接口不支持该维度) -->
+        <div v-if="mode === 'usage'" class="w-full sm:w-auto sm:min-w-[200px]">
           <label class="input-label">{{ t('admin.usage.billingMode') }}</label>
           <Select v-model="filters.billing_mode" :options="billingModeOptions" @change="emitChange" />
         </div>
@@ -282,7 +284,7 @@
           {{ t('common.reset') }}
         </button>
         <slot name="after-reset" />
-        <template v-if="mode !== 'errors'">
+        <template v-if="mode === 'usage'">
           <button type="button" @click="$emit('cleanup')" class="btn btn-danger">
             {{ t('admin.usage.cleanup.button') }}
           </button>
@@ -313,15 +315,25 @@ interface Props {
   endDate: string
   showActions?: boolean
   modelOptions?: string[]
-  /** errors 模式:隐藏用量专属字段/按钮,显示错误类型+状态码(错误请求 tab 用) */
-  mode?: 'usage' | 'errors'
+
+  /**
+   * errors mode hides usage-only fields/actions and shows error type/status code.
+   * ranking mode keeps usage filters but hides billing-mode cleanup/export actions.
+   */
+  mode?: 'usage' | 'errors' | 'ranking'
   compact?: boolean
+  /** Embedded usage inside a shared card: remove this component's card shell. */
+  flat?: boolean
+
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showActions: true,
   mode: 'usage',
-  compact: false
+
+  compact: false,
+  flat: false
+
 })
 const emit = defineEmits([
   'update:modelValue',
@@ -406,7 +418,8 @@ const billingModeOptions = ref<SelectOption[]>([
   { value: null, label: t('admin.usage.allBillingModes') },
   { value: 'token', label: t('admin.usage.billingModeToken') },
   { value: 'per_request', label: t('admin.usage.billingModePerRequest') },
-  { value: 'image', label: t('admin.usage.billingModeImage') }
+  { value: 'image', label: t('admin.usage.billingModeImage') },
+  { value: 'video', label: t('admin.usage.billingModeVideo') }
 ])
 
 const emitChange = () => emit('change')
@@ -600,4 +613,13 @@ onMounted(async () => {
 onUnmounted(() => {
   document.removeEventListener('click', onDocumentClick)
 })
+
+// 供外部(如用户排行下钻)在程序化设置 user_id 后回显选中的用户邮箱
+const setUserKeyword = (email: string) => {
+  userKeyword.value = email
+  userResults.value = []
+  showUserDropdown.value = false
+}
+
+defineExpose({ setUserKeyword })
 </script>
