@@ -105,6 +105,10 @@ const UserTokenRankingStub = {
   emits: ['select-user'],
   template: '<div data-test="ranking"><button class="pick-user" @click="$emit(\'select-user\', 5, \'rank@test.com\')">pick</button></div>',
 }
+const RequestDiagnosticsTableStub = {
+  emits: ['diagnosticsClick'],
+  template: '<div data-test="request-logs"><button class="open-diagnostics" @click="$emit(\'diagnosticsClick\', 77)">open</button></div>',
+}
 const ModelDistributionChartStub = {
   props: ['metric'],
   emits: ['update:metric'],
@@ -418,7 +422,8 @@ describe('admin UsageView ranking tab', () => {
         UserBalanceHistoryModal: true, Pagination: true, Select: true,
         DateRangePicker: true, Icon: true, TokenUsageTrend: true,
         ModelDistributionChart: true, GroupDistributionChart: true, EndpointDistributionChart: true,
-        UserTokenRanking: UserTokenRankingStub, OpsErrorLogTable: true, OpsErrorDetailModal: true,
+        UserTokenRanking: UserTokenRankingStub, RequestDiagnosticsTable: RequestDiagnosticsTableStub,
+        OpsErrorLogTable: true, OpsErrorDetailModal: true,
       } },
     })
     vi.advanceTimersByTime(120)
@@ -428,7 +433,7 @@ describe('admin UsageView ranking tab', () => {
     expect(wrapper.find('[data-test="ranking"]').exists()).toBe(false)
 
     const tabs = wrapper.findAll('[data-testid="usage-detail-tab"]')
-    expect(tabs).toHaveLength(3)
+    expect(tabs).toHaveLength(4)
     await tabs[2].trigger('click')
     await flushPromises()
     expect(wrapper.find('[data-test="ranking"]').exists()).toBe(true)
@@ -441,5 +446,32 @@ describe('admin UsageView ranking tab', () => {
     expect((wrapper.vm as any).activeTab).toBe('usage')
     expect((wrapper.vm as any).filters.user_id).toBe(5)
     expect(list).toHaveBeenCalledWith(expect.objectContaining({ user_id: 5 }), expect.anything())
+  })
+
+  it('shows request logs as a fourth tab and opens diagnostics for the selected row', async () => {
+    const wrapper = mount(UsageView, {
+      global: { stubs: {
+        AppLayout: AppLayoutStub, UsageStatsCards: true, UsageFilters: UsageFiltersStub,
+        UsageTable: true, UsageExportProgress: true, UsageCleanupDialog: true,
+        UserBalanceHistoryModal: true, Pagination: true, Select: true,
+        DateRangePicker: true, Icon: true, EntityDistributionChart: true,
+        ModelDistributionChart: true, UserTokenRanking: UserTokenRankingStub,
+        RequestDiagnosticsTable: RequestDiagnosticsTableStub,
+        OpsErrorLogTable: true, OpsErrorDetailModal: true,
+      } },
+    })
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+
+    const tabs = wrapper.findAll('[data-testid="usage-detail-tab"]')
+    await tabs[3].trigger('click')
+    await flushPromises()
+
+    expect((wrapper.vm as any).activeTab).toBe('diagnostics')
+    expect(wrapper.find('[data-test="request-logs"]').isVisible()).toBe(true)
+
+    await wrapper.find('[data-test="request-logs"] .open-diagnostics').trigger('click')
+    expect((wrapper.vm as any).selectedDiagnosticsID).toBe(77)
+    expect((wrapper.vm as any).diagnosticsVisible).toBe(true)
   })
 })

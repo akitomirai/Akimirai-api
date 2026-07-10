@@ -237,36 +237,6 @@
           </div>
         </div>
 
-        <div v-if="mode === 'usage'" class="w-full sm:w-auto sm:min-w-[160px]">
-          <label class="input-label">{{ t('admin.usage.diagnostics.route') }}</label>
-          <Select v-model="filters.route_kind" :options="routeKindOptions" @change="emitChange" />
-        </div>
-
-        <div v-if="mode === 'usage'" class="w-full sm:w-[130px]">
-          <label class="input-label">{{ t('admin.usage.diagnostics.proxyId') }}</label>
-          <input v-model.number="filters.proxy_id" type="number" min="1" class="input" @change="emitChange" />
-        </div>
-
-        <div v-if="mode === 'usage'" class="w-full sm:w-[150px]">
-          <label class="input-label">{{ t('admin.usage.diagnostics.minTotalMs') }}</label>
-          <input v-model.number="filters.min_request_total_ms" type="number" min="0" class="input" @change="emitChange" />
-        </div>
-
-        <div v-if="mode === 'usage'" class="w-full sm:w-[150px]">
-          <label class="input-label">{{ t('admin.usage.diagnostics.minFirstTokenMs') }}</label>
-          <input v-model.number="filters.min_request_first_token_ms" type="number" min="0" class="input" @change="emitChange" />
-        </div>
-
-        <div v-if="mode === 'usage'" class="w-full sm:w-[150px]">
-          <label class="input-label">{{ t('admin.usage.diagnostics.minFirstByteMs') }}</label>
-          <input v-model.number="filters.min_upstream_first_byte_ms" type="number" min="0" class="input" @change="emitChange" />
-        </div>
-
-        <label v-if="mode === 'usage'" class="flex h-10 w-full cursor-pointer items-center gap-2 rounded-md border border-gray-200 px-3 text-sm text-gray-700 sm:w-auto dark:border-dark-700 dark:text-gray-300">
-          <input v-model="filters.retry_only" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" @change="emitChange" />
-          <span>{{ t('admin.usage.diagnostics.retryOnly') }}</span>
-        </label>
-
         <div v-if="mode === 'errors'" class="w-full sm:w-auto sm:min-w-[220px]">
           <label class="input-label">{{ t('admin.usage.requestId') }}</label>
           <input v-model.trim="filters.error_request_id" type="text" class="input font-mono" @change="emitChange" />
@@ -337,7 +307,7 @@ interface Props {
    * errors mode keeps the shared identity filters and adds error type/status fields.
    * ranking mode keeps the shared filters but hides cleanup/export actions.
    */
-  mode?: 'usage' | 'errors' | 'ranking'
+  mode?: 'usage' | 'errors' | 'ranking' | 'diagnostics'
   compact?: boolean
   /** Embedded usage inside a shared card: remove this component's card shell. */
   flat?: boolean
@@ -393,12 +363,6 @@ const modelOptions = computed<SelectOption[]>(() => [
   ...(props.modelOptions ?? []).map((m) => ({ value: m, label: m })),
 ])
 const groupOptions = ref<SelectOption[]>([{ value: null, label: t('admin.usage.allGroups') }])
-const routeKindOptions = computed<SelectOption[]>(() => [
-  { value: null, label: t('admin.usage.diagnostics.allRoutes') },
-  { value: 'direct', label: t('admin.usage.diagnostics.directRoute') },
-  { value: 'proxy', label: t('admin.usage.diagnostics.proxyRoute') },
-])
-
 // 错误类型对应后端 phase 参数(与错误表"类型"徽章同语义)
 const errorPhaseOptions = computed<SelectOption[]>(() => [
   { value: null, label: t('admin.usage.allTypes') },

@@ -211,7 +211,7 @@ describe('UsageFilters — model options come from prop (no dup request)', () =>
 })
 
 describe('UsageFilters usage-mode fields', () => {
-  it('shows identity and lightweight diagnostic filters', async () => {
+  it('keeps the usage page focused on identity filters', async () => {
     const wrapper = mountFilters()
     await flushPromises()
 
@@ -222,12 +222,8 @@ describe('UsageFilters usage-mode fields', () => {
       'Model',
       'Group',
       'Account',
-      'Route',
-      'Proxy ID',
-      'Min total (ms)',
-      'Min first token (ms)',
-      'Min first byte (ms)',
     ])
+    expect(wrapper.text()).not.toContain('Retries only')
     expect(labels).not.toContain('Type')
     expect(labels).not.toContain('Billing Type')
     expect(labels).not.toContain('Billing Mode')

@@ -1,6 +1,8 @@
 import type { GroupPlatform } from '@/types'
 
 export const OPENAI_CC_SWITCH_CODEX_MODEL = 'gpt-5.6-sol'
+export const CC_SWITCH_CODEX_CONTEXT_WINDOW = 262144
+export const CC_SWITCH_CODEX_AUTO_COMPACT_LIMIT = 240000
 
 export type CcSwitchApp = 'claude' | 'codex' | 'gemini'
 
@@ -46,9 +48,7 @@ export function resolveCcSwitchImportConfig(
 
 export function buildCcSwitchImportDeeplink(input: CcSwitchImportDeeplinkInput): string {
   const config = resolveCcSwitchImportConfig(input.platform, input.app, input.baseUrl)
-  const providerName = input.app === 'codex' && input.remoteCompaction
-    ? 'OpenAI'
-    : input.providerName
+  const providerName = input.providerName.trim()
   const entries: [string, string][] = [
     ['resource', 'provider'],
     ['app', config.app],
@@ -64,6 +64,27 @@ export function buildCcSwitchImportDeeplink(input: CcSwitchImportDeeplinkInput):
     ['usageAutoInterval', '30']
   ]
 
+  if (input.app === 'codex') {
+    const internalProviderName = input.remoteCompaction ? 'OpenAI' : providerName
+    const configToml = `model_provider = "custom"
+model = ${JSON.stringify(input.model.trim())}
+model_context_window = ${CC_SWITCH_CODEX_CONTEXT_WINDOW}
+model_auto_compact_token_limit = ${CC_SWITCH_CODEX_AUTO_COMPACT_LIMIT}
+model_reasoning_effort = "high"
+disable_response_storage = true
+
+[model_providers.custom]
+name = ${JSON.stringify(internalProviderName)}
+base_url = ${JSON.stringify(config.endpoint)}
+wire_api = "responses"
+requires_openai_auth = true
+`
+    entries.push(['config', encodeBase64Utf8(JSON.stringify({
+      auth: { OPENAI_API_KEY: input.apiKey },
+      config: configToml
+    }))])
+  }
+
   if (input.app === 'claude') {
     const optionalModels = [
       ['haikuModel', input.haikuModel],
@@ -76,4 +97,11 @@ export function buildCcSwitchImportDeeplink(input: CcSwitchImportDeeplinkInput):
   }
 
   return `ccswitch://v1/import?${new URLSearchParams(entries).toString()}`
+}
+
+function encodeBase64Utf8(value: string): string {
+  const bytes = new TextEncoder().encode(value)
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary)
 }

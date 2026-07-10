@@ -210,8 +210,8 @@ export default {
       modelRequired: 'Please select or enter a main model.',
       catalogFallback: 'The model catalog is unavailable. Enter the model name manually.',
       remoteCompaction: 'Enable remote compaction',
-      remoteCompactionHint: 'CC Switch enables this by naming the active Codex provider OpenAI.',
-      remoteCompactionNameHint: 'CC Switch will display the provider as OpenAI.',
+      remoteCompactionHint: 'Keeps the custom display name while enabling the OpenAI feature gate in the embedded Codex config.',
+      remoteCompactionNameHint: 'The display name stays unchanged.',
     },
     // Quota and expiration
     quotaLimit: 'Quota Limit',

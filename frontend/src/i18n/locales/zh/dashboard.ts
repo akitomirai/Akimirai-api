@@ -215,8 +215,8 @@ export default {
       modelRequired: '请选择或输入主模型。',
       catalogFallback: '模型目录暂不可用，请手动输入模型名称。',
       remoteCompaction: '启用远程压缩',
-      remoteCompactionHint: 'CC Switch 通过将当前 Codex 供应商命名为 OpenAI 来启用远程压缩。',
-      remoteCompactionNameHint: 'CC Switch 中将显示为 OpenAI。'
+      remoteCompactionHint: '保留自定义显示名称，并在 Codex 内部配置中启用 OpenAI 特性门控。',
+      remoteCompactionNameHint: '显示名称保持不变。'
     },
     // 配额和有效期
     quotaLimit: '额度限制',

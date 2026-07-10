@@ -112,13 +112,16 @@ The usage route returns only proven usage/billing facts and leaves error explana
 - `usage_logs` remains the only completed-request usage and billing ledger. Diagnostic columns are additive evidence on that row, not a second request store.
 - `created_at` remains the completion/log-write timestamp. `request_started_at` is the only field that proves when the request began.
 - Nullable phase timings mean unavailable, not zero. The UI must render unavailable phases explicitly and must not infer DNS, TCP, TLS, upload, or queue sub-phases that were not measured.
-- For supported OpenAI HTTP paths, request-body read, request write, first response byte, first semantic token, and total request time use one request-scoped monotonic collector.
+- For supported OpenAI HTTP paths, request-body read, request write, first response-header byte, first semantic token, and total request time use one request-scoped monotonic collector.
+- `upstream_first_byte_ms` comes from `httptrace.GotFirstResponseByte`; it proves the first byte of the HTTP response headers, not the first SSE body event or model token. Admin UI labels must say response headers and keep every timing as an offset from request start rather than displaying derived stage differences.
 - Route snapshots are immutable for the completed row. A later account proxy edit must not rewrite historical attribution.
 - A proxy snapshot may contain the proxy ID, display name, protocol, and a sanitized fingerprint. It must not contain userinfo, credentials, query parameters, paths, authorization headers, full proxy URLs, prompts, request bodies, or response bodies.
 - `attempt_timeline` is serialized only when `retry_count > 0` or `account_switch_count > 0`, is capped at 32 sanitized events, and reuses the upstream error sanitizer.
 - Normal single-attempt successes keep `attempt_timeline` null/empty.
 - Diagnostic collection, sanitization, or serialization failures are fail-open for forwarding and billing.
 - The admin detail DTO may expose diagnostic fields. User usage DTOs and exports must not expose route fingerprints, proxy snapshots, attempt timelines, or admin-only phase timings.
+- The existing admin usage view owns four tabs: usage rows, errors, user ranking, and request records. Request records reuse the same usage list rows and diagnostics drawer; they do not create another route, sidebar entry, API, or persistence ledger.
+- Diagnostic route/proxy/latency query parameters remain supported by the admin API but are not rendered in the main usage filter bar. The visible filter bar stays focused on user, API key, model, group, and account.
 - Diagnostic rows follow the existing usage retention policy; no separate high-volume event table is introduced.
 - Handwritten usage insert/select contracts must remain atomic: `usageLogInsertArgTypes`, every SQL column/value list, `prepareUsageLogInsert().args`, and `usageLogSelectColumns`/scan order are updated together. Batch capacities and test argument counts derive from `len(usageLogInsertArgTypes)` rather than a historical literal.
 
@@ -145,7 +148,7 @@ The usage route returns only proven usage/billing facts and leaves error explana
 - Repository tests must cover all insert paths, arg/type count equality, JSON round trip, nullable historical rows, filter SQL, and scan order.
 - Handler tests must cover admin authorization through route registration, invalid detail IDs, not found, filter parsing, and exact request-ID correlation.
 - DTO tests must marshal both admin and user responses and assert diagnostic fields exist only in the admin contract.
-- Frontend tests must cover loading/error/empty states, null timing rendering, retry/switch indicators, drawer detail loading, and the errors-tab request-ID action.
+- Frontend tests must cover loading/error/empty states, null timing rendering, retry/switch indicators, the request-records tab and columns, drawer detail loading, and the errors-tab request-ID action.
 - Full verification includes `go test ./...`, `go vet ./...`, frontend full tests, type-check, lint, production build, migration coverage, secret scan, and `git diff --check`.
 
 ### 7. Wrong vs Correct
