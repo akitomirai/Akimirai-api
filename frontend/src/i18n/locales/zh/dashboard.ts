@@ -75,7 +75,10 @@ export default {
       copied: '已复制',
       copiedHint: '已复制到剪贴板',
       clickToCopy: '点击可复制此端点',
-      speedTest: '测速',
+      testLatency: '测试延迟',
+      testingLatency: '正在测试延迟',
+      latencyFailed: '延迟测试失败',
+      externalSpeedTest: '外部测速',
     },
     allGroups: '全部分组',
     allStatus: '全部状态',
@@ -215,8 +218,8 @@ export default {
       modelRequired: '请选择或输入主模型。',
       catalogFallback: '模型目录暂不可用，请手动输入模型名称。',
       remoteCompaction: '启用远程压缩',
-      remoteCompactionHint: '保留自定义显示名称，并在 Codex 内部配置中启用 OpenAI 特性门控。',
-      remoteCompactionNameHint: '显示名称保持不变。'
+      remoteCompactionHint: 'CC Switch 通过供应商名称 OpenAI 启用 Codex 远程压缩。',
+      remoteCompactionNameHint: '供应商将显示为 OpenAI；CC Switch 3.16.x（#3751）保存时会重建 Codex TOML，不能保留任意自定义字段。'
     },
     // 配额和有效期
     quotaLimit: '额度限制',

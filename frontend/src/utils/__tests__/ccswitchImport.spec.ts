@@ -47,7 +47,7 @@ describe('ccswitchImport utils', () => {
     expect(atob(params.get('usageScript') || '')).toBe(baseInput.usageScript)
   })
 
-  it('keeps the display name while embedding the Codex OpenAI feature gate', () => {
+  it('uses the stock CC Switch OpenAI name gate for remote compaction', () => {
     const params = paramsFromDeeplink(
       buildCcSwitchImportDeeplink({
         ...baseInput,
@@ -57,7 +57,7 @@ describe('ccswitchImport utils', () => {
       })
     )
 
-    expect(params.get('name')).toBe('Aki')
+    expect(params.get('name')).toBe('OpenAI')
     const embedded = decodeConfig(params).config
     expect(embedded).toContain('name = "OpenAI"')
     expect(embedded).toContain(`model_context_window = ${CC_SWITCH_CODEX_CONTEXT_WINDOW}`)

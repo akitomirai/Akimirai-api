@@ -3,6 +3,7 @@
     :data="data"
     :columns="columns"
     :loading="loading"
+    density="compact"
     row-key="id"
   >
     <template #cell-user="{ row }">
@@ -28,7 +29,7 @@
 
     <template #cell-created_at="{ row }">
       <div class="min-w-[138px] text-sm text-gray-700 dark:text-gray-300">
-        {{ formatDateTime(row.request_started_at || row.created_at) }}
+        {{ row.request_started_at ? formatDateTime(row.request_started_at) : t('admin.usage.diagnostics.unavailable') }}
       </div>
     </template>
 
@@ -71,9 +72,9 @@
         <span class="text-gray-400">{{ t('admin.usage.diagnostics.firstByte') }}</span>
         <span class="font-medium tabular-nums text-gray-700 dark:text-gray-200">{{ formatDuration(row.upstream_first_byte_ms) }}</span>
         <span class="text-gray-400">{{ t('admin.usage.diagnostics.firstToken') }}</span>
-        <span class="font-medium tabular-nums text-amber-600 dark:text-amber-300">{{ formatDuration(row.request_first_token_ms ?? row.first_token_ms) }}</span>
+        <span class="font-medium tabular-nums text-amber-600 dark:text-amber-300">{{ formatDuration(row.request_first_token_ms) }}</span>
         <span class="text-gray-400">{{ t('admin.usage.diagnostics.completed') }}</span>
-        <span class="font-medium tabular-nums text-gray-700 dark:text-gray-200">{{ formatDuration(row.request_total_ms ?? row.duration_ms) }}</span>
+        <span class="font-medium tabular-nums text-gray-700 dark:text-gray-200">{{ formatDuration(row.request_total_ms) }}</span>
       </div>
     </template>
 
@@ -89,16 +90,6 @@
       </span>
     </template>
 
-    <template #cell-actions="{ row }">
-      <button
-        type="button"
-        class="flex h-8 w-8 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-primary-50 hover:text-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:hover:bg-primary-500/10 dark:hover:text-primary-300"
-        :title="t('admin.usage.diagnostics.open')"
-        @click="emit('diagnosticsClick', row.id)"
-      >
-        <Icon name="search" size="sm" />
-      </button>
-    </template>
   </DataTable>
 </template>
 
@@ -106,37 +97,38 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DataTable from '@/components/common/DataTable.vue'
-import Icon from '@/components/icons/Icon.vue'
 import { formatDateTime } from '@/utils/format'
 import { resolveUsageRequestType } from '@/utils/usageRequestType'
 import type { Column } from '@/components/common/types'
 import type { AdminUsageLog, UsageRouteKind } from '@/types'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   data: AdminUsageLog[]
   loading?: boolean
+  columns?: Column[]
 }>(), {
   loading: false,
+  columns: undefined,
 })
 
 const emit = defineEmits<{
   userClick: [userID: number, email?: string]
-  diagnosticsClick: [usageID: number]
 }>()
 
 const { t } = useI18n()
 
-const columns = computed<Column[]>(() => [
+const defaultColumns = computed<Column[]>(() => [
   { key: 'user', label: t('admin.usage.user') },
   { key: 'api_key', label: t('usage.apiKeyFilter') },
-  { key: 'created_at', label: t('usage.time') },
+  { key: 'created_at', label: t('admin.usage.diagnostics.requestStartedAt') },
   { key: 'features', label: t('admin.usage.diagnostics.requestFeatures') },
   { key: 'route', label: t('admin.usage.diagnostics.route') },
   { key: 'timings', label: t('admin.usage.diagnostics.timings') },
   { key: 'retries', label: t('admin.usage.diagnostics.retrySwitch') },
   { key: 'status', label: t('admin.usage.diagnostics.upstreamStatus') },
-  { key: 'actions', label: t('admin.usage.diagnostics.title'), class: 'w-12' },
 ])
+
+const columns = computed<Column[]>(() => props.columns ?? defaultColumns.value)
 
 const requestTypeLabel = (row: AdminUsageLog): string => {
   const requestType = resolveUsageRequestType(row)
@@ -154,7 +146,7 @@ const formatBytes = (value: number): string => {
 }
 
 const formatDuration = (value: number | null | undefined): string => {
-  if (value == null) return '-'
+  if (value == null) return t('admin.usage.diagnostics.unavailable')
   if (value < 1000) return `${value}ms`
   if (value < 60_000) return `${(value / 1000).toFixed(2)}s`
   const seconds = Math.round(value / 1000)

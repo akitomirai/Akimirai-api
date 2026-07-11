@@ -91,13 +91,13 @@
       </div>
 
       <div v-if="showActions" class="flex w-full flex-wrap items-center justify-end gap-2 xl:w-auto">
+        <slot name="before-refresh" />
         <button type="button" @click="$emit('refresh')" class="btn btn-secondary h-9 rounded-lg px-3 py-0">
           {{ t('common.refresh') }}
         </button>
         <button type="button" @click="$emit('reset')" class="btn btn-secondary h-9 rounded-lg px-3 py-0">
           {{ t('common.reset') }}
         </button>
-        <slot name="after-reset" />
         <button type="button" @click="$emit('cleanup')" class="btn btn-danger h-9 rounded-lg px-3 py-0">
           {{ t('admin.usage.cleanup.button') }}
         </button>
@@ -264,13 +264,13 @@
 
       <!-- Right: actions -->
       <div v-if="showActions" class="flex w-full flex-wrap items-center justify-end gap-3 sm:w-auto">
+        <slot name="before-refresh" />
         <button type="button" @click="$emit('refresh')" class="btn btn-secondary">
           {{ t('common.refresh') }}
         </button>
         <button type="button" @click="$emit('reset')" class="btn btn-secondary">
           {{ t('common.reset') }}
         </button>
-        <slot name="after-reset" />
         <template v-if="mode === 'usage'">
           <button type="button" @click="$emit('cleanup')" class="btn btn-danger">
             {{ t('admin.usage.cleanup.button') }}

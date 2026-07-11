@@ -26,6 +26,9 @@ const messages: Record<string, string> = {
   'admin.dashboard.day': 'Day',
   'admin.dashboard.hour': 'Hour',
   'admin.usage.failedToLoadUser': 'Failed to load user',
+  'admin.users.columnSettings': 'Column settings',
+  'admin.usage.diagnostics.timings': 'Stage Timings',
+  'admin.usage.diagnostics.requestStartedAt': 'Request started',
 }
 
 const formatLocalDate = (date: Date): string => {
@@ -96,7 +99,7 @@ vi.mock('vue-router', () => ({
 }))
 
 const AppLayoutStub = { template: '<div><slot /></div>' }
-const UsageFiltersStub = { template: '<div><slot name="after-reset" /></div>' }
+const UsageFiltersStub = { template: '<div><slot name="before-refresh" /></div>' }
 const UsageTableStub = {
   emits: ['userClick'],
   template: '<div data-test="usage-table"><button class="user-click" @click="$emit(\'userClick\', 2)">user</button></div>',
@@ -106,8 +109,8 @@ const UserTokenRankingStub = {
   template: '<div data-test="ranking"><button class="pick-user" @click="$emit(\'select-user\', 5, \'rank@test.com\')">pick</button></div>',
 }
 const RequestDiagnosticsTableStub = {
-  emits: ['diagnosticsClick'],
-  template: '<div data-test="request-logs"><button class="open-diagnostics" @click="$emit(\'diagnosticsClick\', 77)">open</button></div>',
+  props: ['columns'],
+  template: '<div data-test="request-logs">{{ columns.map((column) => column.key).join("|") }}</div>',
 }
 const ModelDistributionChartStub = {
   props: ['metric'],
@@ -394,6 +397,8 @@ describe('admin UsageView errors tab filter forwarding', () => {
 describe('admin UsageView ranking tab', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    vi.mocked(localStorage.getItem).mockReset().mockReturnValue(null)
+    vi.mocked(localStorage.setItem).mockClear()
     list.mockReset()
     getStats.mockReset()
     getSnapshotV2.mockReset()
@@ -448,7 +453,7 @@ describe('admin UsageView ranking tab', () => {
     expect(list).toHaveBeenCalledWith(expect.objectContaining({ user_id: 5 }), expect.anything())
   })
 
-  it('shows request logs as a fourth tab and opens diagnostics for the selected row', async () => {
+  it('shows request logs inline and lets admins choose visible columns', async () => {
     const wrapper = mount(UsageView, {
       global: { stubs: {
         AppLayout: AppLayoutStub, UsageStatsCards: true, UsageFilters: UsageFiltersStub,
@@ -469,9 +474,45 @@ describe('admin UsageView ranking tab', () => {
 
     expect((wrapper.vm as any).activeTab).toBe('diagnostics')
     expect(wrapper.find('[data-test="request-logs"]').isVisible()).toBe(true)
+    expect(wrapper.get('[data-test="request-logs"]').text()).toContain('timings')
 
-    await wrapper.find('[data-test="request-logs"] .open-diagnostics').trigger('click')
-    expect((wrapper.vm as any).selectedDiagnosticsID).toBe(77)
-    expect((wrapper.vm as any).diagnosticsVisible).toBe(true)
+    const columnSettings = wrapper.get('button[title="Column settings"]')
+    await columnSettings.trigger('click')
+    const timingToggle = wrapper.findAll('button').find(button => button.text() === 'Stage Timings')
+    expect(timingToggle).toBeDefined()
+    await timingToggle!.trigger('click')
+
+    expect(wrapper.get('[data-test="request-logs"]').text()).not.toContain('timings')
+    expect(localStorage.setItem).toHaveBeenCalledWith(
+      'usage-diagnostics-hidden-columns',
+      JSON.stringify(['timings']),
+    )
+  })
+
+  it('restores request-log column preferences while keeping required columns visible', async () => {
+    vi.mocked(localStorage.getItem).mockImplementation((key) =>
+      key === 'usage-diagnostics-hidden-columns' ? JSON.stringify(['timings', 'user']) : null
+    )
+    const wrapper = mount(UsageView, {
+      global: { stubs: {
+        AppLayout: AppLayoutStub, UsageStatsCards: true, UsageFilters: UsageFiltersStub,
+        UsageTable: true, UsageExportProgress: true, UsageCleanupDialog: true,
+        UserBalanceHistoryModal: true, Pagination: true, Select: true,
+        DateRangePicker: true, Icon: true, EntityDistributionChart: true,
+        ModelDistributionChart: true, UserTokenRanking: UserTokenRankingStub,
+        RequestDiagnosticsTable: RequestDiagnosticsTableStub,
+        OpsErrorLogTable: true, OpsErrorDetailModal: true,
+      } },
+    })
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+
+    await wrapper.findAll('[data-testid="usage-detail-tab"]')[3].trigger('click')
+    await flushPromises()
+
+    const columns = wrapper.get('[data-test="request-logs"]').text()
+    expect(columns).toContain('user')
+    expect(columns).toContain('created_at')
+    expect(columns).not.toContain('timings')
   })
 })

@@ -196,6 +196,10 @@ import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useClipboard } from '@/composables/useClipboard'
+import {
+  CC_SWITCH_CODEX_AUTO_COMPACT_LIMIT,
+  CC_SWITCH_CODEX_CONTEXT_WINDOW,
+} from '@/utils/ccswitchImport'
 import type { GroupPlatform } from '@/types'
 
 interface Props {
@@ -615,6 +619,8 @@ function generateOpenAIFiles(baseUrl: string, apiKey: string): FileConfig[] {
   const configContent = `model_provider = "OpenAI"
 model = "gpt-5.6-sol"
 review_model = "gpt-5.6-sol"
+model_context_window = ${CC_SWITCH_CODEX_CONTEXT_WINDOW}
+model_auto_compact_token_limit = ${CC_SWITCH_CODEX_AUTO_COMPACT_LIMIT}
 model_reasoning_effort = "xhigh"
 disable_response_storage = true
 network_access = "enabled"
@@ -655,6 +661,8 @@ function generateOpenAIWsFiles(baseUrl: string, apiKey: string): FileConfig[] {
   const configContent = `model_provider = "OpenAI"
 model = "gpt-5.6-sol"
 review_model = "gpt-5.6-sol"
+model_context_window = ${CC_SWITCH_CODEX_CONTEXT_WINDOW}
+model_auto_compact_token_limit = ${CC_SWITCH_CODEX_AUTO_COMPACT_LIMIT}
 model_reasoning_effort = "xhigh"
 disable_response_storage = true
 network_access = "enabled"

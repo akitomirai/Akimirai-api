@@ -499,7 +499,7 @@ describe('user KeysView column settings', () => {
     const openedDeeplink = String(openSpy.mock.calls[0]?.[0] || '')
     expect(openedDeeplink).toContain('ccswitch://v1/import?')
     const params = new URLSearchParams(openedDeeplink.split('?')[1])
-    expect(params.get('name')).toBe('Sub2API')
+    expect(params.get('name')).toBe('OpenAI')
     expect(params.get('config')).toBeTruthy()
     expect(openSpy).toHaveBeenCalledWith(expect.any(String), '_self')
     openSpy.mockRestore()
