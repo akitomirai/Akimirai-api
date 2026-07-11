@@ -149,6 +149,14 @@ frontend/coverage/
 aicodex
 output/
 
+# Local workspace runtime and browser-tool artifacts
+/.playwright-cli/
+/frontend/.playwright-cli/
+/.vite/
+/.wrangler/
+/config.yaml
+/dump.rdb
+
 # Build artifacts (large binaries)
 backend/build-artifacts/
 backend/backend/build-artifacts/
