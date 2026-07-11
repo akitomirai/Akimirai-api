@@ -806,6 +806,9 @@ type GatewayConfig struct {
 	// 开启后对大请求体（>1KB）进行 gzip 压缩再发送，减少网络传输时间。
 	// 适用于 /responses 大输入场景（如 80K+ tokens 的 JSON body）。
 	UpstreamRequestGzip bool `mapstructure:"upstream_request_gzip"`
+	// UpstreamRequestGzipHosts limits request compression to exact upstream hostnames.
+	// Empty preserves the legacy global behavior when UpstreamRequestGzip is enabled.
+	UpstreamRequestGzipHosts []string `mapstructure:"upstream_request_gzip_hosts"`
 	// ConcurrencySlotTTLMinutes: 并发槽位过期时间（分钟）
 	// 应大于最长 LLM 请求时间，防止请求完成前槽位过期
 	ConcurrencySlotTTLMinutes int `mapstructure:"concurrency_slot_ttl_minutes"`
@@ -2014,6 +2017,8 @@ func setDefaults() {
 	viper.SetDefault("gateway.antigravity_fallback_cooldown_minutes", 1)
 	viper.SetDefault("gateway.antigravity_extra_retries", 10)
 	viper.SetDefault("gateway.max_body_size", int64(256*1024*1024))
+	viper.SetDefault("gateway.upstream_request_gzip", false)
+	viper.SetDefault("gateway.upstream_request_gzip_hosts", []string{})
 	viper.SetDefault("gateway.upstream_response_read_max_bytes", DefaultUpstreamResponseReadMaxBytes)
 	viper.SetDefault("gateway.proxy_probe_response_read_max_bytes", int64(1024*1024))
 	viper.SetDefault("gateway.gemini_debug_response_headers", false)

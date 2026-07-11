@@ -247,6 +247,9 @@ gateway:
   # Rollback: set to false or remove this line, then restart the service.
   # 回滚方式：设置为 false 或删除此行，然后重启服务。
   upstream_request_gzip: false
+  # Optional exact-host allowlist. Empty keeps the legacy behavior of compressing every OpenAI upstream.
+  # 可选的精确主机白名单。留空时保持旧行为：压缩所有 OpenAI 上游请求。
+  upstream_request_gzip_hosts: []
   # Force Codex CLI mode: treat all /openai/v1/responses requests as Codex CLI.
   # 强制按 Codex CLI 处理 /openai/v1/responses 请求（用于网关未透传/改写 User-Agent 的兜底）。
   #

@@ -395,6 +395,7 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 	}
 
 	// 验证分组权限（如果指定了分组）
+	var selectedGroup *Group
 	if req.GroupID != nil {
 		group, err := s.groupRepo.GetByID(ctx, *req.GroupID)
 		if err != nil {
@@ -405,6 +406,7 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 		if !s.canUserBindGroup(ctx, user, group) {
 			return nil, ErrGroupNotAllowed
 		}
+		selectedGroup = group
 	}
 
 	var key string
@@ -460,6 +462,7 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 		KeyPrefix:     keyPrefix,
 		Name:          html.EscapeString(req.Name),
 		GroupID:       req.GroupID,
+		Group:         selectedGroup,
 		Status:        StatusActive,
 		IPWhitelist:   req.IPWhitelist,
 		IPBlacklist:   req.IPBlacklist,
@@ -481,7 +484,7 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 		return nil, fmt.Errorf("create api key: %w", err)
 	}
 
-	s.InvalidateAuthCacheByKey(ctx, apiKey.Key)
+	s.InvalidateAuthCacheByKey(ctx, apiKeyAuthCacheIdentity(apiKey))
 	s.compileAPIKeyIPRules(apiKey)
 
 	return apiKey, nil
@@ -624,6 +627,10 @@ func (s *APIKeyService) GetByID(ctx context.Context, id int64) (*APIKey, error) 
 
 // GetByKey 根据Key字符串获取API Key（用于认证）
 func (s *APIKeyService) GetByKey(ctx context.Context, key string) (*APIKey, error) {
+	key = strings.TrimSpace(key)
+	if key == "" || IsAPIKeyHash(key) {
+		return nil, fmt.Errorf("get api key: %w", ErrAPIKeyNotFound)
+	}
 	cacheKey := s.authCacheKey(key)
 
 	if entry, ok := s.getAuthCacheEntry(ctx, cacheKey); ok {
@@ -692,6 +699,9 @@ func (s *APIKeyService) getByRawKeyForAuth(ctx context.Context, key string) (*AP
 	apiKey, err := s.apiKeyRepo.GetByKeyForAuth(ctx, key)
 	if err != nil {
 		return nil, err
+	}
+	if isAPIKeyStoragePlaceholder(key) && strings.TrimSpace(apiKey.KeyHash) != "" && apiKey.KeyHash != hash {
+		return nil, ErrAPIKeyNotFound
 	}
 	apiKey.Key = key
 	if apiKey.KeyPrefix == "" {
@@ -834,7 +844,7 @@ func (s *APIKeyService) Update(ctx context.Context, id int64, userID int64, req 
 		return nil, fmt.Errorf("update api key: %w", err)
 	}
 
-	s.InvalidateAuthCacheByKey(ctx, apiKey.Key)
+	s.InvalidateAuthCacheByKey(ctx, apiKeyAuthCacheIdentity(apiKey))
 	s.compileAPIKeyIPRules(apiKey)
 
 	// Invalidate Redis rate limit cache so reset takes effect immediately
@@ -1082,7 +1092,7 @@ func (s *APIKeyService) UpdateQuotaUsed(ctx context.Context, apiKeyID int64, cos
 			return nil // Don't fail the request
 		}
 		// Invalidate cache so next request sees the new status
-		s.InvalidateAuthCacheByKey(ctx, apiKey.Key)
+		s.InvalidateAuthCacheByKey(ctx, apiKeyAuthCacheIdentity(apiKey))
 	}
 
 	return nil

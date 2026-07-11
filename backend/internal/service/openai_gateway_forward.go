@@ -863,7 +863,7 @@ func (s *OpenAIGatewayService) buildUpstreamRequest(ctx context.Context, c *gin.
 	}
 	targetURL = appendOpenAIResponsesRequestPathSuffix(targetURL, openAIResponsesRequestPathSuffix(c))
 
-	wireBody, gzipCompressed := s.maybeGzipCompressBody(body)
+	wireBody, gzipCompressed := s.maybeGzipCompressBody(body, targetURL)
 	req, err := http.NewRequestWithContext(ctx, "POST", targetURL, bytes.NewReader(wireBody))
 	if err != nil {
 		return nil, err

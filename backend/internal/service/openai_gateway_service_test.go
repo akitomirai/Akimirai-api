@@ -3,6 +3,7 @@ package service
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -2411,6 +2412,50 @@ func TestOpenAIBuildUpstreamRequestOpenAIPassthroughPreservesCompactPath(t *test
 	require.Equal(t, codexCLIVersion, req.Header.Get("Version"))
 	require.NotEmpty(t, req.Header.Get("Session_Id"))
 	require.Equal(t, HTTPUpstreamProfileOpenAI, HTTPUpstreamProfileFromContext(req.Context()))
+}
+
+func TestOpenAIBuildUpstreamRequestsApplyHostScopedGzipWithoutChangingBody(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	body := []byte(`{"model":"gpt-5.5","input":"` + strings.Repeat("payload-", 1024) + `"}`)
+	svc := &OpenAIGatewayService{cfg: &config.Config{Gateway: config.GatewayConfig{
+		UpstreamRequestGzip:      true,
+		UpstreamRequestGzipHosts: []string{"xcpcai.com"},
+	}}}
+	account := &Account{
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Credentials: map[string]any{"base_url": "https://xcpcai.com"},
+	}
+
+	assertCompressedBody := func(t *testing.T, req *http.Request) {
+		t.Helper()
+		require.Equal(t, "xcpcai.com", req.URL.Hostname())
+		require.Equal(t, "gzip", req.Header.Get("Content-Encoding"))
+		reader, err := gzip.NewReader(req.Body)
+		require.NoError(t, err)
+		decompressed, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		require.NoError(t, reader.Close())
+		require.Equal(t, body, decompressed)
+	}
+
+	t.Run("managed", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(rec)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+		req, err := svc.buildUpstreamRequest(c.Request.Context(), c, account, body, "token", false, "", false)
+		require.NoError(t, err)
+		assertCompressedBody(t, req)
+	})
+
+	t.Run("passthrough", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(rec)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+		req, err := svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
+		require.NoError(t, err)
+		assertCompressedBody(t, req)
+	})
 }
 
 func TestOpenAIBuildUpstreamRequestCompactForcesJSONAcceptForOAuth(t *testing.T) {

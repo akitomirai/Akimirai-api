@@ -5,6 +5,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -18,6 +19,8 @@ import (
 
 type authRepoStub struct {
 	getByKeyForAuth   func(ctx context.Context, key string) (*APIKey, error)
+	getByID           func(ctx context.Context, id int64) (*APIKey, error)
+	update            func(ctx context.Context, key *APIKey) error
 	listKeysByUserID  func(ctx context.Context, userID int64) ([]string, error)
 	listKeysByGroupID func(ctx context.Context, groupID int64) ([]string, error)
 }
@@ -27,6 +30,9 @@ func (s *authRepoStub) Create(ctx context.Context, key *APIKey) error {
 }
 
 func (s *authRepoStub) GetByID(ctx context.Context, id int64) (*APIKey, error) {
+	if s.getByID != nil {
+		return s.getByID(ctx, id)
+	}
 	panic("unexpected GetByID call")
 }
 
@@ -46,6 +52,9 @@ func (s *authRepoStub) GetByKeyForAuth(ctx context.Context, key string) (*APIKey
 }
 
 func (s *authRepoStub) Update(ctx context.Context, key *APIKey) error {
+	if s.update != nil {
+		return s.update(ctx, key)
+	}
 	panic("unexpected Update call")
 }
 
@@ -419,6 +428,220 @@ func TestAPIKeyService_GetByKey_CacheMissStoresL2(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(5), apiKey.ID)
 	require.Len(t, cache.setAuthKeys, 1)
+}
+
+func TestAPIKeyService_GetByKey_CacheMissAuthenticatesHashedStorage(t *testing.T) {
+	const rawKey = "sk-legacy-hashed-storage-key"
+	cfg := &config.Config{
+		JWT: config.JWTConfig{Secret: "stable-test-secret"},
+		APIKeyAuth: config.APIKeyAuthCacheConfig{
+			L2TTLSeconds:       60,
+			NegativeTTLSeconds: 30,
+		},
+	}
+	expectedHash := HashAPIKeyWithConfig(rawKey, cfg)
+	var lookups []string
+	repo := &authRepoStub{
+		getByKeyForAuth: func(ctx context.Context, key string) (*APIKey, error) {
+			lookups = append(lookups, key)
+			if key != expectedHash {
+				return nil, ErrAPIKeyNotFound
+			}
+			return &APIKey{
+				ID:        17,
+				UserID:    7,
+				Key:       expectedHash,
+				KeyHash:   expectedHash,
+				KeyPrefix: "sk-legac",
+				Status:    StatusActive,
+				User: &User{
+					ID:          7,
+					Status:      StatusActive,
+					Role:        RoleUser,
+					Balance:     10,
+					Concurrency: 1,
+				},
+			}, nil
+		},
+	}
+	cache := &authCacheStub{
+		getAuthCache: func(ctx context.Context, key string) (*APIKeyAuthCacheEntry, error) {
+			return nil, redis.Nil
+		},
+	}
+	svc := NewAPIKeyService(repo, nil, nil, nil, nil, cache, cfg)
+
+	apiKey, err := svc.GetByKey(context.Background(), rawKey)
+	require.NoError(t, err)
+	require.Equal(t, int64(17), apiKey.ID)
+	require.Equal(t, rawKey, apiKey.Key)
+	require.Equal(t, []string{expectedHash}, lookups)
+	require.Equal(t, svc.authCacheKey(rawKey), svc.authCacheKey(expectedHash))
+	require.NotEqual(t, strings.TrimPrefix(expectedHash, apiKeyHashPrefix), svc.authCacheKey(rawKey))
+	require.Len(t, cache.setAuthKeys, 1)
+}
+
+func TestAPIKeyService_GetByKey_RejectsStoredKeyRepresentations(t *testing.T) {
+	cfg := &config.Config{JWT: config.JWTConfig{Secret: "stable-test-secret"}}
+	rawKey := "sk-stored-key-representation-test"
+	storedHash := HashAPIKeyWithConfig(rawKey, cfg)
+	storedPlaceholder := apiKeyStoragePlaceholder(storedHash, apiKeyDisplayPrefix(rawKey))
+
+	t.Run("hash", func(t *testing.T) {
+		var repoCalls int
+		repo := &authRepoStub{getByKeyForAuth: func(ctx context.Context, key string) (*APIKey, error) {
+			repoCalls++
+			return nil, ErrAPIKeyNotFound
+		}}
+		svc := NewAPIKeyService(repo, nil, nil, nil, nil, nil, cfg)
+
+		_, err := svc.GetByKey(context.Background(), storedHash)
+		require.ErrorIs(t, err, ErrAPIKeyNotFound)
+		require.Zero(t, repoCalls)
+	})
+
+	t.Run("placeholder", func(t *testing.T) {
+		placeholderHash := HashAPIKeyWithConfig(storedPlaceholder, cfg)
+		var lookups []string
+		repo := &authRepoStub{getByKeyForAuth: func(ctx context.Context, key string) (*APIKey, error) {
+			lookups = append(lookups, key)
+			if key != storedPlaceholder {
+				return nil, ErrAPIKeyNotFound
+			}
+			return &APIKey{
+				ID: 17, UserID: 7, Key: storedPlaceholder, KeyHash: storedHash, Status: StatusActive,
+				User: &User{ID: 7, Status: StatusActive, Role: RoleUser, Balance: 10, Concurrency: 1},
+			}, nil
+		}}
+		svc := NewAPIKeyService(repo, nil, nil, nil, nil, nil, cfg)
+
+		_, err := svc.GetByKey(context.Background(), storedPlaceholder)
+		require.ErrorIs(t, err, ErrAPIKeyNotFound)
+		require.Equal(t, []string{placeholderHash, storedPlaceholder}, lookups)
+	})
+
+	t.Run("short prefix placeholder", func(t *testing.T) {
+		shortRawKey := "short"
+		shortHash := HashAPIKeyWithConfig(shortRawKey, cfg)
+		shortPlaceholder := apiKeyStoragePlaceholder(shortHash, apiKeyDisplayPrefix(shortRawKey))
+		placeholderHash := HashAPIKeyWithConfig(shortPlaceholder, cfg)
+		var lookups []string
+		repo := &authRepoStub{getByKeyForAuth: func(ctx context.Context, key string) (*APIKey, error) {
+			lookups = append(lookups, key)
+			if key != shortPlaceholder {
+				return nil, ErrAPIKeyNotFound
+			}
+			return &APIKey{
+				ID: 20, UserID: 7, Key: shortPlaceholder, KeyHash: shortHash, Status: StatusActive,
+				User: &User{ID: 7, Status: StatusActive, Role: RoleUser, Balance: 10, Concurrency: 1},
+			}, nil
+		}}
+		svc := NewAPIKeyService(repo, nil, nil, nil, nil, nil, cfg)
+
+		_, err := svc.GetByKey(context.Background(), shortPlaceholder)
+		require.ErrorIs(t, err, ErrAPIKeyNotFound)
+		require.Equal(t, []string{placeholderHash, shortPlaceholder}, lookups)
+	})
+}
+
+func TestAPIKeyService_GetByKey_AllowsLegacyPlaintextWithHashedPrefix(t *testing.T) {
+	const rawKey = "__hashed__my_valid_key_123"
+	cfg := &config.Config{JWT: config.JWTConfig{Secret: "stable-test-secret"}}
+	expectedHash := HashAPIKeyWithConfig(rawKey, cfg)
+	var lookups []string
+	repo := &authRepoStub{
+		getByKeyForAuth: func(ctx context.Context, key string) (*APIKey, error) {
+			lookups = append(lookups, key)
+			if key != rawKey {
+				return nil, ErrAPIKeyNotFound
+			}
+			return &APIKey{
+				ID: 18, UserID: 7, Key: rawKey, Status: StatusActive,
+				User: &User{ID: 7, Status: StatusActive, Role: RoleUser, Balance: 10, Concurrency: 1},
+			}, nil
+		},
+	}
+	svc := NewAPIKeyService(repo, nil, nil, nil, nil, nil, cfg)
+
+	apiKey, err := svc.GetByKey(context.Background(), rawKey)
+	require.NoError(t, err)
+	require.Equal(t, rawKey, apiKey.Key)
+	require.Equal(t, []string{expectedHash, rawKey}, lookups)
+}
+
+func TestAPIKeyService_GetByKey_AllowsPlaintextMatchingPlaceholderShape(t *testing.T) {
+	const rawKey = "__hashed__ABCDEFGH__0123456789abcdef01234567"
+	cfg := &config.Config{JWT: config.JWTConfig{Secret: "stable-test-secret"}}
+	expectedHash := HashAPIKeyWithConfig(rawKey, cfg)
+	var lookups []string
+	repo := &authRepoStub{getByKeyForAuth: func(ctx context.Context, key string) (*APIKey, error) {
+		lookups = append(lookups, key)
+		if key != expectedHash {
+			return nil, ErrAPIKeyNotFound
+		}
+		return &APIKey{
+			ID: 19, UserID: 7, Key: rawKey, KeyHash: expectedHash, Status: StatusActive,
+			User: &User{ID: 7, Status: StatusActive, Role: RoleUser, Balance: 10, Concurrency: 1},
+		}, nil
+	}}
+	svc := NewAPIKeyService(repo, nil, nil, nil, nil, nil, cfg)
+
+	apiKey, err := svc.GetByKey(context.Background(), rawKey)
+	require.NoError(t, err)
+	require.Equal(t, rawKey, apiKey.Key)
+	require.Equal(t, []string{expectedHash}, lookups)
+}
+
+func TestAPIKeyService_UpdateInvalidatesHashedAuthCacheEntry(t *testing.T) {
+	const rawKey = "sk-update-hashed-cache-key"
+	cfg := &config.Config{
+		JWT: config.JWTConfig{Secret: "stable-test-secret"},
+		APIKeyAuth: config.APIKeyAuthCacheConfig{
+			L1Size:             100,
+			L1TTLSeconds:       60,
+			L2TTLSeconds:       60,
+			NegativeTTLSeconds: 30,
+		},
+	}
+	storedHash := HashAPIKeyWithConfig(rawKey, cfg)
+	storedPlaceholder := apiKeyStoragePlaceholder(storedHash, apiKeyDisplayPrefix(rawKey))
+	apiKey := &APIKey{
+		ID: 17, UserID: 7, Key: storedPlaceholder, KeyHash: storedHash, Status: StatusActive,
+		User: &User{ID: 7, Status: StatusActive, Role: RoleUser, Balance: 10, Concurrency: 1},
+	}
+	repo := &authRepoStub{
+		getByKeyForAuth: func(ctx context.Context, key string) (*APIKey, error) {
+			require.Equal(t, storedHash, key)
+			copy := *apiKey
+			return &copy, nil
+		},
+		getByID: func(ctx context.Context, id int64) (*APIKey, error) {
+			require.Equal(t, int64(17), id)
+			copy := *apiKey
+			return &copy, nil
+		},
+		update: func(ctx context.Context, updated *APIKey) error {
+			apiKey.Status = updated.Status
+			return nil
+		},
+	}
+	cache := &authCacheStub{}
+	svc := NewAPIKeyService(repo, nil, nil, nil, nil, cache, cfg)
+
+	_, err := svc.GetByKey(context.Background(), rawKey)
+	require.NoError(t, err)
+	svc.authCacheL1.Wait()
+	cacheKey := svc.authCacheKey(rawKey)
+	_, cached := svc.authCacheL1.Get(cacheKey)
+	require.True(t, cached)
+
+	disabled := StatusDisabled
+	_, err = svc.Update(context.Background(), 17, 7, UpdateAPIKeyRequest{Status: &disabled})
+	require.NoError(t, err)
+	svc.authCacheL1.Wait()
+	_, cached = svc.authCacheL1.Get(cacheKey)
+	require.False(t, cached)
+	require.Contains(t, cache.deleteAuthKeys, cacheKey)
 }
 
 func TestAPIKeyService_GetByKey_UsesL1Cache(t *testing.T) {

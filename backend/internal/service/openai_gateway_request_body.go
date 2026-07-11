@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
@@ -251,12 +252,18 @@ func resolveOpenAICompactSessionID(c *gin.Context, bodies ...[]byte) string {
 	return uuid.NewString()
 }
 
-func (s *OpenAIGatewayService) maybeGzipCompressBody(body []byte) ([]byte, bool) {
+func (s *OpenAIGatewayService) maybeGzipCompressBody(body []byte, targetURL string) ([]byte, bool) {
 	if s == nil || s.cfg == nil || !s.cfg.Gateway.UpstreamRequestGzip || len(body) <= gzipCompressThreshold {
 		return body, false
 	}
+	if !upstreamRequestGzipHostAllowed(targetURL, s.cfg.Gateway.UpstreamRequestGzipHosts) {
+		return body, false
+	}
 	var compressed bytes.Buffer
-	gz := gzip.NewWriter(&compressed)
+	gz, err := gzip.NewWriterLevel(&compressed, gzip.BestSpeed)
+	if err != nil {
+		return body, false
+	}
 	if _, err := gz.Write(body); err != nil {
 		_ = gz.Close()
 		return body, false
@@ -268,6 +275,38 @@ func (s *OpenAIGatewayService) maybeGzipCompressBody(body []byte) ([]byte, bool)
 		return body, false
 	}
 	return compressed.Bytes(), true
+}
+
+func upstreamRequestGzipHostAllowed(targetURL string, allowedHosts []string) bool {
+	if len(allowedHosts) == 0 {
+		return true
+	}
+	target, err := url.Parse(strings.TrimSpace(targetURL))
+	if err != nil {
+		return false
+	}
+	targetHost := strings.ToLower(strings.TrimSuffix(target.Hostname(), "."))
+	if targetHost == "" {
+		return false
+	}
+	for _, allowed := range allowedHosts {
+		allowed = strings.TrimSpace(allowed)
+		if allowed == "" {
+			continue
+		}
+		if !strings.Contains(allowed, "://") {
+			allowed = "//" + allowed
+		}
+		parsed, parseErr := url.Parse(allowed)
+		if parseErr != nil {
+			continue
+		}
+		allowedHost := strings.ToLower(strings.TrimSuffix(parsed.Hostname(), "."))
+		if allowedHost != "" && targetHost == allowedHost {
+			return true
+		}
+	}
+	return false
 }
 
 func openAIResponsesRequestPathSuffix(c *gin.Context) string {

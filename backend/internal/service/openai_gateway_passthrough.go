@@ -314,7 +314,7 @@ func (s *OpenAIGatewayService) buildUpstreamRequestOpenAIPassthrough(
 	}
 	targetURL = appendOpenAIResponsesRequestPathSuffix(targetURL, openAIResponsesRequestPathSuffix(c))
 
-	wireBody, gzipCompressed := s.maybeGzipCompressBody(body)
+	wireBody, gzipCompressed := s.maybeGzipCompressBody(body, targetURL)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, targetURL, bytes.NewReader(wireBody))
 	if err != nil {
 		return nil, err

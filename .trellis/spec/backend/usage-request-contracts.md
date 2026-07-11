@@ -119,8 +119,11 @@ The usage route returns only proven usage/billing facts and leaves error explana
 - `attempt_timeline` is serialized only when `retry_count > 0` or `account_switch_count > 0`, is capped at 32 sanitized events, and reuses the upstream error sanitizer.
 - Normal single-attempt successes keep `attempt_timeline` null/empty.
 - Diagnostic collection, sanitization, or serialization failures are fail-open for forwarding and billing.
+- Upstream request gzip is opt-in and limited to upstreams verified to accept `Content-Encoding: gzip`. Production canaries use exact hostnames; a verified host does not imply support for arbitrary subdomains.
+- Payload-shape investigation remains scalar-only. Do not persist request bodies, image URLs, MIME types, content hashes, tool output, or `encrypted_content`; the gateway must not delete or rewrite opaque request content merely to reduce transfer size.
 - The admin detail DTO may expose diagnostic fields. User usage DTOs and exports must not expose route fingerprints, proxy snapshots, attempt timelines, or admin-only phase timings.
-- The existing admin usage view owns four tabs: usage rows, errors, user ranking, and request records. Request records reuse the same usage list rows and diagnostics drawer; they do not create another route, sidebar entry, API, or persistence ledger.
+- The existing admin usage view owns four tabs: usage rows, errors, user ranking, and request records. Request records reuse the same usage list rows and render the route/timing/status summary as configurable inline columns; they do not require a per-row drawer action or create another route, sidebar entry, API, or persistence ledger. The ordinary usage tab may retain its diagnostics drawer for the full attempt timeline.
+- Request-record column visibility is client-local UI state. User and request-start time remain visible; optional columns are persisted under `usage-diagnostics-hidden-columns`, and the column-settings control is placed immediately before refresh.
 - Diagnostic route/proxy/latency query parameters remain supported by the admin API but are not rendered in the main usage filter bar. The visible filter bar stays focused on user, API key, model, group, and account.
 - Diagnostic rows follow the existing usage retention policy; no separate high-volume event table is introduced.
 - Handwritten usage insert/select contracts must remain atomic: `usageLogInsertArgTypes`, every SQL column/value list, `prepareUsageLogInsert().args`, and `usageLogSelectColumns`/scan order are updated together. Batch capacities and test argument counts derive from `len(usageLogInsertArgTypes)` rather than a historical literal.
@@ -148,7 +151,7 @@ The usage route returns only proven usage/billing facts and leaves error explana
 - Repository tests must cover all insert paths, arg/type count equality, JSON round trip, nullable historical rows, filter SQL, and scan order.
 - Handler tests must cover admin authorization through route registration, invalid detail IDs, not found, filter parsing, and exact request-ID correlation.
 - DTO tests must marshal both admin and user responses and assert diagnostic fields exist only in the admin contract.
-- Frontend tests must cover loading/error/empty states, null timing rendering, retry/switch indicators, the request-records tab and columns, drawer detail loading, and the errors-tab request-ID action.
+- Frontend tests must cover loading/error/empty states, null timing rendering, retry/switch indicators, inline request-record columns, persisted column toggles, drawer detail loading from the ordinary usage tab, and the errors-tab request-ID action.
 - Full verification includes `go test ./...`, `go vet ./...`, frontend full tests, type-check, lint, production build, migration coverage, secret scan, and `git diff --check`.
 
 ### 7. Wrong vs Correct

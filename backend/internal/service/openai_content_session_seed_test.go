@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -117,7 +118,7 @@ func TestMaybeGzipCompressBody_Disabled(t *testing.T) {
 	for i := range body {
 		body[i] = byte('a' + i%26)
 	}
-	compressed, ok := svc.maybeGzipCompressBody(body)
+	compressed, ok := svc.maybeGzipCompressBody(body, "https://xcpcai.com/v1/responses")
 	require.False(t, ok)
 	require.Equal(t, body, compressed)
 }
@@ -125,7 +126,7 @@ func TestMaybeGzipCompressBody_Disabled(t *testing.T) {
 func TestMaybeGzipCompressBody_SmallBody(t *testing.T) {
 	svc := &OpenAIGatewayService{cfg: &config.Config{Gateway: config.GatewayConfig{UpstreamRequestGzip: true}}}
 	body := []byte(`{"model":"gpt-5.5"}`) // < 1KB
-	compressed, ok := svc.maybeGzipCompressBody(body)
+	compressed, ok := svc.maybeGzipCompressBody(body, "https://xcpcai.com/v1/responses")
 	require.False(t, ok, "small body should not be compressed")
 	require.Equal(t, body, compressed)
 }
@@ -142,9 +143,25 @@ func TestMaybeGzipCompressBody_LargeBody(t *testing.T) {
 	body := []byte(sb.String())
 	require.Greater(t, len(body), gzipCompressThreshold)
 
-	compressed, ok := svc.maybeGzipCompressBody(body)
+	compressed, ok := svc.maybeGzipCompressBody(body, "https://xcpcai.com/v1/responses")
 	require.True(t, ok, "large compressible body should be compressed")
 	require.Less(t, len(compressed), len(body), "compressed size should be smaller")
+}
+
+func TestMaybeGzipCompressBody_ExactHostAllowlist(t *testing.T) {
+	svc := &OpenAIGatewayService{cfg: &config.Config{Gateway: config.GatewayConfig{
+		UpstreamRequestGzip:      true,
+		UpstreamRequestGzipHosts: []string{"xcpcai.com"},
+	}}}
+	body := bytes.Repeat([]byte(`{"input":"aaaaaaaaaaaaaaaa"}`), 200)
+
+	compressed, ok := svc.maybeGzipCompressBody(body, "https://xcpcai.com/v1/responses")
+	require.True(t, ok)
+	require.Less(t, len(compressed), len(body))
+
+	uncompressed, ok := svc.maybeGzipCompressBody(body, "https://k12.xcpcai.com/v1/responses")
+	require.False(t, ok)
+	require.Equal(t, body, uncompressed)
 }
 
 func TestResolveOpenAICompactSessionID_StableSameBody(t *testing.T) {

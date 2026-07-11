@@ -227,6 +227,17 @@ func TestLoadOpenAIHTTP2DisabledFromEnv(t *testing.T) {
 	require.False(t, cfg.Gateway.OpenAIHTTP2.Enabled)
 }
 
+func TestLoadUpstreamRequestGzipHostsFromEnv(t *testing.T) {
+	resetViperWithJWTSecret(t)
+	t.Setenv("GATEWAY_UPSTREAM_REQUEST_GZIP", "true")
+	t.Setenv("GATEWAY_UPSTREAM_REQUEST_GZIP_HOSTS", "xcpcai.com,api.example.com")
+
+	cfg, err := Load()
+	require.NoError(t, err)
+	require.True(t, cfg.Gateway.UpstreamRequestGzip)
+	require.Equal(t, []string{"xcpcai.com", "api.example.com"}, cfg.Gateway.UpstreamRequestGzipHosts)
+}
+
 func TestLoadDefaultOpenAIResponseHeaderTimeoutUnlimited(t *testing.T) {
 	resetViperWithJWTSecret(t)
 
