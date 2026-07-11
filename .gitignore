@@ -137,6 +137,7 @@ docs/*
 !docs/PAYMENT.md
 !docs/PAYMENT_CN.md
 !docs/ADMIN_PAYMENT_INTEGRATION_API.md
+!docs/ARCHITECTURE_AND_API.md
 !docs/product-commercialization-audit.md
 !docs/production-readiness-checklist.md
 !docs/p0-2-production-readiness-report.md
