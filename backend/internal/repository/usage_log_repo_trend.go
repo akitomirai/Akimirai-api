@@ -13,6 +13,9 @@ import (
 // TrendDataPoint represents a single point in trend data
 type TrendDataPoint = usagestats.TrendDataPoint
 
+// ModelUsageTrendPoint represents a model-aware usage trend point.
+type ModelUsageTrendPoint = usagestats.ModelUsageTrendPoint
+
 // ModelStat represents usage statistics for a single model
 type ModelStat = usagestats.ModelStat
 
@@ -263,6 +266,110 @@ func (r *usageLogRepository) GetUserUsageTrendByUserID(ctx context.Context, user
 // GetUserModelStats 获取指定用户的模型统计
 func (r *usageLogRepository) GetUserModelStats(ctx context.Context, userID int64, startTime, endTime time.Time) (results []ModelStat, err error) {
 	return r.getModelStatsWithFiltersBySource(ctx, startTime, endTime, userID, 0, 0, 0, "", nil, nil, nil, usagestats.ModelSourceRequested, "")
+}
+
+// GetModelUsageTrendWithUsageFilters returns a bounded model-aware trend for a user dashboard.
+func (r *usageLogRepository) GetModelUsageTrendWithUsageFilters(ctx context.Context, startTime, endTime time.Time, granularity string, filters UsageLogFilters, limit int) (results []ModelUsageTrendPoint, err error) {
+	if limit <= 0 {
+		limit = 8
+	}
+	if limit > 12 {
+		limit = 12
+	}
+
+	dateFormat := safeDateFormat(granularity)
+	modelExpr := resolveModelDimensionExpressionWithAlias(usagestats.ModelSourceRequested, "ul")
+	query := fmt.Sprintf(`
+		WITH filtered AS (
+			SELECT
+				TO_CHAR(ul.created_at, '%s') AS date,
+				COALESCE(NULLIF(TRIM(%s), ''), 'unknown') AS model,
+				1::bigint AS requests,
+				COALESCE(ul.input_tokens, 0) AS input_tokens,
+				COALESCE(ul.output_tokens, 0) AS output_tokens,
+				COALESCE(ul.cache_creation_tokens, 0) AS cache_creation_tokens,
+				COALESCE(ul.cache_read_tokens, 0) AS cache_read_tokens,
+				COALESCE(ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens, 0) AS total_tokens,
+				COALESCE(ul.total_cost, 0) AS cost,
+				COALESCE(ul.actual_cost, 0) AS actual_cost
+			FROM usage_logs ul
+			WHERE ul.created_at >= $1 AND ul.created_at < $2
+	`, dateFormat, modelExpr)
+
+	args := []any{startTime, endTime}
+	if filters.UserID > 0 {
+		query += fmt.Sprintf(" AND ul.user_id = $%d", len(args)+1)
+		args = append(args, filters.UserID)
+	}
+	if filters.APIKeyID > 0 {
+		query += fmt.Sprintf(" AND ul.api_key_id = $%d", len(args)+1)
+		args = append(args, filters.APIKeyID)
+	}
+	if filters.AccountID > 0 {
+		query += fmt.Sprintf(" AND ul.account_id = $%d", len(args)+1)
+		args = append(args, filters.AccountID)
+	}
+	if filters.GroupID > 0 {
+		query += fmt.Sprintf(" AND ul.group_id = $%d", len(args)+1)
+		args = append(args, filters.GroupID)
+	}
+	if strings.TrimSpace(filters.Model) != "" {
+		query += fmt.Sprintf(" AND %s = $%d", modelExpr, len(args)+1)
+		args = append(args, filters.Model)
+	}
+	query, args = appendRequestTypeOrStreamQueryFilter(query, args, filters.RequestType, filters.Stream)
+	if filters.BillingType != nil {
+		query += fmt.Sprintf(" AND ul.billing_type = $%d", len(args)+1)
+		args = append(args, int16(*filters.BillingType))
+	}
+	query, args = appendUsageLogBillingModeQueryFilter(query, args, filters.BillingMode, "ul")
+
+	limitPlaceholder := fmt.Sprintf("$%d", len(args)+1)
+	args = append(args, limit)
+	query += fmt.Sprintf(`
+		), ranked_models AS (
+			SELECT
+				model,
+				ROW_NUMBER() OVER (ORDER BY SUM(actual_cost) DESC, model ASC) AS model_rank
+			FROM filtered
+			GROUP BY model
+			ORDER BY SUM(actual_cost) DESC, model ASC
+			LIMIT %s
+		), bucketed AS (
+			SELECT
+				f.date,
+				COALESCE(rm.model, '') AS model,
+				(rm.model IS NULL) AS is_other,
+				COALESCE(rm.model_rank, %d) AS model_rank,
+				SUM(f.requests) AS requests,
+				SUM(f.total_tokens) AS total_tokens,
+				SUM(f.cost) AS cost,
+				SUM(f.actual_cost) AS actual_cost
+			FROM filtered f
+			LEFT JOIN ranked_models rm ON rm.model = f.model
+			GROUP BY f.date, rm.model, rm.model_rank
+		)
+		SELECT date, model, is_other, requests, total_tokens, cost, actual_cost
+		FROM bucketed
+		ORDER BY model_rank ASC, date ASC
+	`, limitPlaceholder, limit+1)
+
+	rows, err := r.sql.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+			results = nil
+		}
+	}()
+
+	results, err = scanModelUsageTrendRows(rows)
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
 }
 
 // GetUsageTrendWithFilters returns usage trend data with optional filters
@@ -842,6 +949,29 @@ func scanTrendRows(rows *sql.Rows) ([]TrendDataPoint, error) {
 			&row.OutputTokens,
 			&row.CacheCreationTokens,
 			&row.CacheReadTokens,
+			&row.TotalTokens,
+			&row.Cost,
+			&row.ActualCost,
+		); err != nil {
+			return nil, err
+		}
+		results = append(results, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func scanModelUsageTrendRows(rows *sql.Rows) ([]ModelUsageTrendPoint, error) {
+	results := make([]ModelUsageTrendPoint, 0)
+	for rows.Next() {
+		var row ModelUsageTrendPoint
+		if err := rows.Scan(
+			&row.Date,
+			&row.Model,
+			&row.IsOther,
+			&row.Requests,
 			&row.TotalTokens,
 			&row.Cost,
 			&row.ActualCost,

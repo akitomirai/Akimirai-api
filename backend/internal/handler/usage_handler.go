@@ -512,6 +512,52 @@ func (h *UsageHandler) DashboardModels(c *gin.Context) {
 	})
 }
 
+// DashboardModelTrend handles requested-model usage trends for the user dashboard.
+// GET /api/v1/usage/dashboard/model-trend
+func (h *UsageHandler) DashboardModelTrend(c *gin.Context) {
+	parsed, ok := h.parseUserUsageFilters(c, true)
+	if !ok {
+		return
+	}
+
+	modelSource := strings.TrimSpace(c.Query("model_source"))
+	if modelSource != "" && modelSource != usagestats.ModelSourceRequested {
+		response.BadRequest(c, "Invalid model_source, user usage only supports requested")
+		return
+	}
+
+	granularity := strings.TrimSpace(c.DefaultQuery("granularity", "day"))
+	if granularity != "hour" {
+		granularity = "day"
+	}
+	trend, err := h.usageService.GetModelUsageTrendWithFilters(c.Request.Context(), parsed.StartTime, parsed.EndTime, granularity, parsed.Filters, 8)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	models := make([]string, 0, 8)
+	seen := make(map[string]struct{}, 8)
+	for _, point := range trend {
+		if point.IsOther || point.Model == "" {
+			continue
+		}
+		if _, exists := seen[point.Model]; exists {
+			continue
+		}
+		seen[point.Model] = struct{}{}
+		models = append(models, point.Model)
+	}
+
+	response.Success(c, gin.H{
+		"trend":       trend,
+		"models":      models,
+		"start_date":  parsed.StartTime.Format("2006-01-02"),
+		"end_date":    parsed.EndTime.Add(-24 * time.Hour).Format("2006-01-02"),
+		"granularity": granularity,
+	})
+}
+
 // DashboardSnapshotV2 returns usage-page chart data scoped to the current user.
 // GET /api/v1/usage/dashboard/snapshot-v2
 func (h *UsageHandler) DashboardSnapshotV2(c *gin.Context) {

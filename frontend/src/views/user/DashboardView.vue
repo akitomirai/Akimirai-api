@@ -24,22 +24,22 @@
           {{ t('dashboard.noDataAvailable') }}
         </div>
 
-        <UserDashboardCharts
-          v-if="stats"
+        <UserDashboardFilters
           v-model:startDate="startDate"
           v-model:endDate="endDate"
           v-model:granularity="granularity"
-          :loading="loadingCharts"
-          :trend="trendData"
-          :models="modelStats"
-          @dateRangeChange="loadCharts"
-          @granularityChange="loadCharts"
+          :loading="loadingTrends"
+          @dateRangeChange="loadModelTrends"
+          @granularityChange="loadModelTrends"
           @refresh="refreshAll"
         />
 
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div class="lg:col-span-2">
-            <UserDashboardRecentUsage :data="recentUsage" :loading="loadingUsage" />
+            <UserDashboardModelTrends
+              :trend-data="modelTrendData"
+              :loading="loadingTrends"
+            />
           </div>
           <div class="lg:col-span-1">
             <UserDashboardAnnouncements />
@@ -56,13 +56,17 @@ import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import UserDashboardStats from '@/components/user/dashboard/UserDashboardStats.vue'
-import UserDashboardCharts from '@/components/user/dashboard/UserDashboardCharts.vue'
-import UserDashboardRecentUsage from '@/components/user/dashboard/UserDashboardRecentUsage.vue'
+import UserDashboardFilters from '@/components/user/dashboard/UserDashboardFilters.vue'
+import UserDashboardModelTrends from '@/components/user/dashboard/UserDashboardModelTrends.vue'
 import UserDashboardAnnouncements from '@/components/user/dashboard/UserDashboardAnnouncements.vue'
 import { useAuthStore } from '@/stores'
-import { usageAPI, type UserDashboardStats as UserStatsType } from '@/api/usage'
+import {
+  usageAPI,
+  type ModelUsageTrendPoint,
+  type UserDashboardStats as UserStatsType,
+} from '@/api/usage'
 import { getMyPlatformQuotas } from '@/api/user'
-import type { ModelStat, PlatformQuotaItem, TrendDataPoint, UsageLog } from '@/types'
+import type { PlatformQuotaItem } from '@/types'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -70,13 +74,10 @@ const user = computed(() => authStore.user)
 
 const stats = ref<UserStatsType | null>(null)
 const loading = ref(false)
-const loadingUsage = ref(false)
-const loadingCharts = ref(false)
+const loadingTrends = ref(false)
 const dashboardError = ref(false)
 
-const trendData = ref<TrendDataPoint[]>([])
-const modelStats = ref<ModelStat[]>([])
-const recentUsage = ref<UsageLog[]>([])
+const modelTrendData = ref<ModelUsageTrendPoint[]>([])
 const platformQuotas = ref<PlatformQuotaItem[] | null>(null)
 
 const formatLocalDate = (d: Date) => d.toISOString().split('T')[0]
@@ -104,41 +105,21 @@ const loadStats = async () => {
   }
 }
 
-const loadCharts = async () => {
-  loadingCharts.value = true
+const loadModelTrends = async () => {
+  loadingTrends.value = true
   try {
-    const [trend, models] = await Promise.all([
-      usageAPI.getDashboardTrend({
-        start_date: startDate.value,
-        end_date: endDate.value,
-        granularity: granularity.value
-      }),
-      usageAPI.getDashboardModels({
-        start_date: startDate.value,
-        end_date: endDate.value
-      })
-    ])
-    trendData.value = trend.trend || []
-    modelStats.value = models.models || []
+    const response = await usageAPI.getDashboardModelTrend({
+      start_date: startDate.value,
+      end_date: endDate.value,
+      granularity: granularity.value,
+      model_source: 'requested',
+    })
+    modelTrendData.value = response.trend || []
   } catch (error) {
-    console.error('Failed to load charts:', error instanceof Error ? error.message : error)
-    trendData.value = []
-    modelStats.value = []
+    console.error('Failed to load model trends:', error instanceof Error ? error.message : error)
+    modelTrendData.value = []
   } finally {
-    loadingCharts.value = false
-  }
-}
-
-const loadRecent = async () => {
-  loadingUsage.value = true
-  try {
-    const res = await usageAPI.getByDateRange(startDate.value, endDate.value)
-    recentUsage.value = res.items.slice(0, 5)
-  } catch (error) {
-    console.error('Failed to load recent usage:', error instanceof Error ? error.message : error)
-    recentUsage.value = []
-  } finally {
-    loadingUsage.value = false
+    loadingTrends.value = false
   }
 }
 
@@ -154,8 +135,7 @@ const loadPlatformQuotas = async () => {
 
 const refreshAll = () => {
   loadStats()
-  loadCharts()
-  loadRecent()
+  loadModelTrends()
   loadPlatformQuotas()
 }
 

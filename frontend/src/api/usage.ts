@@ -83,6 +83,24 @@ export interface ModelStatsResponse {
   end_date: string
 }
 
+export interface ModelUsageTrendPoint {
+  date: string
+  model: string
+  is_other: boolean
+  requests: number
+  total_tokens: number
+  cost: number
+  actual_cost: number
+}
+
+export interface ModelUsageTrendResponse {
+  trend: ModelUsageTrendPoint[]
+  models: string[]
+  start_date: string
+  end_date: string
+  granularity: string
+}
+
 export interface ApiKeyDailyUsagePoint {
   date: string
   requests: number
@@ -297,6 +315,18 @@ export async function getDashboardModels(params?: {
 }
 
 /**
+ * Get requested-model usage trend data for the user dashboard.
+ * @param params - Query parameters for filtering
+ * @returns Usage trend data grouped by model and time bucket
+ */
+export async function getDashboardModelTrend(
+  params?: TrendParams & { model_source?: 'requested' }
+): Promise<ModelUsageTrendResponse> {
+  const { data } = await apiClient.get<ModelUsageTrendResponse>('/usage/dashboard/model-trend', { params })
+  return data
+}
+
+/**
  * Get daily usage details for one API key owned by the current user.
  * @param apiKeyId - API key ID
  * @param days - Number of days to include (1-90)
@@ -382,6 +412,7 @@ export const usageAPI = {
   getDashboardStats,
   getDashboardTrend,
   getDashboardModels,
+  getDashboardModelTrend,
   getMyApiKeyDailyUsage,
   getDashboardSnapshotV2,
   getDashboardApiKeysUsage,
