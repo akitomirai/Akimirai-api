@@ -1199,42 +1199,10 @@
                   <p class="mb-2 text-xs text-gray-400 dark:text-gray-500">
                     {{ t("admin.settings.openaiFastPolicy.userIdsHint") }}
                   </p>
-                  <div
-                    v-for="(_, userIDIndex) in rule.user_ids || []"
-                    :key="userIDIndex"
-                    class="mb-1.5 flex items-center gap-2"
-                  >
-                    <input
-                      v-model.number="rule.user_ids![userIDIndex]"
-                      type="number"
-                      min="1"
-                      step="1"
-                      class="input input-sm min-w-0 flex-1"
-                      :placeholder="
-                        t('admin.settings.openaiFastPolicy.userIdPlaceholder')
-                      "
-                    />
-                    <button
-                      type="button"
-                      class="shrink-0 rounded p-1 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
-                      :title="
-                        t('admin.settings.openaiFastPolicy.removeUserId')
-                      "
-                      @click="
-                        removeOpenAIFastPolicyUserID(rule, userIDIndex)
-                      "
-                    >
-                      <Icon name="x" size="xs" />
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    class="mb-2 inline-flex items-center gap-1 text-xs text-primary-600 transition-colors hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-                    @click="addOpenAIFastPolicyUserID(rule)"
-                  >
-                    <Icon name="plus" size="xs" />
-                    {{ t("admin.settings.openaiFastPolicy.addUserId") }}
-                  </button>
+                  <OpenAIFastPolicyUserSelector
+                    :model-value="rule.user_ids || []"
+                    @update:model-value="rule.user_ids = $event"
+                  />
                 </div>
 
                 <!-- Error Message (only when action=block) -->
@@ -7413,6 +7381,7 @@ import ProxySelector from "@/components/common/ProxySelector.vue";
 import ImageUpload from "@/components/common/ImageUpload.vue";
 import BackupSettings from "@/views/admin/BackupView.vue";
 import EmailTemplateEditor from "@/views/admin/settings/EmailTemplateEditor.vue";
+import OpenAIFastPolicyUserSelector from "@/views/admin/settings/OpenAIFastPolicyUserSelector.vue";
 import { useClipboard } from "@/composables/useClipboard";
 import { affiliatesAPI, type AffiliateAdminEntry, type SimpleUser as AffiliateSimpleUser } from "@/api/admin/affiliates";
 import { extractApiErrorMessage, extractI18nErrorMessage } from "@/utils/apiError";
@@ -10217,18 +10186,6 @@ function addOpenAIFastPolicyRule() {
 
 function removeOpenAIFastPolicyRule(index: number) {
   openaiFastPolicyForm.rules.splice(index, 1);
-}
-
-function addOpenAIFastPolicyUserID(rule: OpenAIFastPolicyRule) {
-  if (!rule.user_ids) rule.user_ids = [];
-  rule.user_ids.push(0);
-}
-
-function removeOpenAIFastPolicyUserID(
-  rule: OpenAIFastPolicyRule,
-  index: number,
-) {
-  rule.user_ids?.splice(index, 1);
 }
 
 function addOpenAIFastPolicyModelPattern(rule: OpenAIFastPolicyRule) {
