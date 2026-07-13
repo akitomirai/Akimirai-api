@@ -602,7 +602,7 @@ import { adminAPI } from '@/api/admin'
 import type { Account, AccountUsageInfo, GeminiCredentials, WindowStats } from '@/types'
 import { buildOpenAIUsageRefreshKey } from '@/utils/accountUsageRefresh'
 import { enqueueUsageRequest } from '@/utils/usageLoadQueue'
-import { formatCompactNumber, formatRelativeTime } from '@/utils/format'
+import { formatCompactNumber, formatRelativeTime, formatTokenCount } from '@/utils/format'
 import UsageProgressBar from './UsageProgressBar.vue'
 import AccountQuotaInfo from './AccountQuotaInfo.vue'
 import OpenAIQuotaResetCell from './OpenAIQuotaResetCell.vue'
@@ -1092,7 +1092,7 @@ const grokRetryAfterLabel = computed(() => {
 })
 
 const formatWindowRequests = (stats: WindowStats) => formatCompactNumber(stats.requests, { allowBillions: false })
-const formatWindowTokens = (stats: WindowStats) => formatCompactNumber(stats.tokens)
+const formatWindowTokens = (stats: WindowStats) => formatTokenCount(stats.tokens)
 const formatWindowCost = (stats: WindowStats) => stats.cost.toFixed(2)
 const formatWindowUserCost = (stats: WindowStats) => (stats.user_cost ?? 0).toFixed(2)
 
@@ -1361,7 +1361,7 @@ const formatKeyRequests = computed(() => {
 
 const formatKeyTokens = computed(() => {
   if (!props.todayStats) return ''
-  return formatCompactNumber(props.todayStats.tokens)
+  return formatTokenCount(props.todayStats.tokens)
 })
 
 const formatKeyCost = computed(() => {

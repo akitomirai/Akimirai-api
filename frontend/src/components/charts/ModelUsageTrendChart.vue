@@ -10,12 +10,82 @@
       <LoadingSpinner size="md" />
     </div>
 
-    <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
-      {{ title }}
-    </h3>
+    <div class="mb-3 flex min-h-9 flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+        {{ title }}
+      </h3>
 
-    <div v-if="chartData" class="h-64 sm:h-72">
-      <Line :data="chartData" :options="chartOptions" />
+      <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+        <div
+          class="inline-flex shrink-0 rounded-md border border-gray-200 bg-gray-50 p-0.5 dark:border-dark-600 dark:bg-dark-700"
+          role="group"
+          :aria-label="t('dashboard.metricType')"
+        >
+          <button
+            v-for="option in metricOptions"
+            :key="option.value"
+            type="button"
+            class="inline-flex h-7 items-center rounded px-2 text-xs font-medium transition-colors"
+            :class="selectedMetric === option.value
+              ? 'bg-white text-primary-600 shadow-sm dark:bg-dark-600 dark:text-primary-400'
+              : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100'"
+            :aria-pressed="selectedMetric === option.value"
+            :title="option.label"
+            :data-testid="`model-trend-metric-${option.value}`"
+            @click="selectedMetric = option.value"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+
+        <div
+          class="inline-flex shrink-0 rounded-md border border-gray-200 bg-gray-50 p-0.5 dark:border-dark-600 dark:bg-dark-700"
+          role="group"
+          :aria-label="t('dashboard.chartType')"
+        >
+          <button
+            type="button"
+            class="inline-flex h-7 items-center gap-1 rounded px-2 text-xs font-medium transition-colors"
+            :class="chartType === 'bar'
+              ? 'bg-white text-primary-600 shadow-sm dark:bg-dark-600 dark:text-primary-400'
+              : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100'"
+            :aria-pressed="chartType === 'bar'"
+            :title="t('dashboard.barChart')"
+            data-testid="model-trend-chart-bar"
+            @click="chartType = 'bar'"
+          >
+            <Icon name="chartBar" size="xs" />
+            <span>{{ t('dashboard.barChart') }}</span>
+          </button>
+          <button
+            type="button"
+            class="inline-flex h-7 items-center gap-1 rounded px-2 text-xs font-medium transition-colors"
+            :class="chartType === 'area'
+              ? 'bg-white text-primary-600 shadow-sm dark:bg-dark-600 dark:text-primary-400'
+              : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100'"
+            :aria-pressed="chartType === 'area'"
+            :title="t('dashboard.areaChart')"
+            data-testid="model-trend-chart-area"
+            @click="chartType = 'area'"
+          >
+            <Icon name="trendingUp" size="xs" />
+            <span>{{ t('dashboard.areaChart') }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="chartData" class="h-72 sm:h-80">
+      <Bar
+        v-if="chartType === 'bar'"
+        :data="chartData"
+        :options="chartOptions"
+      />
+      <Line
+        v-else
+        :data="chartData"
+        :options="chartOptions"
+      />
     </div>
     <div
       v-else
@@ -29,8 +99,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Line } from 'vue-chartjs'
+import { Bar, Line } from 'vue-chartjs'
 import {
+  BarElement,
   CategoryScale,
   Chart as ChartJS,
   Filler,
@@ -41,22 +112,49 @@ import {
   Tooltip,
 } from 'chart.js'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import type { ModelUsageTrendPoint } from '@/api/usage'
-import { formatCostFixed, formatNumberLocaleString } from '@/utils/format'
+import Icon from '@/components/icons/Icon.vue'
+import type { ModelUsageTrendGranularity, ModelUsageTrendPoint } from '@/api/usage'
+import { formatCostFixed, formatTokenCount } from '@/utils/format'
+import {
+  completeModelUsageBuckets,
+  createModelUsageTickFormatter,
+} from './modelUsageTrendAxis'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler)
+ChartJS.register(
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+  Filler,
+)
 
-type Metric = 'actual_cost' | 'requests'
+type Metric = 'total_tokens' | 'cost' | 'actual_cost'
+type ChartType = 'bar' | 'area'
 
 const props = withDefaults(defineProps<{
   trendData: ModelUsageTrendPoint[]
   metric: Metric
+  granularity: ModelUsageTrendGranularity
+  rangeStart?: string | null
+  rangeEnd?: string | null
+  timezone?: string
   loading?: boolean
 }>(), {
   loading: false,
 })
 
 const { t } = useI18n()
+const chartType = ref<ChartType>('area')
+const selectedMetric = ref<Metric>(props.metric)
+
+const metricOptions = computed<Array<{ value: Metric; label: string }>>(() => [
+  { value: 'total_tokens', label: t('dashboard.tokens') },
+  { value: 'cost', label: t('dashboard.quotaConsumption') },
+  { value: 'actual_cost', label: t('dashboard.actualConsumption') },
+])
 
 const colors = [
   '#7c3aed',
@@ -72,7 +170,7 @@ const colors = [
 
 const title = computed(() => props.metric === 'actual_cost'
   ? t('dashboard.spendingDistribution')
-  : t('dashboard.callTrend'))
+  : t('dashboard.tokenUsageTrend'))
 
 const readDarkMode = (): boolean => typeof document !== 'undefined'
   && document.documentElement.classList.contains('dark')
@@ -121,7 +219,7 @@ const groupedData = computed(() => {
       isOther: point.is_other,
       values: new Map<string, number>(),
     }
-    const value = props.metric === 'actual_cost' ? point.actual_cost : point.requests
+    const value = point[selectedMetric.value]
     group.values.set(point.date, (group.values.get(point.date) ?? 0) + value)
     groups.set(key, group)
   }
@@ -130,7 +228,12 @@ const groupedData = computed(() => {
     .sort((a, b) => Number(a.isOther) - Number(b.isOther))
 
   return {
-    dates: Array.from(dates).sort(),
+    dates: completeModelUsageBuckets(
+      Array.from(dates),
+      props.granularity,
+      props.rangeStart,
+      props.rangeEnd,
+    ),
     groups: orderedGroups,
   }
 })
@@ -146,20 +249,28 @@ const chartData = computed(() => {
         label: group.label,
         data: groupedData.value!.dates.map((date) => group.values.get(date) ?? 0),
         borderColor: color,
-        backgroundColor: `${color}20`,
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        fill: true,
-        tension: 0.3,
+        backgroundColor: chartType.value === 'bar' ? `${color}cc` : `${color}20`,
+        borderWidth: chartType.value === 'bar' ? 1 : 2,
+        borderRadius: chartType.value === 'bar' ? 2 : 0,
+        maxBarThickness: 36,
+        pointRadius: chartType.value === 'area' ? 0 : undefined,
+        pointHoverRadius: chartType.value === 'area' ? 4 : undefined,
+        fill: chartType.value === 'area',
+        tension: chartType.value === 'area' ? 0.3 : 0,
       }
     }),
   }
 })
 
-const formatValue = (value: number): string => props.metric === 'actual_cost'
-  ? `$${formatCostFixed(value, 4)}`
-  : formatNumberLocaleString(value)
+const formatXAxisTick = computed(() => createModelUsageTickFormatter(
+  groupedData.value?.dates ?? [],
+  props.granularity,
+  props.timezone,
+))
+
+const formatValue = (value: number): string => selectedMetric.value === 'total_tokens'
+  ? formatTokenCount(value)
+  : `$${formatCostFixed(value, 4)}`
 
 const chartOptions = computed(() => ({
   responsive: true,
@@ -170,7 +281,7 @@ const chartOptions = computed(() => ({
   },
   plugins: {
     legend: {
-      position: 'top' as const,
+      position: 'bottom' as const,
       labels: {
         color: chartColors.value.text,
         usePointStyle: true,
@@ -182,22 +293,29 @@ const chartOptions = computed(() => ({
     tooltip: {
       itemSort: (a: any, b: any) => Number(b.raw ?? 0) - Number(a.raw ?? 0),
       callbacks: {
+        title: (tooltipItems: any[]) => formatXAxisTick.value(tooltipItems[0]?.dataIndex ?? -1),
         label: (context: any) => `${context.dataset.label}: ${formatValue(Number(context.raw ?? 0))}`,
       },
     },
   },
   scales: {
     x: {
+      stacked: chartType.value === 'bar',
       grid: { color: chartColors.value.grid },
       ticks: {
         color: chartColors.value.text,
         font: { size: 10 },
         maxRotation: 0,
         autoSkip: true,
+        callback: (value: string | number) => {
+          const labelIndex = typeof value === 'number' ? value : Number(value)
+          return formatXAxisTick.value(Number.isInteger(labelIndex) ? labelIndex : -1)
+        },
       },
     },
     y: {
       beginAtZero: true,
+      stacked: chartType.value === 'bar',
       grid: { color: chartColors.value.grid },
       ticks: {
         color: chartColors.value.text,

@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   deriveModelAvailabilityStatus,
+  filterModelCatalogItems,
   findCatalogModel,
   formatMultiplierRange,
+  getModelCatalogFilterOptions,
+  getModelPricingSummary,
   isModelAvailabilityErrorCode,
   selectQuickStartCatalogModel,
   toModelCatalogItems,
@@ -37,6 +40,10 @@ const catalogPayload: UserModelCatalogItem[] = [
         platform: 'openai',
         subscription_type: 'standard',
         rate_multiplier: 1.5,
+        peak_rate_enabled: false,
+        peak_start: '',
+        peak_end: '',
+        peak_rate_multiplier: 0,
         is_exclusive: false,
       },
     ],
@@ -50,6 +57,36 @@ const catalogPayload: UserModelCatalogItem[] = [
       per_request_price: null,
       intervals: [],
     },
+    offers: [
+      {
+        channel: 'channel-a',
+        platform: 'openai',
+        groups: [
+          {
+            id: 10,
+            name: 'Pro',
+            platform: 'openai',
+            subscription_type: 'standard',
+            rate_multiplier: 1.5,
+            peak_rate_enabled: true,
+            peak_start: '09:00',
+            peak_end: '12:00',
+            peak_rate_multiplier: 2,
+            is_exclusive: false,
+          },
+        ],
+        pricing: {
+          billing_mode: 'token',
+          input_price: 0.000001,
+          output_price: 0.000002,
+          cache_write_price: null,
+          cache_read_price: null,
+          image_output_price: null,
+          per_request_price: null,
+          intervals: [],
+        },
+      },
+    ],
   },
 ]
 
@@ -73,9 +110,57 @@ describe('modelCatalog', () => {
       supportsTools: true,
       supportsJson: true,
       contextWindow: 128000,
-      channelNames: ['safe-visible-channel'],
+      channelNames: ['channel-a'],
     })
     expect(formatMultiplierRange(catalog[0])).toBe('1.5x')
+    expect(catalog[0].offers[0].groups[0]).toMatchObject({
+      peakRateEnabled: true,
+      peakStart: '09:00',
+      peakEnd: '12:00',
+      peakRateMultiplier: 2,
+    })
+  })
+
+  it('keeps channel pricing associated with each offer and filters against offer data', () => {
+    const firstOffer = catalogPayload[0].offers![0]
+    const payload: UserModelCatalogItem[] = [{
+      ...catalogPayload[0],
+      offers: [
+        firstOffer,
+        {
+          ...firstOffer,
+          channel: 'channel-b',
+          groups: [{
+            ...firstOffer.groups[0],
+            id: 20,
+            name: 'Basic',
+          }],
+          pricing: {
+            ...firstOffer.pricing!,
+            input_price: 0.000003,
+            output_price: 0.000006,
+          },
+        },
+      ],
+    }]
+
+    const catalog = toModelCatalogItems(payload)
+    expect(catalog[0].offers.map((offer) => ({
+      channel: offer.channel,
+      group: offer.groups[0].name,
+      input: offer.pricing?.input_price,
+    }))).toEqual([
+      { channel: 'channel-a', group: 'Pro', input: 0.000001 },
+      { channel: 'channel-b', group: 'Basic', input: 0.000003 },
+    ])
+    expect(getModelPricingSummary(catalog[0])).toMatchObject({ kind: 'multiple', pricedOfferCount: 2 })
+    expect(filterModelCatalogItems(catalog, { group: 'Basic' })).toHaveLength(1)
+    expect(filterModelCatalogItems(catalog, { group: 'Missing' })).toHaveLength(0)
+    expect(getModelCatalogFilterOptions(catalog)).toMatchObject({
+      groups: ['Basic', 'Pro'],
+      providers: ['openai'],
+      billingModes: ['token'],
+    })
   })
 
   it('keeps status derivation conservative without faking availability', () => {

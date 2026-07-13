@@ -98,7 +98,7 @@
           <span class="min-w-0">
             <span class="font-medium">{{ t('keys.ccsImport.remoteCompaction') }}</span>
             <span class="block text-xs text-gray-500 dark:text-gray-400">
-              {{ t('keys.ccsImport.remoteCompactionNameHint') }}
+              {{ t('keys.ccsImport.remoteCompactionHint') }}
             </span>
           </span>
         </label>

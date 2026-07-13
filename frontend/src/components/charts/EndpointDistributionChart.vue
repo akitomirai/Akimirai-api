@@ -104,7 +104,7 @@
                   {{ formatNumber(item.requests) }}
                 </td>
                 <td class="py-1.5 text-right text-gray-600 dark:text-gray-400">
-                  {{ formatTokens(item.total_tokens) }}
+                  {{ formatTokenCount(item.total_tokens) }}
                 </td>
                 <td class="py-1.5 text-right text-green-600 dark:text-green-400">
                   ${{ formatCost(item.actual_cost) }}
@@ -141,6 +141,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import UserBreakdownSubTable from './UserBreakdownSubTable.vue'
 import type { EndpointStat, UserBreakdownItem } from '@/types'
 import { getUserBreakdown } from '@/api/admin/dashboard'
+import { formatTokenCount } from '@/utils/format'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
@@ -270,24 +271,13 @@ const doughnutOptions = computed(() => ({
           const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0'
           const formattedValue = props.metric === 'actual_cost'
             ? `$${formatCost(value)}`
-            : formatTokens(value)
+            : formatTokenCount(value)
           return `${context.label}: ${formattedValue} (${percentage}%)`
         }
       }
     }
   }
 }))
-
-const formatTokens = (value: number): string => {
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(2)}B`
-  } else if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(2)}M`
-  } else if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(2)}K`
-  }
-  return value.toLocaleString()
-}
 
 const formatNumber = (value: number): string => {
   return value.toLocaleString()

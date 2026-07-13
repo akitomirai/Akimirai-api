@@ -8,9 +8,10 @@
         <DateRangePicker
           :start-date="startDate"
           :end-date="endDate"
+          :preset-values="dashboardDatePresets"
           @update:start-date="emit('update:startDate', $event)"
           @update:end-date="emit('update:endDate', $event)"
-          @change="emit('dateRangeChange')"
+          @change="emit('dateRangeChange', $event)"
         />
       </div>
 
@@ -44,8 +45,11 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import Select from '@/components/common/Select.vue'
+import type { ModelUsageTrendGranularity } from '@/api/usage'
+import { dashboardDatePresets } from '@/utils/dashboardTimeRange'
 
-type Granularity = 'day' | 'hour'
+type Granularity = ModelUsageTrendGranularity
+type DateRangeChange = { startDate: string; endDate: string; preset: string | null }
 
 defineProps<{
   startDate: string
@@ -58,7 +62,7 @@ const emit = defineEmits<{
   (event: 'update:startDate', value: string): void
   (event: 'update:endDate', value: string): void
   (event: 'update:granularity', value: Granularity): void
-  (event: 'dateRangeChange'): void
+  (event: 'dateRangeChange', range: DateRangeChange): void
   (event: 'granularityChange'): void
   (event: 'refresh'): void
 }>()
@@ -66,12 +70,15 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const granularityOptions = computed(() => [
+  { value: 'hour', label: t('dashboard.oneHour') },
+  { value: '2h', label: t('dashboard.twoHours') },
+  { value: '4h', label: t('dashboard.fourHours') },
+  { value: '8h', label: t('dashboard.eightHours') },
   { value: 'day', label: t('dashboard.day') },
-  { value: 'hour', label: t('dashboard.hour') },
 ])
 
 const updateGranularity = (value: string | number | boolean | null) => {
-  if (value !== 'day' && value !== 'hour') return
+  if (value !== 'day' && value !== 'hour' && value !== '2h' && value !== '4h' && value !== '8h') return
   emit('update:granularity', value)
   emit('granularityChange')
 }

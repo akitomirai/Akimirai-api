@@ -36,7 +36,7 @@
               ${{ formatMoney(stats.today_actual_cost || 0) }}
             </p>
             <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">
-              {{ formatNumber(stats.today_tokens || 0) }} tokens · {{ formatNumber(stats.today_requests || 0) }} {{ t('dashboard.commercial.requests') }}
+              {{ formatTokenCount(stats.today_tokens || 0) }} tokens · {{ formatNumber(stats.today_requests || 0) }} {{ t('dashboard.commercial.requests') }}
             </p>
           </template>
           <p v-else class="mt-2 text-sm text-gray-500 dark:text-dark-400">
@@ -137,7 +137,7 @@
           <Icon name="key" size="sm" />
           {{ t('dashboard.commercial.createKey') }}
         </router-link>
-        <router-link class="btn btn-sm btn-secondary" to="/available-channels">
+        <router-link class="btn btn-sm btn-secondary" to="/model-plaza">
           <Icon name="server" size="sm" />
           {{ t('dashboard.commercial.viewModels') }}
         </router-link>
@@ -227,7 +227,7 @@
             class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200"
           >
             <p>{{ t('dashboard.commercial.modelAvailabilityErrorHint', 'This failure may be caused by a disabled model or no available channel. Try switching to a currently available model.') }}</p>
-            <router-link class="mt-2 inline-flex text-primary-700 hover:text-primary-800 dark:text-primary-300" to="/available-channels">
+            <router-link class="mt-2 inline-flex text-primary-700 hover:text-primary-800 dark:text-primary-300" to="/model-plaza">
               {{ t('dashboard.commercial.viewAvailableModels', 'View available models') }}
             </router-link>
           </div>
@@ -249,7 +249,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import { useClipboard } from '@/composables/useClipboard'
-import { formatDateTime } from '@/utils/format'
+import { formatDateTime, formatTokenCount } from '@/utils/format'
 import { isModelAvailabilityErrorCode } from '@/utils/modelCatalog'
 import type { UserDashboardStats as UserStatsType } from '@/api/usage'
 import type { ApiKey, UserErrorRequest } from '@/types'

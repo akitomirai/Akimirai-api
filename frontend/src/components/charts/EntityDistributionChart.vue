@@ -58,7 +58,7 @@
                 {{ item.label }}
               </td>
               <td class="py-1.5 text-right text-gray-600 dark:text-gray-400">{{ formatNumber(item.requests) }}</td>
-              <td class="py-1.5 text-right text-gray-600 dark:text-gray-400">{{ formatTokens(item.total_tokens) }}</td>
+              <td class="py-1.5 text-right text-gray-600 dark:text-gray-400">{{ formatTokenCount(item.total_tokens) }}</td>
               <td class="py-1.5 text-right text-green-600 dark:text-green-400">${{ formatCost(item.actual_cost) }}</td>
               <td v-if="showAccountCost" class="py-1.5 text-right text-orange-500 dark:text-orange-400">
                 ${{ formatCost(item.account_cost) }}
@@ -84,6 +84,7 @@ import { ArcElement, Chart as ChartJS, Legend, Tooltip } from 'chart.js'
 import type { TooltipItem } from 'chart.js'
 import { Doughnut } from 'vue-chartjs'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import { formatTokenCount } from '@/utils/format'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
@@ -155,20 +156,13 @@ const doughnutOptions = computed(() => ({
           const value = toFiniteNumber(context.raw)
           const total = context.dataset.data.reduce<number>((sum, item) => sum + toFiniteNumber(item), 0)
           const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0'
-          const formatted = props.metric === 'actual_cost' ? `$${formatCost(value)}` : formatTokens(value)
+          const formatted = props.metric === 'actual_cost' ? `$${formatCost(value)}` : formatTokenCount(value)
           return `${context.label || ''}: ${formatted} (${percentage}%)`
         },
       },
     },
   },
 }))
-
-const formatTokens = (value: number): string => {
-  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`
-  if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`
-  return toFiniteNumber(value).toLocaleString()
-}
 
 const formatNumber = (value: number): string => toFiniteNumber(value).toLocaleString()
 const formatCost = (value: number | null | undefined): string => {

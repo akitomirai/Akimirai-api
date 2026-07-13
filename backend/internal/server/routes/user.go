@@ -84,6 +84,7 @@ func RegisterUserRoutes(
 		usage := authenticated.Group("/usage")
 		{
 			usage.GET("", h.Usage.List)
+			usage.GET("/requests", h.Usage.ListRequestLogs)
 			usage.GET("/errors", h.Usage.ListErrors)
 			usage.GET("/errors/:id", h.Usage.GetErrorDetail)
 			usage.GET("/:id", h.Usage.GetByID)

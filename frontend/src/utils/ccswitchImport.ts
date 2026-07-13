@@ -1,8 +1,6 @@
 import type { GroupPlatform } from '@/types'
 
 export const OPENAI_CC_SWITCH_CODEX_MODEL = 'gpt-5.6-sol'
-export const CC_SWITCH_CODEX_CONTEXT_WINDOW = 262144
-export const CC_SWITCH_CODEX_AUTO_COMPACT_LIMIT = 240000
 
 export type CcSwitchApp = 'claude' | 'codex' | 'gemini'
 
@@ -69,8 +67,6 @@ export function buildCcSwitchImportDeeplink(input: CcSwitchImportDeeplinkInput):
   if (input.app === 'codex') {
     const configToml = `model_provider = "custom"
 model = ${JSON.stringify(input.model.trim())}
-model_context_window = ${CC_SWITCH_CODEX_CONTEXT_WINDOW}
-model_auto_compact_token_limit = ${CC_SWITCH_CODEX_AUTO_COMPACT_LIMIT}
 model_reasoning_effort = "high"
 disable_response_storage = true
 

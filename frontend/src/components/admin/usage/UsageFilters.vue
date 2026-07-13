@@ -85,6 +85,7 @@
           <DateRangePicker
             v-model:start-date="filters.start_date"
             v-model:end-date="filters.end_date"
+            :preset-values="dashboardDatePresets"
             @change="onCompactDateChange"
           />
         </div>
@@ -290,6 +291,7 @@ import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
 import Select, { type SelectOption } from '@/components/common/Select.vue'
 import { COMMON_ERROR_STATUS_CODES } from '@/utils/errorBadges'
+import { dashboardDatePresets } from '@/utils/dashboardTimeRange'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import type { SimpleApiKey, SimpleUser } from '@/api/admin/usage'
 

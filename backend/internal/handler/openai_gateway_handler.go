@@ -610,6 +610,7 @@ func isBareOpenAIResponsesPath(c *gin.Context) bool {
 func (h *OpenAIGatewayHandler) normalizeOpenAIResponsesCompactRequest(c *gin.Context, reqLog *zap.Logger, body []byte) ([]byte, bool) {
 	isCompactRequest := service.IsOpenAIResponsesCompactPathForTest(c)
 	if !isCompactRequest && isBareOpenAIResponsesPath(c) && service.HasCompactionTriggerInInput(body) {
+		service.MarkOpenAICompactBodySignal(c, body)
 		c.Request.URL.Path = strings.TrimRight(c.Request.URL.Path, "/") + "/compact"
 		isCompactRequest = true
 		// Codex remote compact v2 的原始请求是流式 /responses：白名单归一化会删除

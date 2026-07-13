@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 
 import UsageView from '../UsageView.vue'
 
-const { list, getStats, getSnapshotV2, getById, getModelStats, getUserBreakdown, listErrorLogs } = vi.hoisted(() => {
+const { list, getStats, getSnapshotV2, getById, getModelStats, getUserBreakdown, listErrorLogs, routeQuery } = vi.hoisted(() => {
   vi.stubGlobal('localStorage', {
     getItem: vi.fn(() => null),
     setItem: vi.fn(),
@@ -18,6 +18,7 @@ const { list, getStats, getSnapshotV2, getById, getModelStats, getUserBreakdown,
     getModelStats: vi.fn(),
     getUserBreakdown: vi.fn(),
     listErrorLogs: vi.fn(),
+    routeQuery: {} as Record<string, string>,
   }
 })
 
@@ -29,13 +30,6 @@ const messages: Record<string, string> = {
   'admin.users.columnSettings': 'Column settings',
   'admin.usage.diagnostics.timings': 'Stage Timings',
   'admin.usage.diagnostics.requestStartedAt': 'Request started',
-}
-
-const formatLocalDate = (date: Date): string => {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
 }
 
 vi.mock('@/api/admin', () => ({
@@ -94,9 +88,13 @@ vi.mock('vue-i18n', async () => {
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({
-    query: {}
+    query: routeQuery
   })
 }))
+
+beforeEach(() => {
+  Object.keys(routeQuery).forEach((key) => delete routeQuery[key])
+})
 
 const AppLayoutStub = { template: '<div><slot /></div>' }
 const UsageFiltersStub = { template: '<div><slot name="before-refresh" /></div>' }
@@ -243,11 +241,9 @@ describe('admin UsageView distribution metric toggles', () => {
     await flushPromises()
 
     expect(getSnapshotV2).not.toHaveBeenCalled()
-    const now = new Date()
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
     expect(getUserBreakdown).toHaveBeenCalledWith(expect.objectContaining({
-      start_date: formatLocalDate(yesterday),
-      end_date: formatLocalDate(now),
+      period: '24h',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       limit: 200,
       sort_by: 'total_tokens',
     }))
@@ -272,6 +268,37 @@ describe('admin UsageView distribution metric toggles', () => {
     expect(modelChart.find('.metric').text()).toBe('actual_cost')
     expect(userChart.find('.metric').text()).toBe('actual_cost')
     expect(getUserBreakdown).toHaveBeenCalledTimes(1)
+  })
+
+  it('preserves a dashboard rolling period when opened from ranking', async () => {
+    Object.assign(routeQuery, {
+      user_id: '7',
+      period: '48h',
+      timezone: 'America/New_York',
+    })
+
+    mount(UsageView, {
+      global: { stubs: {
+        AppLayout: AppLayoutStub, UsageStatsCards: true, UsageFilters: UsageFiltersStub,
+        UsageTable: true, UsageExportProgress: true, UsageCleanupDialog: true,
+        UserBalanceHistoryModal: true, Pagination: true, Select: true,
+        DateRangePicker: true, Icon: true, EntityDistributionChart: true,
+        ModelDistributionChart: ModelDistributionChartStub, UserTokenRanking: true,
+      } },
+    })
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+
+    expect(list).toHaveBeenCalledWith(expect.objectContaining({
+      user_id: 7,
+      period: '48h',
+      timezone: 'America/New_York',
+    }), expect.anything())
+    expect(list.mock.calls[0][0]).not.toHaveProperty('start_date')
+    expect(getStats).toHaveBeenCalledWith(expect.objectContaining({
+      period: '48h',
+      timezone: 'America/New_York',
+    }))
   })
 })
 

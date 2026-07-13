@@ -102,6 +102,19 @@ func TestDashboardTrendInvalidRequestType(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, rec.Code)
 }
 
+func TestDashboardTrendInvalidPeriod(t *testing.T) {
+	repo := &dashboardUsageRepoCapture{}
+	router := newDashboardRequestTypeTestRouter(repo)
+
+	req := httptest.NewRequest(http.MethodGet, "/admin/dashboard/trend?period=forever", nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	require.Contains(t, rec.Body.String(), "invalid period")
+	require.Nil(t, repo.trendRequestType)
+}
+
 func TestDashboardTrendInvalidStream(t *testing.T) {
 	repo := &dashboardUsageRepoCapture{}
 	router := newDashboardRequestTypeTestRouter(repo)

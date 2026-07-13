@@ -1826,6 +1826,47 @@ export interface UserErrorListParams {
   sort_order?: 'asc' | 'desc'
 }
 
+export type UserUsagePeriod = 'yesterday' | 'today' | '24h' | '48h' | '7d' | '14d' | '30d'
+export type UserRequestLogKind = 'consumption' | 'error'
+
+export interface UserRequestLog {
+  id: number
+  kind: UserRequestLogKind
+  created_at: string
+  request_id: string
+  api_key_id: number | null
+  api_key_name: string
+  api_key_deleted: boolean
+  group_id: number | null
+  group_name: string
+  rate_multiplier: number | null
+  model: string
+  reasoning_effort: string | null
+  first_token_ms: number | null
+  duration_ms: number | null
+  total_tokens: number | null
+  actual_cost: number | null
+  status_code: number | null
+  error_code: string | null
+  error_message: string | null
+}
+
+export interface UserRequestLogQueryParams {
+  page?: number
+  page_size?: number
+  kind?: 'all' | UserRequestLogKind
+  start_date?: string
+  end_date?: string
+  period?: UserUsagePeriod
+  timezone?: string
+  api_key_id?: number
+  group_id?: number
+  model?: string
+  request_id?: string
+  sort_by?: 'created_at' | 'duration_ms'
+  sort_order?: 'asc' | 'desc'
+}
+
 export interface UsageQueryParams {
   page?: number
   page_size?: number
@@ -1840,6 +1881,7 @@ export interface UsageQueryParams {
   billing_mode?: string | null
   start_date?: string
   end_date?: string
+  period?: UserUsagePeriod
   timezone?: string
   sort_by?: string
   sort_order?: 'asc' | 'desc'

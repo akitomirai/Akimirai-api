@@ -28,6 +28,7 @@ vi.mock('@/composables/useClipboard', () => ({
 }))
 
 import EndpointPopover from '../EndpointPopover.vue'
+import Icon from '@/components/icons/Icon.vue'
 
 describe('EndpointPopover', () => {
   beforeEach(() => {
@@ -143,5 +144,7 @@ describe('EndpointPopover', () => {
       'https://www.tcptest.cn/http/https%3A%2F%2Fdefault.example.com%2Fv1',
     )
     expect(externalSpeedLink.attributes('target')).toBe('_blank')
+    expect(externalSpeedLink.findComponent(Icon).props('name')).toBe('gauge')
+    expect(wrapper.findAllComponents(Icon).map(component => component.props('name'))).toEqual(['gauge', 'bolt'])
   })
 })

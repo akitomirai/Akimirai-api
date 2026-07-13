@@ -557,7 +557,7 @@ describe('AccountUsageCell', () => {
 		await flushPromises()
 
 		expect(wrapper.text()).toContain('1.0M req')
-		expect(wrapper.text()).toContain('1.0B')
+		expect(wrapper.text()).toContain('1.00B')
 		expect(wrapper.text()).toContain('A $12.35')
 		expect(wrapper.text()).toContain('U $6.79')
 
@@ -608,7 +608,7 @@ describe('AccountUsageCell', () => {
 
     expect(getUsage).toHaveBeenCalledWith(3861)
     expect(wrapper.text()).toContain('4 req')
-    expect(wrapper.text()).toContain('1.2K')
+    expect(wrapper.text()).toContain('1.20K')
     expect(wrapper.text()).toContain('A $0.12')
     expect(wrapper.text()).toContain('U $0.34')
     expect(wrapper.text()).toContain('admin.accounts.usageWindow.grokRequests|120|2026-07-09T16:00:00Z')

@@ -29,19 +29,26 @@
           v-model:endDate="endDate"
           v-model:granularity="granularity"
           :loading="loadingTrends"
-          @dateRangeChange="loadModelTrends"
+          @dateRangeChange="handleDateRangeChange"
           @granularityChange="loadModelTrends"
           @refresh="refreshAll"
         />
 
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div class="lg:col-span-2">
+        <div
+          data-testid="dashboard-content-grid"
+          class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(14rem,1fr)]"
+        >
+          <div class="min-w-0">
             <UserDashboardModelTrends
               :trend-data="modelTrendData"
               :loading="loadingTrends"
+              :granularity="granularity"
+              :range-start="trendRangeStart"
+              :range-end="trendRangeEnd"
+              :timezone="dashboardTimezone"
             />
           </div>
-          <div class="lg:col-span-1">
+          <div class="min-w-0">
             <UserDashboardAnnouncements />
           </div>
         </div>
@@ -63,10 +70,15 @@ import { useAuthStore } from '@/stores'
 import {
   usageAPI,
   type ModelUsageTrendPoint,
+  type ModelUsageTrendGranularity,
   type UserDashboardStats as UserStatsType,
 } from '@/api/usage'
 import { getMyPlatformQuotas } from '@/api/user'
 import type { PlatformQuotaItem } from '@/types'
+import {
+  getDashboardPresetGranularity,
+  getDashboardPresetPeriod,
+} from '@/utils/dashboardTimeRange'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -78,12 +90,17 @@ const loadingTrends = ref(false)
 const dashboardError = ref(false)
 
 const modelTrendData = ref<ModelUsageTrendPoint[]>([])
+const trendRangeStart = ref<string | null>(null)
+const trendRangeEnd = ref<string | null>(null)
 const platformQuotas = ref<PlatformQuotaItem[] | null>(null)
+const dashboardTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
-const formatLocalDate = (d: Date) => d.toISOString().split('T')[0]
-const startDate = ref(formatLocalDate(new Date(Date.now() - 6 * 86400000)))
+const formatLocalDate = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+const startDate = ref(formatLocalDate(new Date(Date.now() - 86400000)))
 const endDate = ref(formatLocalDate(new Date()))
-const granularity = ref<'day' | 'hour'>('day')
+const activePreset = ref<string | null>('last24Hours')
+const granularity = ref<ModelUsageTrendGranularity>('hour')
 
 const balance = computed(() => {
   const value = user.value?.balance
@@ -108,19 +125,33 @@ const loadStats = async () => {
 const loadModelTrends = async () => {
   loadingTrends.value = true
   try {
+    const period = getDashboardPresetPeriod(activePreset.value)
     const response = await usageAPI.getDashboardModelTrend({
-      start_date: startDate.value,
-      end_date: endDate.value,
+      ...(period
+        ? { period }
+        : { start_date: startDate.value, end_date: endDate.value }),
       granularity: granularity.value,
       model_source: 'requested',
+      timezone: dashboardTimezone,
     })
     modelTrendData.value = response.trend || []
+    trendRangeStart.value = response.start_time
+    trendRangeEnd.value = response.end_time
   } catch (error) {
     console.error('Failed to load model trends:', error instanceof Error ? error.message : error)
     modelTrendData.value = []
+    trendRangeStart.value = null
+    trendRangeEnd.value = null
   } finally {
     loadingTrends.value = false
   }
+}
+
+const handleDateRangeChange = (range: { preset: string | null }) => {
+  activePreset.value = range.preset
+  const defaultGranularity = getDashboardPresetGranularity(range.preset)
+  if (defaultGranularity) granularity.value = defaultGranularity
+  void loadModelTrends()
 }
 
 const loadPlatformQuotas = async () => {

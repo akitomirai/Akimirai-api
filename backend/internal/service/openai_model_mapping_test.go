@@ -179,7 +179,7 @@ func TestResolveOpenAICompactForwardModel(t *testing.T) {
 			expectedModel: "gpt-5.4",
 		},
 		{
-			name: "exact compact mapping overrides model",
+			name: "exact compact mapping does not override model",
 			account: &Account{
 				Credentials: map[string]any{
 					"compact_model_mapping": map[string]any{
@@ -188,10 +188,10 @@ func TestResolveOpenAICompactForwardModel(t *testing.T) {
 				},
 			},
 			model:         "gpt-5.4",
-			expectedModel: "gpt-5.4-openai-compact",
+			expectedModel: "gpt-5.4",
 		},
 		{
-			name: "wildcard compact mapping overrides model",
+			name: "wildcard compact mapping does not override model",
 			account: &Account{
 				Credentials: map[string]any{
 					"compact_model_mapping": map[string]any{
@@ -200,7 +200,7 @@ func TestResolveOpenAICompactForwardModel(t *testing.T) {
 				},
 			},
 			model:         "gpt-5.4",
-			expectedModel: "gpt-5-openai-compact",
+			expectedModel: "gpt-5.4",
 		},
 		{
 			name: "passthrough compact mapping remains unchanged",

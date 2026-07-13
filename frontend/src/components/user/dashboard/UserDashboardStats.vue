@@ -1,6 +1,6 @@
 <template>
-  <!-- Row 1: Core Stats -->
-  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+  <!-- Core stats stay in one grid so simple mode cannot leave an empty slot. -->
+  <div data-testid="dashboard-stats-grid" class="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-y-6">
     <!-- Balance -->
     <div v-if="!isSimple" class="card p-4">
       <div class="flex items-center gap-3">
@@ -65,10 +65,6 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- Row 2: Token Stats -->
-  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
     <!-- Today Tokens -->
     <div class="card p-4">
       <div class="flex items-center gap-3">
@@ -77,22 +73,30 @@
         </div>
         <div>
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.todayTokens') }}</p>
-          <p class="text-xl font-bold text-gray-900 dark:text-white">{{ formatTokens(stats?.today_tokens || 0) }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('dashboard.input') }}: {{ formatTokens(stats?.today_input_tokens || 0) }} / {{ t('dashboard.output') }}: {{ formatTokens(stats?.today_output_tokens || 0) }}</p>
+          <p
+            class="text-xl font-bold text-gray-900 dark:text-white"
+            :title="formatExactNumber(stats?.today_tokens || 0)"
+          >{{ formatTokens(stats?.today_tokens || 0) }}</p>
         </div>
       </div>
     </div>
 
     <!-- Total Tokens -->
-    <div class="card p-4">
+    <div
+      data-testid="dashboard-total-tokens"
+      class="card p-4"
+      :class="isSimple && 'col-span-2'"
+    >
       <div class="flex items-center gap-3">
         <div class="rounded-lg bg-indigo-100 p-2 dark:bg-indigo-900/30">
           <Icon name="database" size="md" class="text-indigo-600 dark:text-indigo-400" :stroke-width="2" />
         </div>
         <div>
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.totalTokens') }}</p>
-          <p class="text-xl font-bold text-gray-900 dark:text-white">{{ formatTokens(stats?.total_tokens || 0) }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('dashboard.input') }}: {{ formatTokens(stats?.total_input_tokens || 0) }} / {{ t('dashboard.output') }}: {{ formatTokens(stats?.total_output_tokens || 0) }}</p>
+          <p
+            class="text-xl font-bold text-gray-900 dark:text-white"
+            :title="formatExactNumber(stats?.total_tokens || 0)"
+          >{{ formatTokens(stats?.total_tokens || 0) }}</p>
         </div>
       </div>
     </div>
@@ -106,7 +110,7 @@
         <div class="flex-1">
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.performance') }}</p>
           <div class="flex items-baseline gap-2">
-            <p class="text-xl font-bold text-gray-900 dark:text-white">{{ formatTokens(stats?.rpm || 0) }}</p>
+            <p class="text-xl font-bold text-gray-900 dark:text-white">{{ formatNumber(stats?.rpm || 0) }}</p>
             <span class="text-xs text-gray-500 dark:text-gray-400">RPM</span>
           </div>
           <div class="flex items-baseline gap-2">
@@ -228,6 +232,7 @@ import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import type { UserDashboardStats as UserStatsType } from '@/api/usage'
 import type { PlatformQuotaItem } from '@/types'
+import { formatTokenCount } from '@/utils/format'
 
 interface FusedPlatformCard {
   platform: string
@@ -245,7 +250,7 @@ const props = defineProps<{
   isSimple: boolean
   platformQuotas?: PlatformQuotaItem[] | null
 }>()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const PLATFORM_LABELS: Record<string, string> = {
   anthropic: 'Claude',
@@ -382,10 +387,10 @@ const formatBalance = (b: number) =>
 
 const formatNumber = (n: number) => n.toLocaleString()
 const formatCost = (c: number) => c.toFixed(4)
-const formatTokens = (t: number) => {
-  if (t >= 1_000_000) return `${(t / 1_000_000).toFixed(1)}M`
-  if (t >= 1000) return `${(t / 1000).toFixed(1)}K`
-  return t.toString()
-}
+const formatTokens = (tokens: number) => formatTokenCount(tokens, { locale: locale.value })
+const formatExactNumber = (value: number) => formatTokenCount(value, {
+  locale: locale.value,
+  display: 'exact',
+})
 const formatDuration = (ms: number) => ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${ms.toFixed(0)}ms`
 </script>

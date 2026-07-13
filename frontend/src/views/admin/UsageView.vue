@@ -11,6 +11,7 @@
               <DateRangePicker
                 v-model:start-date="startDate"
                 v-model:end-date="endDate"
+                :preset-values="dashboardDatePresets"
                 @change="onDateRangeChange"
               />
             </div>
@@ -36,6 +37,8 @@
             :show-metric-toggle="true"
             :start-date="startDate"
             :end-date="endDate"
+            :period="activePeriod"
+            :timezone="requestTimezone"
             :filters="breakdownFilters"
           />
         </div>
@@ -181,6 +184,11 @@ import { useAppStore } from '@/stores/app'; import { adminAPI } from '@/api/admi
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 import { formatReasoningEffort } from '@/utils/format'
 import { resolveUsageRequestType } from '@/utils/usageRequestType'
+import {
+  dashboardDatePresets,
+  getDashboardPresetPeriod,
+  isDashboardUsagePeriod
+} from '@/utils/dashboardTimeRange'
 import AppLayout from '@/components/layout/AppLayout.vue'; import Pagination from '@/components/common/Pagination.vue'; import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import UsageStatsCards from '@/components/admin/usage/UsageStatsCards.vue'; import UsageFilters from '@/components/admin/usage/UsageFilters.vue'
 import UsageTable from '@/components/admin/usage/UsageTable.vue'; import UsageExportProgress from '@/components/admin/usage/UsageExportProgress.vue'
@@ -197,6 +205,7 @@ import EntityDistributionChart from '@/components/charts/EntityDistributionChart
 import ModelDistributionChart from '@/components/charts/ModelDistributionChart.vue'
 import Icon from '@/components/icons/Icon.vue'
 import type { AdminUsageLog, ModelStat, AdminUser, UserBreakdownItem } from '@/types'; import type { AdminUsageStatsResponse, AdminUsageQueryParams } from '@/api/admin/usage'
+import type { UserUsagePeriod } from '@/api/usage'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -286,7 +295,21 @@ const getLast24HoursRangeDates = (): { start: string; end: string } => {
 }
 const defaultRange = getLast24HoursRangeDates()
 const startDate = ref(defaultRange.start); const endDate = ref(defaultRange.end)
+const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+const requestTimezone = ref(browserTimezone)
+const activePeriod = ref<UserUsagePeriod | null>('24h')
 const filters = ref<AdminUsageQueryParams>({ user_id: undefined, model: undefined, group_id: undefined, start_date: startDate.value, end_date: endDate.value })
+const activeRangeParams = computed<Pick<AdminUsageQueryParams, 'start_date' | 'end_date' | 'period' | 'timezone'>>(() => activePeriod.value
+  ? { period: activePeriod.value, timezone: requestTimezone.value }
+  : { start_date: startDate.value, end_date: endDate.value, timezone: requestTimezone.value })
+const apiFilterParams = computed<AdminUsageQueryParams>(() => {
+  const result = { ...filters.value }
+  delete result.start_date
+  delete result.end_date
+  delete result.period
+  delete result.timezone
+  return { ...result, ...activeRangeParams.value }
+})
 const pagination = reactive({ page: 1, page_size: getPersistedPageSize(), total: 0 })
 const sortState = reactive({
   sort_by: 'created_at',
@@ -309,6 +332,15 @@ const applyRouteQueryFilters = () => {
   const queryStartDate = getSingleQueryValue(route.query.start_date)
   const queryEndDate = getSingleQueryValue(route.query.end_date)
   const queryUserId = getNumericQueryValue(route.query.user_id)
+  const queryPeriod = getSingleQueryValue(route.query.period)
+  const queryTimezone = getSingleQueryValue(route.query.timezone)
+
+  requestTimezone.value = queryTimezone || browserTimezone
+  if (isDashboardUsagePeriod(queryPeriod)) {
+    activePeriod.value = queryPeriod
+  } else if (queryStartDate || queryEndDate) {
+    activePeriod.value = null
+  }
 
   if (queryStartDate) {
     startDate.value = queryStartDate
@@ -328,6 +360,8 @@ const applyRouteQueryFilters = () => {
 const onDateRangeChange = (range: { startDate: string; endDate: string; preset: string | null }) => {
   startDate.value = range.startDate
   endDate.value = range.endDate
+  activePeriod.value = getDashboardPresetPeriod(range.preset)
+  requestTimezone.value = browserTimezone
   filters.value = {
     ...filters.value,
     start_date: range.startDate,
@@ -345,7 +379,7 @@ const buildUsageListParams = (
     page,
     page_size: pageSize,
     exact_total: exactTotal,
-    ...filters.value,
+    ...apiFilterParams.value,
     sort_by: sortState.sort_by,
     sort_order: sortState.sort_order
   }
@@ -365,7 +399,7 @@ const loadStats = async (force = false) => {
   const seq = ++statsReqSeq
   try {
     const s = await adminAPI.usage.getStats({
-      ...filters.value,
+      ...apiFilterParams.value,
       ...(force ? { nocache: 1 } : {}),
     })
     if (seq !== statsReqSeq) return
@@ -381,8 +415,7 @@ const loadUserStats = async () => {
   userStatsLoading.value = true
   try {
     const response = await adminAPI.dashboard.getUserBreakdown({
-      start_date: filters.value.start_date || startDate.value,
-      end_date: filters.value.end_date || endDate.value,
+      ...activeRangeParams.value,
       user_id: filters.value.user_id,
       model: filters.value.model,
       api_key_id: filters.value.api_key_id,
@@ -421,8 +454,7 @@ const loadModelStats = async (source: ModelDistributionSource, force = false) =>
   modelStatsLoading.value = true
   try {
     const baseParams = {
-      start_date: filters.value.start_date || startDate.value,
-      end_date: filters.value.end_date || endDate.value,
+      ...activeRangeParams.value,
       user_id: filters.value.user_id,
       model: filters.value.model,
       api_key_id: filters.value.api_key_id,
@@ -489,6 +521,8 @@ const resetFilters = () => {
   const range = getLast24HoursRangeDates()
   startDate.value = range.start
   endDate.value = range.end
+  activePeriod.value = '24h'
+  requestTimezone.value = browserTimezone
   filters.value = { start_date: startDate.value, end_date: endDate.value }
   applyFilters()
 }

@@ -79,14 +79,18 @@ const mountDashboard = () => mount(DashboardView, {
             />
             <button
               data-testid="set-range"
-              @click="$emit('update:startDate', '2026-07-01'); $emit('update:endDate', '2026-07-02'); $emit('dateRangeChange')"
+              @click="$emit('update:startDate', '2026-07-01'); $emit('update:endDate', '2026-07-02'); $emit('dateRangeChange', { startDate: '2026-07-01', endDate: '2026-07-02', preset: null })"
+            />
+            <button
+              data-testid="set-48-hours"
+              @click="$emit('update:startDate', '2026-07-10'); $emit('update:endDate', '2026-07-12'); $emit('dateRangeChange', { startDate: '2026-07-10', endDate: '2026-07-12', preset: 'last48Hours' })"
             />
           </div>
         `,
       },
       ModelUsageTrendChart: {
-        props: ['trendData', 'metric', 'loading'],
-        template: '<section :data-testid="`model-usage-trend-${metric}`">{{ trendData.length }}</section>',
+        props: ['trendData', 'metric', 'loading', 'granularity', 'rangeStart', 'rangeEnd'],
+        template: '<section :data-testid="`model-usage-trend-${metric}`" :data-granularity="granularity" :data-range-start="rangeStart" :data-range-end="rangeEnd">{{ trendData.length }}</section>',
       },
       UserDashboardAnnouncements: { template: '<aside data-testid="announcements" />' },
     },
@@ -101,9 +105,11 @@ describe('user DashboardView', () => {
     mocks.getDashboardModelTrend.mockResolvedValue({
       trend,
       models: ['gpt-5.6-sol'],
-      start_date: '2026-07-06',
+      start_date: '2026-07-11',
       end_date: '2026-07-12',
-      granularity: 'day',
+      start_time: '2026-07-11T17:00:00+08:00',
+      end_time: '2026-07-12T17:00:00+08:00',
+      granularity: 'hour',
     })
     mocks.getMyPlatformQuotas.mockResolvedValue({ platform_quotas: [] })
   })
@@ -113,10 +119,15 @@ describe('user DashboardView', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="model-usage-trend-actual_cost"]').text()).toBe('1')
-    expect(wrapper.find('[data-testid="model-usage-trend-requests"]').text()).toBe('1')
+    expect(wrapper.find('[data-testid="model-usage-trend-total_tokens"]').text()).toBe('1')
+    expect(wrapper.find('[data-testid="model-usage-trend-total_tokens"]').attributes('data-granularity')).toBe('hour')
+    expect(wrapper.find('[data-testid="model-usage-trend-total_tokens"]').attributes('data-range-start')).toBe('2026-07-11T17:00:00+08:00')
+    expect(wrapper.find('[data-testid="model-usage-trend-total_tokens"]').attributes('data-range-end')).toBe('2026-07-12T17:00:00+08:00')
     expect(wrapper.find('[data-testid="announcements"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="dashboard-content-grid"]').classes()).toContain('lg:grid-cols-[minmax(0,5fr)_minmax(14rem,1fr)]')
     expect(mocks.getDashboardModelTrend).toHaveBeenCalledWith(expect.objectContaining({
-      granularity: 'day',
+      granularity: 'hour',
+      period: '24h',
       model_source: 'requested',
     }))
     expect(mocks.getDashboardTrend).not.toHaveBeenCalled()
@@ -139,6 +150,22 @@ describe('user DashboardView', () => {
     expect(mocks.getDashboardModelTrend).toHaveBeenLastCalledWith(expect.objectContaining({
       start_date: '2026-07-01',
       end_date: '2026-07-02',
+    }))
+    expect(mocks.getDashboardModelTrend).toHaveBeenLastCalledWith(expect.not.objectContaining({
+      period: expect.anything(),
+    }))
+  })
+
+  it('maps the rolling 48-hour preset to two-hour buckets', async () => {
+    const wrapper = mountDashboard()
+    await flushPromises()
+
+    await wrapper.get('[data-testid="set-48-hours"]').trigger('click')
+    await flushPromises()
+
+    expect(mocks.getDashboardModelTrend).toHaveBeenLastCalledWith(expect.objectContaining({
+      period: '48h',
+      granularity: '2h',
     }))
   })
 })

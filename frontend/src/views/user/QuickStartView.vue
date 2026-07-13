@@ -15,7 +15,7 @@
             </p>
           </div>
           <div class="flex flex-wrap gap-2">
-            <router-link class="btn btn-secondary" to="/available-channels">
+            <router-link class="btn btn-secondary" to="/model-plaza">
               <Icon name="server" size="sm" />
               {{ t('quickStart.viewModels') }}
             </router-link>

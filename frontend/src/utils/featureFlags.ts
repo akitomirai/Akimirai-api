@@ -30,7 +30,7 @@
  *     that ship enabled by default (Channel Monitor, Payment).
  *   - **`opt-in`**  (default disabled) — menu hidden when settings unloaded,
  *     visible only when the backend explicitly sends `true`. Use for features
- *     that ship disabled (Available Channels).
+ *     that ship disabled (Model Plaza).
  *
  * For `opt-in` flags to render immediately on refresh, the backend **must**
  * inject the field through `PublicSettingsInjectionPayload`. A drift test in
@@ -59,9 +59,7 @@
  * ```ts
  * import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
  *
- * const flagAvailableChannels = makeSidebarFlag(FeatureFlags.availableChannels)
- * // ...
- * { path: '/available-channels', label: ..., featureFlag: flagAvailableChannels }
+ * const showModelPlaza = isFeatureFlagEnabled(FeatureFlags.modelPlaza)
  * ```
  *
  * `isFeatureFlagEnabled(flag)` returns the resolved boolean (`true` = show).
@@ -99,10 +97,10 @@ export const FeatureFlags = {
     mode: 'opt-out',
     label: 'Channel Monitor',
   }),
-  availableChannels: defineFlag({
+  modelPlaza: defineFlag({
     key: 'available_channels_enabled',
     mode: 'opt-in',
-    label: 'Available Channels',
+    label: 'Model Plaza',
   }),
   payment: defineFlag({
     key: 'payment_enabled',

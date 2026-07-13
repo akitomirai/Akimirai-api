@@ -4,7 +4,7 @@
 
 ### 1. Scope / Trigger
 - Trigger: user-facing usage/request APIs that return or filter request details, billing facts, API key display data, or error correlation fields.
-- Applies to `GET /api/v1/usage`, `GET /api/v1/usage/:id`, `GET /api/v1/usage/errors`, and `GET /api/v1/usage/errors/:id`.
+- Applies to `GET /api/v1/usage`, `GET /api/v1/usage/requests`, `GET /api/v1/usage/:id`, `GET /api/v1/usage/errors`, and `GET /api/v1/usage/errors/:id`.
 - These APIs are user-scoped. They must not expose admin-only request investigation data.
 
 ### 2. Signatures
@@ -12,6 +12,8 @@
   - `GET /api/v1/usage?page=&page_size=&api_key_id=&request_id=&model=&request_type=&stream=&billing_type=&charged=&start_date=&end_date=&sort_by=&sort_order=`
 - Usage detail:
   - `GET /api/v1/usage/:id`
+- Unified request log:
+  - `GET /api/v1/usage/requests?page=&page_size=&kind=all|consumption|error&api_key_id=&group_id=&model=&request_id=&start_date=&end_date=&sort_by=created_at|duration_ms&sort_order=asc|desc`
 - Error list:
   - `GET /api/v1/usage/errors?page=&page_size=&start_date=&end_date=&model=&api_key_id=&status_code=&category=&request_id=`
 - Error detail:
@@ -23,6 +25,17 @@
   - `api_key_id` usage filters must verify API key ownership before querying.
   - user error listing must force `OpsErrorLogFilter.UserID` and keep deleted-key owner matching enabled for user-owned deleted keys.
 - `request_id` filters are exact matches, not fuzzy search.
+- The unified request log has one server-side pagination owner after union and deduplication:
+  - `usage_logs` owns completed consumption and billing facts.
+  - `ops_error_logs` owns failed-request status and redacted error classification.
+  - exact non-empty `(request_id, api_key_id)` matches correlate the two ledgers; timestamp/model similarity is never used as proof.
+  - a correlated error row takes precedence and may be enriched with the matching usage row's key/group/model/reasoning/latency/token/cost fields.
+  - error rows are deduplicated by effective non-empty request ID plus API key, keeping the newest row; blank request IDs remain distinct by error ID.
+  - the final combined set is counted, sorted, and paginated globally. The client must not merge independently paginated lists.
+- User error visibility is fail-closed on the unified endpoint:
+  - `kind=error` is forbidden while the setting is disabled.
+  - `kind=all` falls back to consumption-only while the setting is disabled.
+- Unified rows expose only the five-column user log contract: time/type, key/group/rate, requested model/reasoning effort, request latency, and safe details. They must not expose raw prompts, request/response bodies, account credentials, full API keys, client IPs, admin hints, or raw upstream error messages.
 - `charged` usage filter is backed by real `usage_logs.actual_cost`:
   - `charged=true` means `actual_cost > 0`.
   - `charged=false` means `actual_cost <= 0`.
@@ -45,6 +58,9 @@
 - `charged` not parseable as bool -> bad request.
 - `start_date` / `end_date` not `YYYY-MM-DD` -> bad request.
 - user error view disabled -> forbidden.
+- unified log `kind` outside `all|consumption|error` -> bad request.
+- unified log `sort_by` outside `created_at|duration_ms` -> bad request.
+- unified log `sort_order` outside `asc|desc` -> bad request.
 - user error detail id invalid -> bad request.
 - user error detail not owned by the current user -> not found.
 
@@ -57,6 +73,8 @@
 - Handler tests must assert user-scope filters are always set from the auth subject.
 - Handler tests must cover `request_type`, legacy `stream`, `request_id`, and invalid `charged` parsing.
 - Repository tests must prove `request_id` filters are exact matches.
+- Unified-log repository tests must prove ledger scoping occurs before correlation, exact-key correlation, newest-error deduplication, blank-ID independence, error precedence/enrichment, errors-disabled behavior, and global count/pagination after the union.
+- Unified-log handler/service tests must prove auth scope cannot be overridden, API key ownership is checked, error visibility is fail-closed, and invalid kind/sort values are rejected.
 - DTO tests must prove:
   - token totals and cost fields are derived from real usage data;
   - masked API key output uses the existing masking path;
@@ -112,7 +130,7 @@ The usage route returns only proven usage/billing facts and leaves error explana
 - `usage_logs` remains the only completed-request usage and billing ledger. Diagnostic columns are additive evidence on that row, not a second request store.
 - `created_at` remains the completion/log-write timestamp. `request_started_at` is the only field that proves when the request began.
 - Nullable phase timings mean unavailable, not zero. The UI must render unavailable phases explicitly and must not infer DNS, TCP, TLS, upload, or queue sub-phases that were not measured.
-- For supported OpenAI HTTP paths, request-body read, request write, first response-header byte, first semantic token, and total request time use one request-scoped monotonic collector.
+- For supported OpenAI HTTP paths (`/v1/responses`, `/v1/messages`, and `/v1/chat/completions`), request-body read, request write, first response-header byte, first semantic token, and total request time use one request-scoped monotonic collector.
 - `upstream_first_byte_ms` comes from `httptrace.GotFirstResponseByte`; it proves the first byte of the HTTP response headers, not the first SSE body event or model token. Admin UI labels must say response headers and keep every timing as an offset from request start rather than displaying derived stage differences.
 - Route snapshots are immutable for the completed row. A later account proxy edit must not rewrite historical attribution.
 - A proxy snapshot may contain the proxy ID, display name, protocol, and a sanitized fingerprint. It must not contain userinfo, credentials, query parameters, paths, authorization headers, full proxy URLs, prompts, request bodies, or response bodies.

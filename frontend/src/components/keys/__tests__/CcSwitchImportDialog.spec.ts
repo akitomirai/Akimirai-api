@@ -29,6 +29,8 @@ describe('CcSwitchImportDialog', () => {
     expect((wrapper.get('#cc-switch-name').element as HTMLInputElement).value).toBe('Sub2API')
     expect((wrapper.get('#cc-switch-main-model').element as HTMLInputElement).value).toBe('gpt-5.6-sol')
     expect((wrapper.get('[data-test="cc-switch-remote-compaction"]').element as HTMLInputElement).checked).toBe(true)
+    expect(wrapper.text()).toContain('keys.ccsImport.remoteCompactionHint')
+    expect(wrapper.text()).not.toContain('keys.ccsImport.remoteCompactionNameHint')
     expect(wrapper.emitted('confirm')).toBeUndefined()
 
     await wrapper.get('#cc-switch-import-form').trigger('submit')

@@ -42,6 +42,10 @@ func (m *opsRepoMock) ListRequestDetails(ctx context.Context, filter *OpsRequest
 	return []*OpsRequestDetail{}, 0, nil
 }
 
+func (m *opsRepoMock) ListUserRequestLogs(ctx context.Context, filter *UserRequestLogFilter) ([]*UserRequestLog, int64, error) {
+	return []*UserRequestLog{}, 0, nil
+}
+
 func (m *opsRepoMock) BatchInsertSystemLogs(ctx context.Context, inputs []*OpsInsertSystemLogInput) (int64, error) {
 	if m.BatchInsertSystemLogsFn != nil {
 		return m.BatchInsertSystemLogsFn(ctx, inputs)

@@ -36,7 +36,7 @@ const stats = {
   total_cache_tokens: 34,
   total_cache_creation_tokens: 12,
   total_cache_read_tokens: 22,
-  total_tokens: 184,
+  total_tokens: 137_440_000,
   total_cost: 0.001,
   total_actual_cost: 0.001,
   total_account_cost: 0.001,
@@ -44,7 +44,7 @@ const stats = {
 }
 
 describe('UsageStatsCards', () => {
-  it('shows cache token breakdown values', () => {
+  it('shows only the compact total token count', () => {
     const wrapper = mount(UsageStatsCards, {
       props: {
         stats,
@@ -57,11 +57,10 @@ describe('UsageStatsCards', () => {
     })
 
     const text = wrapper.text()
-    expect(text).toContain('Cache: 34')
-    expect(text).toContain('Cache Token Breakdown')
-    expect(text).toContain('Cache Creation')
-    expect(text).toContain('12')
-    expect(text).toContain('Cache Read')
-    expect(text).toContain('22')
+    expect(text).toContain('Total Tokens')
+    expect(text).toContain('137.44M')
+    expect(text).not.toContain('In:')
+    expect(text).not.toContain('Out:')
+    expect(text).not.toContain('Cache Token Breakdown')
   })
 })

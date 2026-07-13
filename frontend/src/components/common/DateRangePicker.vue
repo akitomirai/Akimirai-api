@@ -89,6 +89,7 @@ interface DatePreset {
 interface Props {
   startDate: string
   endDate: string
+  presetValues?: string[]
 }
 
 interface Emits {
@@ -133,7 +134,17 @@ const formatDateToString = (date: Date): string => {
   return `${year}-${month}-${day}`
 }
 
-const presets: DatePreset[] = [
+const allPresets: DatePreset[] = [
+  {
+    labelKey: 'dates.yesterday',
+    value: 'yesterday',
+    getRange: () => {
+      const d = new Date()
+      d.setDate(d.getDate() - 1)
+      const yesterday = formatDateToString(d)
+      return { start: yesterday, end: yesterday }
+    }
+  },
   {
     labelKey: 'dates.today',
     value: 'today',
@@ -143,13 +154,15 @@ const presets: DatePreset[] = [
     }
   },
   {
-    labelKey: 'dates.yesterday',
-    value: 'yesterday',
+    labelKey: 'dates.last48Hours',
+    value: 'last48Hours',
     getRange: () => {
-      const d = new Date()
-      d.setDate(d.getDate() - 1)
-      const yesterday = formatDateToString(d)
-      return { start: yesterday, end: yesterday }
+      const end = new Date()
+      const start = new Date(end.getTime() - 48 * 60 * 60 * 1000)
+      return {
+        start: formatDateToString(start),
+        end: formatDateToString(end)
+      }
     }
   },
   {
@@ -170,7 +183,7 @@ const presets: DatePreset[] = [
     getRange: () => {
       const end = today.value
       const d = new Date()
-      d.setDate(d.getDate() - 6)
+      d.setDate(d.getDate() - 7)
       const start = formatDateToString(d)
       return { start, end }
     }
@@ -181,7 +194,7 @@ const presets: DatePreset[] = [
     getRange: () => {
       const end = today.value
       const d = new Date()
-      d.setDate(d.getDate() - 13)
+      d.setDate(d.getDate() - 14)
       const start = formatDateToString(d)
       return { start, end }
     }
@@ -192,7 +205,7 @@ const presets: DatePreset[] = [
     getRange: () => {
       const end = today.value
       const d = new Date()
-      d.setDate(d.getDate() - 29)
+      d.setDate(d.getDate() - 30)
       const start = formatDateToString(d)
       return { start, end }
     }
@@ -218,9 +231,17 @@ const presets: DatePreset[] = [
   }
 ]
 
+const presets = computed(() => {
+  if (!props.presetValues?.length) return allPresets
+  const byValue = new Map(allPresets.map((preset) => [preset.value, preset]))
+  return props.presetValues
+    .map((value) => byValue.get(value))
+    .filter((preset): preset is DatePreset => preset !== undefined)
+})
+
 const displayValue = computed(() => {
   if (activePreset.value) {
-    const preset = presets.find((p) => p.value === activePreset.value)
+    const preset = presets.value.find((p) => p.value === activePreset.value)
     if (preset) return t(preset.labelKey)
   }
 
@@ -254,7 +275,7 @@ const selectPreset = (preset: DatePreset) => {
 const onDateChange = () => {
   // Check if current dates match any preset
   activePreset.value = null
-  for (const preset of presets) {
+  for (const preset of presets.value) {
     const range = preset.getRange()
     if (range.start === localStartDate.value && range.end === localEndDate.value) {
       activePreset.value = preset.value

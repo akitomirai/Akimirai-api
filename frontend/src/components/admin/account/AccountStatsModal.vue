@@ -469,6 +469,7 @@ import EndpointDistributionChart from '@/components/charts/EndpointDistributionC
 import Icon from '@/components/icons/Icon.vue'
 import { adminAPI } from '@/api/admin'
 import type { Account, AccountUsageStatsResponse } from '@/types'
+import { formatTokenCount } from '@/utils/format'
 
 ChartJS.register(
   CategoryScale,
@@ -693,16 +694,7 @@ const formatNumber = (value: number): string => {
   return value.toLocaleString()
 }
 
-const formatTokens = (value: number): string => {
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(2)}B`
-  } else if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(2)}M`
-  } else if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(2)}K`
-  }
-  return value.toLocaleString()
-}
+const formatTokens = (value: number): string => formatTokenCount(value)
 
 const formatDuration = (ms: number): string => {
   if (ms >= 1000) {

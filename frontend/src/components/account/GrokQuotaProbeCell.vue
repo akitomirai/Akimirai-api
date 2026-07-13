@@ -50,6 +50,7 @@ import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
 import type { GrokQuotaProbeResult, GrokQuotaWindow } from '@/api/admin/grok'
 import type { Account } from '@/types'
+import { formatTokenCount } from '@/utils/format'
 
 const props = defineProps<{
   account: Account
@@ -77,9 +78,13 @@ const extractErrorMessage = (e: unknown): string => {
   )
 }
 
-const formatWindow = (label: string, window?: GrokQuotaWindow | null): string | null => {
+const formatWindow = (
+  label: string,
+  window?: GrokQuotaWindow | null,
+  formatValue: (value: number) => string = String,
+): string | null => {
   if (!window || window.limit == null || window.remaining == null) return null
-  return `${label} ${window.remaining}/${window.limit}`
+  return `${label} ${formatValue(window.remaining)}/${formatValue(window.limit)}`
 }
 
 const retryAfterLabel = computed(() => {
@@ -95,7 +100,7 @@ const summary = computed(() => {
   if (!snapshot) return t('admin.accounts.usageWindow.grokNoHeaders')
   const parts = [
     formatWindow(t('admin.accounts.usageWindow.grokRequests'), snapshot.requests),
-    formatWindow(t('admin.accounts.usageWindow.grokTokens'), snapshot.tokens)
+    formatWindow(t('admin.accounts.usageWindow.grokTokens'), snapshot.tokens, formatTokenCount)
   ].filter(Boolean)
   if (retryAfterLabel.value) {
     parts.push(t('admin.accounts.usageWindow.grokRetryAfter', { time: retryAfterLabel.value }))

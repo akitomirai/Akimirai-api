@@ -27,6 +27,9 @@ type dashboardSnapshotV2Response struct {
 
 	StartDate   string `json:"start_date"`
 	EndDate     string `json:"end_date"`
+	StartTime   string `json:"start_time"`
+	EndTime     string `json:"end_time"`
+	Timezone    string `json:"timezone"`
 	Granularity string `json:"granularity"`
 
 	Stats      *dashboardSnapshotV2Stats        `json:"stats,omitempty"`
@@ -48,31 +51,33 @@ type dashboardSnapshotV2Filters struct {
 }
 
 type dashboardSnapshotV2CacheKey struct {
-	StartTime         string `json:"start_time"`
-	EndTime           string `json:"end_time"`
-	Granularity       string `json:"granularity"`
-	UserID            int64  `json:"user_id"`
-	APIKeyID          int64  `json:"api_key_id"`
-	AccountID         int64  `json:"account_id"`
-	GroupID           int64  `json:"group_id"`
-	Model             string `json:"model"`
-	RequestType       *int16 `json:"request_type"`
-	Stream            *bool  `json:"stream"`
-	BillingType       *int8  `json:"billing_type"`
-	IncludeStats      bool   `json:"include_stats"`
-	IncludeTrend      bool   `json:"include_trend"`
-	IncludeModels     bool   `json:"include_models"`
-	IncludeGroups     bool   `json:"include_groups"`
-	IncludeUsersTrend bool   `json:"include_users_trend"`
-	UsersTrendLimit   int    `json:"users_trend_limit"`
+	StartTime         string                         `json:"start_time"`
+	EndTime           string                         `json:"end_time"`
+	Response          dashboardResponseCacheMetadata `json:"response"`
+	Granularity       string                         `json:"granularity"`
+	UserID            int64                          `json:"user_id"`
+	APIKeyID          int64                          `json:"api_key_id"`
+	AccountID         int64                          `json:"account_id"`
+	GroupID           int64                          `json:"group_id"`
+	Model             string                         `json:"model"`
+	RequestType       *int16                         `json:"request_type"`
+	Stream            *bool                          `json:"stream"`
+	BillingType       *int8                          `json:"billing_type"`
+	IncludeStats      bool                           `json:"include_stats"`
+	IncludeTrend      bool                           `json:"include_trend"`
+	IncludeModels     bool                           `json:"include_models"`
+	IncludeGroups     bool                           `json:"include_groups"`
+	IncludeUsersTrend bool                           `json:"include_users_trend"`
+	UsersTrendLimit   int                            `json:"users_trend_limit"`
 }
 
 func (h *DashboardHandler) GetSnapshotV2(c *gin.Context) {
-	startTime, endTime := parseTimeRange(c)
-	granularity := strings.TrimSpace(c.DefaultQuery("granularity", "day"))
-	if granularity != "hour" {
-		granularity = "day"
+	startTime, endTime, ok := parseDashboardTimeRange(c)
+	if !ok {
+		return
 	}
+	granularity := normalizeDashboardGranularity(c.DefaultQuery("granularity", "day"))
+	responseMetadata := newDashboardResponseCacheMetadata(c, startTime, endTime)
 
 	includeStats := parseBoolQueryWithDefault(c.Query("include_stats"), true)
 	includeTrend := parseBoolQueryWithDefault(c.Query("include_trend"), true)
@@ -95,6 +100,7 @@ func (h *DashboardHandler) GetSnapshotV2(c *gin.Context) {
 	keyRaw, _ := json.Marshal(dashboardSnapshotV2CacheKey{
 		StartTime:         startTime.UTC().Format(time.RFC3339),
 		EndTime:           endTime.UTC().Format(time.RFC3339),
+		Response:          responseMetadata,
 		Granularity:       granularity,
 		UserID:            filters.UserID,
 		APIKeyID:          filters.APIKeyID,
@@ -119,6 +125,7 @@ func (h *DashboardHandler) GetSnapshotV2(c *gin.Context) {
 			startTime,
 			endTime,
 			granularity,
+			responseMetadata,
 			filters,
 			includeStats,
 			includeTrend,
@@ -148,14 +155,18 @@ func (h *DashboardHandler) buildSnapshotV2Response(
 	ctx context.Context,
 	startTime, endTime time.Time,
 	granularity string,
+	responseMetadata dashboardResponseCacheMetadata,
 	filters *dashboardSnapshotV2Filters,
 	includeStats, includeTrend, includeModels, includeGroups, includeUsersTrend bool,
 	usersTrendLimit int,
 ) (*dashboardSnapshotV2Response, error) {
 	resp := &dashboardSnapshotV2Response{
 		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
-		StartDate:   startTime.Format("2006-01-02"),
-		EndDate:     endTime.Add(-24 * time.Hour).Format("2006-01-02"),
+		StartDate:   responseMetadata.StartDate,
+		EndDate:     responseMetadata.EndDate,
+		StartTime:   startTime.Format(time.RFC3339),
+		EndTime:     endTime.Format(time.RFC3339),
+		Timezone:    responseMetadata.Timezone,
 		Granularity: granularity,
 	}
 

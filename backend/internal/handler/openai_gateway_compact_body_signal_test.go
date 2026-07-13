@@ -43,6 +43,9 @@ func TestNormalizeOpenAIResponsesCompactRequest_BodySignalPromoted(t *testing.T)
 
 	normalized, ok := h.normalizeOpenAIResponsesCompactRequest(c, zap.NewNop(), body)
 	require.True(t, ok)
+	originalBody, marked := service.GetOpenAICompactBodySignal(c)
+	require.True(t, marked)
+	require.Equal(t, body, originalBody)
 
 	require.Equal(t, "/v1/responses/compact", c.Request.URL.Path)
 	require.True(t, isOpenAIRemoteCompactPath(c))
@@ -103,6 +106,8 @@ func TestNormalizeOpenAIResponsesCompactRequest_PathBasedNoDoubleSuffix(t *testi
 	normalized, ok := h.normalizeOpenAIResponsesCompactRequest(c, zap.NewNop(), body)
 	require.True(t, ok)
 	require.Equal(t, "/v1/responses/compact", c.Request.URL.Path)
+	_, marked := service.GetOpenAICompactBodySignal(c)
+	require.False(t, marked)
 	require.False(t, gjson.GetBytes(normalized, "stream").Exists())
 	require.False(t, gjson.GetBytes(normalized, "store").Exists())
 }

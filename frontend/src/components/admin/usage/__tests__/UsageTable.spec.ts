@@ -320,9 +320,12 @@ describe('admin UsageTable tooltip', () => {
 
     const cacheCell = wrapper.get('[data-test="cache-hit-rate"]')
     expect(cacheCell.text()).toContain('99.6%')
-    expect(cacheCell.text()).toContain('172.0K')
+    expect(cacheCell.text()).toContain('172.00K')
     expect(cacheCell.attributes('class')).toContain('w-[112px]')
     expect(cacheCell.attributes('class')).toContain('text-left')
+    expect(wrapper.get('[data-testid="usage-total-token-count"]').text()).toBe('172.66K')
+    expect(wrapper.text()).not.toContain('631')
+    expect(wrapper.text()).not.toContain('28')
   })
 
   it.each([

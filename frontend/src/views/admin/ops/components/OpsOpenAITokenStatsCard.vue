@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import Select from '@/components/common/Select.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import { opsAPI, type OpsOpenAITokenStatsResponse, type OpsOpenAITokenStatsTimeRange } from '@/api/admin/ops'
-import { formatNumber } from '@/utils/format'
+import { formatNumber, formatTokenCount } from '@/utils/format'
 
 interface Props {
   platformFilter?: string
@@ -81,7 +81,7 @@ const metricCards = computed(() => [
     label: t('admin.ops.openaiTokenStats.metrics.cacheReadRatio'),
     value: formatPercent(cacheReadRatio.value),
     caption: t('admin.ops.openaiTokenStats.metrics.cacheReadCaption', {
-      tokens: formatInt(totalCacheReadTokens.value)
+      tokens: formatTokenCount(totalCacheReadTokens.value)
     })
   },
   {
@@ -354,7 +354,7 @@ function onNextPage() {
               >
                 <td class="px-2 py-2 font-medium">{{ row.model }}</td>
                 <td class="px-2 py-2">{{ formatInt(row.request_count) }}</td>
-                <td class="px-2 py-2">{{ formatInt(row.total_input_tokens) }}</td>
+                <td class="px-2 py-2">{{ formatTokenCount(row.total_input_tokens) }}</td>
                 <td class="px-2 py-2">
                   <div class="flex min-w-24 items-center gap-2">
                     <div class="h-1.5 w-14 overflow-hidden rounded-full bg-gray-100 dark:bg-dark-700">
@@ -366,11 +366,11 @@ function onNextPage() {
                     <span class="tabular-nums">{{ formatPercent(row.cache_read_ratio) }}</span>
                   </div>
                 </td>
-                <td class="px-2 py-2">{{ formatInt(row.total_cache_read_tokens) }}</td>
-                <td class="px-2 py-2">{{ formatInt(row.total_cache_creation_tokens) }}</td>
+                <td class="px-2 py-2">{{ formatTokenCount(row.total_cache_read_tokens) }}</td>
+                <td class="px-2 py-2">{{ formatTokenCount(row.total_cache_creation_tokens) }}</td>
                 <td class="px-2 py-2">{{ formatRate(row.avg_tokens_per_sec) }}</td>
                 <td class="px-2 py-2">{{ formatMs(row.avg_first_token_ms) }}</td>
-                <td class="px-2 py-2">{{ formatInt(row.total_output_tokens) }}</td>
+                <td class="px-2 py-2">{{ formatTokenCount(row.total_output_tokens) }}</td>
                 <td class="px-2 py-2">{{ formatMs(row.avg_duration_ms) }}</td>
                 <td class="px-2 py-2">{{ formatInt(row.requests_with_first_token) }}</td>
               </tr>

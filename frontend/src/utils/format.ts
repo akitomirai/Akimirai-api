@@ -238,15 +238,58 @@ export function formatCostFixed(amount: number, fractionDigits: number = 4): str
   return amount.toFixed(fractionDigits)
 }
 
+export type TokenCountDisplay = 'compact' | 'exact'
+
+export interface FormatTokenCountOptions {
+  locale?: string
+  display?: TokenCountDisplay
+  maximumFractionDigits?: number
+}
+
 /**
- * 格式化 token 数量（>=1M 显示为 M，>=1K 显示为 K，保留 1 位小数）
- * @param tokens token 数量
- * @returns 格式化后的字符串，如 "950", "1.2K", "3.5M"
+ * Format token counts with locale-aware units and two decimal places by default.
+ * Chinese compact values use 万/亿. Exact Chinese values use the 个 unit.
  */
-export function formatTokensK(tokens: number): string {
-  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`
-  if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}K`
-  return tokens.toString()
+export function formatTokenCount(
+  value: number | null | undefined,
+  options: FormatTokenCountOptions = {}
+): string {
+  const numericValue = Number(value ?? 0)
+  if (!Number.isFinite(numericValue)) return '0'
+
+  const locale = options.locale ?? getLocale()
+  const maximumFractionDigits = options.maximumFractionDigits ?? 2
+  if (options.display === 'exact') {
+    const exactValue = new Intl.NumberFormat(locale, {
+      maximumFractionDigits: 0
+    }).format(numericValue)
+    return locale.toLowerCase().startsWith('zh') ? `${exactValue}个` : exactValue
+  }
+
+  const absoluteValue = Math.abs(numericValue)
+  if (locale.toLowerCase().startsWith('zh')) {
+    if (absoluteValue >= 100_000_000) {
+      return `${formatTokenUnitValue(numericValue / 100_000_000, maximumFractionDigits)}亿`
+    }
+    if (absoluteValue >= 10_000) {
+      return `${formatTokenUnitValue(numericValue / 10_000, maximumFractionDigits)}万`
+    }
+    return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(numericValue)
+  }
+
+  return new Intl.NumberFormat(locale, {
+    notation: absoluteValue >= 1_000 ? 'compact' : 'standard',
+    minimumFractionDigits: absoluteValue >= 1_000 ? maximumFractionDigits : 0,
+    maximumFractionDigits
+  }).format(numericValue)
+}
+
+function formatTokenUnitValue(value: number, maximumFractionDigits: number): string {
+  return new Intl.NumberFormat('zh-CN', {
+    useGrouping: false,
+    minimumFractionDigits: maximumFractionDigits,
+    maximumFractionDigits
+  }).format(value)
 }
 
 /**

@@ -167,34 +167,9 @@
           <!-- Token 璇锋眰 -->
           <div v-else class="flex items-center gap-1.5">
             <div class="space-y-1 text-sm">
-              <div class="flex items-center gap-2">
-                <div class="inline-flex items-center gap-1">
-                  <Icon name="arrowDown" size="sm" class="h-3.5 w-3.5 text-emerald-500" />
-                  <span class="font-medium text-gray-900 dark:text-white">{{ row.input_tokens?.toLocaleString() || 0 }}</span>
-                </div>
-                <div class="inline-flex items-center gap-1">
-                  <Icon name="arrowUp" size="sm" class="h-3.5 w-3.5 text-violet-500" />
-                  <span class="font-medium text-gray-900 dark:text-white">{{ row.output_tokens?.toLocaleString() || 0 }}</span>
-                </div>
-              </div>
-              <div v-if="row.cache_read_tokens > 0 || row.cache_creation_tokens > 0" class="flex items-center gap-2">
-                <div v-if="row.cache_read_tokens > 0" class="inline-flex items-center gap-1">
-                  <svg class="h-3.5 w-3.5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
-                  <span class="font-medium text-sky-600 dark:text-sky-400">{{ formatCacheTokens(row.cache_read_tokens) }}</span>
-                </div>
-                <div v-if="row.cache_creation_tokens > 0" class="inline-flex items-center gap-1">
-                  <svg class="h-3.5 w-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                  <span class="font-medium text-amber-600 dark:text-amber-400">{{ formatCacheTokens(row.cache_creation_tokens) }}</span>
-                  <span v-if="row.cache_creation_1h_tokens > 0" class="inline-flex items-center rounded px-1 py-px text-[10px] font-medium leading-tight bg-orange-100 text-orange-600 ring-1 ring-inset ring-orange-200 dark:bg-orange-500/20 dark:text-orange-400 dark:ring-orange-500/30">1h</span>
-                  <span v-if="row.cache_ttl_overridden" :title="t('usage.cacheTtlOverriddenHint')" class="inline-flex items-center rounded px-1 py-px text-[10px] font-medium leading-tight bg-rose-100 text-rose-600 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/20 dark:text-rose-400 dark:ring-rose-500/30 cursor-help">R</span>
-                </div>
-              </div>
-              <div v-if="hasImageOutputTokens(row)" class="flex items-center gap-2">
-                <div class="inline-flex items-center gap-1">
-                  <svg class="h-3.5 w-3.5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                  <span class="font-medium text-pink-600 dark:text-pink-400">{{ row.image_output_tokens.toLocaleString() }}</span>
-                </div>
-              </div>
+              <span data-testid="usage-total-token-count" class="font-medium text-gray-900 dark:text-white">
+                {{ formatTokenCount(totalTokenCount(row)) }}
+              </span>
             </div>
             <!-- Token Detail Tooltip -->
             <div
@@ -238,7 +213,7 @@
                 {{ getPerRequestCacheHitRatio(row) }}%
               </span>
               <span class="text-left text-xs text-gray-400 dark:text-gray-500">
-                {{ formatCacheTokens(row.cache_read_tokens || 0) }}
+                {{ formatTokenCount(row.cache_read_tokens || 0) }}
               </span>
             </div>
             <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-sky-100 dark:bg-sky-950/50">
@@ -328,19 +303,19 @@
             <div class="text-xs font-semibold text-gray-300 mb-1">{{ t('usage.tokenDetails') }}</div>
             <div v-if="tokenTooltipData && tokenTooltipData.input_tokens > 0" class="flex items-center justify-between gap-4">
               <span class="text-gray-400">{{ t('admin.usage.inputTokens') }}</span>
-              <span class="font-medium text-white">{{ tokenTooltipData.input_tokens.toLocaleString() }}</span>
+              <span class="font-medium text-white">{{ formatTokenCount(tokenTooltipData.input_tokens, { display: 'exact' }) }}</span>
             </div>
             <div v-if="tokenTooltipData && tokenTooltipData.output_tokens > 0 && !hasImageOutputTokens(tokenTooltipData)" class="flex items-center justify-between gap-4">
               <span class="text-gray-400">{{ t('admin.usage.outputTokens') }}</span>
-              <span class="font-medium text-white">{{ tokenTooltipData.output_tokens.toLocaleString() }}</span>
+              <span class="font-medium text-white">{{ formatTokenCount(tokenTooltipData.output_tokens, { display: 'exact' }) }}</span>
             </div>
             <div v-if="tokenTooltipData && hasImageOutputTokens(tokenTooltipData) && textOutputTokens(tokenTooltipData) > 0" class="flex items-center justify-between gap-4">
               <span class="text-gray-400">{{ t('admin.usage.outputTokens') }}</span>
-              <span class="font-medium text-white">{{ textOutputTokens(tokenTooltipData).toLocaleString() }}</span>
+              <span class="font-medium text-white">{{ formatTokenCount(textOutputTokens(tokenTooltipData), { display: 'exact' }) }}</span>
             </div>
             <div v-if="tokenTooltipData && hasImageOutputTokens(tokenTooltipData)" class="flex items-center justify-between gap-4">
               <span class="text-gray-400">{{ t('usage.imageOutputTokens') }}</span>
-              <span class="font-medium text-pink-300">{{ tokenTooltipData.image_output_tokens.toLocaleString() }}</span>
+              <span class="font-medium text-pink-300">{{ formatTokenCount(tokenTooltipData.image_output_tokens, { display: 'exact' }) }}</span>
             </div>
             <div v-if="tokenTooltipData && tokenTooltipData.cache_creation_tokens > 0">
               <!-- 鏈?5m/1h 鏄庣粏鏃讹紝灞曞紑鏄剧ず -->
@@ -350,20 +325,20 @@
                     {{ t('admin.usage.cacheCreation5mTokens') }}
                     <span class="inline-flex items-center rounded px-1 py-px text-[10px] font-medium leading-tight bg-amber-500/20 text-amber-400 ring-1 ring-inset ring-amber-500/30">5m</span>
                   </span>
-                  <span class="font-medium text-white">{{ tokenTooltipData.cache_creation_5m_tokens.toLocaleString() }}</span>
+                  <span class="font-medium text-white">{{ formatTokenCount(tokenTooltipData.cache_creation_5m_tokens, { display: 'exact' }) }}</span>
                 </div>
                 <div v-if="tokenTooltipData.cache_creation_1h_tokens > 0" class="flex items-center justify-between gap-4">
                   <span class="text-gray-400 flex items-center gap-1.5">
                     {{ t('admin.usage.cacheCreation1hTokens') }}
                     <span class="inline-flex items-center rounded px-1 py-px text-[10px] font-medium leading-tight bg-orange-500/20 text-orange-400 ring-1 ring-inset ring-orange-500/30">1h</span>
                   </span>
-                  <span class="font-medium text-white">{{ tokenTooltipData.cache_creation_1h_tokens.toLocaleString() }}</span>
+                  <span class="font-medium text-white">{{ formatTokenCount(tokenTooltipData.cache_creation_1h_tokens, { display: 'exact' }) }}</span>
                 </div>
               </template>
               <!-- 鏃犳槑缁嗘椂锛屽彧鏄剧ず鑱氬悎鍊?-->
               <div v-else class="flex items-center justify-between gap-4">
                 <span class="text-gray-400">{{ t('admin.usage.cacheCreationTokens') }}</span>
-                <span class="font-medium text-white">{{ tokenTooltipData.cache_creation_tokens.toLocaleString() }}</span>
+                <span class="font-medium text-white">{{ formatTokenCount(tokenTooltipData.cache_creation_tokens, { display: 'exact' }) }}</span>
               </div>
             </div>
             <div v-if="tokenTooltipData && tokenTooltipData.cache_ttl_overridden" class="flex items-center justify-between gap-4">
@@ -375,12 +350,12 @@
             </div>
             <div v-if="tokenTooltipData && tokenTooltipData.cache_read_tokens > 0" class="flex items-center justify-between gap-4">
               <span class="text-gray-400">{{ t('admin.usage.cacheReadTokens') }}</span>
-              <span class="font-medium text-white">{{ tokenTooltipData.cache_read_tokens.toLocaleString() }}</span>
+              <span class="font-medium text-white">{{ formatTokenCount(tokenTooltipData.cache_read_tokens, { display: 'exact' }) }}</span>
             </div>
           </div>
           <div class="flex items-center justify-between gap-6 border-t border-gray-700 pt-1.5">
             <span class="text-gray-400">{{ t('usage.totalTokens') }}</span>
-            <span class="font-semibold text-blue-400">{{ ((tokenTooltipData?.input_tokens || 0) + (tokenTooltipData?.output_tokens || 0) + (tokenTooltipData?.cache_creation_tokens || 0) + (tokenTooltipData?.cache_read_tokens || 0)).toLocaleString() }}</span>
+            <span class="font-semibold text-blue-400">{{ formatTokenCount(totalTokenCount(tokenTooltipData), { display: 'exact' }) }}</span>
           </div>
           <!-- Cache Hit Ratio -->
           <div v-if="tokenTooltipData && getPerRequestCacheHitRatio(tokenTooltipData) !== null" class="flex items-center justify-between gap-6">
@@ -580,8 +555,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { formatDateTime, formatReasoningEffort } from '@/utils/format'
-import { formatCacheTokens, formatMultiplier } from '@/utils/formatters'
+import { formatDateTime, formatReasoningEffort, formatTokenCount } from '@/utils/format'
+import { formatMultiplier } from '@/utils/formatters'
 import { formatTokenPricePerMillion } from '@/utils/usagePricing'
 import { getUsageServiceTierLabel } from '@/utils/usageServiceTier'
 import { resolveUsageRequestType } from '@/utils/usageRequestType'
@@ -718,6 +693,14 @@ const getRequestTypeBadgeClass = (row: AdminUsageLog): string => {
   if (requestType === 'stream') return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
   if (requestType === 'sync') return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
   return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+}
+
+const totalTokenCount = (row: AdminUsageLog | null | undefined): number => {
+  if (!row) return 0
+  return (row.input_tokens || 0)
+    + (row.output_tokens || 0)
+    + (row.cache_creation_tokens || 0)
+    + (row.cache_read_tokens || 0)
 }
 
 

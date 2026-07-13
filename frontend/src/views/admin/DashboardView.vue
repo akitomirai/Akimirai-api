@@ -108,26 +108,7 @@
                   {{ t('admin.dashboard.todayTokens') }}
                 </p>
                 <p class="text-xl font-bold text-gray-900 dark:text-white">
-                  {{ formatTokens(stats.today_tokens) }}
-                </p>
-                <p class="text-xs">
-                  <span
-                    class="text-green-600 dark:text-green-400"
-                    :title="t('admin.dashboard.actual')"
-                    >${{ formatCost(stats.today_actual_cost) }}</span
-                  >
-                  <span class="text-gray-400 dark:text-gray-500"> / </span>
-                  <span
-                    class="text-orange-500 dark:text-orange-400"
-                    :title="t('admin.dashboard.accountCost')"
-                    >${{ formatCost(stats.today_account_cost) }}</span
-                  >
-                  <span class="text-gray-400 dark:text-gray-500"> / </span>
-                  <span
-                    class="text-gray-400 dark:text-gray-500"
-                    :title="t('admin.dashboard.standard')"
-                    >${{ formatCost(stats.today_cost) }}</span
-                  >
+                  {{ formatTokenCount(stats.today_tokens) }}
                 </p>
               </div>
             </div>
@@ -144,26 +125,7 @@
                   {{ t('admin.dashboard.totalTokens') }}
                 </p>
                 <p class="text-xl font-bold text-gray-900 dark:text-white">
-                  {{ formatTokens(stats.total_tokens) }}
-                </p>
-                <p class="text-xs">
-                  <span
-                    class="text-green-600 dark:text-green-400"
-                    :title="t('admin.dashboard.actual')"
-                    >${{ formatCost(stats.total_actual_cost) }}</span
-                  >
-                  <span class="text-gray-400 dark:text-gray-500"> / </span>
-                  <span
-                    class="text-orange-500 dark:text-orange-400"
-                    :title="t('admin.dashboard.accountCost')"
-                    >${{ formatCost(stats.total_account_cost) }}</span
-                  >
-                  <span class="text-gray-400 dark:text-gray-500"> / </span>
-                  <span
-                    class="text-gray-400 dark:text-gray-500"
-                    :title="t('admin.dashboard.standard')"
-                    >${{ formatCost(stats.total_cost) }}</span
-                  >
+                  {{ formatTokenCount(stats.total_tokens) }}
                 </p>
               </div>
             </div>
@@ -181,13 +143,13 @@
                 </p>
                 <div class="flex items-baseline gap-2">
                   <p class="text-xl font-bold text-gray-900 dark:text-white">
-                    {{ formatTokens(stats.rpm) }}
+                    {{ formatNumber(stats.rpm) }}
                   </p>
                   <span class="text-xs text-gray-500 dark:text-gray-400">RPM</span>
                 </div>
                 <div class="flex items-baseline gap-2">
                   <p class="text-sm font-semibold text-violet-600 dark:text-violet-400">
-                    {{ formatTokens(stats.tpm) }}
+                    {{ formatTokenCount(stats.tpm) }}
                   </p>
                   <span class="text-xs text-gray-500 dark:text-gray-400">TPM</span>
                 </div>
@@ -228,6 +190,7 @@
                 <DateRangePicker
                   v-model:start-date="startDate"
                   v-model:end-date="endDate"
+                  :preset-values="dashboardDatePresets"
                   @change="onDateRangeChange"
                 />
               </div>
@@ -251,25 +214,40 @@
 
           <!-- Charts Grid -->
           <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <UserSpendingRankingChart
+              :items="rankingItems"
+              :total-actual-cost="rankingTotalActualCost"
+              :total-requests="rankingTotalRequests"
+              :total-tokens="rankingTotalTokens"
+              :loading="rankingLoading"
+              :error="rankingError"
+              data-testid="dashboard-user-spending-ranking"
+              @select-user="goToUserUsage"
+            />
             <ModelDistributionChart
               :model-stats="modelStats"
-              :enable-ranking-view="true"
-              :ranking-items="rankingItems"
-              :ranking-total-actual-cost="rankingTotalActualCost"
-              :ranking-total-requests="rankingTotalRequests"
-              :ranking-total-tokens="rankingTotalTokens"
               :loading="chartsLoading"
-              :ranking-loading="rankingLoading"
-              :ranking-error="rankingError"
               :start-date="startDate"
               :end-date="endDate"
-              @ranking-click="goToUserUsage"
+              :period="activePeriod"
+              :timezone="dashboardTimezone"
+              data-testid="dashboard-model-distribution"
             />
-            <TokenUsageTrend :trend-data="trendData" :loading="chartsLoading" />
           </div>
 
+          <!-- Token Usage Trend (Full Width) -->
+          <TokenUsageTrend
+            :trend-data="trendData"
+            :loading="chartsLoading"
+            :granularity="granularity"
+            :range-start="trendRangeStart"
+            :range-end="trendRangeEnd"
+            :timezone="trendTimezone"
+            data-testid="dashboard-token-usage-trend"
+          />
+
           <!-- User Usage Trend (Full Width) -->
-          <div class="dashboard-chart-card p-4">
+          <div class="dashboard-chart-card p-4" data-testid="dashboard-recent-usage">
             <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">
               {{ t('admin.dashboard.recentUsage') }} (Top 12)
             </h3>
@@ -301,6 +279,10 @@ import { useAppStore } from '@/stores/app'
 const { t } = useI18n()
 import { adminAPI } from '@/api/admin'
 import type {
+  ModelUsageTrendGranularity,
+  UserUsagePeriod
+} from '@/api/usage'
+import type {
   DashboardStats,
   TrendDataPoint,
   ModelStat,
@@ -313,7 +295,18 @@ import Icon from '@/components/icons/Icon.vue'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import Select from '@/components/common/Select.vue'
 import ModelDistributionChart from '@/components/charts/ModelDistributionChart.vue'
+import UserSpendingRankingChart from '@/components/charts/UserSpendingRankingChart.vue'
 import TokenUsageTrend from '@/components/charts/TokenUsageTrend.vue'
+import { formatTokenCount } from '@/utils/format'
+import {
+  completeModelUsageBuckets,
+  createModelUsageTickFormatter
+} from '@/components/charts/modelUsageTrendAxis'
+import {
+  dashboardDatePresets,
+  getDashboardPresetGranularity,
+  getDashboardPresetPeriod
+} from '@/utils/dashboardTimeRange'
 
 import {
   Chart as ChartJS,
@@ -349,6 +342,10 @@ const rankingError = ref(false)
 
 // Chart data
 const trendData = ref<TrendDataPoint[]>([])
+const trendRangeStart = ref<string | null>(null)
+const trendRangeEnd = ref<string | null>(null)
+const dashboardTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+const trendTimezone = ref(dashboardTimezone)
 const modelStats = ref<ModelStat[]>([])
 const userTrend = ref<UserUsageTrendPoint[]>([])
 const rankingItems = ref<UserSpendingRankingItem[]>([])
@@ -375,15 +372,19 @@ const getLast24HoursRangeDates = (): { start: string; end: string } => {
 }
 
 // Date range
-const granularity = ref<'day' | 'hour'>('hour')
+const granularity = ref<ModelUsageTrendGranularity>('hour')
+const activePeriod = ref<UserUsagePeriod | null>('24h')
 const defaultRange = getLast24HoursRangeDates()
 const startDate = ref(defaultRange.start)
 const endDate = ref(defaultRange.end)
 
 // Granularity options for Select component
 const granularityOptions = computed(() => [
-  { value: 'day', label: t('admin.dashboard.day') },
-  { value: 'hour', label: t('admin.dashboard.hour') }
+  { value: 'hour', label: t('dashboard.oneHour') },
+  { value: '2h', label: t('dashboard.twoHours') },
+  { value: '4h', label: t('dashboard.fourHours') },
+  { value: '8h', label: t('dashboard.eightHours') },
+  { value: 'day', label: t('dashboard.day') }
 ])
 
 // Dark mode detection
@@ -425,8 +426,9 @@ const lineOptions = computed(() => ({
         return bValue - aValue
       },
       callbacks: {
+        title: (tooltipItems: any[]) => userTrendTickFormatter.value(tooltipItems[0]?.dataIndex ?? -1),
         label: (context: any) => {
-          return `${context.dataset.label}: ${formatTokens(context.raw)}`
+          return `${context.dataset.label}: ${formatTokenCount(context.raw)}`
         }
       }
     }
@@ -440,7 +442,8 @@ const lineOptions = computed(() => ({
         color: chartColors.value.text,
         font: {
           size: 10
-        }
+        },
+        callback: (_value: string | number, index: number) => userTrendTickFormatter.value(index)
       }
     },
     y: {
@@ -452,7 +455,7 @@ const lineOptions = computed(() => ({
         font: {
           size: 10
         },
-        callback: (value: string | number) => formatTokens(Number(value))
+        callback: (value: string | number) => formatTokenCount(Number(value))
       }
     }
   }
@@ -489,7 +492,17 @@ const userTrendChartData = computed(() => {
     userGroups.get(key)!.data.set(point.date, point.tokens)
   })
 
-  const sortedDates = Array.from(allDates).sort()
+  const sourceDates = Array.from(allDates).sort()
+  const completedDates = completeModelUsageBuckets(
+    sourceDates,
+    granularity.value,
+    trendRangeStart.value,
+    trendRangeEnd.value
+  )
+  const completedDateSet = new Set(completedDates)
+  const sortedDates = sourceDates.every((date) => completedDateSet.has(date))
+    ? completedDates
+    : sourceDates
   const colors = [
     '#3b82f6',
     '#10b981',
@@ -520,19 +533,13 @@ const userTrendChartData = computed(() => {
   }
 })
 
-// Format helpers
-const formatTokens = (value: number | undefined): string => {
-  if (value === undefined || value === null) return '0'
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(2)}B`
-  } else if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(2)}M`
-  } else if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(2)}K`
-  }
-  return value.toLocaleString()
-}
+const userTrendTickFormatter = computed(() => createModelUsageTickFormatter(
+  (userTrendChartData.value?.labels ?? []) as string[],
+  granularity.value,
+  trendTimezone.value
+))
 
+// Format helpers
 const toFiniteNumber = (value: unknown): number => {
   const numberValue = Number(value)
   return Number.isFinite(numberValue) ? numberValue : 0
@@ -540,18 +547,6 @@ const toFiniteNumber = (value: unknown): number => {
 
 const formatNumber = (value: number | null | undefined): string => {
   return toFiniteNumber(value).toLocaleString()
-}
-
-const formatCost = (value: number | null | undefined): string => {
-  const amount = typeof value === 'number' && Number.isFinite(value) ? value : 0
-  if (amount >= 1000) {
-    return (amount / 1000).toFixed(2) + 'K'
-  } else if (amount >= 1) {
-    return amount.toFixed(2)
-  } else if (amount >= 0.01) {
-    return amount.toFixed(3)
-  }
-  return amount.toFixed(4)
 }
 
 const formatDuration = (ms: number): string => {
@@ -562,12 +557,14 @@ const formatDuration = (ms: number): string => {
 }
 
 const goToUserUsage = (item: UserSpendingRankingItem) => {
+  const rangeQuery = activePeriod.value
+    ? { period: activePeriod.value, timezone: dashboardTimezone }
+    : { start_date: startDate.value, end_date: endDate.value, timezone: dashboardTimezone }
   void router.push({
     path: '/admin/usage',
     query: {
       user_id: String(item.user_id),
-      start_date: startDate.value,
-      end_date: endDate.value
+      ...rangeQuery
     }
   })
 }
@@ -578,14 +575,26 @@ const onDateRangeChange = (range: {
   endDate: string
   preset: string | null
 }) => {
-  // Auto-select granularity based on date range
+  activePeriod.value = getDashboardPresetPeriod(range.preset)
+  const presetGranularity = getDashboardPresetGranularity(range.preset)
+  if (presetGranularity) {
+    granularity.value = presetGranularity
+    loadChartData()
+    return
+  }
+
   const start = new Date(range.startDate)
   const end = new Date(range.endDate)
   const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
 
-  // If range is 1 day, use hourly granularity
   if (daysDiff <= 1) {
     granularity.value = 'hour'
+  } else if (daysDiff <= 2) {
+    granularity.value = '2h'
+  } else if (daysDiff <= 7) {
+    granularity.value = '4h'
+  } else if (daysDiff <= 14) {
+    granularity.value = '8h'
   } else {
     granularity.value = 'day'
   }
@@ -604,6 +613,8 @@ const loadDashboardSnapshot = async (includeStats: boolean) => {
     const response = await adminAPI.dashboard.getSnapshotV2({
       start_date: startDate.value,
       end_date: endDate.value,
+      period: activePeriod.value ?? undefined,
+      timezone: dashboardTimezone,
       granularity: granularity.value,
       include_stats: includeStats,
       include_trend: true,
@@ -616,6 +627,9 @@ const loadDashboardSnapshot = async (includeStats: boolean) => {
       stats.value = response.stats
     }
     trendData.value = response.trend || []
+    trendRangeStart.value = response.start_time || null
+    trendRangeEnd.value = response.end_time || null
+    trendTimezone.value = response.timezone || dashboardTimezone
     modelStats.value = response.models || []
   } catch (error) {
     if (currentSeq !== chartLoadSeq) return
@@ -636,6 +650,8 @@ const loadUsersTrend = async () => {
     const response = await adminAPI.dashboard.getUserUsageTrend({
       start_date: startDate.value,
       end_date: endDate.value,
+      period: activePeriod.value ?? undefined,
+      timezone: dashboardTimezone,
       granularity: granularity.value,
       limit: 12
     })
@@ -660,6 +676,8 @@ const loadUserSpendingRanking = async () => {
     const response = await adminAPI.dashboard.getUserSpendingRanking({
       start_date: startDate.value,
       end_date: endDate.value,
+      period: activePeriod.value ?? undefined,
+      timezone: dashboardTimezone,
       limit: rankingLimit
     })
     if (currentSeq !== rankingLoadSeq) return

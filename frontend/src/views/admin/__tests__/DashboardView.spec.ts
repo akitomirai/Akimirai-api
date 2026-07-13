@@ -5,10 +5,11 @@ import { createPinia, setActivePinia } from 'pinia'
 import type { DashboardStats } from '@/types'
 import DashboardView from '../DashboardView.vue'
 
-const { getSnapshotV2, getUserUsageTrend, getUserSpendingRanking } = vi.hoisted(() => ({
+const { getSnapshotV2, getUserUsageTrend, getUserSpendingRanking, routerPush } = vi.hoisted(() => ({
   getSnapshotV2: vi.fn(),
   getUserUsageTrend: vi.fn(),
-  getUserSpendingRanking: vi.fn()
+  getUserSpendingRanking: vi.fn(),
+  routerPush: vi.fn()
 }))
 
 vi.mock('@/api/admin', () => ({
@@ -29,7 +30,7 @@ vi.mock('@/stores/app', () => ({
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({
-    push: vi.fn()
+    push: routerPush
   })
 }))
 
@@ -93,6 +94,7 @@ describe('admin DashboardView', () => {
     getSnapshotV2.mockReset()
     getUserUsageTrend.mockReset()
     getUserSpendingRanking.mockReset()
+    routerPush.mockReset()
 
     getSnapshotV2.mockResolvedValue({
       stats: createDashboardStats(),
@@ -124,6 +126,7 @@ describe('admin DashboardView', () => {
           Icon: true,
           DateRangePicker: true,
           Select: true,
+          UserSpendingRankingChart: true,
           ModelDistributionChart: true,
           TokenUsageTrend: true,
           Line: true
@@ -143,5 +146,103 @@ describe('admin DashboardView', () => {
       granularity: 'hour'
     }))
     expect(wrapper.text()).not.toContain('admin.dashboard.quickActions')
+  })
+
+  it('places spending ranking beside model distribution and token trend above recent usage', async () => {
+    const wrapper = mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: true,
+          Select: true,
+          UserSpendingRankingChart: {
+            name: 'UserSpendingRankingChart',
+            emits: ['select-user'],
+            template: '<button @click="$emit(\'select-user\', { user_id: 42 })" />'
+          },
+          ModelDistributionChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    const sectionOrder = wrapper
+      .findAll('[data-testid^="dashboard-"]')
+      .map((section) => section.attributes('data-testid'))
+
+    expect(sectionOrder).toEqual([
+      'dashboard-user-spending-ranking',
+      'dashboard-model-distribution',
+      'dashboard-token-usage-trend',
+      'dashboard-recent-usage'
+    ])
+
+    const ranking = wrapper.get('[data-testid="dashboard-user-spending-ranking"]')
+    const models = wrapper.get('[data-testid="dashboard-model-distribution"]')
+    expect(ranking.element.parentElement).toBe(models.element.parentElement)
+    expect(ranking.element.parentElement?.className).toContain('lg:grid-cols-2')
+
+    await ranking.trigger('click')
+    expect(routerPush).toHaveBeenCalledWith({
+      path: '/admin/usage',
+      query: expect.objectContaining({
+        user_id: '42',
+        period: '24h',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      })
+    })
+  })
+
+  it('uses the shared preset granularity for the last 48 hours', async () => {
+    const wrapper = mount(DashboardView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          LoadingSpinner: true,
+          Icon: true,
+          DateRangePicker: {
+            props: ['startDate', 'endDate', 'presetValues'],
+            emits: ['update:startDate', 'update:endDate', 'change'],
+            template: `
+              <button
+                data-testid="last-48-hours"
+                :data-presets="presetValues.join(',')"
+                @click="$emit('update:startDate', '2026-07-11'); $emit('update:endDate', '2026-07-13'); $emit('change', { startDate: '2026-07-11', endDate: '2026-07-13', preset: 'last48Hours' })"
+              />
+            `
+          },
+          Select: true,
+          UserSpendingRankingChart: true,
+          ModelDistributionChart: true,
+          TokenUsageTrend: true,
+          Line: true
+        }
+      }
+    })
+
+    await flushPromises()
+    expect(wrapper.get('[data-testid="last-48-hours"]').attributes('data-presets')).toBe(
+      'yesterday,today,last24Hours,last48Hours,7days,14days,30days'
+    )
+
+    await wrapper.get('[data-testid="last-48-hours"]').trigger('click')
+    await flushPromises()
+
+    expect(getSnapshotV2).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        start_date: '2026-07-11',
+        end_date: '2026-07-13',
+        period: '48h',
+        granularity: '2h'
+      })
+    )
+    expect(getUserUsageTrend).toHaveBeenLastCalledWith(
+      expect.objectContaining({ granularity: '2h' })
+    )
   })
 })

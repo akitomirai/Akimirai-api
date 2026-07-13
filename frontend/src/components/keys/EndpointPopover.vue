@@ -172,6 +172,17 @@ onBeforeUnmount(() => {
           </svg>
         </button>
 
+        <a
+          :href="speedTestUrl(item.endpoint)"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="shrink-0 rounded p-0.5 text-gray-400 transition-colors hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400"
+          :aria-label="t('keys.endpoints.externalSpeedTest')"
+          :title="t('keys.endpoints.externalSpeedTest')"
+        >
+          <Icon name="gauge" size="xs" :stroke-width="2" />
+        </a>
+
         <button
           type="button"
           class="shrink-0 rounded p-0.5 text-gray-400 transition-colors hover:text-amber-500 disabled:cursor-wait disabled:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400 dark:disabled:text-amber-400"
@@ -200,17 +211,6 @@ onBeforeUnmount(() => {
           v-else-if="latencyResult(item.endpoint).status === 'failed'"
           class="text-[10px] text-red-500 dark:text-red-400"
         >{{ t('keys.endpoints.latencyFailed') }}</span>
-
-        <a
-          :href="speedTestUrl(item.endpoint)"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="shrink-0 rounded p-0.5 text-gray-400 transition-colors hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400"
-          :aria-label="t('keys.endpoints.externalSpeedTest')"
-          :title="t('keys.endpoints.externalSpeedTest')"
-        >
-          <Icon name="chart" size="xs" :stroke-width="2" />
-        </a>
       </div>
     </div>
   </div>
