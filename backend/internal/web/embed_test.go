@@ -735,6 +735,17 @@ func TestShouldBypassEmbeddedFrontendImagesPaths(t *testing.T) {
 	}
 }
 
+func TestShouldBypassEmbeddedFrontendVideosPaths(t *testing.T) {
+	for _, path := range []string{
+		"/videos/generations",
+		"/videos/edits",
+		"/videos/extensions",
+		"/videos/request-123",
+	} {
+		assert.True(t, shouldBypassEmbeddedFrontend(path), "path=%s", path)
+	}
+}
+
 func TestSetStaticCacheHeadersForPlaygroundAssets(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)

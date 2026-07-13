@@ -185,20 +185,21 @@ func TestBuildGrokResponsesRequestUsesAccountBaseURLAndBearerToken(t *testing.T)
 	require.Equal(t, `{"model":"grok-4.3"}`, strings.TrimSpace(string(data)))
 }
 
-func TestBuildGrokResponsesRequestRejectsUnsafeAccountBaseURL(t *testing.T) {
+func TestBuildGrokResponsesRequestAllowsPublicAPIKeyBaseURLByDefault(t *testing.T) {
 	t.Parallel()
 
 	account := &Account{
 		Platform: PlatformGrok,
-		Type:     AccountTypeOAuth,
+		Type:     AccountTypeAPIKey,
 		Credentials: map[string]any{
 			"base_url": "https://xai.test/v1",
 		},
 	}
 
-	_, err := buildGrokResponsesRequest(context.Background(), nil, account, []byte(`{"model":"grok-4.3"}`), "access-token", "")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid base url")
+	req, err := buildGrokResponsesRequest(context.Background(), nil, account, []byte(`{"model":"grok-4.3"}`), "api-key", "")
+	require.NoError(t, err)
+	require.Equal(t, "https://xai.test/v1/responses", req.URL.String())
+	require.Equal(t, "Bearer api-key", req.Header.Get("Authorization"))
 }
 
 func TestGrokMediaGenerationGateCoversImagesAndVideo(t *testing.T) {
@@ -210,6 +211,8 @@ func TestGrokMediaGenerationGateCoversImagesAndVideo(t *testing.T) {
 		{name: "image generation", endpoint: GrokMediaEndpointImagesGenerations, want: true},
 		{name: "image edit", endpoint: GrokMediaEndpointImagesEdits, want: true},
 		{name: "video generation", endpoint: GrokMediaEndpointVideosGenerations, want: true},
+		{name: "video edit", endpoint: GrokMediaEndpointVideosEdits, want: true},
+		{name: "video extension", endpoint: GrokMediaEndpointVideosExtensions, want: true},
 		{name: "video status", endpoint: GrokMediaEndpointVideoStatus, want: false},
 	}
 

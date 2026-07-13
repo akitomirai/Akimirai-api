@@ -739,10 +739,10 @@ func TestOpenAIWSConnPool_EffectiveMaxConnsDisabledFallbackHardCap(t *testing.T)
 	require.Equal(t, 8, pool.effectiveMaxConnsByAccount(account), "关闭动态模式后应保持旧行为")
 }
 
-func TestOpenAIWSConnPool_EffectiveMaxConnsByAccount_ModeRouterV2UsesAccountConcurrency(t *testing.T) {
+func TestOpenAIWSConnPool_EffectiveMaxConnsByAccount_ModeRouterV2UsesConcurrencyWithinHardCap(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.Gateway.OpenAIWS.ModeRouterV2Enabled = true
-	cfg.Gateway.OpenAIWS.MaxConnsPerAccount = 8
+	cfg.Gateway.OpenAIWS.MaxConnsPerAccount = 20
 	cfg.Gateway.OpenAIWS.DynamicMaxConnsByAccountConcurrencyEnabled = true
 	cfg.Gateway.OpenAIWS.OAuthMaxConnsFactor = 0.3
 	cfg.Gateway.OpenAIWS.APIKeyMaxConnsFactor = 0.6
@@ -754,6 +754,17 @@ func TestOpenAIWSConnPool_EffectiveMaxConnsByAccount_ModeRouterV2UsesAccountConc
 
 	nonPositive := &Account{Platform: PlatformOpenAI, Type: AccountTypeAPIKey, Concurrency: 0}
 	require.Equal(t, 0, pool.effectiveMaxConnsByAccount(nonPositive), "并发数<=0 时应不可调度")
+}
+
+func TestOpenAIWSConnPool_EffectiveMaxConnsByAccount_ModeRouterV2RespectsHardCap(t *testing.T) {
+	cfg := &config.Config{}
+	cfg.Gateway.OpenAIWS.ModeRouterV2Enabled = true
+	cfg.Gateway.OpenAIWS.MaxConnsPerAccount = 8
+	cfg.Gateway.OpenAIWS.DynamicMaxConnsByAccountConcurrencyEnabled = true
+
+	pool := newOpenAIWSConnPool(cfg)
+	high := &Account{Platform: PlatformOpenAI, Type: AccountTypeOAuth, Concurrency: 20}
+	require.Equal(t, 8, pool.effectiveMaxConnsByAccount(high))
 }
 
 func TestOpenAIWSConnPool_AcquireRejectsWhenEffectiveMaxConnsIsZero(t *testing.T) {

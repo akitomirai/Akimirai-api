@@ -28,7 +28,6 @@ func RegisterPaymentRoutes(
 		authenticated.GET("/config", paymentHandler.GetPaymentConfig)
 		authenticated.GET("/checkout-info", paymentHandler.GetCheckoutInfo)
 		authenticated.GET("/plans", paymentHandler.GetPlans)
-		authenticated.GET("/channels", paymentHandler.GetChannels)
 		authenticated.GET("/limits", paymentHandler.GetLimits)
 		authenticated.POST("/promo-code/validate", paymentHandler.ValidatePromoCode)
 		authenticated.POST("/subscriptions/balance", paymentHandler.PurchaseSubscriptionWithBalance)

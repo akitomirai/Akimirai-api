@@ -69,3 +69,20 @@ func TestPaginationParamsLimit(t *testing.T) {
 		})
 	}
 }
+
+func TestPaginationParamsOffsetUsesNormalizedLimit(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		params PaginationParams
+		want   int
+	}{
+		{params: PaginationParams{Page: 2, PageSize: 0}, want: 20},
+		{params: PaginationParams{Page: 3, PageSize: 1500}, want: 2000},
+		{params: PaginationParams{Page: 0, PageSize: 50}, want: 0},
+	} {
+		if got := test.params.Offset(); got != test.want {
+			t.Fatalf("Offset() = %d, want %d for %+v", got, test.want, test.params)
+		}
+	}
+}

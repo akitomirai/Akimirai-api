@@ -39,6 +39,10 @@ type openAIWSClientConn interface {
 	Close() error
 }
 
+type openAIWSIdlePingCapable interface {
+	SupportsIdlePingWithoutReader() bool
+}
+
 // openAIWSClientDialer 抽象 WS 建连器。
 type openAIWSClientDialer interface {
 	Dial(ctx context.Context, wsURL string, headers http.Header, proxyURL string) (openAIWSClientConn, int, http.Header, error)
@@ -299,6 +303,11 @@ func (c *coderOpenAIWSClientConn) Ping(ctx context.Context) error {
 		ctx = context.Background()
 	}
 	return c.conn.Ping(ctx)
+}
+
+// Ping waits for a pong consumed by Read, so it is unsafe while idle in the pool.
+func (*coderOpenAIWSClientConn) SupportsIdlePingWithoutReader() bool {
+	return false
 }
 
 func (c *coderOpenAIWSClientConn) Close() error {

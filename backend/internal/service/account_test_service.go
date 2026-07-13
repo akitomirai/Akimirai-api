@@ -608,8 +608,11 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 	c.Writer.Header().Set("X-Accel-Buffering", "no")
 	c.Writer.Flush()
 
-	// Create OpenAI Responses API payload
-	payload := createOpenAITestPayload(testModelID, isOAuth)
+	upstreamTestModelID := testModelID
+	if isOAuth {
+		upstreamTestModelID = normalizeOpenAIModelForUpstream(credentialAccount, testModelID)
+	}
+	payload := createOpenAITestPayload(upstreamTestModelID, isOAuth)
 	payloadBytes, _ := json.Marshal(payload)
 
 	// Send test_start event
