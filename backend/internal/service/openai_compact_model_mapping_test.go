@@ -143,6 +143,7 @@ func TestOpenAIGatewayService_APIKeyPassthrough_BodySignalCompactPreservesRespon
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses/compact", bytes.NewReader(nil))
 	c.Request.Header.Set("Content-Type", "application/json")
 	c.Request.Header.Set("Accept", "text/event-stream")
+	c.Request.Header.Set("x-codex-beta-features", "remote_compaction_v2")
 
 	originalBody := []byte(`{"model":"gpt-5.6-sol","stream":true,"store":true,"prompt_cache_key":"compact-session","input":[{"type":"message","role":"user","content":"compact me"},{"type":"compaction_trigger"}]}`)
 	normalizedBody := []byte(`{"model":"gpt-5.6-sol","input":[{"type":"message","role":"user","content":"compact me"},{"type":"compaction_trigger"}]}`)
@@ -191,4 +192,5 @@ func TestOpenAIGatewayService_APIKeyPassthrough_BodySignalCompactPreservesRespon
 	require.Equal(t, "compact-session", gjson.GetBytes(upstream.lastBody, "prompt_cache_key").String())
 	require.Equal(t, "compaction_trigger", gjson.GetBytes(upstream.lastBody, "input.1.type").String())
 	require.Equal(t, "text/event-stream", upstream.lastReq.Header.Get("Accept"))
+	require.Equal(t, "remote_compaction_v2", upstream.lastReq.Header.Get("x-codex-beta-features"))
 }
