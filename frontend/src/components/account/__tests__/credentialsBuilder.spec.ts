@@ -6,12 +6,42 @@ import {
   applyAntigravityProjectID,
   applyHeaderOverride,
   applyInterceptWarmup,
+  applyPlanType,
+  buildPlanTypeOptions,
   buildHeaderOverridesObject,
   getHeaderOverrideTemplate,
   isHeaderOverridePlatform,
+  planTypeDisplayLabel,
+  readPlanType,
   splitHeaderOverridesObject,
   validateHeaderOverrideRows
 } from '../credentialsBuilder'
+
+describe('OpenAI plan_type helpers', () => {
+  it('reads only string values', () => {
+    expect(readPlanType({ plan_type: 'chatgptpro' })).toBe('chatgptpro')
+    expect(readPlanType({ plan_type: 42 })).toBe('')
+    expect(readPlanType(undefined)).toBe('')
+  })
+
+  it('uses friendly labels and preserves aliases/custom values', () => {
+    expect(planTypeDisplayLabel('chatgptpro')).toBe('Pro')
+    expect(planTypeDisplayLabel('team')).toBe('Team')
+    expect(buildPlanTypeOptions('chatgptpro', 'Clear')).toEqual([
+      { value: '', label: 'Clear' },
+      { value: 'plus', label: 'Plus' },
+      { value: 'chatgptpro', label: 'Pro' },
+      { value: 'free', label: 'Free' }
+    ])
+    expect(buildPlanTypeOptions('team', 'Clear')).toContainEqual({ value: 'team', label: 'Team' })
+  })
+
+  it('sets or clears plan_type without changing other credentials', () => {
+    const credentials: Record<string, unknown> = { access_token: 'token', plan_type: 'free' }
+    expect(applyPlanType(credentials, ' pro ')).toEqual({ access_token: 'token', plan_type: 'pro' })
+    expect(applyPlanType(credentials, '')).toEqual({ access_token: 'token' })
+  })
+})
 
 describe('applyInterceptWarmup', () => {
   it('create + enabled=true: should set intercept_warmup_requests to true', () => {

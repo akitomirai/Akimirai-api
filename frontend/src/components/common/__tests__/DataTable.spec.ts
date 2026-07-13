@@ -62,4 +62,23 @@ describe('DataTable', () => {
     expect(nameHeader.findAll('svg')[0].classes()).toContain('text-gray-300')
     expect(nameHeader.findAll('svg')[1].classes()).toContain('text-primary-600')
   })
+
+  it('renders small lists without virtualization and enables it above the threshold', async () => {
+    const wrapper = mount(DataTable, {
+      props: {
+        columns: [{ key: 'name', label: 'Name' }],
+        data: Array.from({ length: 3 }, (_, index) => ({ id: index + 1, name: `Row ${index + 1}` })),
+        virtualizeThreshold: 3
+      }
+    })
+    await wrapper.vm.$nextTick()
+    expect((wrapper.vm as any).shouldVirtualize).toBe(false)
+    expect(wrapper.findAll('tbody tr[data-index]')).toHaveLength(3)
+
+    await wrapper.setProps({
+      data: Array.from({ length: 4 }, (_, index) => ({ id: index + 1, name: `Row ${index + 1}` }))
+    })
+    await wrapper.vm.$nextTick()
+    expect((wrapper.vm as any).shouldVirtualize).toBe(true)
+  })
 })

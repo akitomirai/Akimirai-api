@@ -79,6 +79,7 @@ import {
   getDashboardPresetGranularity,
   getDashboardPresetPeriod,
 } from '@/utils/dashboardTimeRange'
+import { formatDateLocalInput } from '@/utils/format'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -95,10 +96,8 @@ const trendRangeEnd = ref<string | null>(null)
 const platformQuotas = ref<PlatformQuotaItem[] | null>(null)
 const dashboardTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
-const formatLocalDate = (date: Date): string =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-const startDate = ref(formatLocalDate(new Date(Date.now() - 86400000)))
-const endDate = ref(formatLocalDate(new Date()))
+const startDate = ref(formatDateLocalInput(new Date(Date.now() - 86400000)))
+const endDate = ref(formatDateLocalInput(new Date()))
 const activePreset = ref<string | null>('last24Hours')
 const granularity = ref<ModelUsageTrendGranularity>('hour')
 
