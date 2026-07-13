@@ -9,9 +9,29 @@ import (
 
 const codexUpstreamMinVersion = "0.144.0"
 
+// ensureCodexIdentityHeaders fills the complete OAuth ChatGPT Codex identity.
+// Existing official User-Agent and version values are retained; enforce then
+// pairs the identity and raises an explicitly stale version when necessary.
+func ensureCodexIdentityHeaders(headers http.Header) {
+	if headers == nil {
+		return
+	}
+	if strings.TrimSpace(headers.Get("user-agent")) == "" {
+		headers.Set("user-agent", codexCLIUserAgent)
+	}
+	if strings.TrimSpace(headers.Get("originator")) == "" {
+		headers.Set("originator", "codex_cli_rs")
+	}
+	if strings.TrimSpace(headers.Get("version")) == "" {
+		headers.Set("version", codexCLIVersion)
+	}
+	headers.Set("OpenAI-Beta", "responses=experimental")
+}
+
 // enforceCodexIdentityHeaders pairs originator with the final outbound
 // User-Agent and raises an explicitly supplied stale version header.
-// Requests without originator are compatibility bridges and remain untouched.
+// Requests without originator remain untouched unless their caller explicitly
+// restores the complete identity with ensureCodexIdentityHeaders first.
 func enforceCodexIdentityHeaders(headers http.Header) {
 	if headers == nil || headers.Get("originator") == "" {
 		return
