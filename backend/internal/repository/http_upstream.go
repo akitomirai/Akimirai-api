@@ -26,6 +26,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/proxyurl"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/proxyutil"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/servertiming"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/tlsfingerprint"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/Wei-Shaw/sub2api/internal/util/urlvalidator"
@@ -187,7 +188,7 @@ func (s *httpUpstreamService) Do(req *http.Request, proxyURL string, accountID i
 
 	// 执行请求
 	req, diagnosticsAttempt := attachHTTPUpstreamDiagnostics(req, proxyURL, accountID)
-	resp, err := entry.client.Do(req)
+	resp, err := servertiming.Do(entry.client, req)
 	finishHTTPUpstreamDiagnostics(diagnosticsAttempt, resp, err)
 	if err != nil {
 		s.recordOpenAIHTTP2Failure(profile, entry.protocolMode, entry.proxyKey, err)
@@ -247,7 +248,7 @@ func (s *httpUpstreamService) DoWithTLS(req *http.Request, proxyURL string, acco
 	}
 
 	req, diagnosticsAttempt := attachHTTPUpstreamDiagnostics(req, proxyURL, accountID)
-	resp, err := entry.client.Do(req)
+	resp, err := servertiming.Do(entry.client, req)
 	finishHTTPUpstreamDiagnostics(diagnosticsAttempt, resp, err)
 	if err != nil {
 		atomic.AddInt64(&entry.inFlight, -1)

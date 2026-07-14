@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/servertiming"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/stretchr/testify/require"
 )
@@ -82,6 +83,34 @@ func TestHTTPUpstreamDiagnosticsMarksPooledConnectionReuse(t *testing.T) {
 	require.Nil(t, second.UpstreamDNSLookupMs)
 	require.Nil(t, second.UpstreamTCPConnectMs)
 	require.Nil(t, second.UpstreamTLSHandshakeMs)
+}
+
+func TestHTTPUpstreamDiagnosticsAndServerTimingCoexist(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer server.Close()
+
+	startedAt := time.Now()
+	diagnostics := service.NewRequestDiagnostics(startedAt)
+	diagnostics.SelectAccount(&service.Account{ID: 61, Name: "direct"})
+	timing := servertiming.New(startedAt)
+	ctx := service.WithRequestDiagnostics(t.Context(), diagnostics)
+	ctx = servertiming.WithCollector(ctx, timing)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, server.URL, nil)
+	require.NoError(t, err)
+
+	upstream := NewHTTPUpstream(&config.Config{Security: config.SecurityConfig{URLAllowlist: config.URLAllowlistConfig{AllowPrivateHosts: true}}})
+	resp, err := upstream.Do(req, "", 61, 1)
+	require.NoError(t, err)
+	_, err = io.Copy(io.Discard, resp.Body)
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
+
+	snapshot := diagnostics.SnapshotAt(time.Now(), nil)
+	require.NotNil(t, snapshot.UpstreamRequestWrittenMs)
+	require.NotNil(t, snapshot.UpstreamFirstByteMs)
+	require.Contains(t, timing.HeaderValue(time.Now(), "bypass"), "dep_http;dur=")
 }
 
 func TestAttachHTTPUpstreamDiagnosticsWithoutCollectorIsNoOp(t *testing.T) {
