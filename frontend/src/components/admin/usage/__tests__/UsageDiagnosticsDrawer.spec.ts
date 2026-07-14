@@ -37,6 +37,7 @@ describe('UsageDiagnosticsDrawer', () => {
       request_total_ms: 2000,
       auth_latency_ms: 25,
       request_body_read_ms: 12,
+      routing_latency_ms: 35,
       upstream_connection_reused: false,
       upstream_connection_ready_ms: 100,
       upstream_dns_lookup_ms: 10,
@@ -74,33 +75,36 @@ describe('UsageDiagnosticsDrawer', () => {
     expect(wrapper.text()).toContain('jp-egress #8 (socks5)')
     expect(wrapper.text()).toContain('12345678')
     for (const checkpoint of [
-      'requestPreparation',
-      'dnsResolution',
-      'tcpConnection',
-      'tlsHandshake',
-      'requestHeadersSent',
-      'requestBodySent',
-      'waitingResponseHeaders',
-      'responseHeadersToFirstByte',
-      'firstByteToFirstEvent',
-      'firstEventToFirstCharacter',
-      'afterFirstCharacter',
-      'firstCharacterLatency',
-      'endToEndTotal',
+      'bodyRead',
+      'routing',
+      'requestWritten',
+      'firstByte',
+      'firstToken',
+      'completed',
     ]) {
       expect(wrapper.text()).toContain(`admin.usage.diagnostics.${checkpoint}`)
     }
-    expect(wrapper.text()).toContain('25ms')
-    expect(wrapper.text()).toContain('10ms')
-    expect(wrapper.text()).toContain('20ms')
-    expect(wrapper.text()).toContain('30ms')
-    expect(wrapper.text()).toContain('550ms')
-    expect(wrapper.text()).toContain('40ms')
-    expect(wrapper.text()).toContain('800ms')
-    expect(wrapper.text()).toContain('1.20s')
+    for (const detail of [
+      'bodyReadDetail',
+      'routingDetail',
+      'requestWrittenDetail',
+      'firstByteDetail',
+      'firstTokenDetail',
+      'completedDetail',
+    ]) {
+      expect(wrapper.text()).toContain(`admin.usage.diagnostics.${detail}`)
+    }
+    expect(wrapper.findAll('[data-testid^="timing-step-"]')).toHaveLength(6)
+    expect(wrapper.get('[data-testid="timing-step-body"]').text()).toContain('12ms')
+    expect(wrapper.get('[data-testid="timing-step-routing"]').text()).toContain('35ms')
+    expect(wrapper.get('[data-testid="timing-step-written"]').text()).toContain('150ms')
+    expect(wrapper.get('[data-testid="timing-step-first-byte"]').text()).toContain('700ms')
+    expect(wrapper.get('[data-testid="timing-step-first-token"]').text()).toContain('900ms')
+    expect(wrapper.get('[data-testid="timing-step-total"]').text()).toContain('2.00s')
     expect(wrapper.text()).toContain('2.00s')
     expect(wrapper.text()).toContain('2.0 KiB')
-    expect(wrapper.text()).not.toContain('700ms')
+    expect(wrapper.text()).not.toContain('admin.usage.diagnostics.dnsResolution')
+    expect(wrapper.text()).not.toContain('admin.usage.diagnostics.requestHeadersSent')
 
     const errorsButton = wrapper.findAll('button').find((button) => button.text().includes('viewErrors'))
     expect(errorsButton).toBeDefined()
@@ -108,14 +112,14 @@ describe('UsageDiagnosticsDrawer', () => {
     expect(wrapper.emitted('openErrors')).toEqual([['req-diagnostics']])
   })
 
-  it('labels unavailable connection phases as reused for pooled connections', async () => {
+  it('does not relabel legacy upstream-relative timings as request-scoped diagnostics', async () => {
     getDiagnostics.mockResolvedValue({
       id: 43,
-      request_id: 'req-reused',
+      request_id: 'req-legacy-timings',
       model: 'gpt-5.6-sol',
       created_at: '2026-07-11T01:02:03Z',
-      request_total_ms: 1000,
-      upstream_connection_reused: true,
+      first_token_ms: 999,
+      duration_ms: 2222,
       route_kind: 'direct',
       retry_count: 0,
       account_switch_count: 0,
@@ -128,6 +132,9 @@ describe('UsageDiagnosticsDrawer', () => {
     })
     await flushPromises()
 
-    expect(wrapper.text().match(/admin\.usage\.diagnostics\.connectionReused/g)).toHaveLength(3)
+    expect(wrapper.get('[data-testid="timing-step-first-token"]').text()).toContain('admin.usage.diagnostics.unavailable')
+    expect(wrapper.get('[data-testid="timing-step-total"]').text()).toContain('admin.usage.diagnostics.unavailable')
+    expect(wrapper.text()).not.toContain('999ms')
+    expect(wrapper.text()).not.toContain('2.22s')
   })
 })

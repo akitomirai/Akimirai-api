@@ -62,7 +62,7 @@
               </div>
               <div>
                 <div class="diagnostic-label">{{ t('admin.usage.diagnostics.totalDuration') }}</div>
-                <div class="diagnostic-value">{{ formatDuration(diagnostics.request_total_ms ?? diagnostics.duration_ms) }}</div>
+                <div class="diagnostic-value">{{ formatDuration(diagnostics.request_total_ms) }}</div>
               </div>
               <div>
                 <div class="diagnostic-label">{{ t('admin.usage.diagnostics.upstreamStatus') }}</div>
@@ -99,21 +99,29 @@
 
             <section class="border-b border-gray-200 px-5 py-5 dark:border-dark-700">
               <h3 class="diagnostic-heading mb-4">{{ t('admin.usage.diagnostics.timeline') }}</h3>
+              <p class="mb-3 text-[11px] leading-4 text-gray-400 dark:text-gray-500">
+                {{ t('admin.usage.diagnostics.timelineDetail') }}
+              </p>
               <div class="relative space-y-0 pl-5">
                 <div class="absolute bottom-2 left-[5px] top-2 w-px bg-gray-200 dark:bg-dark-700"></div>
-                <div v-for="step in timingSteps" :key="step.key" class="relative flex min-h-10 items-start justify-between gap-4 py-2">
+                <div
+                  v-for="step in timingSteps"
+                  :key="step.key"
+                  :data-testid="`timing-step-${step.key}`"
+                  class="relative flex min-h-10 items-start justify-between gap-4 py-2.5"
+                >
                   <span class="absolute -left-5 top-3.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-primary-500 ring-1 ring-primary-200 dark:border-dark-900 dark:ring-primary-900"></span>
-                  <span class="text-sm text-gray-600 dark:text-gray-300">{{ step.label }}</span>
+                  <span class="min-w-0">
+                    <span class="block text-sm text-gray-700 dark:text-gray-200">{{ step.label }}</span>
+                    <span class="mt-0.5 block text-[11px] leading-4 text-gray-400 dark:text-gray-500">{{ step.detail }}</span>
+                  </span>
                   <span class="whitespace-nowrap font-mono text-sm font-medium text-gray-900 dark:text-white">
-                    {{ formatTimingStep(step) }}
+                    {{ formatDuration(step.value) }}
                   </span>
                 </div>
               </div>
-              <div class="mt-3 flex items-center justify-between gap-4 border-t border-gray-100 pt-3 text-sm dark:border-dark-800">
-                <span class="text-gray-600 dark:text-gray-300">{{ t('admin.usage.diagnostics.bodyBytes') }}</span>
-                <span class="whitespace-nowrap font-mono font-medium text-gray-900 dark:text-white">
-                  {{ diagnostics.request_body_bytes == null ? t('admin.usage.diagnostics.unavailable') : formatBytes(diagnostics.request_body_bytes) }}
-                </span>
+              <div v-if="diagnostics.request_body_bytes != null" class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                {{ t('admin.usage.diagnostics.bodyBytes') }}: {{ formatBytes(diagnostics.request_body_bytes) }}
               </div>
             </section>
 
@@ -209,21 +217,43 @@ const timingSteps = computed(() => {
   const row = diagnostics.value
   if (!row) return []
 
-  const reusedConnection = row.upstream_connection_reused === true
   return [
-    { key: 'request-preparation', label: t('admin.usage.diagnostics.requestPreparation'), value: row.auth_latency_ms ?? row.request_body_read_ms },
-    { key: 'dns-resolution', label: t('admin.usage.diagnostics.dnsResolution'), value: row.upstream_dns_lookup_ms, reusedConnection },
-    { key: 'tcp-connection', label: t('admin.usage.diagnostics.tcpConnection'), value: row.upstream_tcp_connect_ms, reusedConnection },
-    { key: 'tls-handshake', label: t('admin.usage.diagnostics.tlsHandshake'), value: row.upstream_tls_handshake_ms, reusedConnection },
-    { key: 'request-headers-sent', label: t('admin.usage.diagnostics.requestHeadersSent'), value: durationBetween(row.upstream_connection_ready_ms, row.upstream_request_headers_written_ms) },
-    { key: 'request-body-sent', label: t('admin.usage.diagnostics.requestBodySent'), value: durationBetween(row.upstream_request_headers_written_ms, row.upstream_request_written_ms) },
-    { key: 'waiting-response-headers', label: t('admin.usage.diagnostics.waitingResponseHeaders'), value: durationBetween(row.upstream_request_written_ms, row.upstream_first_byte_ms) },
-    { key: 'response-headers-to-first-byte', label: t('admin.usage.diagnostics.responseHeadersToFirstByte'), value: durationBetween(row.upstream_response_headers_received_ms, row.upstream_response_body_first_byte_ms) },
-    { key: 'first-byte-to-first-event', label: t('admin.usage.diagnostics.firstByteToFirstEvent'), value: durationBetween(row.upstream_response_body_first_byte_ms, row.upstream_first_event_ms) },
-    { key: 'first-event-to-first-character', label: t('admin.usage.diagnostics.firstEventToFirstCharacter'), value: durationBetween(row.upstream_first_event_ms, row.request_first_output_character_ms) },
-    { key: 'after-first-character', label: t('admin.usage.diagnostics.afterFirstCharacter'), value: durationBetween(row.request_first_output_character_ms, row.request_total_ms) },
-    { key: 'first-character-latency', label: t('admin.usage.diagnostics.firstCharacterLatency'), value: row.request_first_output_character_ms },
-    { key: 'end-to-end-total', label: t('admin.usage.diagnostics.endToEndTotal'), value: row.request_total_ms ?? row.duration_ms },
+    {
+      key: 'body',
+      label: t('admin.usage.diagnostics.bodyRead'),
+      detail: t('admin.usage.diagnostics.bodyReadDetail'),
+      value: row.request_body_read_ms,
+    },
+    {
+      key: 'routing',
+      label: t('admin.usage.diagnostics.routing'),
+      detail: t('admin.usage.diagnostics.routingDetail'),
+      value: row.routing_latency_ms,
+    },
+    {
+      key: 'written',
+      label: t('admin.usage.diagnostics.requestWritten'),
+      detail: t('admin.usage.diagnostics.requestWrittenDetail'),
+      value: row.upstream_request_written_ms,
+    },
+    {
+      key: 'first-byte',
+      label: t('admin.usage.diagnostics.firstByte'),
+      detail: t('admin.usage.diagnostics.firstByteDetail'),
+      value: row.upstream_first_byte_ms,
+    },
+    {
+      key: 'first-token',
+      label: t('admin.usage.diagnostics.firstToken'),
+      detail: t('admin.usage.diagnostics.firstTokenDetail'),
+      value: row.request_first_token_ms,
+    },
+    {
+      key: 'total',
+      label: t('admin.usage.diagnostics.completed'),
+      detail: t('admin.usage.diagnostics.completedDetail'),
+      value: row.request_total_ms,
+    },
   ]
 })
 
@@ -248,20 +278,12 @@ const proxyLabel = computed(() => {
 })
 
 const formatDate = (value: string | null | undefined) => value ? formatDateTime(value) : t('admin.usage.diagnostics.unavailable')
-const durationBetween = (startedAt: number | null | undefined, completedAt: number | null | undefined) => {
-  if (startedAt == null || completedAt == null || completedAt < startedAt) return null
-  return completedAt - startedAt
-}
 const formatDuration = (value: number | null | undefined) => {
   if (value == null) return t('admin.usage.diagnostics.unavailable')
   if (value < 1000) return `${value}ms`
   if (value < 60_000) return `${(value / 1000).toFixed(2)}s`
   const seconds = Math.round(value / 1000)
   return `${Math.floor(seconds / 60)}m ${seconds % 60}s`
-}
-const formatTimingStep = (step: { value: number | null | undefined; reusedConnection?: boolean }) => {
-  if (step.value == null && step.reusedConnection) return t('admin.usage.diagnostics.connectionReused')
-  return formatDuration(step.value)
 }
 const formatBytes = (value: number) => value < 1024
   ? `${value} B`
