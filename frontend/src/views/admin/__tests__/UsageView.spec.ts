@@ -99,8 +99,11 @@ beforeEach(() => {
 const AppLayoutStub = { template: '<div><slot /></div>' }
 const UsageFiltersStub = { template: '<div><slot name="before-refresh" /></div>' }
 const UsageTableStub = {
+  props: {
+    tokenBreakdown: Boolean,
+  },
   emits: ['userClick'],
-  template: '<div data-test="usage-table"><button class="user-click" @click="$emit(\'userClick\', 2)">user</button></div>',
+  template: '<div data-test="usage-table" :data-token-breakdown="String(tokenBreakdown)"><button class="user-click" @click="$emit(\'userClick\', 2)">user</button></div>',
 }
 const UserTokenRankingStub = {
   emits: ['select-user'],
@@ -353,6 +356,8 @@ describe('admin UsageView handleUserClick', () => {
 
     vi.advanceTimersByTime(120)
     await flushPromises()
+
+    expect(wrapper.get('[data-test="usage-table"]').attributes('data-token-breakdown')).toBe('true')
 
     await wrapper.find('[data-test="usage-table"] .user-click').trigger('click')
     await flushPromises()
