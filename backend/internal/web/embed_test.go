@@ -625,6 +625,36 @@ func TestHasEmbeddedFrontend(t *testing.T) {
 	})
 }
 
+func TestEmbeddedImagePlaygroundRoutes(t *testing.T) {
+	provider := &mockSettingsProvider{settings: map[string]string{"test": "value"}}
+	server, err := NewFrontendServer(provider)
+	require.NoError(t, err)
+
+	middlewares := []struct {
+		name       string
+		middleware gin.HandlerFunc
+	}{
+		{name: "settings_injection", middleware: server.Middleware()},
+		{name: "legacy", middleware: ServeEmbeddedFrontend()},
+	}
+
+	for _, tt := range middlewares {
+		t.Run(tt.name, func(t *testing.T) {
+			router := gin.New()
+			router.Use(tt.middleware)
+
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/images/", nil)
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusOK, w.Code)
+			assert.Contains(t, w.Header().Get("Content-Type"), "text/html")
+			assert.Contains(t, w.Body.String(), `id="root"`)
+			assert.NotContains(t, w.Body.String(), `id="app"`)
+		})
+	}
+}
+
 // Tests for legacy ServeEmbeddedFrontend function
 func TestServeEmbeddedFrontend(t *testing.T) {
 	t.Run("serves_static_files", func(t *testing.T) {
