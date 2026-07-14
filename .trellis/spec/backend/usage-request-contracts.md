@@ -142,8 +142,15 @@ For unified request logs, the same rule applies to metrics: populate pointer fie
 - `usage_logs` remains the only completed-request usage and billing ledger. Diagnostic columns are additive evidence on that row, not a second request store.
 - `created_at` remains the completion/log-write timestamp. `request_started_at` is the only field that proves when the request began.
 - Nullable phase timings mean unavailable, not zero. The UI must render unavailable phases explicitly and must not infer DNS, TCP, TLS, upload, or queue sub-phases that were not measured.
-- For supported OpenAI HTTP paths (`/v1/responses`, `/v1/messages`, and `/v1/chat/completions`), request-body read, request write, first response-header byte, first semantic token, and total request time use one request-scoped monotonic collector.
-- `upstream_first_byte_ms` comes from `httptrace.GotFirstResponseByte`; it proves the first byte of the HTTP response headers, not the first SSE body event or model token. Admin UI labels must say response headers and keep every timing as an offset from request start rather than displaying derived stage differences.
+- For supported OpenAI HTTP paths (`/v1/responses`, `/v1/messages`, and `/v1/chat/completions`), the request-scoped collector owns the diagnostic snapshot, but not every numeric field has the same origin:
+  - `request_body_read_ms` is the duration of reading the client request body itself, not an offset from request start.
+  - `routing_latency_ms` is the existing handler routing-stage duration and may include concurrency waits, billing rechecks, failed attempts, retry backoff, and account switches.
+  - `upstream_request_written_ms`, `upstream_first_byte_ms`, `request_first_token_ms`, and `request_total_ms` are request-start elapsed measurements for the final diagnostic snapshot.
+- `upstream_request_written_ms` comes from `httptrace.WroteRequest`. It proves that the local HTTP transport completed its request write flow without reporting an error; it does not prove that the upstream received or processed the request.
+- `upstream_first_byte_ms` comes from `httptrace.GotFirstResponseByte`; it proves that the first byte of the HTTP response headers became available, not that full headers, response body data, or a model token arrived.
+- The HTTP transport may write a request and wait for a response concurrently, so the displayed conceptual order is not guaranteed to be strict wall-clock event order. The admin UI must describe each field's own basis and must not derive unsupported stage differences.
+- `request_first_token_ms` re-anchors each protocol adapter's first-token result to the request collector. Detection points differ by adapter, so UI copy must not promise an identical displayable-token boundary across every upstream protocol.
+- Historical `first_token_ms` and `duration_ms` are upstream-forwarding-relative legacy measurements. The diagnostics drawer must not silently relabel them as request-scoped `request_first_token_ms` or `request_total_ms`; missing request-scoped fields render unavailable.
 - Route snapshots are immutable for the completed row. A later account proxy edit must not rewrite historical attribution.
 - A proxy snapshot may contain the proxy ID, display name, protocol, and a sanitized fingerprint. It must not contain userinfo, credentials, query parameters, paths, authorization headers, full proxy URLs, prompts, request bodies, or response bodies.
 - `attempt_timeline` is serialized only when `retry_count > 0` or `account_switch_count > 0`, is capped at 32 sanitized events, and reuses the upstream error sanitizer.
@@ -165,14 +172,14 @@ For unified request logs, the same rule applies to metrics: populate pointer fie
 - `proxy_id` non-numeric or non-positive -> bad request.
 - `retry_only` not parseable as a boolean -> bad request.
 - Any latency minimum non-numeric or negative -> bad request.
-- Historical row without diagnostics -> successful response with nullable timings and zero retry/switch counters.
+- Historical row without diagnostics -> successful response with nullable timings and zero retry/switch counters; legacy `first_token_ms` and `duration_ms` do not fill request-scoped diagnostic fields.
 - Unsupported timing phase -> null/unavailable, never a fabricated duration.
 - Failed request with an operations record -> correlate by exact `request_id`; do not copy the operations error body into `usage_logs`.
 
 ### 5. Good/Base/Bad Cases
 - Good: a request starts before a proxy change, completes afterward, and its usage row still shows the original proxy snapshot plus independent first-byte and first-token timings.
 - Good: a retry succeeds on another account; the usage row records final route counters and at most 32 sanitized attempt events, while the errors tab remains the owner of failure details.
-- Base: a historical or unsupported-path row opens in the drawer with unavailable phase values and no timeline.
+- Base: a historical or unsupported-path row opens in the drawer with unavailable request-scoped values and no fabricated fallback from legacy forwarding-relative timings.
 - Bad: infer that a row started at `created_at`, display null as `0 ms`, or attribute historical rows from the account's current proxy assignment.
 - Bad: persist a full proxy URL, proxy password, API key, authorization header, prompt, messages, request body, or response body.
 
@@ -181,7 +188,7 @@ For unified request logs, the same rule applies to metrics: populate pointer fie
 - Repository tests must cover all insert paths, arg/type count equality, JSON round trip, nullable historical rows, filter SQL, and scan order.
 - Handler tests must cover admin authorization through route registration, invalid detail IDs, not found, filter parsing, and exact request-ID correlation.
 - DTO tests must marshal both admin and user responses and assert diagnostic fields exist only in the admin contract.
-- Frontend tests must cover loading/error/empty states, null timing rendering, retry/switch indicators, inline request-record columns, persisted column toggles, drawer detail loading from the ordinary usage tab, and the errors-tab request-ID action.
+- Frontend tests must cover loading/error/empty states, null timing rendering, the six business checkpoint labels and descriptions, refusal to fall back to legacy `first_token_ms`/`duration_ms`, retry/switch indicators, inline request-record columns, persisted column toggles, drawer detail loading from the ordinary usage tab, and the errors-tab request-ID action.
 - Full verification includes `go test ./...`, `go vet ./...`, frontend full tests, type-check, lint, production build, migration coverage, secret scan, and `git diff --check`.
 
 ### 7. Wrong vs Correct
