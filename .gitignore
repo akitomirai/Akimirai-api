@@ -152,6 +152,7 @@ output/
 # Repository-root local runtime state
 /config.yaml
 /dump.rdb
+/data/
 
 # Build artifacts (large binaries)
 backend/build-artifacts/
