@@ -4,6 +4,9 @@ package service
 
 import (
 	"testing"
+
+	"github.com/Wei-Shaw/sub2api/internal/pkg/xai"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetBaseURL(t *testing.T) {
@@ -169,4 +172,105 @@ func TestGetOpenAIApiKeySupportsGrok(t *testing.T) {
 	if got := account.GetOpenAIApiKey(); got != "grok-sso-token" {
 		t.Fatalf("GetOpenAIApiKey() = %q, want %q", got, "grok-sso-token")
 	}
+}
+
+func TestGetGrokMediaBaseURLSeparatesOAuthMediaFromCLIProxy(t *testing.T) {
+	tests := []struct {
+		name     string
+		account  Account
+		expected string
+	}{
+		{
+			name: "oauth without base_url uses official media API",
+			account: Account{
+				Type:        AccountTypeOAuth,
+				Platform:    PlatformGrok,
+				Credentials: map[string]any{},
+			},
+			expected: xai.DefaultBaseURL,
+		},
+		{
+			name: "oauth stored CLI proxy uses official media API",
+			account: Account{
+				Type:     AccountTypeOAuth,
+				Platform: PlatformGrok,
+				Credentials: map[string]any{
+					"base_url": xai.DefaultCLIBaseURL,
+				},
+			},
+			expected: xai.DefaultBaseURL,
+		},
+		{
+			name: "oauth stored CLI proxy variant uses official media API",
+			account: Account{
+				Type:     AccountTypeOAuth,
+				Platform: PlatformGrok,
+				Credentials: map[string]any{
+					"base_url": "HTTPS://CLI-CHAT-PROXY.GROK.COM:443/%76%31/",
+				},
+			},
+			expected: xai.DefaultBaseURL,
+		},
+		{
+			name: "oauth legacy official API remains on official media API",
+			account: Account{
+				Type:     AccountTypeOAuth,
+				Platform: PlatformGrok,
+				Credentials: map[string]any{
+					"base_url": xai.DefaultBaseURL,
+				},
+			},
+			expected: xai.DefaultBaseURL,
+		},
+		{
+			name: "oauth untrusted custom base_url is pinned to official media API",
+			account: Account{
+				Type:     AccountTypeOAuth,
+				Platform: PlatformGrok,
+				Credentials: map[string]any{
+					"base_url": "https://custom.example.com/v1",
+				},
+			},
+			expected: xai.DefaultBaseURL,
+		},
+		{
+			name: "API key retains its configured media API",
+			account: Account{
+				Type:     AccountTypeAPIKey,
+				Platform: PlatformGrok,
+				Credentials: map[string]any{
+					"base_url": "https://grok.example.com/v1",
+				},
+			},
+			expected: "https://grok.example.com/v1",
+		},
+		{
+			name: "non-Grok account has no Grok media base URL",
+			account: Account{
+				Type:        AccountTypeOAuth,
+				Platform:    PlatformOpenAI,
+				Credentials: map[string]any{},
+			},
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, tt.account.GetGrokMediaBaseURL())
+		})
+	}
+}
+
+func TestGetGrokMediaBaseURLAllowsExplicitOAuthOverrideWhenUnsafeOverridesEnabled(t *testing.T) {
+	t.Setenv(xai.EnvAllowUnsafeURLOverrides, "true")
+	account := Account{
+		Type:     AccountTypeOAuth,
+		Platform: PlatformGrok,
+		Credentials: map[string]any{
+			"base_url": "https://custom.example.com/v1",
+		},
+	}
+
+	require.Equal(t, "https://custom.example.com/v1", account.GetGrokMediaBaseURL())
 }
