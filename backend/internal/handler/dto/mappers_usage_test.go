@@ -251,28 +251,45 @@ func TestUsageDiagnosticsFromServiceAdminKeepsDiagnosticsOutOfUserDTO(t *testing
 	clientTransport := "http"
 	requestTotalMs := 1800
 	requestFirstTokenMs := 900
+	connectionReused := false
+	dnsLookupMs := 12
+	firstOutputCharacterMs := 800
 	routeKind := service.RequestRouteKindProxy
 	proxyName := "jp-egress"
 	log := &service.UsageLog{
-		RequestID:           "req-admin-diagnostics",
-		Model:               "gpt-5.6-sol",
-		ClientTransport:     &clientTransport,
-		RequestTotalMs:      &requestTotalMs,
-		RequestFirstTokenMs: &requestFirstTokenMs,
-		RouteKind:           &routeKind,
-		ProxyNameSnapshot:   &proxyName,
-		RetryCount:          1,
+		RequestID:                     "req-admin-diagnostics",
+		Model:                         "gpt-5.6-sol",
+		ClientTransport:               &clientTransport,
+		RequestTotalMs:                &requestTotalMs,
+		UpstreamConnectionReused:      &connectionReused,
+		UpstreamDNSLookupMs:           &dnsLookupMs,
+		RequestFirstOutputCharacterMs: &firstOutputCharacterMs,
+		RequestFirstTokenMs:           &requestFirstTokenMs,
+		RouteKind:                     &routeKind,
+		ProxyNameSnapshot:             &proxyName,
+		RetryCount:                    1,
 		AttemptTimeline: []service.RequestAttemptEvent{{
-			Sequence:  1,
-			AccountID: 3,
-			Outcome:   "network_error",
-			Reason:    "failed via http://user:pass@proxy.example.test:8080/?token=secret",
+			Sequence:               1,
+			DNSLookupMs:            &dnsLookupMs,
+			FirstOutputCharacterMs: &firstOutputCharacterMs,
+			AccountID:              3,
+			Outcome:                "network_error",
+			Reason:                 "failed via http://user:pass@proxy.example.test:8080/?token=secret",
 		}},
 	}
 
 	userJSON, err := json.Marshal(UsageLogFromService(log))
 	require.NoError(t, err)
-	for _, field := range []string{"client_transport", "request_total_ms", "route_kind", "proxy_name_snapshot", "attempt_timeline"} {
+	for _, field := range []string{
+		"client_transport",
+		"request_total_ms",
+		"upstream_connection_reused",
+		"upstream_dns_lookup_ms",
+		"request_first_output_character_ms",
+		"route_kind",
+		"proxy_name_snapshot",
+		"attempt_timeline",
+	} {
 		require.NotContains(t, string(userJSON), field)
 	}
 
@@ -281,6 +298,9 @@ func TestUsageDiagnosticsFromServiceAdminKeepsDiagnosticsOutOfUserDTO(t *testing
 	require.NoError(t, err)
 	require.Contains(t, string(adminJSON), `"client_transport":"http"`)
 	require.Contains(t, string(adminJSON), `"request_total_ms":1800`)
+	require.Contains(t, string(adminJSON), `"upstream_connection_reused":false`)
+	require.Contains(t, string(adminJSON), `"upstream_dns_lookup_ms":12`)
+	require.Contains(t, string(adminJSON), `"request_first_output_character_ms":800`)
 	require.Contains(t, string(adminJSON), `"proxy_name_snapshot":"jp-egress"`)
 	require.Contains(t, string(adminJSON), `"attempt_timeline"`)
 	require.NotContains(t, string(adminJSON), "proxy.example.test")

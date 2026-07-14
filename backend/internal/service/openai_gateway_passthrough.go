@@ -921,6 +921,7 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 				line = "data: " + string(normalizedData)
 			}
 			eventType := strings.TrimSpace(gjson.Get(trimmedData, "type").String())
+			markOpenAIStreamDiagnosticEvent(resp, dataBytes)
 			if eventType == "response.failed" {
 				failedMessage = extractOpenAISSEErrorMessage(dataBytes)
 				// response.failed 自带上游已消耗的 usage（input token 通常已扣）；必须先解析

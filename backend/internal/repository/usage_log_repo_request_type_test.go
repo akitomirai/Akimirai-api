@@ -189,11 +189,11 @@ func TestPrepareUsageLogInsert_PersistsImageSizeMetadata(t *testing.T) {
 		CreatedAt:          time.Date(2025, 1, 6, 12, 0, 0, 0, time.UTC),
 	})
 
-	require.Equal(t, sql.NullString{String: imageSize, Valid: true}, prepared.args[55])
-	require.Equal(t, sql.NullString{String: inputSize, Valid: true}, prepared.args[56])
-	require.Equal(t, sql.NullString{String: outputSize, Valid: true}, prepared.args[57])
-	require.Equal(t, sql.NullString{String: source, Valid: true}, prepared.args[58])
-	breakdownJSON, ok := prepared.args[59].(string)
+	require.Equal(t, sql.NullString{String: imageSize, Valid: true}, prepared.args[65])
+	require.Equal(t, sql.NullString{String: inputSize, Valid: true}, prepared.args[66])
+	require.Equal(t, sql.NullString{String: outputSize, Valid: true}, prepared.args[67])
+	require.Equal(t, sql.NullString{String: source, Valid: true}, prepared.args[68])
+	breakdownJSON, ok := prepared.args[69].(string)
 	require.True(t, ok)
 	require.JSONEq(t, `{"1K":1,"4K":1}`, breakdownJSON)
 }
@@ -731,8 +731,18 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullInt64{Valid: true, Int64: 1000},
 			sql.NullInt64{Valid: true, Int64: 12},
 			sql.NullInt64{Valid: true, Int64: 2048},
+			sql.NullBool{Valid: true, Bool: false},
+			sql.NullInt64{Valid: true, Int64: 20},
+			sql.NullInt64{Valid: true, Int64: 2},
+			sql.NullInt64{Valid: true, Int64: 3},
+			sql.NullInt64{Valid: true, Int64: 4},
+			sql.NullInt64{Valid: true, Int64: 25},
 			sql.NullInt64{Valid: true, Int64: 30},
 			sql.NullInt64{Valid: true, Int64: 500},
+			sql.NullInt64{Valid: true, Int64: 505},
+			sql.NullInt64{Valid: true, Int64: 510},
+			sql.NullInt64{Valid: true, Int64: 520},
+			sql.NullInt64{Valid: true, Int64: 530},
 			sql.NullInt64{Valid: true, Int64: 650},
 			sql.NullString{Valid: true, String: service.RequestRouteKindProxy},
 			sql.NullInt64{Valid: true, Int64: 91},
@@ -791,8 +801,18 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 		require.Equal(t, 1000, *log.RequestTotalMs)
 		require.Equal(t, 12, *log.RequestBodyReadMs)
 		require.Equal(t, int64(2048), *log.RequestBodyBytes)
+		require.Equal(t, false, *log.UpstreamConnectionReused)
+		require.Equal(t, 20, *log.UpstreamConnectionReadyMs)
+		require.Equal(t, 2, *log.UpstreamDNSLookupMs)
+		require.Equal(t, 3, *log.UpstreamTCPConnectMs)
+		require.Equal(t, 4, *log.UpstreamTLSHandshakeMs)
+		require.Equal(t, 25, *log.UpstreamRequestHeadersWrittenMs)
 		require.Equal(t, 30, *log.UpstreamRequestWrittenMs)
 		require.Equal(t, 500, *log.UpstreamFirstByteMs)
+		require.Equal(t, 505, *log.UpstreamResponseHeadersReceivedMs)
+		require.Equal(t, 510, *log.UpstreamResponseBodyFirstByteMs)
+		require.Equal(t, 520, *log.UpstreamFirstEventMs)
+		require.Equal(t, 530, *log.RequestFirstOutputCharacterMs)
 		require.Equal(t, 650, *log.RequestFirstTokenMs)
 		require.Equal(t, service.RequestRouteKindProxy, *log.RouteKind)
 		require.Equal(t, int64(91), *log.ProxyIDSnapshot)
@@ -846,6 +866,16 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullTime{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullBool{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullInt64{},
@@ -925,6 +955,16 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullInt64{},
+			sql.NullBool{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullInt64{},
@@ -998,6 +1038,16 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullTime{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullBool{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullInt64{},
 			sql.NullInt64{},

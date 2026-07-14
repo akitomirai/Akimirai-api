@@ -1692,8 +1692,18 @@ var (
 		{Name: "request_total_ms", Type: field.TypeInt, Nullable: true},
 		{Name: "request_body_read_ms", Type: field.TypeInt, Nullable: true},
 		{Name: "request_body_bytes", Type: field.TypeInt64, Nullable: true},
+		{Name: "upstream_connection_reused", Type: field.TypeBool, Nullable: true},
+		{Name: "upstream_connection_ready_ms", Type: field.TypeInt, Nullable: true},
+		{Name: "upstream_dns_lookup_ms", Type: field.TypeInt, Nullable: true},
+		{Name: "upstream_tcp_connect_ms", Type: field.TypeInt, Nullable: true},
+		{Name: "upstream_tls_handshake_ms", Type: field.TypeInt, Nullable: true},
+		{Name: "upstream_request_headers_written_ms", Type: field.TypeInt, Nullable: true},
 		{Name: "upstream_request_written_ms", Type: field.TypeInt, Nullable: true},
 		{Name: "upstream_first_byte_ms", Type: field.TypeInt, Nullable: true},
+		{Name: "upstream_response_headers_received_ms", Type: field.TypeInt, Nullable: true},
+		{Name: "upstream_response_body_first_byte_ms", Type: field.TypeInt, Nullable: true},
+		{Name: "upstream_first_event_ms", Type: field.TypeInt, Nullable: true},
+		{Name: "request_first_output_character_ms", Type: field.TypeInt, Nullable: true},
 		{Name: "request_first_token_ms", Type: field.TypeInt, Nullable: true},
 		{Name: "route_kind", Type: field.TypeString, Nullable: true, Size: 16},
 		{Name: "proxy_id_snapshot", Type: field.TypeInt64, Nullable: true},
@@ -1731,31 +1741,31 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "usage_logs_api_keys_usage_logs",
-				Columns:    []*schema.Column{UsageLogsColumns[61]},
+				Columns:    []*schema.Column{UsageLogsColumns[71]},
 				RefColumns: []*schema.Column{APIKeysColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "usage_logs_accounts_usage_logs",
-				Columns:    []*schema.Column{UsageLogsColumns[62]},
+				Columns:    []*schema.Column{UsageLogsColumns[72]},
 				RefColumns: []*schema.Column{AccountsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "usage_logs_groups_usage_logs",
-				Columns:    []*schema.Column{UsageLogsColumns[63]},
+				Columns:    []*schema.Column{UsageLogsColumns[73]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "usage_logs_users_usage_logs",
-				Columns:    []*schema.Column{UsageLogsColumns[64]},
+				Columns:    []*schema.Column{UsageLogsColumns[74]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "usage_logs_user_subscriptions_usage_logs",
-				Columns:    []*schema.Column{UsageLogsColumns[65]},
+				Columns:    []*schema.Column{UsageLogsColumns[75]},
 				RefColumns: []*schema.Column{UserSubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -1764,32 +1774,32 @@ var (
 			{
 				Name:    "usagelog_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[64]},
+				Columns: []*schema.Column{UsageLogsColumns[74]},
 			},
 			{
 				Name:    "usagelog_api_key_id",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[61]},
+				Columns: []*schema.Column{UsageLogsColumns[71]},
 			},
 			{
 				Name:    "usagelog_account_id",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[62]},
+				Columns: []*schema.Column{UsageLogsColumns[72]},
 			},
 			{
 				Name:    "usagelog_group_id",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[63]},
+				Columns: []*schema.Column{UsageLogsColumns[73]},
 			},
 			{
 				Name:    "usagelog_subscription_id",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[65]},
+				Columns: []*schema.Column{UsageLogsColumns[75]},
 			},
 			{
 				Name:    "usagelog_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[60]},
+				Columns: []*schema.Column{UsageLogsColumns[70]},
 			},
 			{
 				Name:    "usagelog_model",
@@ -1809,17 +1819,17 @@ var (
 			{
 				Name:    "usagelog_user_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[64], UsageLogsColumns[60]},
+				Columns: []*schema.Column{UsageLogsColumns[74], UsageLogsColumns[70]},
 			},
 			{
 				Name:    "usagelog_api_key_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[61], UsageLogsColumns[60]},
+				Columns: []*schema.Column{UsageLogsColumns[71], UsageLogsColumns[70]},
 			},
 			{
 				Name:    "usagelog_proxy_id_snapshot_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[40], UsageLogsColumns[60]},
+				Columns: []*schema.Column{UsageLogsColumns[50], UsageLogsColumns[70]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "proxy_id_snapshot IS NOT NULL",
 				},
@@ -1827,7 +1837,7 @@ var (
 			{
 				Name:    "usagelog_route_kind_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[39], UsageLogsColumns[60]},
+				Columns: []*schema.Column{UsageLogsColumns[49], UsageLogsColumns[70]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "route_kind IS NOT NULL",
 				},
@@ -1835,7 +1845,7 @@ var (
 			{
 				Name:    "usagelog_group_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[63], UsageLogsColumns[60]},
+				Columns: []*schema.Column{UsageLogsColumns[73], UsageLogsColumns[70]},
 			},
 		},
 	}

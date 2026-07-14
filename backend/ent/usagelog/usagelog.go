@@ -94,10 +94,30 @@ const (
 	FieldRequestBodyReadMs = "request_body_read_ms"
 	// FieldRequestBodyBytes holds the string denoting the request_body_bytes field in the database.
 	FieldRequestBodyBytes = "request_body_bytes"
+	// FieldUpstreamConnectionReused holds the string denoting the upstream_connection_reused field in the database.
+	FieldUpstreamConnectionReused = "upstream_connection_reused"
+	// FieldUpstreamConnectionReadyMs holds the string denoting the upstream_connection_ready_ms field in the database.
+	FieldUpstreamConnectionReadyMs = "upstream_connection_ready_ms"
+	// FieldUpstreamDNSLookupMs holds the string denoting the upstream_dns_lookup_ms field in the database.
+	FieldUpstreamDNSLookupMs = "upstream_dns_lookup_ms"
+	// FieldUpstreamTCPConnectMs holds the string denoting the upstream_tcp_connect_ms field in the database.
+	FieldUpstreamTCPConnectMs = "upstream_tcp_connect_ms"
+	// FieldUpstreamTLSHandshakeMs holds the string denoting the upstream_tls_handshake_ms field in the database.
+	FieldUpstreamTLSHandshakeMs = "upstream_tls_handshake_ms"
+	// FieldUpstreamRequestHeadersWrittenMs holds the string denoting the upstream_request_headers_written_ms field in the database.
+	FieldUpstreamRequestHeadersWrittenMs = "upstream_request_headers_written_ms"
 	// FieldUpstreamRequestWrittenMs holds the string denoting the upstream_request_written_ms field in the database.
 	FieldUpstreamRequestWrittenMs = "upstream_request_written_ms"
 	// FieldUpstreamFirstByteMs holds the string denoting the upstream_first_byte_ms field in the database.
 	FieldUpstreamFirstByteMs = "upstream_first_byte_ms"
+	// FieldUpstreamResponseHeadersReceivedMs holds the string denoting the upstream_response_headers_received_ms field in the database.
+	FieldUpstreamResponseHeadersReceivedMs = "upstream_response_headers_received_ms"
+	// FieldUpstreamResponseBodyFirstByteMs holds the string denoting the upstream_response_body_first_byte_ms field in the database.
+	FieldUpstreamResponseBodyFirstByteMs = "upstream_response_body_first_byte_ms"
+	// FieldUpstreamFirstEventMs holds the string denoting the upstream_first_event_ms field in the database.
+	FieldUpstreamFirstEventMs = "upstream_first_event_ms"
+	// FieldRequestFirstOutputCharacterMs holds the string denoting the request_first_output_character_ms field in the database.
+	FieldRequestFirstOutputCharacterMs = "request_first_output_character_ms"
 	// FieldRequestFirstTokenMs holds the string denoting the request_first_token_ms field in the database.
 	FieldRequestFirstTokenMs = "request_first_token_ms"
 	// FieldRouteKind holds the string denoting the route_kind field in the database.
@@ -236,8 +256,18 @@ var Columns = []string{
 	FieldRequestTotalMs,
 	FieldRequestBodyReadMs,
 	FieldRequestBodyBytes,
+	FieldUpstreamConnectionReused,
+	FieldUpstreamConnectionReadyMs,
+	FieldUpstreamDNSLookupMs,
+	FieldUpstreamTCPConnectMs,
+	FieldUpstreamTLSHandshakeMs,
+	FieldUpstreamRequestHeadersWrittenMs,
 	FieldUpstreamRequestWrittenMs,
 	FieldUpstreamFirstByteMs,
+	FieldUpstreamResponseHeadersReceivedMs,
+	FieldUpstreamResponseBodyFirstByteMs,
+	FieldUpstreamFirstEventMs,
+	FieldRequestFirstOutputCharacterMs,
 	FieldRequestFirstTokenMs,
 	FieldRouteKind,
 	FieldProxyIDSnapshot,
@@ -564,6 +594,36 @@ func ByRequestBodyBytes(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRequestBodyBytes, opts...).ToFunc()
 }
 
+// ByUpstreamConnectionReused orders the results by the upstream_connection_reused field.
+func ByUpstreamConnectionReused(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpstreamConnectionReused, opts...).ToFunc()
+}
+
+// ByUpstreamConnectionReadyMs orders the results by the upstream_connection_ready_ms field.
+func ByUpstreamConnectionReadyMs(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpstreamConnectionReadyMs, opts...).ToFunc()
+}
+
+// ByUpstreamDNSLookupMs orders the results by the upstream_dns_lookup_ms field.
+func ByUpstreamDNSLookupMs(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpstreamDNSLookupMs, opts...).ToFunc()
+}
+
+// ByUpstreamTCPConnectMs orders the results by the upstream_tcp_connect_ms field.
+func ByUpstreamTCPConnectMs(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpstreamTCPConnectMs, opts...).ToFunc()
+}
+
+// ByUpstreamTLSHandshakeMs orders the results by the upstream_tls_handshake_ms field.
+func ByUpstreamTLSHandshakeMs(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpstreamTLSHandshakeMs, opts...).ToFunc()
+}
+
+// ByUpstreamRequestHeadersWrittenMs orders the results by the upstream_request_headers_written_ms field.
+func ByUpstreamRequestHeadersWrittenMs(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpstreamRequestHeadersWrittenMs, opts...).ToFunc()
+}
+
 // ByUpstreamRequestWrittenMs orders the results by the upstream_request_written_ms field.
 func ByUpstreamRequestWrittenMs(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpstreamRequestWrittenMs, opts...).ToFunc()
@@ -572,6 +632,26 @@ func ByUpstreamRequestWrittenMs(opts ...sql.OrderTermOption) OrderOption {
 // ByUpstreamFirstByteMs orders the results by the upstream_first_byte_ms field.
 func ByUpstreamFirstByteMs(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpstreamFirstByteMs, opts...).ToFunc()
+}
+
+// ByUpstreamResponseHeadersReceivedMs orders the results by the upstream_response_headers_received_ms field.
+func ByUpstreamResponseHeadersReceivedMs(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpstreamResponseHeadersReceivedMs, opts...).ToFunc()
+}
+
+// ByUpstreamResponseBodyFirstByteMs orders the results by the upstream_response_body_first_byte_ms field.
+func ByUpstreamResponseBodyFirstByteMs(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpstreamResponseBodyFirstByteMs, opts...).ToFunc()
+}
+
+// ByUpstreamFirstEventMs orders the results by the upstream_first_event_ms field.
+func ByUpstreamFirstEventMs(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpstreamFirstEventMs, opts...).ToFunc()
+}
+
+// ByRequestFirstOutputCharacterMs orders the results by the request_first_output_character_ms field.
+func ByRequestFirstOutputCharacterMs(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRequestFirstOutputCharacterMs, opts...).ToFunc()
 }
 
 // ByRequestFirstTokenMs orders the results by the request_first_token_ms field.

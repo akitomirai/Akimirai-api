@@ -235,6 +235,7 @@ func (s *OpenAIGatewayService) handleStreamingResponse(ctx context.Context, resp
 				sawTerminalEvent = true
 			}
 			eventType := strings.TrimSpace(gjson.GetBytes(dataBytes, "type").String())
+			markOpenAIStreamDiagnosticEvent(resp, dataBytes)
 			if responseID == "" {
 				responseID = extractOpenAIResponseIDFromJSONBytes(dataBytes)
 			}

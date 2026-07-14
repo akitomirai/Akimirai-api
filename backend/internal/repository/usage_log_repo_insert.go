@@ -64,8 +64,18 @@ var usageLogInsertArgTypes = [...]string{
 	"integer",     // request_total_ms
 	"integer",     // request_body_read_ms
 	"bigint",      // request_body_bytes
+	"boolean",     // upstream_connection_reused
+	"integer",     // upstream_connection_ready_ms
+	"integer",     // upstream_dns_lookup_ms
+	"integer",     // upstream_tcp_connect_ms
+	"integer",     // upstream_tls_handshake_ms
+	"integer",     // upstream_request_headers_written_ms
 	"integer",     // upstream_request_written_ms
 	"integer",     // upstream_first_byte_ms
+	"integer",     // upstream_response_headers_received_ms
+	"integer",     // upstream_response_body_first_byte_ms
+	"integer",     // upstream_first_event_ms
+	"integer",     // request_first_output_character_ms
 	"integer",     // request_first_token_ms
 	"text",        // route_kind
 	"bigint",      // proxy_id_snapshot
@@ -277,8 +287,18 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			request_total_ms,
 			request_body_read_ms,
 			request_body_bytes,
+			upstream_connection_reused,
+			upstream_connection_ready_ms,
+			upstream_dns_lookup_ms,
+			upstream_tcp_connect_ms,
+			upstream_tls_handshake_ms,
+			upstream_request_headers_written_ms,
 			upstream_request_written_ms,
 			upstream_first_byte_ms,
+			upstream_response_headers_received_ms,
+			upstream_response_body_first_byte_ms,
+			upstream_first_event_ms,
+			request_first_output_character_ms,
 			request_first_token_ms,
 			route_kind,
 			proxy_id_snapshot,
@@ -317,7 +337,7 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
 			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74
+			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74, $75, $76, $77, $78, $79, $80, $81, $82, $83, $84
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 		RETURNING id, created_at
@@ -749,8 +769,18 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 			request_total_ms,
 			request_body_read_ms,
 			request_body_bytes,
+			upstream_connection_reused,
+			upstream_connection_ready_ms,
+			upstream_dns_lookup_ms,
+			upstream_tcp_connect_ms,
+			upstream_tls_handshake_ms,
+			upstream_request_headers_written_ms,
 			upstream_request_written_ms,
 			upstream_first_byte_ms,
+			upstream_response_headers_received_ms,
+			upstream_response_body_first_byte_ms,
+			upstream_first_event_ms,
+			request_first_output_character_ms,
 			request_first_token_ms,
 			route_kind,
 			proxy_id_snapshot,
@@ -854,8 +884,18 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				request_total_ms,
 				request_body_read_ms,
 				request_body_bytes,
+				upstream_connection_reused,
+				upstream_connection_ready_ms,
+				upstream_dns_lookup_ms,
+				upstream_tcp_connect_ms,
+				upstream_tls_handshake_ms,
+				upstream_request_headers_written_ms,
 				upstream_request_written_ms,
 				upstream_first_byte_ms,
+				upstream_response_headers_received_ms,
+				upstream_response_body_first_byte_ms,
+				upstream_first_event_ms,
+				request_first_output_character_ms,
 				request_first_token_ms,
 				route_kind,
 				proxy_id_snapshot,
@@ -930,8 +970,18 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				request_total_ms,
 				request_body_read_ms,
 				request_body_bytes,
+				upstream_connection_reused,
+				upstream_connection_ready_ms,
+				upstream_dns_lookup_ms,
+				upstream_tcp_connect_ms,
+				upstream_tls_handshake_ms,
+				upstream_request_headers_written_ms,
 				upstream_request_written_ms,
 				upstream_first_byte_ms,
+				upstream_response_headers_received_ms,
+				upstream_response_body_first_byte_ms,
+				upstream_first_event_ms,
+				request_first_output_character_ms,
 				request_first_token_ms,
 				route_kind,
 				proxy_id_snapshot,
@@ -1046,8 +1096,18 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			request_total_ms,
 			request_body_read_ms,
 			request_body_bytes,
+			upstream_connection_reused,
+			upstream_connection_ready_ms,
+			upstream_dns_lookup_ms,
+			upstream_tcp_connect_ms,
+			upstream_tls_handshake_ms,
+			upstream_request_headers_written_ms,
 			upstream_request_written_ms,
 			upstream_first_byte_ms,
+			upstream_response_headers_received_ms,
+			upstream_response_body_first_byte_ms,
+			upstream_first_event_ms,
+			request_first_output_character_ms,
 			request_first_token_ms,
 			route_kind,
 			proxy_id_snapshot,
@@ -1148,8 +1208,18 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			request_total_ms,
 			request_body_read_ms,
 			request_body_bytes,
+			upstream_connection_reused,
+			upstream_connection_ready_ms,
+			upstream_dns_lookup_ms,
+			upstream_tcp_connect_ms,
+			upstream_tls_handshake_ms,
+			upstream_request_headers_written_ms,
 			upstream_request_written_ms,
 			upstream_first_byte_ms,
+			upstream_response_headers_received_ms,
+			upstream_response_body_first_byte_ms,
+			upstream_first_event_ms,
+			request_first_output_character_ms,
 			request_first_token_ms,
 			route_kind,
 			proxy_id_snapshot,
@@ -1224,8 +1294,18 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			request_total_ms,
 			request_body_read_ms,
 			request_body_bytes,
+			upstream_connection_reused,
+			upstream_connection_ready_ms,
+			upstream_dns_lookup_ms,
+			upstream_tcp_connect_ms,
+			upstream_tls_handshake_ms,
+			upstream_request_headers_written_ms,
 			upstream_request_written_ms,
 			upstream_first_byte_ms,
+			upstream_response_headers_received_ms,
+			upstream_response_body_first_byte_ms,
+			upstream_first_event_ms,
+			request_first_output_character_ms,
 			request_first_token_ms,
 			route_kind,
 			proxy_id_snapshot,
@@ -1308,8 +1388,18 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			request_total_ms,
 			request_body_read_ms,
 			request_body_bytes,
+			upstream_connection_reused,
+			upstream_connection_ready_ms,
+			upstream_dns_lookup_ms,
+			upstream_tcp_connect_ms,
+			upstream_tls_handshake_ms,
+			upstream_request_headers_written_ms,
 			upstream_request_written_ms,
 			upstream_first_byte_ms,
+			upstream_response_headers_received_ms,
+			upstream_response_body_first_byte_ms,
+			upstream_first_event_ms,
+			request_first_output_character_ms,
 			request_first_token_ms,
 			route_kind,
 			proxy_id_snapshot,
@@ -1348,7 +1438,7 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
 			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74
+			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74, $75, $76, $77, $78, $79, $80, $81, $82, $83, $84
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 	`, prepared.args...)
@@ -1380,8 +1470,18 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 	requestTotal := nullInt(log.RequestTotalMs)
 	requestBodyRead := nullInt(log.RequestBodyReadMs)
 	requestBodyBytes := nullInt64(log.RequestBodyBytes)
+	upstreamConnectionReused := nullBool(log.UpstreamConnectionReused)
+	upstreamConnectionReady := nullInt(log.UpstreamConnectionReadyMs)
+	upstreamDNSLookup := nullInt(log.UpstreamDNSLookupMs)
+	upstreamTCPConnect := nullInt(log.UpstreamTCPConnectMs)
+	upstreamTLSHandshake := nullInt(log.UpstreamTLSHandshakeMs)
+	upstreamRequestHeadersWritten := nullInt(log.UpstreamRequestHeadersWrittenMs)
 	upstreamRequestWritten := nullInt(log.UpstreamRequestWrittenMs)
 	upstreamFirstByte := nullInt(log.UpstreamFirstByteMs)
+	upstreamResponseHeadersReceived := nullInt(log.UpstreamResponseHeadersReceivedMs)
+	upstreamResponseBodyFirstByte := nullInt(log.UpstreamResponseBodyFirstByteMs)
+	upstreamFirstEvent := nullInt(log.UpstreamFirstEventMs)
+	requestFirstOutputCharacter := nullInt(log.RequestFirstOutputCharacterMs)
 	requestFirstToken := nullInt(log.RequestFirstTokenMs)
 	routeKind := nullString(log.RouteKind)
 	proxyIDSnapshot := nullInt64(log.ProxyIDSnapshot)
@@ -1464,8 +1564,18 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 			requestTotal,
 			requestBodyRead,
 			requestBodyBytes,
+			upstreamConnectionReused,
+			upstreamConnectionReady,
+			upstreamDNSLookup,
+			upstreamTCPConnect,
+			upstreamTLSHandshake,
+			upstreamRequestHeadersWritten,
 			upstreamRequestWritten,
 			upstreamFirstByte,
+			upstreamResponseHeadersReceived,
+			upstreamResponseBodyFirstByte,
+			upstreamFirstEvent,
+			requestFirstOutputCharacter,
 			requestFirstToken,
 			routeKind,
 			proxyIDSnapshot,

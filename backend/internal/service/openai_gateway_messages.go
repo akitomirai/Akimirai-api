@@ -766,6 +766,7 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 
 	// processDataLine handles a single "data: ..." SSE line from upstream.
 	processDataLine := func(payload string) bool {
+		markOpenAIStreamDiagnosticEvent(resp, []byte(payload))
 		if firstChunk {
 			firstChunk = false
 			ms := int(time.Since(startTime).Milliseconds())

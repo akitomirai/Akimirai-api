@@ -638,6 +638,7 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 	}
 
 	processDataLine := func(payload string) bool {
+		markOpenAIStreamDiagnosticEvent(resp, []byte(payload))
 		if firstChunk {
 			firstChunk = false
 			ms := int(time.Since(startTime).Milliseconds())

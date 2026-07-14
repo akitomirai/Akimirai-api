@@ -149,10 +149,40 @@ func (UsageLog) Fields() []ent.Field {
 		field.Int64("request_body_bytes").
 			Optional().
 			Nillable(),
+		field.Bool("upstream_connection_reused").
+			Optional().
+			Nillable(),
+		field.Int("upstream_connection_ready_ms").
+			Optional().
+			Nillable(),
+		field.Int("upstream_dns_lookup_ms").
+			Optional().
+			Nillable(),
+		field.Int("upstream_tcp_connect_ms").
+			Optional().
+			Nillable(),
+		field.Int("upstream_tls_handshake_ms").
+			Optional().
+			Nillable(),
+		field.Int("upstream_request_headers_written_ms").
+			Optional().
+			Nillable(),
 		field.Int("upstream_request_written_ms").
 			Optional().
 			Nillable(),
 		field.Int("upstream_first_byte_ms").
+			Optional().
+			Nillable(),
+		field.Int("upstream_response_headers_received_ms").
+			Optional().
+			Nillable(),
+		field.Int("upstream_response_body_first_byte_ms").
+			Optional().
+			Nillable(),
+		field.Int("upstream_first_event_ms").
+			Optional().
+			Nillable(),
+		field.Int("request_first_output_character_ms").
 			Optional().
 			Nillable(),
 		field.Int("request_first_token_ms").

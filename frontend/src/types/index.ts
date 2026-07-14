@@ -1402,8 +1402,18 @@ export interface AdminUsageAttemptEvent {
   sequence: number
   started_ms: number
   finished_ms?: number | null
+  connection_reused?: boolean | null
+  connection_ready_ms?: number | null
+  dns_lookup_ms?: number | null
+  tcp_connect_ms?: number | null
+  tls_handshake_ms?: number | null
+  request_headers_written_ms?: number | null
   request_written_ms?: number | null
   first_byte_ms?: number | null
+  response_headers_received_ms?: number | null
+  response_body_first_byte_ms?: number | null
+  first_event_ms?: number | null
+  first_output_character_ms?: number | null
   account_id: number
   account_name?: string | null
   route: AdminUsageRouteSnapshot
@@ -1452,6 +1462,16 @@ export interface AdminUsageLog extends UsageLog {
 }
 
 export interface AdminUsageDiagnostics extends AdminUsageLog {
+  upstream_connection_reused?: boolean | null
+  upstream_connection_ready_ms?: number | null
+  upstream_dns_lookup_ms?: number | null
+  upstream_tcp_connect_ms?: number | null
+  upstream_tls_handshake_ms?: number | null
+  upstream_request_headers_written_ms?: number | null
+  upstream_response_headers_received_ms?: number | null
+  upstream_response_body_first_byte_ms?: number | null
+  upstream_first_event_ms?: number | null
+  request_first_output_character_ms?: number | null
   attempt_timeline?: AdminUsageAttemptEvent[]
 }
 

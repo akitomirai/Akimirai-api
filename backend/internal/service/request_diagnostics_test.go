@@ -46,9 +46,23 @@ func TestRequestDiagnosticsSingleAttemptKeepsTimelineNil(t *testing.T) {
 	diagnostics.SelectAccount(&Account{ID: 3, Name: "direct-account"})
 
 	attempt := diagnostics.BeginHTTPAttemptAt(3, "", startedAt.Add(20*time.Millisecond))
-	attempt.MarkRequestWrittenAt(startedAt.Add(25 * time.Millisecond))
+	attempt.BeginConnectionAcquisitionAt(startedAt.Add(20 * time.Millisecond))
+	attempt.MarkDNSStartAt(startedAt.Add(21 * time.Millisecond))
+	attempt.MarkDNSDoneAt(startedAt.Add(23*time.Millisecond), nil)
+	attempt.MarkConnectStartAt(startedAt.Add(23 * time.Millisecond))
+	attempt.MarkConnectDoneAt(startedAt.Add(27*time.Millisecond), nil)
+	attempt.MarkTLSHandshakeStartAt(startedAt.Add(27 * time.Millisecond))
+	attempt.MarkTLSHandshakeDoneAt(startedAt.Add(32*time.Millisecond), nil)
+	attempt.MarkConnectionReadyAt(startedAt.Add(32*time.Millisecond), false)
+	attempt.MarkRequestHeadersWrittenAt(startedAt.Add(34 * time.Millisecond))
+	attempt.MarkRequestWrittenAt(startedAt.Add(40 * time.Millisecond))
 	attempt.MarkFirstResponseByteAt(startedAt.Add(70 * time.Millisecond))
+	attempt.MarkResponseHeadersReceivedAt(startedAt.Add(72 * time.Millisecond))
 	attempt.FinishAt(startedAt.Add(80*time.Millisecond), 200, nil)
+	// Body and parser milestones arrive after http.Client.Do has returned.
+	attempt.MarkResponseBodyFirstByteAt(startedAt.Add(75 * time.Millisecond))
+	attempt.MarkFirstStreamEventAt(startedAt.Add(76 * time.Millisecond))
+	attempt.MarkFirstOutputCharacterAt(startedAt.Add(78 * time.Millisecond))
 	firstTokenMs := 35
 	diagnostics.MarkFirstSemanticToken(startedAt.Add(20*time.Millisecond), &firstTokenMs)
 
@@ -58,8 +72,18 @@ func TestRequestDiagnosticsSingleAttemptKeepsTimelineNil(t *testing.T) {
 	require.Equal(t, diagIntPtr(100), snapshot.RequestTotalMs)
 	require.Equal(t, diagIntPtr(12), snapshot.RequestBodyReadMs)
 	require.Equal(t, diagInt64Ptr(321), snapshot.RequestBodyBytes)
-	require.Equal(t, diagIntPtr(25), snapshot.UpstreamRequestWrittenMs)
+	require.Equal(t, diagBoolPtr(false), snapshot.UpstreamConnectionReused)
+	require.Equal(t, diagIntPtr(32), snapshot.UpstreamConnectionReadyMs)
+	require.Equal(t, diagIntPtr(2), snapshot.UpstreamDNSLookupMs)
+	require.Equal(t, diagIntPtr(4), snapshot.UpstreamTCPConnectMs)
+	require.Equal(t, diagIntPtr(5), snapshot.UpstreamTLSHandshakeMs)
+	require.Equal(t, diagIntPtr(34), snapshot.UpstreamRequestHeadersWrittenMs)
+	require.Equal(t, diagIntPtr(40), snapshot.UpstreamRequestWrittenMs)
 	require.Equal(t, diagIntPtr(70), snapshot.UpstreamFirstByteMs)
+	require.Equal(t, diagIntPtr(72), snapshot.UpstreamResponseHeadersReceivedMs)
+	require.Equal(t, diagIntPtr(75), snapshot.UpstreamResponseBodyFirstByteMs)
+	require.Equal(t, diagIntPtr(76), snapshot.UpstreamFirstEventMs)
+	require.Equal(t, diagIntPtr(78), snapshot.RequestFirstOutputCharacterMs)
 	require.Equal(t, diagIntPtr(55), snapshot.RequestFirstTokenMs)
 	require.Equal(t, diagIntPtr(200), snapshot.FinalUpstreamStatus)
 	require.Equal(t, 0, snapshot.RetryCount)
@@ -131,9 +155,13 @@ func TestRequestDiagnosticsCapsAttemptTimeline(t *testing.T) {
 func TestRequestDiagnosticsContextRoundTrip(t *testing.T) {
 	diagnostics := NewRequestDiagnostics(time.Now())
 	ctx := WithRequestDiagnostics(context.Background(), diagnostics)
+	attempt := diagnostics.BeginHTTPAttemptAt(1, "", time.Now())
+	ctx = WithRequestDiagnosticsAttempt(ctx, attempt)
 
 	require.Same(t, diagnostics, RequestDiagnosticsFromContext(ctx))
+	require.Same(t, attempt, RequestDiagnosticsAttemptFromContext(ctx))
 	require.Nil(t, RequestDiagnosticsFromContext(nil))
+	require.Nil(t, RequestDiagnosticsAttemptFromContext(nil))
 }
 
 func TestSanitizeRequestDiagnosticReasonBoundsAndRedacts(t *testing.T) {
@@ -150,3 +178,5 @@ func TestSanitizeRequestDiagnosticReasonBoundsAndRedacts(t *testing.T) {
 func diagIntPtr(value int) *int { return &value }
 
 func diagInt64Ptr(value int64) *int64 { return &value }
+
+func diagBoolPtr(value bool) *bool { return &value }

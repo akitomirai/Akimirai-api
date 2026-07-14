@@ -710,7 +710,19 @@ func UsageDiagnosticsFromServiceAdmin(l *service.UsageLog) *AdminUsageDiagnostic
 	if adminLog == nil {
 		return nil
 	}
-	result := &AdminUsageDiagnostics{AdminUsageLog: *adminLog}
+	result := &AdminUsageDiagnostics{
+		AdminUsageLog:                     *adminLog,
+		UpstreamConnectionReused:          l.UpstreamConnectionReused,
+		UpstreamConnectionReadyMs:         l.UpstreamConnectionReadyMs,
+		UpstreamDNSLookupMs:               l.UpstreamDNSLookupMs,
+		UpstreamTCPConnectMs:              l.UpstreamTCPConnectMs,
+		UpstreamTLSHandshakeMs:            l.UpstreamTLSHandshakeMs,
+		UpstreamRequestHeadersWrittenMs:   l.UpstreamRequestHeadersWrittenMs,
+		UpstreamResponseHeadersReceivedMs: l.UpstreamResponseHeadersReceivedMs,
+		UpstreamResponseBodyFirstByteMs:   l.UpstreamResponseBodyFirstByteMs,
+		UpstreamFirstEventMs:              l.UpstreamFirstEventMs,
+		RequestFirstOutputCharacterMs:     l.RequestFirstOutputCharacterMs,
+	}
 	if len(l.AttemptTimeline) == 0 {
 		return result
 	}
@@ -722,13 +734,23 @@ func UsageDiagnosticsFromServiceAdmin(l *service.UsageLog) *AdminUsageDiagnostic
 	for i := 0; i < limit; i++ {
 		event := l.AttemptTimeline[i]
 		result.AttemptTimeline = append(result.AttemptTimeline, AdminUsageAttemptEvent{
-			Sequence:         event.Sequence,
-			StartedMs:        event.StartedMs,
-			FinishedMs:       event.FinishedMs,
-			RequestWrittenMs: event.RequestWrittenMs,
-			FirstByteMs:      event.FirstByteMs,
-			AccountID:        event.AccountID,
-			AccountName:      event.AccountName,
+			Sequence:                  event.Sequence,
+			StartedMs:                 event.StartedMs,
+			FinishedMs:                event.FinishedMs,
+			ConnectionReused:          event.ConnectionReused,
+			ConnectionReadyMs:         event.ConnectionReadyMs,
+			DNSLookupMs:               event.DNSLookupMs,
+			TCPConnectMs:              event.TCPConnectMs,
+			TLSHandshakeMs:            event.TLSHandshakeMs,
+			RequestHeadersWrittenMs:   event.RequestHeadersWrittenMs,
+			RequestWrittenMs:          event.RequestWrittenMs,
+			FirstByteMs:               event.FirstByteMs,
+			ResponseHeadersReceivedMs: event.ResponseHeadersReceivedMs,
+			ResponseBodyFirstByteMs:   event.ResponseBodyFirstByteMs,
+			FirstEventMs:              event.FirstEventMs,
+			FirstOutputCharacterMs:    event.FirstOutputCharacterMs,
+			AccountID:                 event.AccountID,
+			AccountName:               event.AccountName,
 			Route: AdminUsageRouteSnapshot{
 				Kind:          event.Route.Kind,
 				ProxyID:       event.Route.ProxyID,
