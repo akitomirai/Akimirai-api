@@ -66,6 +66,8 @@ export type ModelUsageTrendGranularity = 'hour' | '2h' | '4h' | '8h' | 'day'
 export interface TrendParams {
   start_date?: string
   end_date?: string
+  start_time?: string
+  end_time?: string
   period?: UserUsagePeriod
   granularity?: ModelUsageTrendGranularity
   api_key_id?: number
@@ -324,6 +326,8 @@ export async function getDashboardTrend(params?: TrendParams): Promise<TrendResp
 export async function getDashboardModels(params?: {
   start_date?: string
   end_date?: string
+  start_time?: string
+  end_time?: string
   period?: UserUsagePeriod
   api_key_id?: number
   model?: string

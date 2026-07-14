@@ -81,7 +81,7 @@ describe('ModelUsageTrendChart', () => {
     expect(wrapper.text()).toContain('Spending distribution')
   })
 
-  it('switches the y-axis metric and formats token values with Chinese units', async () => {
+  it('switches the y-axis metric and promotes large Chinese token values to 亿', async () => {
     i18n.global.locale.value = 'zh'
     const wrapper = mount(ModelUsageTrendChart, {
       props: { trendData, metric: 'actual_cost', granularity: 'day' },
@@ -96,7 +96,7 @@ describe('ModelUsageTrendChart', () => {
     const tokenOptions = wrapper.findComponent({ name: 'Line' }).props('options')
     expect(tokenData.datasets[0].data).toEqual([80, 40])
     expect(tokenOptions.scales.y.ticks.callback(123456789)).toBe('1.23亿')
-    expect(tokenOptions.scales.y.ticks.callback(54321)).toBe('5.43万')
+    expect(tokenOptions.scales.y.ticks.callback(54321)).toBe('5.43w')
     expect(tokenOptions.plugins.tooltip.callbacks.label({
       dataset: { label: 'gpt-5.6-sol' },
       raw: 123456789,

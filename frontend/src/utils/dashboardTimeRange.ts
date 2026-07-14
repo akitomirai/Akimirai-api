@@ -9,6 +9,17 @@ export type DashboardDatePreset =
   | '14days'
   | '30days'
 
+export interface DateRangeChange {
+  startDate: string
+  endDate: string
+  startTime: string
+  endTime: string
+  preset: string | null
+}
+
+export const toLocalDateTimeParam = (date: string, time: string): string =>
+  `${date}T${time}`
+
 export const dashboardDatePresets: DashboardDatePreset[] = [
   'yesterday',
   'today',

@@ -62,10 +62,12 @@ const mountDashboard = () => mount(DashboardView, {
       LoadingSpinner: { template: '<div data-testid="loading" />' },
       UserDashboardStats: { template: '<section data-testid="dashboard-stats" />' },
       UserDashboardFilters: {
-        props: ['startDate', 'endDate', 'granularity', 'loading'],
+        props: ['startDate', 'endDate', 'startTime', 'endTime', 'granularity', 'loading'],
         emits: [
           'update:startDate',
           'update:endDate',
+          'update:startTime',
+          'update:endTime',
           'update:granularity',
           'dateRangeChange',
           'granularityChange',
@@ -79,11 +81,11 @@ const mountDashboard = () => mount(DashboardView, {
             />
             <button
               data-testid="set-range"
-              @click="$emit('update:startDate', '2026-07-01'); $emit('update:endDate', '2026-07-02'); $emit('dateRangeChange', { startDate: '2026-07-01', endDate: '2026-07-02', preset: null })"
+              @click="$emit('update:startDate', '2026-07-01'); $emit('update:endDate', '2026-07-02'); $emit('update:startTime', '08:30'); $emit('update:endTime', '19:45'); $emit('dateRangeChange', { startDate: '2026-07-01', endDate: '2026-07-02', startTime: '08:30', endTime: '19:45', preset: null })"
             />
             <button
               data-testid="set-48-hours"
-              @click="$emit('update:startDate', '2026-07-10'); $emit('update:endDate', '2026-07-12'); $emit('dateRangeChange', { startDate: '2026-07-10', endDate: '2026-07-12', preset: 'last48Hours' })"
+              @click="$emit('update:startDate', '2026-07-10'); $emit('update:endDate', '2026-07-12'); $emit('update:startTime', '22:00'); $emit('update:endTime', '22:00'); $emit('dateRangeChange', { startDate: '2026-07-10', endDate: '2026-07-12', startTime: '22:00', endTime: '22:00', preset: 'last48Hours' })"
             />
           </div>
         `,
@@ -148,8 +150,8 @@ describe('user DashboardView', () => {
     await wrapper.get('[data-testid="set-range"]').trigger('click')
     await flushPromises()
     expect(mocks.getDashboardModelTrend).toHaveBeenLastCalledWith(expect.objectContaining({
-      start_date: '2026-07-01',
-      end_date: '2026-07-02',
+      start_time: '2026-07-01T08:30',
+      end_time: '2026-07-02T19:45',
     }))
     expect(mocks.getDashboardModelTrend).toHaveBeenLastCalledWith(expect.not.objectContaining({
       period: expect.anything(),

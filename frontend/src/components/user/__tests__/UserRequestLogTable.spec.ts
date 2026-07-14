@@ -5,11 +5,13 @@ import UserRequestLogTable from '../UserRequestLogTable.vue'
 import type { UserRequestLog } from '@/types'
 
 const messages: Record<string, string> = {
-  'usage.logs.columns.time': 'Time / Type',
-  'usage.logs.columns.key': 'API Key / Group',
-  'usage.logs.columns.model': 'Model / Reasoning',
+  'usage.logs.columns.time': 'Time',
+  'usage.logs.columns.key': 'API Key',
+  'usage.logs.columns.model': 'Model',
   'usage.logs.columns.latency': 'Latency',
-  'usage.logs.columns.details': 'Details',
+  'usage.cacheHitRate': 'Cache Hit Rate',
+  'usage.cost': 'Cost',
+  'usage.original': 'Original',
   'usage.logs.kinds.consumption': 'Consumption',
   'usage.logs.kinds.error': 'Error',
   'usage.logs.noGroup': 'No group',
@@ -45,7 +47,16 @@ const consumption: UserRequestLog = {
   reasoning_effort: 'max',
   first_token_ms: 3000,
   duration_ms: 4000,
+  input_tokens: 14_750,
+  output_tokens: 650,
+  cache_creation_tokens: 0,
+  cache_read_tokens: 102_300,
   total_tokens: 17_248,
+  input_cost: 0.001,
+  output_cost: 0.002,
+  cache_creation_cost: 0,
+  cache_read_cost: 0.003,
+  total_cost: 0.012,
   actual_cost: 0.011508,
   status_code: null,
   error_code: null,
@@ -57,7 +68,16 @@ const error: UserRequestLog = {
   id: 2,
   kind: 'error',
   request_id: 'request-error',
+  input_tokens: null,
+  output_tokens: null,
+  cache_creation_tokens: null,
+  cache_read_tokens: null,
   total_tokens: null,
+  input_cost: null,
+  output_cost: null,
+  cache_creation_cost: null,
+  cache_read_cost: null,
+  total_cost: null,
   actual_cost: null,
   status_code: 429,
   error_code: 'RATE_LIMITED',
@@ -72,7 +92,7 @@ const DataTableStub = {
     <table data-test="data-table">
       <thead><tr><th v-for="column in columns" :key="column.key">{{ column.label }}</th></tr></thead>
       <tbody>
-        <tr v-for="row in data" :key="row.request_id">
+        <tr v-for="row in data" :key="row.request_id" @click="$emit('rowClick', row)">
           <td v-for="column in columns" :key="column.key">
             <slot :name="'cell-' + column.key" :row="row" :value="row[column.key]" />
           </td>
@@ -109,32 +129,37 @@ const mountTable = () => mount(UserRequestLogTable, {
 })
 
 describe('UserRequestLogTable', () => {
-  it('renders exactly the five requested compound columns', () => {
+  it('renders exactly the seven modern usage columns', () => {
     const wrapper = mountTable()
 
     expect(wrapper.findAll('th').map((header) => header.text())).toEqual([
-      'Time / Type',
-      'API Key / Group',
-      'Model / Reasoning',
+      'Time',
+      'API Key',
+      'Model',
+      'Tokens',
+      'Cache Hit Rate',
+      'Cost',
       'Latency',
-      'Details',
     ])
     expect(wrapper.text()).toContain('Consumption')
     expect(wrapper.text()).toContain('Error')
     expect(wrapper.text()).toContain('Baka1')
     expect(wrapper.text()).toContain('Pro pool')
-    expect(wrapper.text()).toContain('1.00x')
     expect(wrapper.text()).toContain('gpt-5.6-sol')
     expect(wrapper.text()).toContain('Max')
     expect(wrapper.text()).toContain('4.00s')
-    expect(wrapper.text()).toContain('RATE_LIMITED')
+    expect(wrapper.text()).toContain('429')
+    expect(wrapper.text()).toContain('1.48w')
+    expect(wrapper.text()).toContain('10.23w')
+    expect(wrapper.text()).toContain('87.4%')
+    expect(wrapper.text()).toContain('$0.011508')
   })
 
   it('opens the matching detail dialog for consumption and error rows', async () => {
     const wrapper = mountTable()
-    const detailButtons = wrapper.findAll('[data-test="request-log-details"]')
+    const rows = wrapper.findAll('tbody tr')
 
-    await detailButtons.find((button) => button.attributes('data-kind') === 'consumption')!.trigger('click')
+    await rows[0].trigger('click')
     expect(wrapper.get('[data-test="usage-detail"]').attributes()).toMatchObject({
       'data-show': 'true',
       'data-id': '1',
@@ -142,7 +167,7 @@ describe('UserRequestLogTable', () => {
       'data-group': 'Pro pool',
     })
 
-    await detailButtons.find((button) => button.attributes('data-kind') === 'error')!.trigger('click')
+    await rows[1].trigger('click')
     expect(wrapper.get('[data-test="error-detail"]').attributes()).toMatchObject({
       'data-show': 'true',
       'data-id': '2',

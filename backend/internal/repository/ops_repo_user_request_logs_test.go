@@ -37,7 +37,8 @@ func TestOpsRepositoryListUserRequestLogs_UnifiesAndPaginatesAfterDedup(t *testi
 		"api_key_id", "api_key_name", "api_key_deleted",
 		"group_id", "group_name", "rate_multiplier",
 		"model", "reasoning_effort", "first_token_ms", "duration_ms",
-		"total_tokens", "actual_cost", "status_code",
+		"input_tokens", "output_tokens", "cache_creation_tokens", "cache_read_tokens", "total_tokens",
+		"input_cost", "output_cost", "cache_creation_cost", "cache_read_cost", "total_cost", "actual_cost", "status_code",
 		"error_phase", "error_type", "error_message", "error_stream",
 	}
 	rows := sqlmock.NewRows(columns).
@@ -46,7 +47,8 @@ func TestOpsRepositoryListUserRequestLogs_UnifiesAndPaginatesAfterDedup(t *testi
 			int64(7), "Baka1", false,
 			int64(9), "Pro号池", 1.2,
 			"gpt-5.6-sol", "high", int64(3000), int64(4000),
-			int64(17196), 0.011508, int64(429),
+			int64(1000), int64(196), int64(2000), int64(14000), int64(17196),
+			0.001, 0.002, 0.003, 0.004, 0.010, 0.011508, int64(429),
 			"upstream", "rate_limit_error", "rate limited", true,
 		).
 		AddRow(
@@ -54,7 +56,8 @@ func TestOpsRepositoryListUserRequestLogs_UnifiesAndPaginatesAfterDedup(t *testi
 			int64(7), "Baka1", false,
 			int64(9), "Pro号池", 1.0,
 			"gpt-5.4-mini", nil, int64(3500), int64(6000),
-			int64(6740), 0.005888, nil,
+			int64(5000), int64(740), int64(0), int64(1000), int64(6740),
+			0.001, 0.002, 0.0, 0.001, 0.004, 0.005888, nil,
 			"", "", "", false,
 		)
 	mock.ExpectQuery(`(?s)FROM combined.*ORDER BY created_at DESC, kind DESC, id DESC.*LIMIT \$5 OFFSET \$6`).
@@ -75,6 +78,16 @@ func TestOpsRepositoryListUserRequestLogs_UnifiesAndPaginatesAfterDedup(t *testi
 	require.Equal(t, 429, *items[0].StatusCode)
 	require.NotNil(t, items[0].TotalTokens)
 	require.Equal(t, int64(17196), *items[0].TotalTokens)
+	require.NotNil(t, items[0].InputTokens)
+	require.Equal(t, int64(1000), *items[0].InputTokens)
+	require.NotNil(t, items[0].OutputTokens)
+	require.Equal(t, int64(196), *items[0].OutputTokens)
+	require.NotNil(t, items[0].CacheCreationTokens)
+	require.Equal(t, int64(2000), *items[0].CacheCreationTokens)
+	require.NotNil(t, items[0].CacheReadTokens)
+	require.Equal(t, int64(14000), *items[0].CacheReadTokens)
+	require.NotNil(t, items[0].TotalCost)
+	require.InDelta(t, 0.010, *items[0].TotalCost, 0.000001)
 	require.NotNil(t, items[0].ActualCost)
 	require.InDelta(t, 0.011508, *items[0].ActualCost, 0.000001)
 	require.Equal(t, service.UserRequestLogKindConsumption, items[1].Kind)
@@ -102,14 +115,16 @@ func TestOpsRepositoryListUserRequestLogs_PreservesUnknownStandaloneErrorMetrics
 			"api_key_id", "api_key_name", "api_key_deleted",
 			"group_id", "group_name", "rate_multiplier",
 			"model", "reasoning_effort", "first_token_ms", "duration_ms",
-			"total_tokens", "actual_cost", "status_code",
+			"input_tokens", "output_tokens", "cache_creation_tokens", "cache_read_tokens", "total_tokens",
+			"input_cost", "output_cost", "cache_creation_cost", "cache_read_cost", "total_cost", "actual_cost", "status_code",
 			"error_phase", "error_type", "error_message", "error_stream",
 		}).AddRow(
 			int64(99), "error", start, "req-error-only",
 			int64(2), "key", false,
 			nil, "", nil,
 			"gpt-5", nil, nil, int64(1200),
-			nil, nil, int64(500),
+			nil, nil, nil, nil, nil,
+			nil, nil, nil, nil, nil, nil, int64(500),
 			"upstream", "upstream_error", "failed", false,
 		))
 
@@ -118,6 +133,9 @@ func TestOpsRepositoryListUserRequestLogs_PreservesUnknownStandaloneErrorMetrics
 	require.Equal(t, int64(1), total)
 	require.Len(t, items, 1)
 	require.Nil(t, items[0].TotalTokens)
+	require.Nil(t, items[0].InputTokens)
+	require.Nil(t, items[0].CacheReadTokens)
+	require.Nil(t, items[0].TotalCost)
 	require.Nil(t, items[0].ActualCost)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
@@ -147,7 +165,8 @@ func TestOpsRepositoryListUserRequestLogs_DisablesErrorLedgerBeforeCorrelation(t
 			"api_key_id", "api_key_name", "api_key_deleted",
 			"group_id", "group_name", "rate_multiplier",
 			"model", "reasoning_effort", "first_token_ms", "duration_ms",
-			"total_tokens", "actual_cost", "status_code",
+			"input_tokens", "output_tokens", "cache_creation_tokens", "cache_read_tokens", "total_tokens",
+			"input_cost", "output_cost", "cache_creation_cost", "cache_read_cost", "total_cost", "actual_cost", "status_code",
 			"error_phase", "error_type", "error_message", "error_stream",
 		}))
 

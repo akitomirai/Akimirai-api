@@ -15,6 +15,11 @@
       <div>
         <p class="text-xs font-medium text-gray-500">{{ t('usage.totalTokens') }}</p>
         <p class="text-xl font-bold">{{ formatTokenCount(stats?.total_tokens || 0) }}</p>
+        <p v-if="showTokenBreakdown" class="mt-0.5 text-xs text-gray-400">
+          {{ t('usage.in') }}: {{ formatTokenCount(stats?.total_input_tokens || 0) }} /
+          {{ t('usage.out') }}: {{ formatTokenCount(stats?.total_output_tokens || 0) }} /
+          {{ t('usage.cacheRead') }}: {{ formatTokenCount(stats?.total_cache_read_tokens || 0) }}
+        </p>
       </div>
     </div>
     <div class="card p-4 flex items-center gap-3">
@@ -59,9 +64,11 @@ const props = withDefaults(defineProps<{
   stats: (AdminUsageStatsResponse | UsageStatsResponse) | null
   showAccountCost?: boolean
   strikeStandardCost?: boolean
+  showTokenBreakdown?: boolean
 }>(), {
   showAccountCost: true,
   strikeStandardCost: false,
+  showTokenBreakdown: false,
 })
 
 const { t } = useI18n()
@@ -72,6 +79,7 @@ const totalAccountCost = computed(() => {
 })
 const showAccountCost = computed(() => props.showAccountCost)
 const strikeStandardCost = computed(() => props.strikeStandardCost)
+const showTokenBreakdown = computed(() => props.showTokenBreakdown)
 
 const formatDuration = (ms: number) =>
   ms < 1000 ? `${ms.toFixed(0)}ms` : `${(ms / 1000).toFixed(2)}s`

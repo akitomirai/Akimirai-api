@@ -149,6 +149,10 @@ frontend/coverage/
 aicodex
 output/
 
+# Repository-root local runtime state
+/config.yaml
+/dump.rdb
+
 # Build artifacts (large binaries)
 backend/build-artifacts/
 backend/backend/build-artifacts/

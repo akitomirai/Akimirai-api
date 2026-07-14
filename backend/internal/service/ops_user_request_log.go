@@ -18,25 +18,34 @@ const (
 )
 
 type UserRequestLog struct {
-	ID              int64              `json:"id"`
-	Kind            UserRequestLogKind `json:"kind"`
-	CreatedAt       time.Time          `json:"created_at"`
-	RequestID       string             `json:"request_id"`
-	APIKeyID        *int64             `json:"api_key_id"`
-	APIKeyName      string             `json:"api_key_name"`
-	APIKeyDeleted   bool               `json:"api_key_deleted"`
-	GroupID         *int64             `json:"group_id"`
-	GroupName       string             `json:"group_name"`
-	RateMultiplier  *float64           `json:"rate_multiplier"`
-	Model           string             `json:"model"`
-	ReasoningEffort *string            `json:"reasoning_effort"`
-	FirstTokenMs    *int               `json:"first_token_ms"`
-	DurationMs      *int               `json:"duration_ms"`
-	TotalTokens     *int64             `json:"total_tokens"`
-	ActualCost      *float64           `json:"actual_cost"`
-	StatusCode      *int               `json:"status_code"`
-	ErrorCode       *string            `json:"error_code"`
-	ErrorMessage    *string            `json:"error_message"`
+	ID                  int64              `json:"id"`
+	Kind                UserRequestLogKind `json:"kind"`
+	CreatedAt           time.Time          `json:"created_at"`
+	RequestID           string             `json:"request_id"`
+	APIKeyID            *int64             `json:"api_key_id"`
+	APIKeyName          string             `json:"api_key_name"`
+	APIKeyDeleted       bool               `json:"api_key_deleted"`
+	GroupID             *int64             `json:"group_id"`
+	GroupName           string             `json:"group_name"`
+	RateMultiplier      *float64           `json:"rate_multiplier"`
+	Model               string             `json:"model"`
+	ReasoningEffort     *string            `json:"reasoning_effort"`
+	FirstTokenMs        *int               `json:"first_token_ms"`
+	DurationMs          *int               `json:"duration_ms"`
+	InputTokens         *int64             `json:"input_tokens"`
+	OutputTokens        *int64             `json:"output_tokens"`
+	CacheCreationTokens *int64             `json:"cache_creation_tokens"`
+	CacheReadTokens     *int64             `json:"cache_read_tokens"`
+	TotalTokens         *int64             `json:"total_tokens"`
+	InputCost           *float64           `json:"input_cost"`
+	OutputCost          *float64           `json:"output_cost"`
+	CacheCreationCost   *float64           `json:"cache_creation_cost"`
+	CacheReadCost       *float64           `json:"cache_read_cost"`
+	TotalCost           *float64           `json:"total_cost"`
+	ActualCost          *float64           `json:"actual_cost"`
+	StatusCode          *int               `json:"status_code"`
+	ErrorCode           *string            `json:"error_code"`
+	ErrorMessage        *string            `json:"error_message"`
 
 	RawErrorPhase   string `json:"-"`
 	RawErrorType    string `json:"-"`

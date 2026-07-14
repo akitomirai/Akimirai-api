@@ -268,10 +268,12 @@ export default {
 
   // Usage
   usage: {
-    title: 'Logs',
+    title: 'Usage Records',
     description: 'Review API consumption and error logs',
     costDetails: 'Cost Breakdown',
     tokenDetails: 'Token Breakdown',
+    tokenUnitPrice: 'Unit price',
+    tokenCost: 'Cost',
     cacheTtlOverriddenHint: 'Cache TTL Override enabled',
     cacheTtlOverriddenLabel: 'TTL Override',
     cacheTtlOverridden5m: 'Billed as 5m',
@@ -344,6 +346,7 @@ export default {
     cacheHitRate: 'Cache hit rate',
     inputTokenPrice: 'Input price',
     outputTokenPrice: 'Output price',
+    cacheReadTokenPrice: 'Cache read price',
     perMillionTokens: '/ 1M tokens',
     unitPrice: 'Per-request price',
     imageUnitPrice: 'Per-image price',
@@ -406,9 +409,9 @@ export default {
         error: 'Error',
       },
       columns: {
-        time: 'Time / Type',
-        key: 'API Key / Group',
-        model: 'Model / Reasoning',
+        time: 'Time',
+        key: 'API Key',
+        model: 'Model',
         latency: 'Latency',
         details: 'Details',
       },
@@ -422,6 +425,11 @@ export default {
       billingDetails: 'Billing Details',
       openDetail: 'View log details',
       errorFallback: 'Request failed',
+    },
+    countMode: {
+      label: 'Token count format',
+      modern: 'w/unit',
+      legacy: 'k/unit',
     },
     tabs: { usage: 'Usage', errors: 'Error Requests', ranking: 'User Ranking' },
     errors: {
@@ -913,8 +921,12 @@ export default {
     last14Days: 'Last 14 Days',
     last30Days: 'Last 30 Days',
     custom: 'Custom',
+    customTimeRange: 'Custom time range',
     startDate: 'Start Date',
     endDate: 'End Date',
+    startTime: 'Start time',
+    endTime: 'End time',
+    invalidRange: 'End time must be later than start time',
     apply: 'Apply',
     selectDateRange: 'Select date range'
   },

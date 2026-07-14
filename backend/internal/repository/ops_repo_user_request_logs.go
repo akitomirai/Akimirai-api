@@ -64,7 +64,16 @@ WITH usage_rows AS (
     NULLIF(TRIM(ul.reasoning_effort), '') AS reasoning_effort,
     ul.first_token_ms,
     ul.duration_ms,
+	ul.input_tokens::BIGINT AS input_tokens,
+	ul.output_tokens::BIGINT AS output_tokens,
+	ul.cache_creation_tokens::BIGINT AS cache_creation_tokens,
+	ul.cache_read_tokens::BIGINT AS cache_read_tokens,
     (ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens)::BIGINT AS total_tokens,
+	ul.input_cost::DOUBLE PRECISION AS input_cost,
+	ul.output_cost::DOUBLE PRECISION AS output_cost,
+	ul.cache_creation_cost::DOUBLE PRECISION AS cache_creation_cost,
+	ul.cache_read_cost::DOUBLE PRECISION AS cache_read_cost,
+	ul.total_cost::DOUBLE PRECISION AS total_cost,
     ul.actual_cost::DOUBLE PRECISION AS actual_cost
   FROM usage_logs ul
   LEFT JOIN api_keys k ON k.id = ul.api_key_id
@@ -130,7 +139,16 @@ combined AS (
     u.reasoning_effort AS reasoning_effort,
     COALESCE(e.time_to_first_token_ms, u.first_token_ms) AS first_token_ms,
     COALESCE(e.duration_ms, u.duration_ms) AS duration_ms,
+	u.input_tokens AS input_tokens,
+	u.output_tokens AS output_tokens,
+	u.cache_creation_tokens AS cache_creation_tokens,
+	u.cache_read_tokens AS cache_read_tokens,
     u.total_tokens AS total_tokens,
+	u.input_cost AS input_cost,
+	u.output_cost AS output_cost,
+	u.cache_creation_cost AS cache_creation_cost,
+	u.cache_read_cost AS cache_read_cost,
+	u.total_cost AS total_cost,
     u.actual_cost AS actual_cost,
     e.status_code,
     COALESCE(e.error_phase, '') AS error_phase,
@@ -173,7 +191,8 @@ SELECT
   api_key_id, api_key_name, api_key_deleted,
   group_id, group_name, rate_multiplier,
   model, reasoning_effort, first_token_ms, duration_ms,
-  total_tokens, actual_cost, status_code,
+	input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, total_tokens,
+	input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, status_code,
   error_phase, error_type, error_message, error_stream
 FROM combined
 %s
@@ -191,24 +210,34 @@ LIMIT $%d OFFSET $%d
 	items := make([]*service.UserRequestLog, 0, filter.PageSize)
 	for rows.Next() {
 		var (
-			item            service.UserRequestLog
-			kind            string
-			apiKeyID        sql.NullInt64
-			groupID         sql.NullInt64
-			rateMultiplier  sql.NullFloat64
-			reasoningEffort sql.NullString
-			firstTokenMs    sql.NullInt64
-			durationMs      sql.NullInt64
-			totalTokens     sql.NullInt64
-			actualCost      sql.NullFloat64
-			statusCode      sql.NullInt64
+			item                service.UserRequestLog
+			kind                string
+			apiKeyID            sql.NullInt64
+			groupID             sql.NullInt64
+			rateMultiplier      sql.NullFloat64
+			reasoningEffort     sql.NullString
+			firstTokenMs        sql.NullInt64
+			durationMs          sql.NullInt64
+			inputTokens         sql.NullInt64
+			outputTokens        sql.NullInt64
+			cacheCreationTokens sql.NullInt64
+			cacheReadTokens     sql.NullInt64
+			totalTokens         sql.NullInt64
+			inputCost           sql.NullFloat64
+			outputCost          sql.NullFloat64
+			cacheCreationCost   sql.NullFloat64
+			cacheReadCost       sql.NullFloat64
+			totalCost           sql.NullFloat64
+			actualCost          sql.NullFloat64
+			statusCode          sql.NullInt64
 		)
 		if err := rows.Scan(
 			&item.ID, &kind, &item.CreatedAt, &item.RequestID,
 			&apiKeyID, &item.APIKeyName, &item.APIKeyDeleted,
 			&groupID, &item.GroupName, &rateMultiplier,
 			&item.Model, &reasoningEffort, &firstTokenMs, &durationMs,
-			&totalTokens, &actualCost, &statusCode,
+			&inputTokens, &outputTokens, &cacheCreationTokens, &cacheReadTokens, &totalTokens,
+			&inputCost, &outputCost, &cacheCreationCost, &cacheReadCost, &totalCost, &actualCost, &statusCode,
 			&item.RawErrorPhase, &item.RawErrorType, &item.RawErrorMessage,
 			&item.RawErrorStream,
 		); err != nil {
@@ -221,7 +250,16 @@ LIMIT $%d OFFSET $%d
 		item.ReasoningEffort = nullStringPointer(reasoningEffort)
 		item.FirstTokenMs = nullIntPointer(firstTokenMs)
 		item.DurationMs = nullIntPointer(durationMs)
+		item.InputTokens = nullInt64Pointer(inputTokens)
+		item.OutputTokens = nullInt64Pointer(outputTokens)
+		item.CacheCreationTokens = nullInt64Pointer(cacheCreationTokens)
+		item.CacheReadTokens = nullInt64Pointer(cacheReadTokens)
 		item.TotalTokens = nullInt64Pointer(totalTokens)
+		item.InputCost = nullFloat64Pointer(inputCost)
+		item.OutputCost = nullFloat64Pointer(outputCost)
+		item.CacheCreationCost = nullFloat64Pointer(cacheCreationCost)
+		item.CacheReadCost = nullFloat64Pointer(cacheReadCost)
+		item.TotalCost = nullFloat64Pointer(totalCost)
 		item.ActualCost = nullFloat64Pointer(actualCost)
 		item.StatusCode = nullIntPointer(statusCode)
 		items = append(items, &item)

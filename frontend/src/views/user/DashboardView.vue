@@ -27,6 +27,8 @@
         <UserDashboardFilters
           v-model:startDate="startDate"
           v-model:endDate="endDate"
+          v-model:startTime="startTime"
+          v-model:endTime="endTime"
           v-model:granularity="granularity"
           :loading="loadingTrends"
           @dateRangeChange="handleDateRangeChange"
@@ -76,10 +78,12 @@ import {
 import { getMyPlatformQuotas } from '@/api/user'
 import type { PlatformQuotaItem } from '@/types'
 import {
+  type DateRangeChange,
   getDashboardPresetGranularity,
   getDashboardPresetPeriod,
+  toLocalDateTimeParam,
 } from '@/utils/dashboardTimeRange'
-import { formatDateLocalInput } from '@/utils/format'
+import { formatDateLocalInput, formatTimeLocalInput } from '@/utils/format'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
@@ -98,6 +102,8 @@ const dashboardTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
 const startDate = ref(formatDateLocalInput(new Date(Date.now() - 86400000)))
 const endDate = ref(formatDateLocalInput(new Date()))
+const startTime = ref(formatTimeLocalInput(new Date(Date.now() - 86400000)))
+const endTime = ref(formatTimeLocalInput(new Date()))
 const activePreset = ref<string | null>('last24Hours')
 const granularity = ref<ModelUsageTrendGranularity>('hour')
 
@@ -128,7 +134,10 @@ const loadModelTrends = async () => {
     const response = await usageAPI.getDashboardModelTrend({
       ...(period
         ? { period }
-        : { start_date: startDate.value, end_date: endDate.value }),
+        : {
+            start_time: toLocalDateTimeParam(startDate.value, startTime.value),
+            end_time: toLocalDateTimeParam(endDate.value, endTime.value),
+          }),
       granularity: granularity.value,
       model_source: 'requested',
       timezone: dashboardTimezone,
@@ -146,7 +155,7 @@ const loadModelTrends = async () => {
   }
 }
 
-const handleDateRangeChange = (range: { preset: string | null }) => {
+const handleDateRangeChange = (range: DateRangeChange) => {
   activePreset.value = range.preset
   const defaultGranularity = getDashboardPresetGranularity(range.preset)
   if (defaultGranularity) granularity.value = defaultGranularity

@@ -8,9 +8,14 @@
         <DateRangePicker
           :start-date="startDate"
           :end-date="endDate"
+          :start-time="startTime"
+          :end-time="endTime"
+          show-time-inputs
           :preset-values="dashboardDatePresets"
           @update:start-date="emit('update:startDate', $event)"
           @update:end-date="emit('update:endDate', $event)"
+          @update:start-time="emit('update:startTime', $event)"
+          @update:end-time="emit('update:endTime', $event)"
           @change="emit('dateRangeChange', $event)"
         />
       </div>
@@ -46,14 +51,15 @@ import { useI18n } from 'vue-i18n'
 import DateRangePicker from '@/components/common/DateRangePicker.vue'
 import Select from '@/components/common/Select.vue'
 import type { ModelUsageTrendGranularity } from '@/api/usage'
-import { dashboardDatePresets } from '@/utils/dashboardTimeRange'
+import { dashboardDatePresets, type DateRangeChange } from '@/utils/dashboardTimeRange'
 
 type Granularity = ModelUsageTrendGranularity
-type DateRangeChange = { startDate: string; endDate: string; preset: string | null }
 
 defineProps<{
   startDate: string
   endDate: string
+  startTime: string
+  endTime: string
   granularity: Granularity
   loading: boolean
 }>()
@@ -61,6 +67,8 @@ defineProps<{
 const emit = defineEmits<{
   (event: 'update:startDate', value: string): void
   (event: 'update:endDate', value: string): void
+  (event: 'update:startTime', value: string): void
+  (event: 'update:endTime', value: string): void
   (event: 'update:granularity', value: Granularity): void
   (event: 'dateRangeChange', range: DateRangeChange): void
   (event: 'granularityChange'): void

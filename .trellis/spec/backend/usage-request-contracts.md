@@ -9,13 +9,13 @@
 
 ### 2. Signatures
 - Usage list:
-  - `GET /api/v1/usage?page=&page_size=&api_key_id=&request_id=&model=&request_type=&stream=&billing_type=&charged=&start_date=&end_date=&sort_by=&sort_order=`
+  - `GET /api/v1/usage?page=&page_size=&api_key_id=&request_id=&model=&request_type=&stream=&billing_type=&charged=&start_date=&end_date=&start_time=&end_time=&timezone=&sort_by=&sort_order=`
 - Usage detail:
   - `GET /api/v1/usage/:id`
 - Unified request log:
-  - `GET /api/v1/usage/requests?page=&page_size=&kind=all|consumption|error&api_key_id=&group_id=&model=&request_id=&start_date=&end_date=&sort_by=created_at|duration_ms&sort_order=asc|desc`
+  - `GET /api/v1/usage/requests?page=&page_size=&kind=all|consumption|error&api_key_id=&group_id=&model=&request_id=&start_date=&end_date=&start_time=&end_time=&period=&timezone=&sort_by=created_at|duration_ms&sort_order=asc|desc`
 - Error list:
-  - `GET /api/v1/usage/errors?page=&page_size=&start_date=&end_date=&model=&api_key_id=&status_code=&category=&request_id=`
+  - `GET /api/v1/usage/errors?page=&page_size=&start_date=&end_date=&start_time=&end_time=&period=&timezone=&model=&api_key_id=&status_code=&category=&request_id=`
 - Error detail:
   - `GET /api/v1/usage/errors/:id`
 
@@ -25,6 +25,7 @@
   - `api_key_id` usage filters must verify API key ownership before querying.
   - user error listing must force `OpsErrorLogFilter.UserID` and keep deleted-key owner matching enabled for user-owned deleted keys.
 - `request_id` filters are exact matches, not fuzzy search.
+- Custom user ranges use local `YYYY-MM-DDTHH:mm` values plus `timezone` and become exact half-open `[start_time, end_time)` instants. Rolling presets continue to use `period`; explicit minute values take precedence when present.
 - The unified request log has one server-side pagination owner after union and deduplication:
   - `usage_logs` owns completed consumption and billing facts.
   - `ops_error_logs` owns failed-request status and redacted error classification.
@@ -35,7 +36,10 @@
 - User error visibility is fail-closed on the unified endpoint:
   - `kind=error` is forbidden while the setting is disabled.
   - `kind=all` falls back to consumption-only while the setting is disabled.
-- Unified rows expose only the five-column user log contract: time/type, key/group/rate, requested model/reasoning effort, request latency, and safe details. They must not expose raw prompts, request/response bodies, account credentials, full API keys, client IPs, admin hints, or raw upstream error messages.
+- Unified rows support the modern seven-column user projection: time, key/group, model/reasoning effort, Token breakdown, cache-hit rate inputs, safe costs, and latency. Row details remain user-safe and are opened from the row rather than a dedicated detail column.
+- Token fields are nullable `input_tokens`, `output_tokens`, `cache_creation_tokens`, `cache_read_tokens`, and `total_tokens`. Cost fields are nullable `input_cost`, `output_cost`, `cache_creation_cost`, `cache_read_cost`, `total_cost`, and `actual_cost`.
+- A completed consumption row may populate those fields from `usage_logs`. An exactly correlated error may inherit them from its matched usage row. A standalone error keeps them null; null means unavailable and must not be converted to fabricated zero measurements.
+- Unified rows must not expose raw prompts, request/response bodies, account credentials, full API keys, client IPs, User-Agent, admin hints, proxy/route diagnostics, or raw upstream error messages.
 - `charged` usage filter is backed by real `usage_logs.actual_cost`:
   - `charged=true` means `actual_cost > 0`.
   - `charged=false` means `actual_cost <= 0`.
@@ -57,6 +61,8 @@
 - `stream` not parseable as bool -> bad request.
 - `charged` not parseable as bool -> bad request.
 - `start_date` / `end_date` not `YYYY-MM-DD` -> bad request.
+- `start_time` and `end_time` not supplied together -> bad request.
+- `start_time` / `end_time` not `YYYY-MM-DDTHH:mm`, or end is not after start -> bad request.
 - user error view disabled -> forbidden.
 - unified log `kind` outside `all|consumption|error` -> bad request.
 - unified log `sort_by` outside `created_at|duration_ms` -> bad request.
@@ -66,14 +72,18 @@
 
 ### 5. Good/Base/Bad Cases
 - Good: user `42` requests `/usage?request_id=req-1&charged=true`; the repository receives `UserID=42`, `RequestID=req-1`, and `Charged=true`, and returns only exact matching real usage rows.
+- Good: `start_time=2026-07-12T22:00&end_time=2026-07-13T22:15&timezone=Asia/Shanghai` reaches every user usage projection as the same exact half-open range.
+- Good: an error row with an exact `(request_id, api_key_id)` usage match inherits the matched row's Token/cost metrics; the same error without that proof returns null metrics.
 - Base: a zero-cost usage row returns `status="unknown"`, `charged=false`, and null error descriptor fields unless a separate `/usage/errors` row is queried.
 - Bad: a DTO returns a full API key, raw prompt/messages/content, upstream credentials, admin hint, client IP, or account credential fields.
 
 ### 6. Tests Required
 - Handler tests must assert user-scope filters are always set from the auth subject.
 - Handler tests must cover `request_type`, legacy `stream`, `request_id`, and invalid `charged` parsing.
+- Handler tests must cover valid minute ranges, missing pairs, invalid syntax, reversed ranges, timezone conversion, and rolling-period compatibility.
 - Repository tests must prove `request_id` filters are exact matches.
 - Unified-log repository tests must prove ledger scoping occurs before correlation, exact-key correlation, newest-error deduplication, blank-ID independence, error precedence/enrichment, errors-disabled behavior, and global count/pagination after the union.
+- Unified-log repository/service tests must assert exact correlated Token/cost inheritance, standalone-error null metrics, and stable select/scan order.
 - Unified-log handler/service tests must prove auth scope cannot be overridden, API key ownership is checked, error visibility is fail-closed, and invalid kind/sort values are rejected.
 - DTO tests must prove:
   - token totals and cost fields are derived from real usage data;
@@ -101,6 +111,8 @@ row.Retryable = nil
 ```
 
 The usage route returns only proven usage/billing facts and leaves error explanation fields to `/usage/errors`.
+
+For unified request logs, the same rule applies to metrics: populate pointer fields only from a proven `usage_logs` row and leave standalone error metrics nil.
 
 ## Scenario: Administrator Request Diagnostics
 

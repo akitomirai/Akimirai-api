@@ -79,12 +79,12 @@ describe('UserDashboardStats', () => {
   it('formats token totals according to the active locale', async () => {
     const wrapper = mountStats()
     expect(wrapper.get('[data-testid="dashboard-total-tokens"]').text()).toContain('4.00亿')
-    expect(wrapper.get('[data-testid="dashboard-total-tokens"] [title="400,000,000个"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="dashboard-total-tokens"] [title="400,000,000"]').exists()).toBe(true)
 
     currentLocale.value = 'en'
     await nextTick()
 
-    expect(wrapper.get('[data-testid="dashboard-total-tokens"]').text()).toContain('400.00M')
+    expect(wrapper.get('[data-testid="dashboard-total-tokens"]').text()).toContain('40000.00w')
     expect(wrapper.get('[data-testid="dashboard-total-tokens"] [title="400,000,000"]').exists()).toBe(true)
   })
 

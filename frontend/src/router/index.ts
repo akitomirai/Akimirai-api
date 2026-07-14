@@ -220,7 +220,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
-      title: 'Logs',
+      title: 'Usage Records',
       titleKey: 'usage.title',
       descriptionKey: 'usage.description'
     }

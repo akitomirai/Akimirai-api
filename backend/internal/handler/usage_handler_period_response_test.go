@@ -25,4 +25,8 @@ func TestUserUsageResponseEndDate(t *testing.T) {
 	calendarContext, _ := gin.CreateTestContext(httptest.NewRecorder())
 	calendarContext.Request = httptest.NewRequest(http.MethodGet, "/?end_date=2026-07-12", nil)
 	require.Equal(t, "2026-07-12", userUsageResponseEndDate(calendarContext, end))
+
+	customContext, _ := gin.CreateTestContext(httptest.NewRecorder())
+	customContext.Request = httptest.NewRequest(http.MethodGet, "/?end_time=2026-07-13T22:15", nil)
+	require.Equal(t, "2026-07-13", userUsageResponseEndDate(customContext, end))
 }

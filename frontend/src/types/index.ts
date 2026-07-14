@@ -1875,6 +1875,9 @@ export interface UserErrorListParams {
   page_size?: number
   start_date?: string
   end_date?: string
+  start_time?: string
+  end_time?: string
+  period?: UserUsagePeriod
   timezone?: string
   model?: string
   status_code?: number
@@ -1903,7 +1906,16 @@ export interface UserRequestLog {
   reasoning_effort: string | null
   first_token_ms: number | null
   duration_ms: number | null
+  input_tokens: number | null
+  output_tokens: number | null
+  cache_creation_tokens: number | null
+  cache_read_tokens: number | null
   total_tokens: number | null
+  input_cost: number | null
+  output_cost: number | null
+  cache_creation_cost: number | null
+  cache_read_cost: number | null
+  total_cost: number | null
   actual_cost: number | null
   status_code: number | null
   error_code: string | null
@@ -1916,6 +1928,8 @@ export interface UserRequestLogQueryParams {
   kind?: 'all' | UserRequestLogKind
   start_date?: string
   end_date?: string
+  start_time?: string
+  end_time?: string
   period?: UserUsagePeriod
   timezone?: string
   api_key_id?: number
@@ -1940,6 +1954,8 @@ export interface UsageQueryParams {
   billing_mode?: string | null
   start_date?: string
   end_date?: string
+  start_time?: string
+  end_time?: string
   period?: UserUsagePeriod
   timezone?: string
   sort_by?: string

@@ -4,6 +4,7 @@
  */
 
 import { i18n, getLocale } from '@/i18n'
+import { getTokenCountMode, type TokenCountMode } from '@/composables/useTokenCountMode'
 
 /**
  * 格式化相对时间
@@ -158,6 +159,14 @@ export function formatDateLocalInput(date: Date): string {
   return `${year}-${month}-${day}`
 }
 
+/** Format a Date as a local time input value (HH:mm). */
+export function formatTimeLocalInput(date: Date): string {
+  if (isNaN(date.getTime())) return ''
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${hours}:${minutes}`
+}
+
 /**
  * 格式化为 datetime-local 控件值（YYYY-MM-DDTHH:mm，使用本地时间）
  */
@@ -253,11 +262,14 @@ export interface FormatTokenCountOptions {
   locale?: string
   display?: TokenCountDisplay
   maximumFractionDigits?: number
+  mode?: TokenCountMode
+  unitStyle?: 'locale' | 'wan-latin'
 }
 
 /**
- * Format token counts with locale-aware units and two decimal places by default.
- * Chinese compact values use 万/亿. Exact Chinese values use the 个 unit.
+ * Format token counts using the global display mode.
+ * Modern compact values use w and promote large Chinese values to 亿;
+ * legacy compact values use k/m/b.
  */
 export function formatTokenCount(
   value: number | null | undefined,
@@ -268,36 +280,41 @@ export function formatTokenCount(
 
   const locale = options.locale ?? getLocale()
   const maximumFractionDigits = options.maximumFractionDigits ?? 2
+  const mode = options.mode ?? getTokenCountMode()
   if (options.display === 'exact') {
     const exactValue = new Intl.NumberFormat(locale, {
       maximumFractionDigits: 0
     }).format(numericValue)
-    return locale.toLowerCase().startsWith('zh') ? `${exactValue}个` : exactValue
+    return exactValue
   }
 
   const absoluteValue = Math.abs(numericValue)
-  if (locale.toLowerCase().startsWith('zh')) {
-    if (absoluteValue >= 100_000_000) {
-      return `${formatTokenUnitValue(numericValue / 100_000_000, maximumFractionDigits)}亿`
-    }
-    if (absoluteValue >= 10_000) {
-      return `${formatTokenUnitValue(numericValue / 10_000, maximumFractionDigits)}万`
-    }
+  const useLatinWanUnit = options.unitStyle === 'wan-latin'
+  const useModernUnit = useLatinWanUnit || mode === 'modern'
+  const threshold = useModernUnit ? 10_000 : 1_000
+  if (absoluteValue < threshold) {
     return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(numericValue)
   }
+  if (useModernUnit) {
+    if (!useLatinWanUnit && mode === 'modern' && locale.toLowerCase().startsWith('zh') && absoluteValue >= 100_000_000) {
+      return `${formatFixedTokenUnitValue(numericValue / 100_000_000, maximumFractionDigits)}亿`
+    }
+    return `${formatFixedTokenUnitValue(numericValue / threshold, maximumFractionDigits)}w`
+  }
 
-  return new Intl.NumberFormat(locale, {
-    notation: absoluteValue >= 1_000 ? 'compact' : 'standard',
-    minimumFractionDigits: absoluteValue >= 1_000 ? maximumFractionDigits : 0,
-    maximumFractionDigits
-  }).format(numericValue)
+  const legacyUnit = absoluteValue >= 1_000_000_000
+    ? { divisor: 1_000_000_000, suffix: 'b' }
+    : absoluteValue >= 1_000_000
+      ? { divisor: 1_000_000, suffix: 'm' }
+      : { divisor: 1_000, suffix: 'k' }
+  return `${formatFixedTokenUnitValue(numericValue / legacyUnit.divisor, maximumFractionDigits)}${legacyUnit.suffix}`
 }
 
-function formatTokenUnitValue(value: number, maximumFractionDigits: number): string {
-  return new Intl.NumberFormat('zh-CN', {
+function formatFixedTokenUnitValue(value: number, fractionDigits: number): string {
+  return new Intl.NumberFormat('en-US', {
     useGrouping: false,
-    minimumFractionDigits: maximumFractionDigits,
-    maximumFractionDigits
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
   }).format(value)
 }
 

@@ -273,10 +273,12 @@ export default {
 
   // Usage
   usage: {
-    title: '日志',
+    title: '使用记录',
     description: '查看 API 消耗与错误日志',
     costDetails: '费用明细',
     tokenDetails: 'Token 明细',
+    tokenUnitPrice: '单价',
+    tokenCost: '费用',
     cacheTtlOverriddenHint: '缓存 TTL Override 已启用',
     cacheTtlOverriddenLabel: 'TTL 替换',
     cacheTtlOverridden5m: '按 5m 计费',
@@ -349,6 +351,7 @@ export default {
     cacheHitRate: '缓存命中率',
     inputTokenPrice: '输入单价',
     outputTokenPrice: '输出单价',
+    cacheReadTokenPrice: '缓存读取单价',
     perMillionTokens: '/ 1M Token',
     unitPrice: '单次价格',
     imageUnitPrice: '单张价格',
@@ -411,9 +414,9 @@ export default {
         error: '错误',
       },
       columns: {
-        time: '时间 / 类型',
-        key: '密钥 / 号池',
-        model: '模型 / 推理强度',
+        time: '时间',
+        key: '密钥',
+        model: '模型',
         latency: '延迟',
         details: '详情',
       },
@@ -427,6 +430,11 @@ export default {
       billingDetails: '计费详情',
       openDetail: '查看日志详情',
       errorFallback: '请求失败',
+    },
+    countMode: {
+      label: 'Token 计数方式',
+      modern: 'w/单位',
+      legacy: 'k/单位',
     },
     tabs: { usage: '用量明细', errors: '错误请求', ranking: '用户排行' },
     errors: {
@@ -918,8 +926,12 @@ export default {
     last14Days: '近 14 天',
     last30Days: '近 30 天',
     custom: '自定义',
+    customTimeRange: '自定义时间范围',
     startDate: '开始日期',
     endDate: '结束日期',
+    startTime: '开始时间',
+    endTime: '结束时间',
+    invalidRange: '结束时间必须晚于开始时间',
     apply: '应用',
     selectDateRange: '选择日期范围'
   },
