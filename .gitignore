@@ -129,6 +129,8 @@ scripts
 !deploy/miraiapi-domain-migration/scripts/**
 !deploy/miraiapi-domain-migration/tests/
 !deploy/miraiapi-domain-migration/tests/**
+deploy/miraiapi-domain-migration/**/__pycache__/
+deploy/miraiapi-domain-migration/**/*.py[cod]
 .code-review-state
 #openspec/
 code-reviews/
@@ -157,6 +159,7 @@ output/
 /config.yaml
 /dump.rdb
 /data/
+/.runtime/
 
 # Build artifacts (large binaries)
 backend/build-artifacts/

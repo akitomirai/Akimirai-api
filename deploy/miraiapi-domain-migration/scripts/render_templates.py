@@ -64,7 +64,7 @@ def main() -> int:
     parser.add_argument("--source-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--compatibility-days", type=int, default=DEFAULT_COMPATIBILITY_DAYS)
-    parser.add_argument("--primary-domain", default="miraiapi.cn")
+    parser.add_argument("--primary-domain", default="miraiapi.cloud")
     parser.add_argument("--legacy-domain", default="akimirai.xyz")
     args = parser.parse_args()
 

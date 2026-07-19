@@ -34,7 +34,7 @@ class RenderTemplatesTests(unittest.TestCase):
     def test_render_tree_sets_exact_thirty_day_sunset(self):
         cutover = render_templates.parse_cutover("2026-07-19T14:30:00+08:00")
         replacements, sunset = render_templates.build_replacements(
-            cutover, 30, "miraiapi.cn", "akimirai.xyz"
+            cutover, 30, "miraiapi.cloud", "akimirai.xyz"
         )
         self.assertEqual(sunset.isoformat(), "2026-08-18T14:30:00+08:00")
         self.assertEqual(replacements["{{SUNSET_HTTP_DATE}}"], "Tue, 18 Aug 2026 06:30:00 GMT")
@@ -49,7 +49,7 @@ class RenderTemplatesTests(unittest.TestCase):
             compat = (output / "nginx" / "akimirai.xyz-compat.conf").read_text(encoding="utf-8")
             headers = (output / "nginx" / "miraiapi-legacy-headers.conf").read_text(encoding="utf-8")
             self.assertIn("Sunset \"Tue, 18 Aug 2026 06:30:00 GMT\"", headers)
-            self.assertIn("return 308 https://miraiapi.cn$request_uri", compat)
+            self.assertIn("return 308 https://miraiapi.cloud$request_uri", compat)
 
     def test_cutover_requires_offset(self):
         with self.assertRaisesRegex(ValueError, "UTC offset"):
@@ -95,7 +95,7 @@ class StaticContractTests(unittest.TestCase):
     def test_nginx_contract_covers_streaming_and_compatibility(self):
         proxy = (ROOT / "nginx" / "miraiapi-proxy.conf").read_text(encoding="utf-8")
         compat = (ROOT / "nginx" / "akimirai.xyz-compat.conf.template").read_text(encoding="utf-8")
-        primary = (ROOT / "nginx" / "miraiapi.cn.conf.template").read_text(encoding="utf-8")
+        primary = (ROOT / "nginx" / "miraiapi.cloud.conf.template").read_text(encoding="utf-8")
         for directive in (
             "proxy_http_version 1.1",
             "proxy_set_header Upgrade $http_upgrade",
@@ -118,9 +118,28 @@ class StaticContractTests(unittest.TestCase):
         xianyu_script = (REPO_ROOT / "tools" / "xianyu_auto_fulfill.mjs").read_text(encoding="utf-8")
         xianyu_doc = (REPO_ROOT / "tools" / "xianyu_auto_fulfill.md").read_text(encoding="utf-8")
         rent_doc = (REPO_ROOT / "deploy" / "RENT_LEDGER_UPDATE.md").read_text(encoding="utf-8")
-        self.assertIn("const defaultAPIBase = 'https://miraiapi.cn'", xianyu_script)
-        self.assertIn("https://miraiapi.cn/redeem", xianyu_doc)
-        self.assertIn("https://miraiapi.cn/rent-ledger/latest.json", rent_doc)
+        self.assertIn("const defaultAPIBase = 'https://miraiapi.cloud'", xianyu_script)
+        self.assertIn("https://miraiapi.cloud/redeem", xianyu_doc)
+        self.assertIn("https://miraiapi.cloud/rent-ledger/latest.json", rent_doc)
+
+    def test_retired_cn_domain_is_absent_from_maintained_assets(self):
+        maintained = [
+            *ROOT.rglob("*.py"),
+            *ROOT.rglob("*.sh"),
+            *ROOT.rglob("*.template"),
+            ROOT / "README.md",
+            REPO_ROOT / "deploy" / "RENT_LEDGER_UPDATE.md",
+            REPO_ROOT / "deploy" / "rent-ledger-update.Caddyfile.example",
+            REPO_ROOT / "tools" / "xianyu_auto_fulfill.mjs",
+            REPO_ROOT / "tools" / "xianyu_auto_fulfill.md",
+        ]
+        retired_domain = "miraiapi" + ".cn"
+        offenders = [
+            str(path.relative_to(REPO_ROOT))
+            for path in maintained
+            if path.is_file() and retired_domain in path.read_text(encoding="utf-8")
+        ]
+        self.assertEqual(offenders, [])
 
     def test_retirement_script_parses_as_bash_when_available(self):
         if os.name == "nt":
