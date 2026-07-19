@@ -28,7 +28,7 @@ the official order ID and webhook/event flow instead of this browser fallback.
    - `bakaai-balance-100`
 2. Each SKU has the delivery template containing:
    - redeem code,
-   - `https://akimirai.xyz/redeem`,
+   - `https://miraiapi.cn/redeem`,
    - Feishu manual link,
    - QQ support group `1048099894`.
 3. `EXTERNAL_FULFILLMENT_FEISHU_WEBHOOK_URL` is set on the backend if Feishu
@@ -97,7 +97,7 @@ opened browser window; watch mode will continue after login is detected.
 
 ## Important Options
 
-- `--api-base`: backend API base, default `https://akimirai.xyz`.
+- `--api-base`: backend API base, default `https://miraiapi.cn`.
 - `--api-key-file`: read admin API key from a local file.
 - `--profile-dir`: browser profile directory.
 - `--state-file`: duplicate-protection state file.

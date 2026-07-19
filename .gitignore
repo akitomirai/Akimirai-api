@@ -125,6 +125,10 @@ CLAUDE.md
 scripts
 !backend/scripts/
 !backend/scripts/resolve-version.sh
+!deploy/miraiapi-domain-migration/scripts/
+!deploy/miraiapi-domain-migration/scripts/**
+!deploy/miraiapi-domain-migration/tests/
+!deploy/miraiapi-domain-migration/tests/**
 .code-review-state
 #openspec/
 code-reviews/

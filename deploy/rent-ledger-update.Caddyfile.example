@@ -1,4 +1,4 @@
-akimirai.xyz {
+miraiapi.cn {
     handle_path /rent-ledger/* {
         root * /var/www/rent-ledger
         file_server
