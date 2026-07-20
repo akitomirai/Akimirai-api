@@ -4,6 +4,7 @@
  */
 
 import { i18n, getLocale } from '@/i18n'
+import { getTokenCountMode, type TokenCountMode } from '@/composables/useTokenCountMode'
 
 /**
  * 格式化相对时间
@@ -149,6 +150,23 @@ export function formatDateTime(
   return formatDate(date, options, localeOverride)
 }
 
+/** Format a Date as a local calendar input value (YYYY-MM-DD). */
+export function formatDateLocalInput(date: Date): string {
+  if (isNaN(date.getTime())) return ''
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/** Format a Date as a local time input value (HH:mm). */
+export function formatTimeLocalInput(date: Date): string {
+  if (isNaN(date.getTime())) return ''
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${hours}:${minutes}`
+}
+
 /**
  * 格式化为 datetime-local 控件值（YYYY-MM-DDTHH:mm，使用本地时间）
  */
@@ -238,15 +256,66 @@ export function formatCostFixed(amount: number, fractionDigits: number = 4): str
   return amount.toFixed(fractionDigits)
 }
 
+export type TokenCountDisplay = 'compact' | 'exact'
+
+export interface FormatTokenCountOptions {
+  locale?: string
+  display?: TokenCountDisplay
+  maximumFractionDigits?: number
+  mode?: TokenCountMode
+  unitStyle?: 'locale' | 'wan-latin'
+}
+
 /**
- * 格式化 token 数量（>=1M 显示为 M，>=1K 显示为 K，保留 1 位小数）
- * @param tokens token 数量
- * @returns 格式化后的字符串，如 "950", "1.2K", "3.5M"
+ * Format token counts using the global display mode.
+ * Modern compact values use w and promote large Chinese values to 亿;
+ * legacy compact values use k/m/b.
  */
-export function formatTokensK(tokens: number): string {
-  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`
-  if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}K`
-  return tokens.toString()
+export function formatTokenCount(
+  value: number | null | undefined,
+  options: FormatTokenCountOptions = {}
+): string {
+  const numericValue = Number(value ?? 0)
+  if (!Number.isFinite(numericValue)) return '0'
+
+  const locale = options.locale ?? getLocale()
+  const maximumFractionDigits = options.maximumFractionDigits ?? 2
+  const mode = options.mode ?? getTokenCountMode()
+  if (options.display === 'exact') {
+    const exactValue = new Intl.NumberFormat(locale, {
+      maximumFractionDigits: 0
+    }).format(numericValue)
+    return exactValue
+  }
+
+  const absoluteValue = Math.abs(numericValue)
+  const useLatinWanUnit = options.unitStyle === 'wan-latin'
+  const useModernUnit = useLatinWanUnit || mode === 'modern'
+  const threshold = useModernUnit ? 10_000 : 1_000
+  if (absoluteValue < threshold) {
+    return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(numericValue)
+  }
+  if (useModernUnit) {
+    if (!useLatinWanUnit && mode === 'modern' && locale.toLowerCase().startsWith('zh') && absoluteValue >= 100_000_000) {
+      return `${formatFixedTokenUnitValue(numericValue / 100_000_000, maximumFractionDigits)}亿`
+    }
+    return `${formatFixedTokenUnitValue(numericValue / threshold, maximumFractionDigits)}w`
+  }
+
+  const legacyUnit = absoluteValue >= 1_000_000_000
+    ? { divisor: 1_000_000_000, suffix: 'b' }
+    : absoluteValue >= 1_000_000
+      ? { divisor: 1_000_000, suffix: 'm' }
+      : { divisor: 1_000, suffix: 'k' }
+  return `${formatFixedTokenUnitValue(numericValue / legacyUnit.divisor, maximumFractionDigits)}${legacyUnit.suffix}`
+}
+
+function formatFixedTokenUnitValue(value: number, fractionDigits: number): string {
+  return new Intl.NumberFormat('en-US', {
+    useGrouping: false,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(value)
 }
 
 /**

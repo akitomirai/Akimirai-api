@@ -20,7 +20,7 @@
             {{ user.requests.toLocaleString() }}
           </td>
           <td class="py-1 text-right text-gray-500 dark:text-gray-400">
-            {{ formatTokens(user.total_tokens) }}
+            {{ formatTokenCount(user.total_tokens) }}
           </td>
           <td class="py-1 text-right text-green-600 dark:text-green-400">
             ${{ formatCost(user.actual_cost) }}
@@ -42,6 +42,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import type { UserBreakdownItem } from '@/types'
+import { formatTokenCount } from '@/utils/format'
 
 const { t } = useI18n()
 
@@ -55,13 +56,6 @@ const props = withDefaults(defineProps<{
 })
 
 const showAccountCost = computed(() => props.showAccountCost)
-
-const formatTokens = (value: number): string => {
-  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`
-  if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`
-  return value.toLocaleString()
-}
 
 const formatCost = (value: number | undefined | null): string => {
   if (value == null) return '0.0000'

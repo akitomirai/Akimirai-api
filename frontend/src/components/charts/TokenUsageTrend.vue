@@ -35,6 +35,12 @@ import {
 import { Line } from 'vue-chartjs'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import type { TrendDataPoint } from '@/types'
+import type { ModelUsageTrendGranularity } from '@/api/usage'
+import { formatTokenCount } from '@/utils/format'
+import {
+  completeModelUsageBuckets,
+  createModelUsageTickFormatter
+} from './modelUsageTrendAxis'
 
 ChartJS.register(
   CategoryScale,
@@ -49,10 +55,18 @@ ChartJS.register(
 
 const { t } = useI18n()
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   trendData: TrendDataPoint[]
   loading?: boolean
-}>()
+  granularity?: ModelUsageTrendGranularity
+  rangeStart?: string | null
+  rangeEnd?: string | null
+  timezone?: string
+}>(), {
+  granularity: 'hour',
+  rangeStart: null,
+  rangeEnd: null
+})
 
 const isDarkMode = computed(() => {
   return document.documentElement.classList.contains('dark')
@@ -68,15 +82,43 @@ const chartColors = computed(() => ({
   cacheHitRate: '#8b5cf6'
 }))
 
+const normalizedTrendData = computed<TrendDataPoint[]>(() => {
+  if (!props.trendData?.length) return []
+  const sourceDates = props.trendData.map((point) => point.date)
+  const completedDates = completeModelUsageBuckets(
+    sourceDates,
+    props.granularity,
+    props.rangeStart,
+    props.rangeEnd
+  )
+  const completedDateSet = new Set(completedDates)
+  if (!sourceDates.every((date) => completedDateSet.has(date))) return props.trendData
+
+  const byDate = new Map(props.trendData.map((point) => [point.date, point]))
+  return completedDates.map((date) => byDate.get(date) ?? {
+    date,
+    requests: 0,
+    input_tokens: 0,
+    output_tokens: 0,
+    cache_creation_tokens: 0,
+    cache_read_tokens: 0,
+    total_tokens: 0,
+    cost: 0,
+    actual_cost: 0
+  })
+})
+
 const chartData = computed(() => {
-  if (!props.trendData?.length) return null
+  if (!normalizedTrendData.value.length) return null
+
+  const points = normalizedTrendData.value
 
   return {
-    labels: props.trendData.map((d) => d.date),
+    labels: points.map((d) => d.date),
     datasets: [
       {
         label: 'Input',
-        data: props.trendData.map((d) => d.input_tokens),
+        data: points.map((d) => d.input_tokens),
         borderColor: chartColors.value.input,
         backgroundColor: `${chartColors.value.input}20`,
         fill: true,
@@ -84,7 +126,7 @@ const chartData = computed(() => {
       },
       {
         label: 'Output',
-        data: props.trendData.map((d) => d.output_tokens),
+        data: points.map((d) => d.output_tokens),
         borderColor: chartColors.value.output,
         backgroundColor: `${chartColors.value.output}20`,
         fill: true,
@@ -92,7 +134,7 @@ const chartData = computed(() => {
       },
       {
         label: 'Cache Creation',
-        data: props.trendData.map((d) => d.cache_creation_tokens),
+        data: points.map((d) => d.cache_creation_tokens),
         borderColor: chartColors.value.cacheCreation,
         backgroundColor: `${chartColors.value.cacheCreation}20`,
         fill: true,
@@ -100,7 +142,7 @@ const chartData = computed(() => {
       },
       {
         label: 'Cache Read',
-        data: props.trendData.map((d) => d.cache_read_tokens),
+        data: points.map((d) => d.cache_read_tokens),
         borderColor: chartColors.value.cacheRead,
         backgroundColor: `${chartColors.value.cacheRead}20`,
         fill: true,
@@ -108,7 +150,7 @@ const chartData = computed(() => {
       },
       {
         label: 'Cache Hit Rate',
-        data: props.trendData.map((d) => {
+        data: points.map((d) => {
           const totalPromptTokens = d.input_tokens + d.cache_read_tokens + d.cache_creation_tokens
           return totalPromptTokens > 0 ? (d.cache_read_tokens / totalPromptTokens) * 100 : 0
         }),
@@ -122,6 +164,12 @@ const chartData = computed(() => {
     ]
   }
 })
+
+const tickFormatter = computed(() => createModelUsageTickFormatter(
+  normalizedTrendData.value.map((point) => point.date),
+  props.granularity,
+  props.timezone
+))
 
 const lineOptions = computed(() => ({
   responsive: true,
@@ -145,16 +193,17 @@ const lineOptions = computed(() => ({
     },
     tooltip: {
       callbacks: {
+        title: (tooltipItems: any[]) => tickFormatter.value(tooltipItems[0]?.dataIndex ?? -1),
         label: (context: any) => {
           if (context.dataset.yAxisID === 'yPercent') {
             return `${context.dataset.label}: ${context.raw.toFixed(1)}%`
           }
-          return `${context.dataset.label}: ${formatTokens(context.raw)}`
+          return `${context.dataset.label}: ${formatTokenCount(context.raw)}`
         },
         footer: (tooltipItems: any) => {
           const dataIndex = tooltipItems[0]?.dataIndex
-          if (dataIndex !== undefined && props.trendData[dataIndex]) {
-            const data = props.trendData[dataIndex]
+          if (dataIndex !== undefined && normalizedTrendData.value[dataIndex]) {
+            const data = normalizedTrendData.value[dataIndex]
             return `Actual: $${formatCost(data.actual_cost)} | Standard: $${formatCost(data.cost)}`
           }
           return ''
@@ -171,7 +220,8 @@ const lineOptions = computed(() => ({
         color: chartColors.value.text,
         font: {
           size: 10
-        }
+        },
+        callback: (_value: string | number, index: number) => tickFormatter.value(index)
       }
     },
     y: {
@@ -183,7 +233,7 @@ const lineOptions = computed(() => ({
         font: {
           size: 10
         },
-        callback: (value: string | number) => formatTokens(Number(value))
+        callback: (value: string | number) => formatTokenCount(Number(value))
       }
     },
     yPercent: {
@@ -203,17 +253,6 @@ const lineOptions = computed(() => ({
     }
   }
 }))
-
-const formatTokens = (value: number): string => {
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(2)}B`
-  } else if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(2)}M`
-  } else if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(2)}K`
-  }
-  return value.toLocaleString()
-}
 
 const formatCost = (value: number): string => {
   if (value >= 1000) {

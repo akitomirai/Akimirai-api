@@ -13,6 +13,9 @@ import (
 // TrendDataPoint represents a single point in trend data
 type TrendDataPoint = usagestats.TrendDataPoint
 
+// ModelUsageTrendPoint represents a model-aware usage trend point.
+type ModelUsageTrendPoint = usagestats.ModelUsageTrendPoint
+
 // ModelStat represents usage statistics for a single model
 type ModelStat = usagestats.ModelStat
 
@@ -28,7 +31,7 @@ type APIKeyUsageTrendPoint = usagestats.APIKeyUsageTrendPoint
 
 // GetAPIKeyUsageTrend returns usage trend data grouped by API key and date
 func (r *usageLogRepository) GetAPIKeyUsageTrend(ctx context.Context, startTime, endTime time.Time, granularity string, limit int) (results []APIKeyUsageTrendPoint, err error) {
-	dateFormat := safeDateFormat(granularity)
+	bucketExpression := usageTrendBucketExpression(granularity, "u.created_at", "$1")
 
 	query := fmt.Sprintf(`
 		WITH top_keys AS (
@@ -40,7 +43,7 @@ func (r *usageLogRepository) GetAPIKeyUsageTrend(ctx context.Context, startTime,
 			LIMIT $3
 		)
 		SELECT
-			TO_CHAR(u.created_at, '%s') as date,
+			%s as date,
 			u.api_key_id,
 			COALESCE(k.name, '') as key_name,
 			COUNT(*) as requests,
@@ -51,7 +54,7 @@ func (r *usageLogRepository) GetAPIKeyUsageTrend(ctx context.Context, startTime,
 		  AND u.created_at >= $4 AND u.created_at < $5
 		GROUP BY date, u.api_key_id, k.name
 		ORDER BY date ASC, tokens DESC
-	`, dateFormat)
+	`, bucketExpression)
 
 	rows, err := r.sql.QueryContext(ctx, query, startTime, endTime, limit, startTime, endTime)
 	if err != nil {
@@ -83,7 +86,7 @@ func (r *usageLogRepository) GetAPIKeyUsageTrend(ctx context.Context, startTime,
 
 // GetUserUsageTrend returns usage trend data grouped by user and date
 func (r *usageLogRepository) GetUserUsageTrend(ctx context.Context, startTime, endTime time.Time, granularity string, limit int) (results []UserUsageTrendPoint, err error) {
-	dateFormat := safeDateFormat(granularity)
+	bucketExpression := usageTrendBucketExpression(granularity, "u.created_at", "$1")
 
 	query := fmt.Sprintf(`
 		WITH top_users AS (
@@ -95,7 +98,7 @@ func (r *usageLogRepository) GetUserUsageTrend(ctx context.Context, startTime, e
 			LIMIT $3
 		)
 		SELECT
-			TO_CHAR(u.created_at, '%s') as date,
+			%s as date,
 			u.user_id,
 			COALESCE(us.email, '') as email,
 			COALESCE(us.username, '') as username,
@@ -109,7 +112,7 @@ func (r *usageLogRepository) GetUserUsageTrend(ctx context.Context, startTime, e
 		  AND u.created_at >= $4 AND u.created_at < $5
 		GROUP BY date, u.user_id, us.email, us.username
 		ORDER BY date ASC, tokens DESC
-	`, dateFormat)
+	`, bucketExpression)
 
 	rows, err := r.sql.QueryContext(ctx, query, startTime, endTime, limit, startTime, endTime)
 	if err != nil {
@@ -221,11 +224,11 @@ func (r *usageLogRepository) GetUserSpendingRanking(ctx context.Context, startTi
 
 // GetUserUsageTrendByUserID 获取指定用户的使用趋势
 func (r *usageLogRepository) GetUserUsageTrendByUserID(ctx context.Context, userID int64, startTime, endTime time.Time, granularity string) (results []TrendDataPoint, err error) {
-	dateFormat := safeDateFormat(granularity)
+	bucketExpression := usageTrendBucketExpression(granularity, "created_at", "$2")
 
 	query := fmt.Sprintf(`
 		SELECT
-			TO_CHAR(created_at, '%s') as date,
+			%s as date,
 			COUNT(*) as requests,
 			COALESCE(SUM(input_tokens), 0) as input_tokens,
 			COALESCE(SUM(output_tokens), 0) as output_tokens,
@@ -238,7 +241,7 @@ func (r *usageLogRepository) GetUserUsageTrendByUserID(ctx context.Context, user
 		WHERE user_id = $1 AND created_at >= $2 AND created_at < $3
 		GROUP BY date
 		ORDER BY date ASC
-	`, dateFormat)
+	`, bucketExpression)
 
 	rows, err := r.sql.QueryContext(ctx, query, userID, startTime, endTime)
 	if err != nil {
@@ -265,6 +268,143 @@ func (r *usageLogRepository) GetUserModelStats(ctx context.Context, userID int64
 	return r.getModelStatsWithFiltersBySource(ctx, startTime, endTime, userID, 0, 0, 0, "", nil, nil, nil, usagestats.ModelSourceRequested, "")
 }
 
+// GetModelUsageTrendWithUsageFilters returns a bounded model-aware trend for a user dashboard.
+func (r *usageLogRepository) GetModelUsageTrendWithUsageFilters(ctx context.Context, startTime, endTime time.Time, granularity string, filters UsageLogFilters, limit int) (results []ModelUsageTrendPoint, err error) {
+	if limit <= 0 {
+		limit = 8
+	}
+	if limit > 12 {
+		limit = 12
+	}
+
+	bucketExpression := modelUsageBucketExpression(granularity)
+	modelExpr := resolveModelDimensionExpressionWithAlias(usagestats.ModelSourceRequested, "ul")
+	query := fmt.Sprintf(`
+		WITH filtered AS (
+			SELECT
+				%s AS date,
+				COALESCE(NULLIF(TRIM(%s), ''), 'unknown') AS model,
+				1::bigint AS requests,
+				COALESCE(ul.input_tokens, 0) AS input_tokens,
+				COALESCE(ul.output_tokens, 0) AS output_tokens,
+				COALESCE(ul.cache_creation_tokens, 0) AS cache_creation_tokens,
+				COALESCE(ul.cache_read_tokens, 0) AS cache_read_tokens,
+				COALESCE(ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens, 0) AS total_tokens,
+				COALESCE(ul.total_cost, 0) AS cost,
+				COALESCE(ul.actual_cost, 0) AS actual_cost
+			FROM usage_logs ul
+			WHERE ul.created_at >= $1 AND ul.created_at < $2
+	`, bucketExpression, modelExpr)
+
+	args := []any{startTime, endTime}
+	if filters.UserID > 0 {
+		query += fmt.Sprintf(" AND ul.user_id = $%d", len(args)+1)
+		args = append(args, filters.UserID)
+	}
+	if filters.APIKeyID > 0 {
+		query += fmt.Sprintf(" AND ul.api_key_id = $%d", len(args)+1)
+		args = append(args, filters.APIKeyID)
+	}
+	if filters.AccountID > 0 {
+		query += fmt.Sprintf(" AND ul.account_id = $%d", len(args)+1)
+		args = append(args, filters.AccountID)
+	}
+	if filters.GroupID > 0 {
+		query += fmt.Sprintf(" AND ul.group_id = $%d", len(args)+1)
+		args = append(args, filters.GroupID)
+	}
+	if strings.TrimSpace(filters.Model) != "" {
+		query += fmt.Sprintf(" AND %s = $%d", modelExpr, len(args)+1)
+		args = append(args, filters.Model)
+	}
+	query, args = appendRequestTypeOrStreamQueryFilter(query, args, filters.RequestType, filters.Stream)
+	if filters.BillingType != nil {
+		query += fmt.Sprintf(" AND ul.billing_type = $%d", len(args)+1)
+		args = append(args, int16(*filters.BillingType))
+	}
+	query, args = appendUsageLogBillingModeQueryFilter(query, args, filters.BillingMode, "ul")
+
+	limitPlaceholder := fmt.Sprintf("$%d", len(args)+1)
+	args = append(args, limit)
+	query += fmt.Sprintf(`
+		), ranked_models AS (
+			SELECT
+				model,
+				ROW_NUMBER() OVER (ORDER BY SUM(actual_cost) DESC, model ASC) AS model_rank
+			FROM filtered
+			GROUP BY model
+			ORDER BY SUM(actual_cost) DESC, model ASC
+			LIMIT %s
+		), bucketed AS (
+			SELECT
+				f.date,
+				COALESCE(rm.model, '') AS model,
+				(rm.model IS NULL) AS is_other,
+				COALESCE(rm.model_rank, %d) AS model_rank,
+				SUM(f.requests) AS requests,
+				SUM(f.total_tokens) AS total_tokens,
+				SUM(f.cost) AS cost,
+				SUM(f.actual_cost) AS actual_cost
+			FROM filtered f
+			LEFT JOIN ranked_models rm ON rm.model = f.model
+			GROUP BY f.date, rm.model, rm.model_rank
+		)
+		SELECT date, model, is_other, requests, total_tokens, cost, actual_cost
+		FROM bucketed
+		ORDER BY model_rank ASC, date ASC
+	`, limitPlaceholder, limit+1)
+
+	rows, err := r.sql.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+			results = nil
+		}
+	}()
+
+	results, err = scanModelUsageTrendRows(rows)
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func modelUsageBucketExpression(granularity string) string {
+	return usageTrendBucketExpression(granularity, "ul.created_at", "$1")
+}
+
+const usageTrendRFC3339Format = `YYYY-MM-DD"T"HH24:MI:SS"Z"`
+
+func usageTrendRFC3339Expression(timestampExpression string) string {
+	return fmt.Sprintf(
+		"TO_CHAR((%s) AT TIME ZONE 'UTC', '%s')",
+		timestampExpression,
+		usageTrendRFC3339Format,
+	)
+}
+
+func usageTrendBucketExpression(granularity, timestampColumn, originPlaceholder string) string {
+	var bucketExpression string
+	switch granularity {
+	case "hour":
+		bucketExpression = fmt.Sprintf("date_bin(INTERVAL '1 hour', %s, %s)", timestampColumn, originPlaceholder)
+	case "2h":
+		bucketExpression = fmt.Sprintf("date_bin(INTERVAL '2 hours', %s, %s)", timestampColumn, originPlaceholder)
+	case "4h":
+		bucketExpression = fmt.Sprintf("date_bin(INTERVAL '4 hours', %s, %s)", timestampColumn, originPlaceholder)
+	case "8h":
+		bucketExpression = fmt.Sprintf("date_bin(INTERVAL '8 hours', %s, %s)", timestampColumn, originPlaceholder)
+	case "week", "month":
+		return fmt.Sprintf("TO_CHAR(%s, '%s')", timestampColumn, safeDateFormat(granularity))
+	default:
+		bucketExpression = fmt.Sprintf("date_bin(INTERVAL '1 day', %s, %s)", timestampColumn, originPlaceholder)
+	}
+	return usageTrendRFC3339Expression(bucketExpression)
+}
+
 // GetUsageTrendWithFilters returns usage trend data with optional filters
 func (r *usageLogRepository) GetUsageTrendWithFilters(ctx context.Context, startTime, endTime time.Time, granularity string, userID, apiKeyID, accountID, groupID int64, model string, requestType *int16, stream *bool, billingType *int8) (results []TrendDataPoint, err error) {
 	return r.getUsageTrendWithFilters(ctx, startTime, endTime, granularity, userID, apiKeyID, accountID, groupID, model, "", requestType, stream, billingType, "")
@@ -275,18 +415,18 @@ func (r *usageLogRepository) GetUsageTrendWithUsageFilters(ctx context.Context, 
 }
 
 func (r *usageLogRepository) getUsageTrendWithFilters(ctx context.Context, startTime, endTime time.Time, granularity string, userID, apiKeyID, accountID, groupID int64, model string, modelSource string, requestType *int16, stream *bool, billingType *int8, billingMode string) (results []TrendDataPoint, err error) {
-	if shouldUsePreaggregatedTrend(granularity, userID, apiKeyID, accountID, groupID, model, requestType, stream, billingType, billingMode) {
+	if shouldUsePreaggregatedTrend(granularity, startTime, endTime, userID, apiKeyID, accountID, groupID, model, requestType, stream, billingType, billingMode) {
 		aggregated, aggregatedErr := r.getUsageTrendFromAggregates(ctx, startTime, endTime, granularity)
 		if aggregatedErr == nil && len(aggregated) > 0 {
 			return aggregated, nil
 		}
 	}
 
-	dateFormat := safeDateFormat(granularity)
+	bucketExpression := usageTrendBucketExpression(granularity, "created_at", "$1")
 
 	query := fmt.Sprintf(`
 		SELECT
-			TO_CHAR(created_at, '%s') as date,
+			%s as date,
 			COUNT(*) as requests,
 			COALESCE(SUM(input_tokens), 0) as input_tokens,
 			COALESCE(SUM(output_tokens), 0) as output_tokens,
@@ -297,7 +437,7 @@ func (r *usageLogRepository) getUsageTrendWithFilters(ctx context.Context, start
 			COALESCE(SUM(actual_cost), 0) as actual_cost
 		FROM usage_logs
 		WHERE created_at >= $1 AND created_at < $2
-	`, dateFormat)
+	`, bucketExpression)
 
 	args := []any{startTime, endTime}
 	if userID > 0 {
@@ -345,8 +485,11 @@ func (r *usageLogRepository) getUsageTrendWithFilters(ctx context.Context, start
 	return results, nil
 }
 
-func shouldUsePreaggregatedTrend(granularity string, userID, apiKeyID, accountID, groupID int64, model string, requestType *int16, stream *bool, billingType *int8, billingMode string) bool {
+func shouldUsePreaggregatedTrend(granularity string, startTime, endTime time.Time, userID, apiKeyID, accountID, groupID int64, model string, requestType *int16, stream *bool, billingType *int8, billingMode string) bool {
 	if granularity != "day" && granularity != "hour" {
+		return false
+	}
+	if !isAlignedTrendRange(startTime, endTime, granularity) {
 		return false
 	}
 	return userID == 0 &&
@@ -360,8 +503,25 @@ func shouldUsePreaggregatedTrend(granularity string, userID, apiKeyID, accountID
 		billingMode == ""
 }
 
+func isAlignedTrendRange(startTime, endTime time.Time, granularity string) bool {
+	if startTime.IsZero() || endTime.IsZero() {
+		return false
+	}
+	startTime = startTime.UTC()
+	endTime = endTime.UTC()
+	isHourAligned := func(value time.Time) bool {
+		return value.Minute() == 0 && value.Second() == 0 && value.Nanosecond() == 0
+	}
+	if !isHourAligned(startTime) || !isHourAligned(endTime) {
+		return false
+	}
+	if granularity == "day" {
+		return startTime.Hour() == 0 && endTime.Hour() == 0
+	}
+	return true
+}
+
 func (r *usageLogRepository) getUsageTrendFromAggregates(ctx context.Context, startTime, endTime time.Time, granularity string) (results []TrendDataPoint, err error) {
-	dateFormat := safeDateFormat(granularity)
 	query := ""
 	args := []any{startTime, endTime}
 
@@ -369,7 +529,7 @@ func (r *usageLogRepository) getUsageTrendFromAggregates(ctx context.Context, st
 	case "hour":
 		query = fmt.Sprintf(`
 			SELECT
-				TO_CHAR(bucket_start, '%s') as date,
+				%s as date,
 				total_requests as requests,
 				input_tokens,
 				output_tokens,
@@ -381,11 +541,11 @@ func (r *usageLogRepository) getUsageTrendFromAggregates(ctx context.Context, st
 			FROM usage_dashboard_hourly
 			WHERE bucket_start >= $1 AND bucket_start < $2
 			ORDER BY bucket_start ASC
-		`, dateFormat)
+		`, usageTrendRFC3339Expression("bucket_start"))
 	case "day":
 		query = fmt.Sprintf(`
 			SELECT
-				TO_CHAR(bucket_date::timestamp, '%s') as date,
+				%s as date,
 				total_requests as requests,
 				input_tokens,
 				output_tokens,
@@ -397,7 +557,7 @@ func (r *usageLogRepository) getUsageTrendFromAggregates(ctx context.Context, st
 			FROM usage_dashboard_daily
 			WHERE bucket_date >= $1::date AND bucket_date < $2::date
 			ORDER BY bucket_date ASC
-		`, dateFormat)
+		`, usageTrendRFC3339Expression("bucket_date::timestamp AT TIME ZONE 'UTC'"))
 	default:
 		return nil, nil
 	}
@@ -842,6 +1002,29 @@ func scanTrendRows(rows *sql.Rows) ([]TrendDataPoint, error) {
 			&row.OutputTokens,
 			&row.CacheCreationTokens,
 			&row.CacheReadTokens,
+			&row.TotalTokens,
+			&row.Cost,
+			&row.ActualCost,
+		); err != nil {
+			return nil, err
+		}
+		results = append(results, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func scanModelUsageTrendRows(rows *sql.Rows) ([]ModelUsageTrendPoint, error) {
+	results := make([]ModelUsageTrendPoint, 0)
+	for rows.Next() {
+		var row ModelUsageTrendPoint
+		if err := rows.Scan(
+			&row.Date,
+			&row.Model,
+			&row.IsOther,
+			&row.Requests,
 			&row.TotalTokens,
 			&row.Cost,
 			&row.ActualCost,

@@ -630,6 +630,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import { adminAPI } from '@/api/admin'
@@ -656,6 +657,7 @@ import { useKeyedDebouncedSearch } from '@/composables/useKeyedDebouncedSearch'
 
 const { t } = useI18n()
 const appStore = useAppStore()
+const route = useRoute()
 
 // Web Search global enabled state (loaded once on mount)
 const webSearchGlobalEnabled = ref(false)
@@ -1348,6 +1350,22 @@ async function openEditDialog(channel: Channel) {
   showDialog.value = true
 }
 
+async function openDeepLinkedChannelEditor() {
+  const rawEdit = Array.isArray(route.query.edit) ? route.query.edit[0] : route.query.edit
+  if (typeof rawEdit !== 'string' || !/^\d+$/.test(rawEdit)) return
+
+  const channelId = Number(rawEdit)
+  if (!Number.isSafeInteger(channelId) || channelId <= 0) return
+
+  try {
+    const channel = channels.value.find((item) => item.id === channelId)
+      ?? await adminAPI.channels.getById(channelId)
+    await openEditDialog(channel)
+  } catch (error: unknown) {
+    appStore.showError(extractApiErrorMessage(error, t('admin.channels.loadError', 'Failed to load channel')))
+  }
+}
+
 /** Distribute flat channel-level rules into the matching platform section based on group_ids */
 function distributeRulesToPlatforms(apiRules: AccountStatsPricingRule[]) {
   // Build groupID → platform lookup
@@ -1595,11 +1613,10 @@ async function confirmDelete() {
 }
 
 // ── Lifecycle ──
-onMounted(() => {
-  loadChannels()
-  loadGroups()
-  loadWebSearchGlobalState()
+onMounted(async () => {
   document.addEventListener('click', handleRuleAccountClickOutside)
+  await Promise.all([loadChannels(), loadGroups(), loadWebSearchGlobalState()])
+  await openDeepLinkedChannelEditor()
 })
 
 onUnmounted(() => {

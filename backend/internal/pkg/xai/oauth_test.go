@@ -129,6 +129,14 @@ func TestBuildGrokMediaURLs(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, DefaultBaseURL+"/videos/generations", videosURL)
 
+	videoEditsURL, err := BuildVideosEditsURL(DefaultBaseURL)
+	require.NoError(t, err)
+	require.Equal(t, DefaultBaseURL+"/videos/edits", videoEditsURL)
+
+	videoExtensionsURL, err := BuildVideosExtensionsURL(DefaultBaseURL)
+	require.NoError(t, err)
+	require.Equal(t, DefaultBaseURL+"/videos/extensions", videoExtensionsURL)
+
 	videoURL, err := BuildVideoURL(DefaultBaseURL, "req 123")
 	require.NoError(t, err)
 	require.Equal(t, DefaultBaseURL+"/videos/req%20123", videoURL)
@@ -137,11 +145,15 @@ func TestBuildGrokMediaURLs(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestValidateXAIURLsRejectArbitraryHostsByDefault(t *testing.T) {
+func TestValidateXAIURLsAllowPublicAPIBaseAndRejectUnsafeURLs(t *testing.T) {
 	_, err := ValidateOAuthEndpointURL("https://auth.example.test/oauth2/token")
 	require.Error(t, err)
 
-	_, err = ValidateBaseURL("https://xai.test/v1")
+	baseURL, err := ValidateBaseURL("https://xai.test/v1")
+	require.NoError(t, err)
+	require.Equal(t, "https://xai.test/v1", baseURL)
+
+	_, err = ValidateTrustedBaseURL("https://xai.test/v1")
 	require.Error(t, err)
 
 	_, err = ValidateBaseURL("http://127.0.0.1:8080/v1")

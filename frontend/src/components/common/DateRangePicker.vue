@@ -21,7 +21,12 @@
     </button>
 
     <Transition name="date-picker-dropdown">
-      <div v-if="isOpen" class="date-picker-dropdown">
+      <div
+        v-if="isOpen"
+        ref="dropdownRef"
+        :class="['date-picker-dropdown', props.showTimeInputs && 'date-picker-dropdown-time']"
+        :style="{ marginLeft: `${dropdownOffsetX}px` }"
+      >
         <!-- Quick presets -->
         <div class="date-picker-presets">
           <button
@@ -36,13 +41,54 @@
 
         <div class="date-picker-divider"></div>
 
-        <!-- Custom date range inputs -->
-        <div class="date-picker-custom">
+        <div v-if="props.showTimeInputs" class="date-picker-custom-time">
+          <div class="date-picker-custom-title">
+            <span>{{ t('dates.customTimeRange') }}</span>
+          </div>
+          <div class="date-picker-range-row">
+            <label class="date-picker-range-label">{{ t('dates.startTime') }}</label>
+            <input
+              v-model="localStartDate"
+              type="date"
+              :max="localEndDate || tomorrow"
+              class="date-picker-input date-picker-date-input"
+              @change="onDateChange"
+            />
+            <input
+              v-model="localStartTime"
+              type="time"
+              step="60"
+              class="date-picker-input date-picker-time-input"
+              @change="onDateChange"
+            />
+          </div>
+          <div class="date-picker-range-row">
+            <label class="date-picker-range-label">{{ t('dates.endTime') }}</label>
+            <input
+              v-model="localEndDate"
+              type="date"
+              :min="localStartDate"
+              :max="tomorrow"
+              class="date-picker-input date-picker-date-input"
+              @change="onDateChange"
+            />
+            <input
+              v-model="localEndTime"
+              type="time"
+              step="60"
+              class="date-picker-input date-picker-time-input"
+              @change="onDateChange"
+            />
+          </div>
+          <p v-if="!isRangeValid" class="date-picker-error">{{ t('dates.invalidRange') }}</p>
+        </div>
+
+        <div v-else class="date-picker-custom">
           <div class="date-picker-field">
             <label class="date-picker-label">{{ t('dates.startDate') }}</label>
             <input
-              type="date"
               v-model="localStartDate"
+              type="date"
               :max="localEndDate || tomorrow"
               class="date-picker-input"
               @change="onDateChange"
@@ -54,8 +100,8 @@
           <div class="date-picker-field">
             <label class="date-picker-label">{{ t('dates.endDate') }}</label>
             <input
-              type="date"
               v-model="localEndDate"
+              type="date"
               :min="localStartDate"
               :max="tomorrow"
               class="date-picker-input"
@@ -66,7 +112,7 @@
 
         <!-- Apply button -->
         <div class="date-picker-actions">
-          <button @click="apply" class="date-picker-apply">
+          <button :disabled="!isRangeValid" @click="apply" class="date-picker-apply">
             {{ t('dates.apply') }}
           </button>
         </div>
@@ -76,36 +122,53 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
+import type { DateRangeChange } from '@/utils/dashboardTimeRange'
 
 interface DatePreset {
   labelKey: string
   value: string
-  getRange: () => { start: string; end: string }
+  getRange: () => { start: string; end: string; startTime: string; endTime: string }
 }
 
 interface Props {
   startDate: string
   endDate: string
+  startTime?: string
+  endTime?: string
+  showTimeInputs?: boolean
+  presetValues?: string[]
 }
 
 interface Emits {
   (e: 'update:startDate', value: string): void
   (e: 'update:endDate', value: string): void
-  (e: 'change', range: { startDate: string; endDate: string; preset: string | null }): void
+  (e: 'update:startTime', value: string): void
+  (e: 'update:endTime', value: string): void
+  (e: 'change', range: DateRangeChange): void
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  startTime: '00:00',
+  endTime: '23:59',
+  showTimeInputs: false,
+})
 const emit = defineEmits<Emits>()
 
 const { t, locale } = useI18n()
 
 const isOpen = ref(false)
 const containerRef = ref<HTMLElement | null>(null)
+const dropdownRef = ref<HTMLElement | null>(null)
+const dropdownOffsetX = ref(0)
+let dropdownPositionRun = 0
+let viewportResizeTimer: number | undefined
 const localStartDate = ref(props.startDate)
 const localEndDate = ref(props.endDate)
+const localStartTime = ref(props.startTime)
+const localEndTime = ref(props.endTime)
 const activePreset = ref<string | null>('last24Hours')
 
 const today = computed(() => {
@@ -133,15 +196,10 @@ const formatDateToString = (date: Date): string => {
   return `${year}-${month}-${day}`
 }
 
-const presets: DatePreset[] = [
-  {
-    labelKey: 'dates.today',
-    value: 'today',
-    getRange: () => {
-      const t = today.value
-      return { start: t, end: t }
-    }
-  },
+const formatTimeToString = (date: Date): string =>
+  `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+
+const allPresets: DatePreset[] = [
   {
     labelKey: 'dates.yesterday',
     value: 'yesterday',
@@ -149,7 +207,29 @@ const presets: DatePreset[] = [
       const d = new Date()
       d.setDate(d.getDate() - 1)
       const yesterday = formatDateToString(d)
-      return { start: yesterday, end: yesterday }
+      return { start: yesterday, end: yesterday, startTime: '00:00', endTime: '23:59' }
+    }
+  },
+  {
+    labelKey: 'dates.today',
+    value: 'today',
+    getRange: () => {
+      const t = today.value
+      return { start: t, end: t, startTime: '00:00', endTime: formatTimeToString(new Date()) }
+    }
+  },
+  {
+    labelKey: 'dates.last48Hours',
+    value: 'last48Hours',
+    getRange: () => {
+      const end = new Date()
+      const start = new Date(end.getTime() - 48 * 60 * 60 * 1000)
+      return {
+        start: formatDateToString(start),
+        end: formatDateToString(end),
+        startTime: formatTimeToString(start),
+        endTime: formatTimeToString(end),
+      }
     }
   },
   {
@@ -160,7 +240,9 @@ const presets: DatePreset[] = [
       const start = new Date(end.getTime() - 24 * 60 * 60 * 1000)
       return {
         start: formatDateToString(start),
-        end: formatDateToString(end)
+        end: formatDateToString(end),
+        startTime: formatTimeToString(start),
+        endTime: formatTimeToString(end),
       }
     }
   },
@@ -170,9 +252,10 @@ const presets: DatePreset[] = [
     getRange: () => {
       const end = today.value
       const d = new Date()
-      d.setDate(d.getDate() - 6)
+      d.setDate(d.getDate() - 7)
       const start = formatDateToString(d)
-      return { start, end }
+      const currentTime = formatTimeToString(new Date())
+      return { start, end, startTime: currentTime, endTime: currentTime }
     }
   },
   {
@@ -181,9 +264,10 @@ const presets: DatePreset[] = [
     getRange: () => {
       const end = today.value
       const d = new Date()
-      d.setDate(d.getDate() - 13)
+      d.setDate(d.getDate() - 14)
       const start = formatDateToString(d)
-      return { start, end }
+      const currentTime = formatTimeToString(new Date())
+      return { start, end, startTime: currentTime, endTime: currentTime }
     }
   },
   {
@@ -192,9 +276,10 @@ const presets: DatePreset[] = [
     getRange: () => {
       const end = today.value
       const d = new Date()
-      d.setDate(d.getDate() - 29)
+      d.setDate(d.getDate() - 30)
       const start = formatDateToString(d)
-      return { start, end }
+      const currentTime = formatTimeToString(new Date())
+      return { start, end, startTime: currentTime, endTime: currentTime }
     }
   },
   {
@@ -203,7 +288,7 @@ const presets: DatePreset[] = [
     getRange: () => {
       const now = new Date()
       const start = formatDateToString(new Date(now.getFullYear(), now.getMonth(), 1))
-      return { start, end: today.value }
+      return { start, end: today.value, startTime: '00:00', endTime: formatTimeToString(now) }
     }
   },
   {
@@ -213,18 +298,29 @@ const presets: DatePreset[] = [
       const now = new Date()
       const start = formatDateToString(new Date(now.getFullYear(), now.getMonth() - 1, 1))
       const end = formatDateToString(new Date(now.getFullYear(), now.getMonth(), 0))
-      return { start, end }
+      return { start, end, startTime: '00:00', endTime: '23:59' }
     }
   }
 ]
 
+const presets = computed(() => {
+  if (!props.presetValues?.length) return allPresets
+  const byValue = new Map(allPresets.map((preset) => [preset.value, preset]))
+  return props.presetValues
+    .map((value) => byValue.get(value))
+    .filter((preset): preset is DatePreset => preset !== undefined)
+})
+
 const displayValue = computed(() => {
   if (activePreset.value) {
-    const preset = presets.find((p) => p.value === activePreset.value)
+    const preset = presets.value.find((p) => p.value === activePreset.value)
     if (preset) return t(preset.labelKey)
   }
 
   if (localStartDate.value && localEndDate.value) {
+    if (props.showTimeInputs) {
+      return `${formatDate(localStartDate.value)} ${localStartTime.value} - ${formatDate(localEndDate.value)} ${localEndTime.value}`
+    }
     if (localStartDate.value === localEndDate.value) {
       return formatDate(localStartDate.value)
     }
@@ -244,19 +340,32 @@ const isPresetActive = (preset: DatePreset): boolean => {
   return activePreset.value === preset.value
 }
 
+const isRangeValid = computed(() => {
+  if (!localStartDate.value || !localEndDate.value) return false
+  if (!props.showTimeInputs) return localStartDate.value <= localEndDate.value
+  if (!localStartTime.value || !localEndTime.value) return false
+  return `${localStartDate.value}T${localStartTime.value}` < `${localEndDate.value}T${localEndTime.value}`
+})
+
 const selectPreset = (preset: DatePreset) => {
   const range = preset.getRange()
   localStartDate.value = range.start
   localEndDate.value = range.end
+  localStartTime.value = range.startTime
+  localEndTime.value = range.endTime
   activePreset.value = preset.value
 }
 
 const onDateChange = () => {
   // Check if current dates match any preset
   activePreset.value = null
-  for (const preset of presets) {
+  for (const preset of presets.value) {
     const range = preset.getRange()
-    if (range.start === localStartDate.value && range.end === localEndDate.value) {
+    const datesMatch = range.start === localStartDate.value && range.end === localEndDate.value
+    const timesMatch = !props.showTimeInputs || (
+      range.startTime === localStartTime.value && range.endTime === localEndTime.value
+    )
+    if (datesMatch && timesMatch) {
       activePreset.value = preset.value
       break
     }
@@ -265,14 +374,50 @@ const onDateChange = () => {
 
 const toggle = () => {
   isOpen.value = !isOpen.value
+  if (isOpen.value) void positionDropdownWithinViewport()
+}
+
+const positionDropdownWithinViewport = async () => {
+  const positionRun = ++dropdownPositionRun
+  dropdownOffsetX.value = 0
+  await nextTick()
+  await new Promise<void>((resolve) => {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()))
+  })
+  if (positionRun !== dropdownPositionRun || !isOpen.value || !dropdownRef.value) return
+
+  const viewportPadding = 16
+  const rect = dropdownRef.value.getBoundingClientRect()
+  let offset = 0
+  if (rect.right > window.innerWidth - viewportPadding) {
+    offset -= rect.right - (window.innerWidth - viewportPadding)
+  }
+  if (rect.left + offset < viewportPadding) {
+    offset += viewportPadding - (rect.left + offset)
+  }
+  dropdownOffsetX.value = Math.round(offset)
+}
+
+const handleViewportResize = () => {
+  if (!isOpen.value) return
+  void positionDropdownWithinViewport()
+  window.clearTimeout(viewportResizeTimer)
+  viewportResizeTimer = window.setTimeout(() => {
+    void positionDropdownWithinViewport()
+  }, 350)
 }
 
 const apply = () => {
+  if (!isRangeValid.value) return
   emit('update:startDate', localStartDate.value)
   emit('update:endDate', localEndDate.value)
+  emit('update:startTime', localStartTime.value)
+  emit('update:endTime', localEndTime.value)
   emit('change', {
     startDate: localStartDate.value,
     endDate: localEndDate.value,
+    startTime: localStartTime.value,
+    endTime: localEndTime.value,
     preset: activePreset.value
   })
   isOpen.value = false
@@ -307,9 +452,26 @@ watch(
   }
 )
 
+watch(
+  () => props.startTime,
+  (val) => {
+    localStartTime.value = val
+    onDateChange()
+  }
+)
+
+watch(
+  () => props.endTime,
+  (val) => {
+    localEndTime.value = val
+    onDateChange()
+  }
+)
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   document.addEventListener('keydown', handleEscape)
+  window.addEventListener('resize', handleViewportResize)
   // Initialize active preset detection
   onDateChange()
 })
@@ -317,6 +479,8 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
   document.removeEventListener('keydown', handleEscape)
+  window.removeEventListener('resize', handleViewportResize)
+  window.clearTimeout(viewportResizeTimer)
 })
 </script>
 
@@ -359,12 +523,16 @@ onUnmounted(() => {
   @apply min-w-[320px];
 }
 
+.date-picker-dropdown-time {
+  width: min(28rem, calc(100vw - 2rem));
+}
+
 .date-picker-presets {
-  @apply grid grid-cols-2 gap-1 p-2;
+  @apply grid grid-cols-4 gap-1 p-2;
 }
 
 .date-picker-preset {
-  @apply rounded-md px-3 py-1.5 text-xs font-medium;
+  @apply min-w-0 whitespace-nowrap rounded-md px-1 py-1 text-xs font-medium;
   @apply text-gray-600 dark:text-gray-400;
   @apply hover:bg-gray-100 dark:hover:bg-dark-700;
   @apply transition-colors duration-150;
@@ -381,6 +549,38 @@ onUnmounted(() => {
 
 .date-picker-custom {
   @apply flex items-end gap-2 p-3;
+}
+
+.date-picker-custom-time {
+  @apply space-y-2 p-3;
+}
+
+.date-picker-custom-title {
+  @apply mb-3 flex items-center gap-3 text-xs font-medium text-gray-500 dark:text-gray-400;
+}
+
+.date-picker-custom-title::before,
+.date-picker-custom-title::after {
+  content: '';
+  @apply h-px flex-1 bg-gray-100 dark:bg-dark-700;
+}
+
+.date-picker-range-row {
+  @apply grid items-center gap-2;
+  grid-template-columns: 5rem minmax(0, 1fr) 7rem;
+}
+
+.date-picker-range-label {
+  @apply text-xs font-medium text-gray-600 dark:text-gray-300;
+}
+
+.date-picker-date-input,
+.date-picker-time-input {
+  @apply min-w-0;
+}
+
+.date-picker-error {
+  @apply pt-1 text-xs text-red-600 dark:text-red-400;
 }
 
 .date-picker-field {
@@ -421,6 +621,20 @@ onUnmounted(() => {
   @apply bg-primary-600 text-white;
   @apply hover:bg-primary-700;
   @apply transition-colors duration-150;
+}
+
+.date-picker-apply:disabled {
+  @apply cursor-not-allowed opacity-50;
+}
+
+@media (max-width: 420px) {
+  .date-picker-range-row {
+    grid-template-columns: minmax(0, 1fr) 7rem;
+  }
+
+  .date-picker-range-label {
+    @apply col-span-2;
+  }
 }
 
 /* Dropdown animation */

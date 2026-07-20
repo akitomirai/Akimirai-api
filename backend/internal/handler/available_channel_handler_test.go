@@ -227,6 +227,12 @@ func TestBuildModelCatalog_AggregatesUserSafeMetadata(t *testing.T) {
 	require.Equal(t, 1.5, available.Groups[0].RateMultiplier)
 	require.NotNil(t, available.Pricing)
 	require.Equal(t, string(service.BillingModeToken), available.Pricing.BillingMode)
+	require.Len(t, available.Offers, 1)
+	require.Equal(t, "active-safe-channel", available.Offers[0].Channel)
+	require.Equal(t, "openai", available.Offers[0].Platform)
+	require.Len(t, available.Offers[0].Groups, 1)
+	require.Equal(t, 1.5, available.Offers[0].Groups[0].RateMultiplier)
+	require.NotNil(t, available.Offers[0].Pricing)
 	require.Equal(t, "/quick-start?model=gpt-test-model", available.QuickStartURL)
 
 	maintenance := byModel["gpt-maintenance-model"]
@@ -252,6 +258,136 @@ func TestBuildModelCatalog_AggregatesUserSafeMetadata(t *testing.T) {
 	} {
 		require.NotContains(t, serialized, forbidden)
 	}
+}
+
+func TestBuildModelCatalog_OffersKeepChannelPricingAndGroupsAssociated(t *testing.T) {
+	priceA := 0.000001
+	priceB := 0.000007
+	groups := []service.AvailableGroupRef{
+		{
+			ID:               10,
+			Name:             "Pro",
+			Platform:         "openai",
+			SubscriptionType: service.SubscriptionTypeStandard,
+			RateMultiplier:   1.2,
+		},
+		{
+			ID:                 20,
+			Name:               "Peak",
+			Platform:           "openai",
+			SubscriptionType:   service.SubscriptionTypeSubscription,
+			RateMultiplier:     2.2,
+			PeakRateEnabled:    true,
+			PeakStart:          "18:00",
+			PeakEnd:            "23:00",
+			PeakRateMultiplier: 1.8,
+		},
+	}
+	channels := []service.Channel{
+		{
+			ID:       101,
+			Name:     "Channel A",
+			Status:   service.StatusActive,
+			GroupIDs: []int64{10},
+			ModelPricing: []service.ChannelModelPricing{
+				{
+					ID:          1001,
+					ChannelID:   101,
+					Platform:    "openai",
+					Models:      []string{"gpt-shared"},
+					BillingMode: service.BillingModeToken,
+					InputPrice:  &priceA,
+				},
+			},
+		},
+		{
+			ID:       202,
+			Name:     "Channel B",
+			Status:   service.StatusActive,
+			GroupIDs: []int64{20},
+			ModelPricing: []service.ChannelModelPricing{
+				{
+					ID:          2002,
+					ChannelID:   202,
+					Platform:    "openai",
+					Models:      []string{"gpt-shared"},
+					BillingMode: service.BillingModeToken,
+					InputPrice:  &priceB,
+				},
+			},
+		},
+	}
+
+	items := (&AvailableChannelHandler{}).buildModelCatalog(
+		channels,
+		groups,
+		map[int64]struct{}{10: {}, 20: {}},
+		map[int64]float64{10: 1.5},
+	)
+
+	require.Len(t, items, 1)
+	item := items[0]
+	require.Len(t, item.Offers, 2)
+	require.Len(t, item.Groups, 2, "legacy aggregate groups must remain available")
+	require.NotNil(t, item.Pricing, "legacy aggregate pricing must remain available")
+	require.Equal(t, priceA, *item.Pricing.InputPrice)
+
+	offers := make(map[string]userModelCatalogOffer, len(item.Offers))
+	for _, offer := range item.Offers {
+		offers[offer.Channel] = offer
+	}
+
+	offerA := offers["Channel A"]
+	require.Equal(t, "openai", offerA.Platform)
+	require.Len(t, offerA.Groups, 1)
+	require.Equal(t, int64(10), offerA.Groups[0].ID)
+	require.Equal(t, 1.5, offerA.Groups[0].RateMultiplier, "user group rate must replace the default")
+	require.NotNil(t, offerA.Pricing)
+	require.Equal(t, priceA, *offerA.Pricing.InputPrice)
+
+	offerB := offers["Channel B"]
+	require.Equal(t, "openai", offerB.Platform)
+	require.Len(t, offerB.Groups, 1)
+	require.Equal(t, int64(20), offerB.Groups[0].ID)
+	require.Equal(t, 2.2, offerB.Groups[0].RateMultiplier)
+	require.True(t, offerB.Groups[0].PeakRateEnabled)
+	require.Equal(t, "18:00", offerB.Groups[0].PeakStart)
+	require.Equal(t, "23:00", offerB.Groups[0].PeakEnd)
+	require.Equal(t, 1.8, offerB.Groups[0].PeakRateMultiplier)
+	require.NotNil(t, offerB.Pricing)
+	require.Equal(t, priceB, *offerB.Pricing.InputPrice)
+
+	raw, err := json.Marshal(offerB)
+	require.NoError(t, err)
+	var decoded map[string]any
+	require.NoError(t, json.Unmarshal(raw, &decoded))
+	require.ElementsMatch(t, []string{"channel", "platform", "groups", "pricing"}, mapKeys(decoded))
+	for _, forbidden := range []string{"channel_id", "pricing_id", "billing_model_source", "restrict_models"} {
+		require.NotContains(t, string(raw), forbidden)
+	}
+}
+
+func TestToAvailableGroupRefs_PreservesPeakRateFields(t *testing.T) {
+	refs := toAvailableGroupRefs([]service.Group{
+		{
+			ID:                 7,
+			Name:               "Subscription",
+			Platform:           "anthropic",
+			SubscriptionType:   service.SubscriptionTypeSubscription,
+			RateMultiplier:     1.25,
+			PeakRateEnabled:    true,
+			PeakStart:          "08:30",
+			PeakEnd:            "10:00",
+			PeakRateMultiplier: 2.5,
+			IsExclusive:        true,
+		},
+	})
+
+	require.Len(t, refs, 1)
+	require.True(t, refs[0].PeakRateEnabled)
+	require.Equal(t, "08:30", refs[0].PeakStart)
+	require.Equal(t, "10:00", refs[0].PeakEnd)
+	require.Equal(t, 2.5, refs[0].PeakRateMultiplier)
 }
 
 func TestBuildModelCatalog_EmptyDataIsSafe(t *testing.T) {
@@ -291,4 +427,12 @@ func TestCatalogAccumulator_FinalizeStatusRules(t *testing.T) {
 			require.NotEmpty(t, acc.item.StatusReason)
 		})
 	}
+}
+
+func mapKeys(values map[string]any) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	return keys
 }

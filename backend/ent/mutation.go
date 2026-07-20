@@ -24362,6 +24362,8 @@ type GroupMutation struct {
 	addvideo_price_720p                     *float64
 	video_price_1080p                       *float64
 	addvideo_price_1080p                    *float64
+	web_search_price_per_call               *float64
+	addweb_search_price_per_call            *float64
 	claude_code_only                        *bool
 	fallback_group_id                       *int64
 	addfallback_group_id                    *int64
@@ -26128,6 +26130,76 @@ func (m *GroupMutation) ResetVideoPrice1080p() {
 	delete(m.clearedFields, group.FieldVideoPrice1080p)
 }
 
+// SetWebSearchPricePerCall sets the "web_search_price_per_call" field.
+func (m *GroupMutation) SetWebSearchPricePerCall(f float64) {
+	m.web_search_price_per_call = &f
+	m.addweb_search_price_per_call = nil
+}
+
+// WebSearchPricePerCall returns the value of the "web_search_price_per_call" field in the mutation.
+func (m *GroupMutation) WebSearchPricePerCall() (r float64, exists bool) {
+	v := m.web_search_price_per_call
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWebSearchPricePerCall returns the old "web_search_price_per_call" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldWebSearchPricePerCall(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWebSearchPricePerCall is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWebSearchPricePerCall requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWebSearchPricePerCall: %w", err)
+	}
+	return oldValue.WebSearchPricePerCall, nil
+}
+
+// AddWebSearchPricePerCall adds f to the "web_search_price_per_call" field.
+func (m *GroupMutation) AddWebSearchPricePerCall(f float64) {
+	if m.addweb_search_price_per_call != nil {
+		*m.addweb_search_price_per_call += f
+	} else {
+		m.addweb_search_price_per_call = &f
+	}
+}
+
+// AddedWebSearchPricePerCall returns the value that was added to the "web_search_price_per_call" field in this mutation.
+func (m *GroupMutation) AddedWebSearchPricePerCall() (r float64, exists bool) {
+	v := m.addweb_search_price_per_call
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearWebSearchPricePerCall clears the value of the "web_search_price_per_call" field.
+func (m *GroupMutation) ClearWebSearchPricePerCall() {
+	m.web_search_price_per_call = nil
+	m.addweb_search_price_per_call = nil
+	m.clearedFields[group.FieldWebSearchPricePerCall] = struct{}{}
+}
+
+// WebSearchPricePerCallCleared returns if the "web_search_price_per_call" field was cleared in this mutation.
+func (m *GroupMutation) WebSearchPricePerCallCleared() bool {
+	_, ok := m.clearedFields[group.FieldWebSearchPricePerCall]
+	return ok
+}
+
+// ResetWebSearchPricePerCall resets all changes to the "web_search_price_per_call" field.
+func (m *GroupMutation) ResetWebSearchPricePerCall() {
+	m.web_search_price_per_call = nil
+	m.addweb_search_price_per_call = nil
+	delete(m.clearedFields, group.FieldWebSearchPricePerCall)
+}
+
 // SetClaudeCodeOnly sets the "claude_code_only" field.
 func (m *GroupMutation) SetClaudeCodeOnly(b bool) {
 	m.claude_code_only = &b
@@ -27162,7 +27234,7 @@ func (m *GroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroupMutation) Fields() []string {
-	fields := make([]string, 0, 47)
+	fields := make([]string, 0, 48)
 	if m.created_at != nil {
 		fields = append(fields, group.FieldCreatedAt)
 	}
@@ -27258,6 +27330,9 @@ func (m *GroupMutation) Fields() []string {
 	}
 	if m.video_price_1080p != nil {
 		fields = append(fields, group.FieldVideoPrice1080p)
+	}
+	if m.web_search_price_per_call != nil {
+		fields = append(fields, group.FieldWebSearchPricePerCall)
 	}
 	if m.claude_code_only != nil {
 		fields = append(fields, group.FieldClaudeCodeOnly)
@@ -27376,6 +27451,8 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.VideoPrice720p()
 	case group.FieldVideoPrice1080p:
 		return m.VideoPrice1080p()
+	case group.FieldWebSearchPricePerCall:
+		return m.WebSearchPricePerCall()
 	case group.FieldClaudeCodeOnly:
 		return m.ClaudeCodeOnly()
 	case group.FieldFallbackGroupID:
@@ -27479,6 +27556,8 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldVideoPrice720p(ctx)
 	case group.FieldVideoPrice1080p:
 		return m.OldVideoPrice1080p(ctx)
+	case group.FieldWebSearchPricePerCall:
+		return m.OldWebSearchPricePerCall(ctx)
 	case group.FieldClaudeCodeOnly:
 		return m.OldClaudeCodeOnly(ctx)
 	case group.FieldFallbackGroupID:
@@ -27742,6 +27821,13 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetVideoPrice1080p(v)
 		return nil
+	case group.FieldWebSearchPricePerCall:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWebSearchPricePerCall(v)
+		return nil
 	case group.FieldClaudeCodeOnly:
 		v, ok := value.(bool)
 		if !ok {
@@ -27903,6 +27989,9 @@ func (m *GroupMutation) AddedFields() []string {
 	if m.addvideo_price_1080p != nil {
 		fields = append(fields, group.FieldVideoPrice1080p)
 	}
+	if m.addweb_search_price_per_call != nil {
+		fields = append(fields, group.FieldWebSearchPricePerCall)
+	}
 	if m.addfallback_group_id != nil {
 		fields = append(fields, group.FieldFallbackGroupID)
 	}
@@ -27955,6 +28044,8 @@ func (m *GroupMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedVideoPrice720p()
 	case group.FieldVideoPrice1080p:
 		return m.AddedVideoPrice1080p()
+	case group.FieldWebSearchPricePerCall:
+		return m.AddedWebSearchPricePerCall()
 	case group.FieldFallbackGroupID:
 		return m.AddedFallbackGroupID()
 	case group.FieldFallbackGroupIDOnInvalidRequest:
@@ -28084,6 +28175,13 @@ func (m *GroupMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddVideoPrice1080p(v)
 		return nil
+	case group.FieldWebSearchPricePerCall:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddWebSearchPricePerCall(v)
+		return nil
 	case group.FieldFallbackGroupID:
 		v, ok := value.(int64)
 		if !ok {
@@ -28153,6 +28251,9 @@ func (m *GroupMutation) ClearedFields() []string {
 	if m.FieldCleared(group.FieldVideoPrice1080p) {
 		fields = append(fields, group.FieldVideoPrice1080p)
 	}
+	if m.FieldCleared(group.FieldWebSearchPricePerCall) {
+		fields = append(fields, group.FieldWebSearchPricePerCall)
+	}
 	if m.FieldCleared(group.FieldFallbackGroupID) {
 		fields = append(fields, group.FieldFallbackGroupID)
 	}
@@ -28208,6 +28309,9 @@ func (m *GroupMutation) ClearField(name string) error {
 		return nil
 	case group.FieldVideoPrice1080p:
 		m.ClearVideoPrice1080p()
+		return nil
+	case group.FieldWebSearchPricePerCall:
+		m.ClearWebSearchPricePerCall()
 		return nil
 	case group.FieldFallbackGroupID:
 		m.ClearFallbackGroupID()
@@ -28321,6 +28425,9 @@ func (m *GroupMutation) ResetField(name string) error {
 		return nil
 	case group.FieldVideoPrice1080p:
 		m.ResetVideoPrice1080p()
+		return nil
+	case group.FieldWebSearchPricePerCall:
+		m.ResetWebSearchPricePerCall()
 		return nil
 	case group.FieldClaudeCodeOnly:
 		m.ResetClaudeCodeOnly()
@@ -45510,119 +45617,139 @@ func (m *UsageCleanupTaskMutation) ResetEdge(name string) error {
 // UsageLogMutation represents an operation that mutates the UsageLog nodes in the graph.
 type UsageLogMutation struct {
 	config
-	op                             Op
-	typ                            string
-	id                             *int64
-	request_id                     *string
-	model                          *string
-	requested_model                *string
-	upstream_model                 *string
-	channel_id                     *int64
-	addchannel_id                  *int64
-	model_mapping_chain            *string
-	billing_tier                   *string
-	billing_mode                   *string
-	input_tokens                   *int
-	addinput_tokens                *int
-	output_tokens                  *int
-	addoutput_tokens               *int
-	cache_creation_tokens          *int
-	addcache_creation_tokens       *int
-	cache_read_tokens              *int
-	addcache_read_tokens           *int
-	cache_creation_5m_tokens       *int
-	addcache_creation_5m_tokens    *int
-	cache_creation_1h_tokens       *int
-	addcache_creation_1h_tokens    *int
-	input_cost                     *float64
-	addinput_cost                  *float64
-	output_cost                    *float64
-	addoutput_cost                 *float64
-	cache_creation_cost            *float64
-	addcache_creation_cost         *float64
-	cache_read_cost                *float64
-	addcache_read_cost             *float64
-	total_cost                     *float64
-	addtotal_cost                  *float64
-	actual_cost                    *float64
-	addactual_cost                 *float64
-	rate_multiplier                *float64
-	addrate_multiplier             *float64
-	account_rate_multiplier        *float64
-	addaccount_rate_multiplier     *float64
-	billing_type                   *int8
-	addbilling_type                *int8
-	stream                         *bool
-	duration_ms                    *int
-	addduration_ms                 *int
-	first_token_ms                 *int
-	addfirst_token_ms              *int
-	client_transport               *string
-	auth_latency_ms                *int
-	addauth_latency_ms             *int
-	routing_latency_ms             *int
-	addrouting_latency_ms          *int
-	upstream_latency_ms            *int
-	addupstream_latency_ms         *int
-	response_latency_ms            *int
-	addresponse_latency_ms         *int
-	request_started_at             *time.Time
-	request_total_ms               *int
-	addrequest_total_ms            *int
-	request_body_read_ms           *int
-	addrequest_body_read_ms        *int
-	request_body_bytes             *int64
-	addrequest_body_bytes          *int64
-	upstream_request_written_ms    *int
-	addupstream_request_written_ms *int
-	upstream_first_byte_ms         *int
-	addupstream_first_byte_ms      *int
-	request_first_token_ms         *int
-	addrequest_first_token_ms      *int
-	route_kind                     *string
-	proxy_id_snapshot              *int64
-	addproxy_id_snapshot           *int64
-	proxy_name_snapshot            *string
-	proxy_protocol_snapshot        *string
-	route_fingerprint              *string
-	final_upstream_status          *int
-	addfinal_upstream_status       *int
-	retry_count                    *int
-	addretry_count                 *int
-	account_switch_count           *int
-	addaccount_switch_count        *int
-	attempt_timeline               *[]map[string]interface{}
-	appendattempt_timeline         []map[string]interface{}
-	user_agent                     *string
-	ip_address                     *string
-	image_count                    *int
-	addimage_count                 *int
-	image_size                     *string
-	image_input_size               *string
-	image_output_size              *string
-	image_size_source              *string
-	image_size_breakdown           *map[string]int
-	video_count                    *int
-	addvideo_count                 *int
-	video_resolution               *string
-	video_duration_seconds         *int
-	addvideo_duration_seconds      *int
-	cache_ttl_overridden           *bool
-	created_at                     *time.Time
-	clearedFields                  map[string]struct{}
-	user                           *int64
-	cleareduser                    bool
-	api_key                        *int64
-	clearedapi_key                 bool
-	account                        *int64
-	clearedaccount                 bool
-	group                          *int64
-	clearedgroup                   bool
-	subscription                   *int64
-	clearedsubscription            bool
-	done                           bool
-	oldValue                       func(context.Context) (*UsageLog, error)
-	predicates                     []predicate.UsageLog
+	op                                       Op
+	typ                                      string
+	id                                       *int64
+	request_id                               *string
+	model                                    *string
+	requested_model                          *string
+	upstream_model                           *string
+	channel_id                               *int64
+	addchannel_id                            *int64
+	model_mapping_chain                      *string
+	billing_tier                             *string
+	billing_mode                             *string
+	input_tokens                             *int
+	addinput_tokens                          *int
+	output_tokens                            *int
+	addoutput_tokens                         *int
+	cache_creation_tokens                    *int
+	addcache_creation_tokens                 *int
+	cache_read_tokens                        *int
+	addcache_read_tokens                     *int
+	cache_creation_5m_tokens                 *int
+	addcache_creation_5m_tokens              *int
+	cache_creation_1h_tokens                 *int
+	addcache_creation_1h_tokens              *int
+	input_cost                               *float64
+	addinput_cost                            *float64
+	output_cost                              *float64
+	addoutput_cost                           *float64
+	cache_creation_cost                      *float64
+	addcache_creation_cost                   *float64
+	cache_read_cost                          *float64
+	addcache_read_cost                       *float64
+	total_cost                               *float64
+	addtotal_cost                            *float64
+	actual_cost                              *float64
+	addactual_cost                           *float64
+	rate_multiplier                          *float64
+	addrate_multiplier                       *float64
+	long_context_billing_applied             *bool
+	account_rate_multiplier                  *float64
+	addaccount_rate_multiplier               *float64
+	billing_type                             *int8
+	addbilling_type                          *int8
+	stream                                   *bool
+	duration_ms                              *int
+	addduration_ms                           *int
+	first_token_ms                           *int
+	addfirst_token_ms                        *int
+	client_transport                         *string
+	auth_latency_ms                          *int
+	addauth_latency_ms                       *int
+	routing_latency_ms                       *int
+	addrouting_latency_ms                    *int
+	upstream_latency_ms                      *int
+	addupstream_latency_ms                   *int
+	response_latency_ms                      *int
+	addresponse_latency_ms                   *int
+	request_started_at                       *time.Time
+	request_total_ms                         *int
+	addrequest_total_ms                      *int
+	request_body_read_ms                     *int
+	addrequest_body_read_ms                  *int
+	request_body_bytes                       *int64
+	addrequest_body_bytes                    *int64
+	upstream_connection_reused               *bool
+	upstream_connection_ready_ms             *int
+	addupstream_connection_ready_ms          *int
+	upstream_dns_lookup_ms                   *int
+	addupstream_dns_lookup_ms                *int
+	upstream_tcp_connect_ms                  *int
+	addupstream_tcp_connect_ms               *int
+	upstream_tls_handshake_ms                *int
+	addupstream_tls_handshake_ms             *int
+	upstream_request_headers_written_ms      *int
+	addupstream_request_headers_written_ms   *int
+	upstream_request_written_ms              *int
+	addupstream_request_written_ms           *int
+	upstream_first_byte_ms                   *int
+	addupstream_first_byte_ms                *int
+	upstream_response_headers_received_ms    *int
+	addupstream_response_headers_received_ms *int
+	upstream_response_body_first_byte_ms     *int
+	addupstream_response_body_first_byte_ms  *int
+	upstream_first_event_ms                  *int
+	addupstream_first_event_ms               *int
+	request_first_output_character_ms        *int
+	addrequest_first_output_character_ms     *int
+	request_first_token_ms                   *int
+	addrequest_first_token_ms                *int
+	route_kind                               *string
+	proxy_id_snapshot                        *int64
+	addproxy_id_snapshot                     *int64
+	proxy_name_snapshot                      *string
+	proxy_protocol_snapshot                  *string
+	route_fingerprint                        *string
+	final_upstream_status                    *int
+	addfinal_upstream_status                 *int
+	retry_count                              *int
+	addretry_count                           *int
+	account_switch_count                     *int
+	addaccount_switch_count                  *int
+	attempt_timeline                         *[]map[string]interface{}
+	appendattempt_timeline                   []map[string]interface{}
+	user_agent                               *string
+	ip_address                               *string
+	image_count                              *int
+	addimage_count                           *int
+	image_size                               *string
+	image_input_size                         *string
+	image_output_size                        *string
+	image_size_source                        *string
+	image_size_breakdown                     *map[string]int
+	video_count                              *int
+	addvideo_count                           *int
+	video_resolution                         *string
+	video_duration_seconds                   *int
+	addvideo_duration_seconds                *int
+	cache_ttl_overridden                     *bool
+	created_at                               *time.Time
+	clearedFields                            map[string]struct{}
+	user                                     *int64
+	cleareduser                              bool
+	api_key                                  *int64
+	clearedapi_key                           bool
+	account                                  *int64
+	clearedaccount                           bool
+	group                                    *int64
+	clearedgroup                             bool
+	subscription                             *int64
+	clearedsubscription                      bool
+	done                                     bool
+	oldValue                                 func(context.Context) (*UsageLog, error)
+	predicates                               []predicate.UsageLog
 }
 
 var _ ent.Mutation = (*UsageLogMutation)(nil)
@@ -47044,6 +47171,42 @@ func (m *UsageLogMutation) ResetRateMultiplier() {
 	m.addrate_multiplier = nil
 }
 
+// SetLongContextBillingApplied sets the "long_context_billing_applied" field.
+func (m *UsageLogMutation) SetLongContextBillingApplied(b bool) {
+	m.long_context_billing_applied = &b
+}
+
+// LongContextBillingApplied returns the value of the "long_context_billing_applied" field in the mutation.
+func (m *UsageLogMutation) LongContextBillingApplied() (r bool, exists bool) {
+	v := m.long_context_billing_applied
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLongContextBillingApplied returns the old "long_context_billing_applied" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldLongContextBillingApplied(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLongContextBillingApplied is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLongContextBillingApplied requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLongContextBillingApplied: %w", err)
+	}
+	return oldValue.LongContextBillingApplied, nil
+}
+
+// ResetLongContextBillingApplied resets all changes to the "long_context_billing_applied" field.
+func (m *UsageLogMutation) ResetLongContextBillingApplied() {
+	m.long_context_billing_applied = nil
+}
+
 // SetAccountRateMultiplier sets the "account_rate_multiplier" field.
 func (m *UsageLogMutation) SetAccountRateMultiplier(f float64) {
 	m.account_rate_multiplier = &f
@@ -47934,6 +48097,405 @@ func (m *UsageLogMutation) ResetRequestBodyBytes() {
 	delete(m.clearedFields, usagelog.FieldRequestBodyBytes)
 }
 
+// SetUpstreamConnectionReused sets the "upstream_connection_reused" field.
+func (m *UsageLogMutation) SetUpstreamConnectionReused(b bool) {
+	m.upstream_connection_reused = &b
+}
+
+// UpstreamConnectionReused returns the value of the "upstream_connection_reused" field in the mutation.
+func (m *UsageLogMutation) UpstreamConnectionReused() (r bool, exists bool) {
+	v := m.upstream_connection_reused
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpstreamConnectionReused returns the old "upstream_connection_reused" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldUpstreamConnectionReused(ctx context.Context) (v *bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpstreamConnectionReused is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpstreamConnectionReused requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpstreamConnectionReused: %w", err)
+	}
+	return oldValue.UpstreamConnectionReused, nil
+}
+
+// ClearUpstreamConnectionReused clears the value of the "upstream_connection_reused" field.
+func (m *UsageLogMutation) ClearUpstreamConnectionReused() {
+	m.upstream_connection_reused = nil
+	m.clearedFields[usagelog.FieldUpstreamConnectionReused] = struct{}{}
+}
+
+// UpstreamConnectionReusedCleared returns if the "upstream_connection_reused" field was cleared in this mutation.
+func (m *UsageLogMutation) UpstreamConnectionReusedCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldUpstreamConnectionReused]
+	return ok
+}
+
+// ResetUpstreamConnectionReused resets all changes to the "upstream_connection_reused" field.
+func (m *UsageLogMutation) ResetUpstreamConnectionReused() {
+	m.upstream_connection_reused = nil
+	delete(m.clearedFields, usagelog.FieldUpstreamConnectionReused)
+}
+
+// SetUpstreamConnectionReadyMs sets the "upstream_connection_ready_ms" field.
+func (m *UsageLogMutation) SetUpstreamConnectionReadyMs(i int) {
+	m.upstream_connection_ready_ms = &i
+	m.addupstream_connection_ready_ms = nil
+}
+
+// UpstreamConnectionReadyMs returns the value of the "upstream_connection_ready_ms" field in the mutation.
+func (m *UsageLogMutation) UpstreamConnectionReadyMs() (r int, exists bool) {
+	v := m.upstream_connection_ready_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpstreamConnectionReadyMs returns the old "upstream_connection_ready_ms" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldUpstreamConnectionReadyMs(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpstreamConnectionReadyMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpstreamConnectionReadyMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpstreamConnectionReadyMs: %w", err)
+	}
+	return oldValue.UpstreamConnectionReadyMs, nil
+}
+
+// AddUpstreamConnectionReadyMs adds i to the "upstream_connection_ready_ms" field.
+func (m *UsageLogMutation) AddUpstreamConnectionReadyMs(i int) {
+	if m.addupstream_connection_ready_ms != nil {
+		*m.addupstream_connection_ready_ms += i
+	} else {
+		m.addupstream_connection_ready_ms = &i
+	}
+}
+
+// AddedUpstreamConnectionReadyMs returns the value that was added to the "upstream_connection_ready_ms" field in this mutation.
+func (m *UsageLogMutation) AddedUpstreamConnectionReadyMs() (r int, exists bool) {
+	v := m.addupstream_connection_ready_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearUpstreamConnectionReadyMs clears the value of the "upstream_connection_ready_ms" field.
+func (m *UsageLogMutation) ClearUpstreamConnectionReadyMs() {
+	m.upstream_connection_ready_ms = nil
+	m.addupstream_connection_ready_ms = nil
+	m.clearedFields[usagelog.FieldUpstreamConnectionReadyMs] = struct{}{}
+}
+
+// UpstreamConnectionReadyMsCleared returns if the "upstream_connection_ready_ms" field was cleared in this mutation.
+func (m *UsageLogMutation) UpstreamConnectionReadyMsCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldUpstreamConnectionReadyMs]
+	return ok
+}
+
+// ResetUpstreamConnectionReadyMs resets all changes to the "upstream_connection_ready_ms" field.
+func (m *UsageLogMutation) ResetUpstreamConnectionReadyMs() {
+	m.upstream_connection_ready_ms = nil
+	m.addupstream_connection_ready_ms = nil
+	delete(m.clearedFields, usagelog.FieldUpstreamConnectionReadyMs)
+}
+
+// SetUpstreamDNSLookupMs sets the "upstream_dns_lookup_ms" field.
+func (m *UsageLogMutation) SetUpstreamDNSLookupMs(i int) {
+	m.upstream_dns_lookup_ms = &i
+	m.addupstream_dns_lookup_ms = nil
+}
+
+// UpstreamDNSLookupMs returns the value of the "upstream_dns_lookup_ms" field in the mutation.
+func (m *UsageLogMutation) UpstreamDNSLookupMs() (r int, exists bool) {
+	v := m.upstream_dns_lookup_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpstreamDNSLookupMs returns the old "upstream_dns_lookup_ms" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldUpstreamDNSLookupMs(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpstreamDNSLookupMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpstreamDNSLookupMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpstreamDNSLookupMs: %w", err)
+	}
+	return oldValue.UpstreamDNSLookupMs, nil
+}
+
+// AddUpstreamDNSLookupMs adds i to the "upstream_dns_lookup_ms" field.
+func (m *UsageLogMutation) AddUpstreamDNSLookupMs(i int) {
+	if m.addupstream_dns_lookup_ms != nil {
+		*m.addupstream_dns_lookup_ms += i
+	} else {
+		m.addupstream_dns_lookup_ms = &i
+	}
+}
+
+// AddedUpstreamDNSLookupMs returns the value that was added to the "upstream_dns_lookup_ms" field in this mutation.
+func (m *UsageLogMutation) AddedUpstreamDNSLookupMs() (r int, exists bool) {
+	v := m.addupstream_dns_lookup_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearUpstreamDNSLookupMs clears the value of the "upstream_dns_lookup_ms" field.
+func (m *UsageLogMutation) ClearUpstreamDNSLookupMs() {
+	m.upstream_dns_lookup_ms = nil
+	m.addupstream_dns_lookup_ms = nil
+	m.clearedFields[usagelog.FieldUpstreamDNSLookupMs] = struct{}{}
+}
+
+// UpstreamDNSLookupMsCleared returns if the "upstream_dns_lookup_ms" field was cleared in this mutation.
+func (m *UsageLogMutation) UpstreamDNSLookupMsCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldUpstreamDNSLookupMs]
+	return ok
+}
+
+// ResetUpstreamDNSLookupMs resets all changes to the "upstream_dns_lookup_ms" field.
+func (m *UsageLogMutation) ResetUpstreamDNSLookupMs() {
+	m.upstream_dns_lookup_ms = nil
+	m.addupstream_dns_lookup_ms = nil
+	delete(m.clearedFields, usagelog.FieldUpstreamDNSLookupMs)
+}
+
+// SetUpstreamTCPConnectMs sets the "upstream_tcp_connect_ms" field.
+func (m *UsageLogMutation) SetUpstreamTCPConnectMs(i int) {
+	m.upstream_tcp_connect_ms = &i
+	m.addupstream_tcp_connect_ms = nil
+}
+
+// UpstreamTCPConnectMs returns the value of the "upstream_tcp_connect_ms" field in the mutation.
+func (m *UsageLogMutation) UpstreamTCPConnectMs() (r int, exists bool) {
+	v := m.upstream_tcp_connect_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpstreamTCPConnectMs returns the old "upstream_tcp_connect_ms" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldUpstreamTCPConnectMs(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpstreamTCPConnectMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpstreamTCPConnectMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpstreamTCPConnectMs: %w", err)
+	}
+	return oldValue.UpstreamTCPConnectMs, nil
+}
+
+// AddUpstreamTCPConnectMs adds i to the "upstream_tcp_connect_ms" field.
+func (m *UsageLogMutation) AddUpstreamTCPConnectMs(i int) {
+	if m.addupstream_tcp_connect_ms != nil {
+		*m.addupstream_tcp_connect_ms += i
+	} else {
+		m.addupstream_tcp_connect_ms = &i
+	}
+}
+
+// AddedUpstreamTCPConnectMs returns the value that was added to the "upstream_tcp_connect_ms" field in this mutation.
+func (m *UsageLogMutation) AddedUpstreamTCPConnectMs() (r int, exists bool) {
+	v := m.addupstream_tcp_connect_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearUpstreamTCPConnectMs clears the value of the "upstream_tcp_connect_ms" field.
+func (m *UsageLogMutation) ClearUpstreamTCPConnectMs() {
+	m.upstream_tcp_connect_ms = nil
+	m.addupstream_tcp_connect_ms = nil
+	m.clearedFields[usagelog.FieldUpstreamTCPConnectMs] = struct{}{}
+}
+
+// UpstreamTCPConnectMsCleared returns if the "upstream_tcp_connect_ms" field was cleared in this mutation.
+func (m *UsageLogMutation) UpstreamTCPConnectMsCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldUpstreamTCPConnectMs]
+	return ok
+}
+
+// ResetUpstreamTCPConnectMs resets all changes to the "upstream_tcp_connect_ms" field.
+func (m *UsageLogMutation) ResetUpstreamTCPConnectMs() {
+	m.upstream_tcp_connect_ms = nil
+	m.addupstream_tcp_connect_ms = nil
+	delete(m.clearedFields, usagelog.FieldUpstreamTCPConnectMs)
+}
+
+// SetUpstreamTLSHandshakeMs sets the "upstream_tls_handshake_ms" field.
+func (m *UsageLogMutation) SetUpstreamTLSHandshakeMs(i int) {
+	m.upstream_tls_handshake_ms = &i
+	m.addupstream_tls_handshake_ms = nil
+}
+
+// UpstreamTLSHandshakeMs returns the value of the "upstream_tls_handshake_ms" field in the mutation.
+func (m *UsageLogMutation) UpstreamTLSHandshakeMs() (r int, exists bool) {
+	v := m.upstream_tls_handshake_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpstreamTLSHandshakeMs returns the old "upstream_tls_handshake_ms" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldUpstreamTLSHandshakeMs(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpstreamTLSHandshakeMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpstreamTLSHandshakeMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpstreamTLSHandshakeMs: %w", err)
+	}
+	return oldValue.UpstreamTLSHandshakeMs, nil
+}
+
+// AddUpstreamTLSHandshakeMs adds i to the "upstream_tls_handshake_ms" field.
+func (m *UsageLogMutation) AddUpstreamTLSHandshakeMs(i int) {
+	if m.addupstream_tls_handshake_ms != nil {
+		*m.addupstream_tls_handshake_ms += i
+	} else {
+		m.addupstream_tls_handshake_ms = &i
+	}
+}
+
+// AddedUpstreamTLSHandshakeMs returns the value that was added to the "upstream_tls_handshake_ms" field in this mutation.
+func (m *UsageLogMutation) AddedUpstreamTLSHandshakeMs() (r int, exists bool) {
+	v := m.addupstream_tls_handshake_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearUpstreamTLSHandshakeMs clears the value of the "upstream_tls_handshake_ms" field.
+func (m *UsageLogMutation) ClearUpstreamTLSHandshakeMs() {
+	m.upstream_tls_handshake_ms = nil
+	m.addupstream_tls_handshake_ms = nil
+	m.clearedFields[usagelog.FieldUpstreamTLSHandshakeMs] = struct{}{}
+}
+
+// UpstreamTLSHandshakeMsCleared returns if the "upstream_tls_handshake_ms" field was cleared in this mutation.
+func (m *UsageLogMutation) UpstreamTLSHandshakeMsCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldUpstreamTLSHandshakeMs]
+	return ok
+}
+
+// ResetUpstreamTLSHandshakeMs resets all changes to the "upstream_tls_handshake_ms" field.
+func (m *UsageLogMutation) ResetUpstreamTLSHandshakeMs() {
+	m.upstream_tls_handshake_ms = nil
+	m.addupstream_tls_handshake_ms = nil
+	delete(m.clearedFields, usagelog.FieldUpstreamTLSHandshakeMs)
+}
+
+// SetUpstreamRequestHeadersWrittenMs sets the "upstream_request_headers_written_ms" field.
+func (m *UsageLogMutation) SetUpstreamRequestHeadersWrittenMs(i int) {
+	m.upstream_request_headers_written_ms = &i
+	m.addupstream_request_headers_written_ms = nil
+}
+
+// UpstreamRequestHeadersWrittenMs returns the value of the "upstream_request_headers_written_ms" field in the mutation.
+func (m *UsageLogMutation) UpstreamRequestHeadersWrittenMs() (r int, exists bool) {
+	v := m.upstream_request_headers_written_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpstreamRequestHeadersWrittenMs returns the old "upstream_request_headers_written_ms" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldUpstreamRequestHeadersWrittenMs(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpstreamRequestHeadersWrittenMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpstreamRequestHeadersWrittenMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpstreamRequestHeadersWrittenMs: %w", err)
+	}
+	return oldValue.UpstreamRequestHeadersWrittenMs, nil
+}
+
+// AddUpstreamRequestHeadersWrittenMs adds i to the "upstream_request_headers_written_ms" field.
+func (m *UsageLogMutation) AddUpstreamRequestHeadersWrittenMs(i int) {
+	if m.addupstream_request_headers_written_ms != nil {
+		*m.addupstream_request_headers_written_ms += i
+	} else {
+		m.addupstream_request_headers_written_ms = &i
+	}
+}
+
+// AddedUpstreamRequestHeadersWrittenMs returns the value that was added to the "upstream_request_headers_written_ms" field in this mutation.
+func (m *UsageLogMutation) AddedUpstreamRequestHeadersWrittenMs() (r int, exists bool) {
+	v := m.addupstream_request_headers_written_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearUpstreamRequestHeadersWrittenMs clears the value of the "upstream_request_headers_written_ms" field.
+func (m *UsageLogMutation) ClearUpstreamRequestHeadersWrittenMs() {
+	m.upstream_request_headers_written_ms = nil
+	m.addupstream_request_headers_written_ms = nil
+	m.clearedFields[usagelog.FieldUpstreamRequestHeadersWrittenMs] = struct{}{}
+}
+
+// UpstreamRequestHeadersWrittenMsCleared returns if the "upstream_request_headers_written_ms" field was cleared in this mutation.
+func (m *UsageLogMutation) UpstreamRequestHeadersWrittenMsCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldUpstreamRequestHeadersWrittenMs]
+	return ok
+}
+
+// ResetUpstreamRequestHeadersWrittenMs resets all changes to the "upstream_request_headers_written_ms" field.
+func (m *UsageLogMutation) ResetUpstreamRequestHeadersWrittenMs() {
+	m.upstream_request_headers_written_ms = nil
+	m.addupstream_request_headers_written_ms = nil
+	delete(m.clearedFields, usagelog.FieldUpstreamRequestHeadersWrittenMs)
+}
+
 // SetUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field.
 func (m *UsageLogMutation) SetUpstreamRequestWrittenMs(i int) {
 	m.upstream_request_written_ms = &i
@@ -48072,6 +48634,286 @@ func (m *UsageLogMutation) ResetUpstreamFirstByteMs() {
 	m.upstream_first_byte_ms = nil
 	m.addupstream_first_byte_ms = nil
 	delete(m.clearedFields, usagelog.FieldUpstreamFirstByteMs)
+}
+
+// SetUpstreamResponseHeadersReceivedMs sets the "upstream_response_headers_received_ms" field.
+func (m *UsageLogMutation) SetUpstreamResponseHeadersReceivedMs(i int) {
+	m.upstream_response_headers_received_ms = &i
+	m.addupstream_response_headers_received_ms = nil
+}
+
+// UpstreamResponseHeadersReceivedMs returns the value of the "upstream_response_headers_received_ms" field in the mutation.
+func (m *UsageLogMutation) UpstreamResponseHeadersReceivedMs() (r int, exists bool) {
+	v := m.upstream_response_headers_received_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpstreamResponseHeadersReceivedMs returns the old "upstream_response_headers_received_ms" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldUpstreamResponseHeadersReceivedMs(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpstreamResponseHeadersReceivedMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpstreamResponseHeadersReceivedMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpstreamResponseHeadersReceivedMs: %w", err)
+	}
+	return oldValue.UpstreamResponseHeadersReceivedMs, nil
+}
+
+// AddUpstreamResponseHeadersReceivedMs adds i to the "upstream_response_headers_received_ms" field.
+func (m *UsageLogMutation) AddUpstreamResponseHeadersReceivedMs(i int) {
+	if m.addupstream_response_headers_received_ms != nil {
+		*m.addupstream_response_headers_received_ms += i
+	} else {
+		m.addupstream_response_headers_received_ms = &i
+	}
+}
+
+// AddedUpstreamResponseHeadersReceivedMs returns the value that was added to the "upstream_response_headers_received_ms" field in this mutation.
+func (m *UsageLogMutation) AddedUpstreamResponseHeadersReceivedMs() (r int, exists bool) {
+	v := m.addupstream_response_headers_received_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearUpstreamResponseHeadersReceivedMs clears the value of the "upstream_response_headers_received_ms" field.
+func (m *UsageLogMutation) ClearUpstreamResponseHeadersReceivedMs() {
+	m.upstream_response_headers_received_ms = nil
+	m.addupstream_response_headers_received_ms = nil
+	m.clearedFields[usagelog.FieldUpstreamResponseHeadersReceivedMs] = struct{}{}
+}
+
+// UpstreamResponseHeadersReceivedMsCleared returns if the "upstream_response_headers_received_ms" field was cleared in this mutation.
+func (m *UsageLogMutation) UpstreamResponseHeadersReceivedMsCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldUpstreamResponseHeadersReceivedMs]
+	return ok
+}
+
+// ResetUpstreamResponseHeadersReceivedMs resets all changes to the "upstream_response_headers_received_ms" field.
+func (m *UsageLogMutation) ResetUpstreamResponseHeadersReceivedMs() {
+	m.upstream_response_headers_received_ms = nil
+	m.addupstream_response_headers_received_ms = nil
+	delete(m.clearedFields, usagelog.FieldUpstreamResponseHeadersReceivedMs)
+}
+
+// SetUpstreamResponseBodyFirstByteMs sets the "upstream_response_body_first_byte_ms" field.
+func (m *UsageLogMutation) SetUpstreamResponseBodyFirstByteMs(i int) {
+	m.upstream_response_body_first_byte_ms = &i
+	m.addupstream_response_body_first_byte_ms = nil
+}
+
+// UpstreamResponseBodyFirstByteMs returns the value of the "upstream_response_body_first_byte_ms" field in the mutation.
+func (m *UsageLogMutation) UpstreamResponseBodyFirstByteMs() (r int, exists bool) {
+	v := m.upstream_response_body_first_byte_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpstreamResponseBodyFirstByteMs returns the old "upstream_response_body_first_byte_ms" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldUpstreamResponseBodyFirstByteMs(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpstreamResponseBodyFirstByteMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpstreamResponseBodyFirstByteMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpstreamResponseBodyFirstByteMs: %w", err)
+	}
+	return oldValue.UpstreamResponseBodyFirstByteMs, nil
+}
+
+// AddUpstreamResponseBodyFirstByteMs adds i to the "upstream_response_body_first_byte_ms" field.
+func (m *UsageLogMutation) AddUpstreamResponseBodyFirstByteMs(i int) {
+	if m.addupstream_response_body_first_byte_ms != nil {
+		*m.addupstream_response_body_first_byte_ms += i
+	} else {
+		m.addupstream_response_body_first_byte_ms = &i
+	}
+}
+
+// AddedUpstreamResponseBodyFirstByteMs returns the value that was added to the "upstream_response_body_first_byte_ms" field in this mutation.
+func (m *UsageLogMutation) AddedUpstreamResponseBodyFirstByteMs() (r int, exists bool) {
+	v := m.addupstream_response_body_first_byte_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearUpstreamResponseBodyFirstByteMs clears the value of the "upstream_response_body_first_byte_ms" field.
+func (m *UsageLogMutation) ClearUpstreamResponseBodyFirstByteMs() {
+	m.upstream_response_body_first_byte_ms = nil
+	m.addupstream_response_body_first_byte_ms = nil
+	m.clearedFields[usagelog.FieldUpstreamResponseBodyFirstByteMs] = struct{}{}
+}
+
+// UpstreamResponseBodyFirstByteMsCleared returns if the "upstream_response_body_first_byte_ms" field was cleared in this mutation.
+func (m *UsageLogMutation) UpstreamResponseBodyFirstByteMsCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldUpstreamResponseBodyFirstByteMs]
+	return ok
+}
+
+// ResetUpstreamResponseBodyFirstByteMs resets all changes to the "upstream_response_body_first_byte_ms" field.
+func (m *UsageLogMutation) ResetUpstreamResponseBodyFirstByteMs() {
+	m.upstream_response_body_first_byte_ms = nil
+	m.addupstream_response_body_first_byte_ms = nil
+	delete(m.clearedFields, usagelog.FieldUpstreamResponseBodyFirstByteMs)
+}
+
+// SetUpstreamFirstEventMs sets the "upstream_first_event_ms" field.
+func (m *UsageLogMutation) SetUpstreamFirstEventMs(i int) {
+	m.upstream_first_event_ms = &i
+	m.addupstream_first_event_ms = nil
+}
+
+// UpstreamFirstEventMs returns the value of the "upstream_first_event_ms" field in the mutation.
+func (m *UsageLogMutation) UpstreamFirstEventMs() (r int, exists bool) {
+	v := m.upstream_first_event_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpstreamFirstEventMs returns the old "upstream_first_event_ms" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldUpstreamFirstEventMs(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpstreamFirstEventMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpstreamFirstEventMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpstreamFirstEventMs: %w", err)
+	}
+	return oldValue.UpstreamFirstEventMs, nil
+}
+
+// AddUpstreamFirstEventMs adds i to the "upstream_first_event_ms" field.
+func (m *UsageLogMutation) AddUpstreamFirstEventMs(i int) {
+	if m.addupstream_first_event_ms != nil {
+		*m.addupstream_first_event_ms += i
+	} else {
+		m.addupstream_first_event_ms = &i
+	}
+}
+
+// AddedUpstreamFirstEventMs returns the value that was added to the "upstream_first_event_ms" field in this mutation.
+func (m *UsageLogMutation) AddedUpstreamFirstEventMs() (r int, exists bool) {
+	v := m.addupstream_first_event_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearUpstreamFirstEventMs clears the value of the "upstream_first_event_ms" field.
+func (m *UsageLogMutation) ClearUpstreamFirstEventMs() {
+	m.upstream_first_event_ms = nil
+	m.addupstream_first_event_ms = nil
+	m.clearedFields[usagelog.FieldUpstreamFirstEventMs] = struct{}{}
+}
+
+// UpstreamFirstEventMsCleared returns if the "upstream_first_event_ms" field was cleared in this mutation.
+func (m *UsageLogMutation) UpstreamFirstEventMsCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldUpstreamFirstEventMs]
+	return ok
+}
+
+// ResetUpstreamFirstEventMs resets all changes to the "upstream_first_event_ms" field.
+func (m *UsageLogMutation) ResetUpstreamFirstEventMs() {
+	m.upstream_first_event_ms = nil
+	m.addupstream_first_event_ms = nil
+	delete(m.clearedFields, usagelog.FieldUpstreamFirstEventMs)
+}
+
+// SetRequestFirstOutputCharacterMs sets the "request_first_output_character_ms" field.
+func (m *UsageLogMutation) SetRequestFirstOutputCharacterMs(i int) {
+	m.request_first_output_character_ms = &i
+	m.addrequest_first_output_character_ms = nil
+}
+
+// RequestFirstOutputCharacterMs returns the value of the "request_first_output_character_ms" field in the mutation.
+func (m *UsageLogMutation) RequestFirstOutputCharacterMs() (r int, exists bool) {
+	v := m.request_first_output_character_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestFirstOutputCharacterMs returns the old "request_first_output_character_ms" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldRequestFirstOutputCharacterMs(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestFirstOutputCharacterMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestFirstOutputCharacterMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestFirstOutputCharacterMs: %w", err)
+	}
+	return oldValue.RequestFirstOutputCharacterMs, nil
+}
+
+// AddRequestFirstOutputCharacterMs adds i to the "request_first_output_character_ms" field.
+func (m *UsageLogMutation) AddRequestFirstOutputCharacterMs(i int) {
+	if m.addrequest_first_output_character_ms != nil {
+		*m.addrequest_first_output_character_ms += i
+	} else {
+		m.addrequest_first_output_character_ms = &i
+	}
+}
+
+// AddedRequestFirstOutputCharacterMs returns the value that was added to the "request_first_output_character_ms" field in this mutation.
+func (m *UsageLogMutation) AddedRequestFirstOutputCharacterMs() (r int, exists bool) {
+	v := m.addrequest_first_output_character_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRequestFirstOutputCharacterMs clears the value of the "request_first_output_character_ms" field.
+func (m *UsageLogMutation) ClearRequestFirstOutputCharacterMs() {
+	m.request_first_output_character_ms = nil
+	m.addrequest_first_output_character_ms = nil
+	m.clearedFields[usagelog.FieldRequestFirstOutputCharacterMs] = struct{}{}
+}
+
+// RequestFirstOutputCharacterMsCleared returns if the "request_first_output_character_ms" field was cleared in this mutation.
+func (m *UsageLogMutation) RequestFirstOutputCharacterMsCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldRequestFirstOutputCharacterMs]
+	return ok
+}
+
+// ResetRequestFirstOutputCharacterMs resets all changes to the "request_first_output_character_ms" field.
+func (m *UsageLogMutation) ResetRequestFirstOutputCharacterMs() {
+	m.request_first_output_character_ms = nil
+	m.addrequest_first_output_character_ms = nil
+	delete(m.clearedFields, usagelog.FieldRequestFirstOutputCharacterMs)
 }
 
 // SetRequestFirstTokenMs sets the "request_first_token_ms" field.
@@ -49472,7 +50314,7 @@ func (m *UsageLogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UsageLogMutation) Fields() []string {
-	fields := make([]string, 0, 65)
+	fields := make([]string, 0, 76)
 	if m.user != nil {
 		fields = append(fields, usagelog.FieldUserID)
 	}
@@ -49551,6 +50393,9 @@ func (m *UsageLogMutation) Fields() []string {
 	if m.rate_multiplier != nil {
 		fields = append(fields, usagelog.FieldRateMultiplier)
 	}
+	if m.long_context_billing_applied != nil {
+		fields = append(fields, usagelog.FieldLongContextBillingApplied)
+	}
 	if m.account_rate_multiplier != nil {
 		fields = append(fields, usagelog.FieldAccountRateMultiplier)
 	}
@@ -49593,11 +50438,41 @@ func (m *UsageLogMutation) Fields() []string {
 	if m.request_body_bytes != nil {
 		fields = append(fields, usagelog.FieldRequestBodyBytes)
 	}
+	if m.upstream_connection_reused != nil {
+		fields = append(fields, usagelog.FieldUpstreamConnectionReused)
+	}
+	if m.upstream_connection_ready_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamConnectionReadyMs)
+	}
+	if m.upstream_dns_lookup_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamDNSLookupMs)
+	}
+	if m.upstream_tcp_connect_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamTCPConnectMs)
+	}
+	if m.upstream_tls_handshake_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamTLSHandshakeMs)
+	}
+	if m.upstream_request_headers_written_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamRequestHeadersWrittenMs)
+	}
 	if m.upstream_request_written_ms != nil {
 		fields = append(fields, usagelog.FieldUpstreamRequestWrittenMs)
 	}
 	if m.upstream_first_byte_ms != nil {
 		fields = append(fields, usagelog.FieldUpstreamFirstByteMs)
+	}
+	if m.upstream_response_headers_received_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamResponseHeadersReceivedMs)
+	}
+	if m.upstream_response_body_first_byte_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamResponseBodyFirstByteMs)
+	}
+	if m.upstream_first_event_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamFirstEventMs)
+	}
+	if m.request_first_output_character_ms != nil {
+		fields = append(fields, usagelog.FieldRequestFirstOutputCharacterMs)
 	}
 	if m.request_first_token_ms != nil {
 		fields = append(fields, usagelog.FieldRequestFirstTokenMs)
@@ -49728,6 +50603,8 @@ func (m *UsageLogMutation) Field(name string) (ent.Value, bool) {
 		return m.ActualCost()
 	case usagelog.FieldRateMultiplier:
 		return m.RateMultiplier()
+	case usagelog.FieldLongContextBillingApplied:
+		return m.LongContextBillingApplied()
 	case usagelog.FieldAccountRateMultiplier:
 		return m.AccountRateMultiplier()
 	case usagelog.FieldBillingType:
@@ -49756,10 +50633,30 @@ func (m *UsageLogMutation) Field(name string) (ent.Value, bool) {
 		return m.RequestBodyReadMs()
 	case usagelog.FieldRequestBodyBytes:
 		return m.RequestBodyBytes()
+	case usagelog.FieldUpstreamConnectionReused:
+		return m.UpstreamConnectionReused()
+	case usagelog.FieldUpstreamConnectionReadyMs:
+		return m.UpstreamConnectionReadyMs()
+	case usagelog.FieldUpstreamDNSLookupMs:
+		return m.UpstreamDNSLookupMs()
+	case usagelog.FieldUpstreamTCPConnectMs:
+		return m.UpstreamTCPConnectMs()
+	case usagelog.FieldUpstreamTLSHandshakeMs:
+		return m.UpstreamTLSHandshakeMs()
+	case usagelog.FieldUpstreamRequestHeadersWrittenMs:
+		return m.UpstreamRequestHeadersWrittenMs()
 	case usagelog.FieldUpstreamRequestWrittenMs:
 		return m.UpstreamRequestWrittenMs()
 	case usagelog.FieldUpstreamFirstByteMs:
 		return m.UpstreamFirstByteMs()
+	case usagelog.FieldUpstreamResponseHeadersReceivedMs:
+		return m.UpstreamResponseHeadersReceivedMs()
+	case usagelog.FieldUpstreamResponseBodyFirstByteMs:
+		return m.UpstreamResponseBodyFirstByteMs()
+	case usagelog.FieldUpstreamFirstEventMs:
+		return m.UpstreamFirstEventMs()
+	case usagelog.FieldRequestFirstOutputCharacterMs:
+		return m.RequestFirstOutputCharacterMs()
 	case usagelog.FieldRequestFirstTokenMs:
 		return m.RequestFirstTokenMs()
 	case usagelog.FieldRouteKind:
@@ -49867,6 +50764,8 @@ func (m *UsageLogMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldActualCost(ctx)
 	case usagelog.FieldRateMultiplier:
 		return m.OldRateMultiplier(ctx)
+	case usagelog.FieldLongContextBillingApplied:
+		return m.OldLongContextBillingApplied(ctx)
 	case usagelog.FieldAccountRateMultiplier:
 		return m.OldAccountRateMultiplier(ctx)
 	case usagelog.FieldBillingType:
@@ -49895,10 +50794,30 @@ func (m *UsageLogMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldRequestBodyReadMs(ctx)
 	case usagelog.FieldRequestBodyBytes:
 		return m.OldRequestBodyBytes(ctx)
+	case usagelog.FieldUpstreamConnectionReused:
+		return m.OldUpstreamConnectionReused(ctx)
+	case usagelog.FieldUpstreamConnectionReadyMs:
+		return m.OldUpstreamConnectionReadyMs(ctx)
+	case usagelog.FieldUpstreamDNSLookupMs:
+		return m.OldUpstreamDNSLookupMs(ctx)
+	case usagelog.FieldUpstreamTCPConnectMs:
+		return m.OldUpstreamTCPConnectMs(ctx)
+	case usagelog.FieldUpstreamTLSHandshakeMs:
+		return m.OldUpstreamTLSHandshakeMs(ctx)
+	case usagelog.FieldUpstreamRequestHeadersWrittenMs:
+		return m.OldUpstreamRequestHeadersWrittenMs(ctx)
 	case usagelog.FieldUpstreamRequestWrittenMs:
 		return m.OldUpstreamRequestWrittenMs(ctx)
 	case usagelog.FieldUpstreamFirstByteMs:
 		return m.OldUpstreamFirstByteMs(ctx)
+	case usagelog.FieldUpstreamResponseHeadersReceivedMs:
+		return m.OldUpstreamResponseHeadersReceivedMs(ctx)
+	case usagelog.FieldUpstreamResponseBodyFirstByteMs:
+		return m.OldUpstreamResponseBodyFirstByteMs(ctx)
+	case usagelog.FieldUpstreamFirstEventMs:
+		return m.OldUpstreamFirstEventMs(ctx)
+	case usagelog.FieldRequestFirstOutputCharacterMs:
+		return m.OldRequestFirstOutputCharacterMs(ctx)
 	case usagelog.FieldRequestFirstTokenMs:
 		return m.OldRequestFirstTokenMs(ctx)
 	case usagelog.FieldRouteKind:
@@ -50136,6 +51055,13 @@ func (m *UsageLogMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRateMultiplier(v)
 		return nil
+	case usagelog.FieldLongContextBillingApplied:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLongContextBillingApplied(v)
+		return nil
 	case usagelog.FieldAccountRateMultiplier:
 		v, ok := value.(float64)
 		if !ok {
@@ -50234,6 +51160,48 @@ func (m *UsageLogMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRequestBodyBytes(v)
 		return nil
+	case usagelog.FieldUpstreamConnectionReused:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpstreamConnectionReused(v)
+		return nil
+	case usagelog.FieldUpstreamConnectionReadyMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpstreamConnectionReadyMs(v)
+		return nil
+	case usagelog.FieldUpstreamDNSLookupMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpstreamDNSLookupMs(v)
+		return nil
+	case usagelog.FieldUpstreamTCPConnectMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpstreamTCPConnectMs(v)
+		return nil
+	case usagelog.FieldUpstreamTLSHandshakeMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpstreamTLSHandshakeMs(v)
+		return nil
+	case usagelog.FieldUpstreamRequestHeadersWrittenMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpstreamRequestHeadersWrittenMs(v)
+		return nil
 	case usagelog.FieldUpstreamRequestWrittenMs:
 		v, ok := value.(int)
 		if !ok {
@@ -50247,6 +51215,34 @@ func (m *UsageLogMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpstreamFirstByteMs(v)
+		return nil
+	case usagelog.FieldUpstreamResponseHeadersReceivedMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpstreamResponseHeadersReceivedMs(v)
+		return nil
+	case usagelog.FieldUpstreamResponseBodyFirstByteMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpstreamResponseBodyFirstByteMs(v)
+		return nil
+	case usagelog.FieldUpstreamFirstEventMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpstreamFirstEventMs(v)
+		return nil
+	case usagelog.FieldRequestFirstOutputCharacterMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestFirstOutputCharacterMs(v)
 		return nil
 	case usagelog.FieldRequestFirstTokenMs:
 		v, ok := value.(int)
@@ -50492,11 +51488,38 @@ func (m *UsageLogMutation) AddedFields() []string {
 	if m.addrequest_body_bytes != nil {
 		fields = append(fields, usagelog.FieldRequestBodyBytes)
 	}
+	if m.addupstream_connection_ready_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamConnectionReadyMs)
+	}
+	if m.addupstream_dns_lookup_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamDNSLookupMs)
+	}
+	if m.addupstream_tcp_connect_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamTCPConnectMs)
+	}
+	if m.addupstream_tls_handshake_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamTLSHandshakeMs)
+	}
+	if m.addupstream_request_headers_written_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamRequestHeadersWrittenMs)
+	}
 	if m.addupstream_request_written_ms != nil {
 		fields = append(fields, usagelog.FieldUpstreamRequestWrittenMs)
 	}
 	if m.addupstream_first_byte_ms != nil {
 		fields = append(fields, usagelog.FieldUpstreamFirstByteMs)
+	}
+	if m.addupstream_response_headers_received_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamResponseHeadersReceivedMs)
+	}
+	if m.addupstream_response_body_first_byte_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamResponseBodyFirstByteMs)
+	}
+	if m.addupstream_first_event_ms != nil {
+		fields = append(fields, usagelog.FieldUpstreamFirstEventMs)
+	}
+	if m.addrequest_first_output_character_ms != nil {
+		fields = append(fields, usagelog.FieldRequestFirstOutputCharacterMs)
 	}
 	if m.addrequest_first_token_ms != nil {
 		fields = append(fields, usagelog.FieldRequestFirstTokenMs)
@@ -50580,10 +51603,28 @@ func (m *UsageLogMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedRequestBodyReadMs()
 	case usagelog.FieldRequestBodyBytes:
 		return m.AddedRequestBodyBytes()
+	case usagelog.FieldUpstreamConnectionReadyMs:
+		return m.AddedUpstreamConnectionReadyMs()
+	case usagelog.FieldUpstreamDNSLookupMs:
+		return m.AddedUpstreamDNSLookupMs()
+	case usagelog.FieldUpstreamTCPConnectMs:
+		return m.AddedUpstreamTCPConnectMs()
+	case usagelog.FieldUpstreamTLSHandshakeMs:
+		return m.AddedUpstreamTLSHandshakeMs()
+	case usagelog.FieldUpstreamRequestHeadersWrittenMs:
+		return m.AddedUpstreamRequestHeadersWrittenMs()
 	case usagelog.FieldUpstreamRequestWrittenMs:
 		return m.AddedUpstreamRequestWrittenMs()
 	case usagelog.FieldUpstreamFirstByteMs:
 		return m.AddedUpstreamFirstByteMs()
+	case usagelog.FieldUpstreamResponseHeadersReceivedMs:
+		return m.AddedUpstreamResponseHeadersReceivedMs()
+	case usagelog.FieldUpstreamResponseBodyFirstByteMs:
+		return m.AddedUpstreamResponseBodyFirstByteMs()
+	case usagelog.FieldUpstreamFirstEventMs:
+		return m.AddedUpstreamFirstEventMs()
+	case usagelog.FieldRequestFirstOutputCharacterMs:
+		return m.AddedRequestFirstOutputCharacterMs()
 	case usagelog.FieldRequestFirstTokenMs:
 		return m.AddedRequestFirstTokenMs()
 	case usagelog.FieldProxyIDSnapshot:
@@ -50784,6 +51825,41 @@ func (m *UsageLogMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddRequestBodyBytes(v)
 		return nil
+	case usagelog.FieldUpstreamConnectionReadyMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUpstreamConnectionReadyMs(v)
+		return nil
+	case usagelog.FieldUpstreamDNSLookupMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUpstreamDNSLookupMs(v)
+		return nil
+	case usagelog.FieldUpstreamTCPConnectMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUpstreamTCPConnectMs(v)
+		return nil
+	case usagelog.FieldUpstreamTLSHandshakeMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUpstreamTLSHandshakeMs(v)
+		return nil
+	case usagelog.FieldUpstreamRequestHeadersWrittenMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUpstreamRequestHeadersWrittenMs(v)
+		return nil
 	case usagelog.FieldUpstreamRequestWrittenMs:
 		v, ok := value.(int)
 		if !ok {
@@ -50797,6 +51873,34 @@ func (m *UsageLogMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddUpstreamFirstByteMs(v)
+		return nil
+	case usagelog.FieldUpstreamResponseHeadersReceivedMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUpstreamResponseHeadersReceivedMs(v)
+		return nil
+	case usagelog.FieldUpstreamResponseBodyFirstByteMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUpstreamResponseBodyFirstByteMs(v)
+		return nil
+	case usagelog.FieldUpstreamFirstEventMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUpstreamFirstEventMs(v)
+		return nil
+	case usagelog.FieldRequestFirstOutputCharacterMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRequestFirstOutputCharacterMs(v)
 		return nil
 	case usagelog.FieldRequestFirstTokenMs:
 		v, ok := value.(int)
@@ -50922,11 +52026,41 @@ func (m *UsageLogMutation) ClearedFields() []string {
 	if m.FieldCleared(usagelog.FieldRequestBodyBytes) {
 		fields = append(fields, usagelog.FieldRequestBodyBytes)
 	}
+	if m.FieldCleared(usagelog.FieldUpstreamConnectionReused) {
+		fields = append(fields, usagelog.FieldUpstreamConnectionReused)
+	}
+	if m.FieldCleared(usagelog.FieldUpstreamConnectionReadyMs) {
+		fields = append(fields, usagelog.FieldUpstreamConnectionReadyMs)
+	}
+	if m.FieldCleared(usagelog.FieldUpstreamDNSLookupMs) {
+		fields = append(fields, usagelog.FieldUpstreamDNSLookupMs)
+	}
+	if m.FieldCleared(usagelog.FieldUpstreamTCPConnectMs) {
+		fields = append(fields, usagelog.FieldUpstreamTCPConnectMs)
+	}
+	if m.FieldCleared(usagelog.FieldUpstreamTLSHandshakeMs) {
+		fields = append(fields, usagelog.FieldUpstreamTLSHandshakeMs)
+	}
+	if m.FieldCleared(usagelog.FieldUpstreamRequestHeadersWrittenMs) {
+		fields = append(fields, usagelog.FieldUpstreamRequestHeadersWrittenMs)
+	}
 	if m.FieldCleared(usagelog.FieldUpstreamRequestWrittenMs) {
 		fields = append(fields, usagelog.FieldUpstreamRequestWrittenMs)
 	}
 	if m.FieldCleared(usagelog.FieldUpstreamFirstByteMs) {
 		fields = append(fields, usagelog.FieldUpstreamFirstByteMs)
+	}
+	if m.FieldCleared(usagelog.FieldUpstreamResponseHeadersReceivedMs) {
+		fields = append(fields, usagelog.FieldUpstreamResponseHeadersReceivedMs)
+	}
+	if m.FieldCleared(usagelog.FieldUpstreamResponseBodyFirstByteMs) {
+		fields = append(fields, usagelog.FieldUpstreamResponseBodyFirstByteMs)
+	}
+	if m.FieldCleared(usagelog.FieldUpstreamFirstEventMs) {
+		fields = append(fields, usagelog.FieldUpstreamFirstEventMs)
+	}
+	if m.FieldCleared(usagelog.FieldRequestFirstOutputCharacterMs) {
+		fields = append(fields, usagelog.FieldRequestFirstOutputCharacterMs)
 	}
 	if m.FieldCleared(usagelog.FieldRequestFirstTokenMs) {
 		fields = append(fields, usagelog.FieldRequestFirstTokenMs)
@@ -51053,11 +52187,41 @@ func (m *UsageLogMutation) ClearField(name string) error {
 	case usagelog.FieldRequestBodyBytes:
 		m.ClearRequestBodyBytes()
 		return nil
+	case usagelog.FieldUpstreamConnectionReused:
+		m.ClearUpstreamConnectionReused()
+		return nil
+	case usagelog.FieldUpstreamConnectionReadyMs:
+		m.ClearUpstreamConnectionReadyMs()
+		return nil
+	case usagelog.FieldUpstreamDNSLookupMs:
+		m.ClearUpstreamDNSLookupMs()
+		return nil
+	case usagelog.FieldUpstreamTCPConnectMs:
+		m.ClearUpstreamTCPConnectMs()
+		return nil
+	case usagelog.FieldUpstreamTLSHandshakeMs:
+		m.ClearUpstreamTLSHandshakeMs()
+		return nil
+	case usagelog.FieldUpstreamRequestHeadersWrittenMs:
+		m.ClearUpstreamRequestHeadersWrittenMs()
+		return nil
 	case usagelog.FieldUpstreamRequestWrittenMs:
 		m.ClearUpstreamRequestWrittenMs()
 		return nil
 	case usagelog.FieldUpstreamFirstByteMs:
 		m.ClearUpstreamFirstByteMs()
+		return nil
+	case usagelog.FieldUpstreamResponseHeadersReceivedMs:
+		m.ClearUpstreamResponseHeadersReceivedMs()
+		return nil
+	case usagelog.FieldUpstreamResponseBodyFirstByteMs:
+		m.ClearUpstreamResponseBodyFirstByteMs()
+		return nil
+	case usagelog.FieldUpstreamFirstEventMs:
+		m.ClearUpstreamFirstEventMs()
+		return nil
+	case usagelog.FieldRequestFirstOutputCharacterMs:
+		m.ClearRequestFirstOutputCharacterMs()
 		return nil
 	case usagelog.FieldRequestFirstTokenMs:
 		m.ClearRequestFirstTokenMs()
@@ -51196,6 +52360,9 @@ func (m *UsageLogMutation) ResetField(name string) error {
 	case usagelog.FieldRateMultiplier:
 		m.ResetRateMultiplier()
 		return nil
+	case usagelog.FieldLongContextBillingApplied:
+		m.ResetLongContextBillingApplied()
+		return nil
 	case usagelog.FieldAccountRateMultiplier:
 		m.ResetAccountRateMultiplier()
 		return nil
@@ -51238,11 +52405,41 @@ func (m *UsageLogMutation) ResetField(name string) error {
 	case usagelog.FieldRequestBodyBytes:
 		m.ResetRequestBodyBytes()
 		return nil
+	case usagelog.FieldUpstreamConnectionReused:
+		m.ResetUpstreamConnectionReused()
+		return nil
+	case usagelog.FieldUpstreamConnectionReadyMs:
+		m.ResetUpstreamConnectionReadyMs()
+		return nil
+	case usagelog.FieldUpstreamDNSLookupMs:
+		m.ResetUpstreamDNSLookupMs()
+		return nil
+	case usagelog.FieldUpstreamTCPConnectMs:
+		m.ResetUpstreamTCPConnectMs()
+		return nil
+	case usagelog.FieldUpstreamTLSHandshakeMs:
+		m.ResetUpstreamTLSHandshakeMs()
+		return nil
+	case usagelog.FieldUpstreamRequestHeadersWrittenMs:
+		m.ResetUpstreamRequestHeadersWrittenMs()
+		return nil
 	case usagelog.FieldUpstreamRequestWrittenMs:
 		m.ResetUpstreamRequestWrittenMs()
 		return nil
 	case usagelog.FieldUpstreamFirstByteMs:
 		m.ResetUpstreamFirstByteMs()
+		return nil
+	case usagelog.FieldUpstreamResponseHeadersReceivedMs:
+		m.ResetUpstreamResponseHeadersReceivedMs()
+		return nil
+	case usagelog.FieldUpstreamResponseBodyFirstByteMs:
+		m.ResetUpstreamResponseBodyFirstByteMs()
+		return nil
+	case usagelog.FieldUpstreamFirstEventMs:
+		m.ResetUpstreamFirstEventMs()
+		return nil
+	case usagelog.FieldRequestFirstOutputCharacterMs:
+		m.ResetRequestFirstOutputCharacterMs()
 		return nil
 	case usagelog.FieldRequestFirstTokenMs:
 		m.ResetRequestFirstTokenMs()

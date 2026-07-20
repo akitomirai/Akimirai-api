@@ -124,6 +124,8 @@ type Group struct {
 	VideoPrice480P     *float64 `json:"video_price_480p"`
 	VideoPrice720P     *float64 `json:"video_price_720p"`
 	VideoPrice1080P    *float64 `json:"video_price_1080p"`
+	// Codex alpha/search 网页搜索单次价格（USD/次）；null 表示使用默认价 0.01
+	WebSearchPricePerCall *float64 `json:"web_search_price_per_call"`
 
 	// Claude Code 客户端限制
 	ClaudeCodeOnly  bool   `json:"claude_code_only"`
@@ -484,13 +486,14 @@ type UsageLog struct {
 	CacheCreation5mTokens int `json:"cache_creation_5m_tokens"`
 	CacheCreation1hTokens int `json:"cache_creation_1h_tokens"`
 
-	InputCost         float64 `json:"input_cost"`
-	OutputCost        float64 `json:"output_cost"`
-	CacheCreationCost float64 `json:"cache_creation_cost"`
-	CacheReadCost     float64 `json:"cache_read_cost"`
-	TotalCost         float64 `json:"total_cost"`
-	ActualCost        float64 `json:"actual_cost"`
-	RateMultiplier    float64 `json:"rate_multiplier"`
+	InputCost                 float64 `json:"input_cost"`
+	OutputCost                float64 `json:"output_cost"`
+	CacheCreationCost         float64 `json:"cache_creation_cost"`
+	CacheReadCost             float64 `json:"cache_read_cost"`
+	TotalCost                 float64 `json:"total_cost"`
+	ActualCost                float64 `json:"actual_cost"`
+	RateMultiplier            float64 `json:"rate_multiplier"`
+	LongContextBillingApplied bool    `json:"long_context_billing_applied"`
 
 	BillingType  int8   `json:"billing_type"`
 	RequestType  string `json:"request_type"`
@@ -579,22 +582,42 @@ type AdminUsageLog struct {
 
 type AdminUsageDiagnostics struct {
 	AdminUsageLog
-	AttemptTimeline []AdminUsageAttemptEvent `json:"attempt_timeline,omitempty"`
+	UpstreamConnectionReused          *bool                    `json:"upstream_connection_reused,omitempty"`
+	UpstreamConnectionReadyMs         *int                     `json:"upstream_connection_ready_ms,omitempty"`
+	UpstreamDNSLookupMs               *int                     `json:"upstream_dns_lookup_ms,omitempty"`
+	UpstreamTCPConnectMs              *int                     `json:"upstream_tcp_connect_ms,omitempty"`
+	UpstreamTLSHandshakeMs            *int                     `json:"upstream_tls_handshake_ms,omitempty"`
+	UpstreamRequestHeadersWrittenMs   *int                     `json:"upstream_request_headers_written_ms,omitempty"`
+	UpstreamResponseHeadersReceivedMs *int                     `json:"upstream_response_headers_received_ms,omitempty"`
+	UpstreamResponseBodyFirstByteMs   *int                     `json:"upstream_response_body_first_byte_ms,omitempty"`
+	UpstreamFirstEventMs              *int                     `json:"upstream_first_event_ms,omitempty"`
+	RequestFirstOutputCharacterMs     *int                     `json:"request_first_output_character_ms,omitempty"`
+	AttemptTimeline                   []AdminUsageAttemptEvent `json:"attempt_timeline,omitempty"`
 }
 
 type AdminUsageAttemptEvent struct {
-	Sequence         int                     `json:"sequence"`
-	StartedMs        int                     `json:"started_ms"`
-	FinishedMs       *int                    `json:"finished_ms,omitempty"`
-	RequestWrittenMs *int                    `json:"request_written_ms,omitempty"`
-	FirstByteMs      *int                    `json:"first_byte_ms,omitempty"`
-	AccountID        int64                   `json:"account_id"`
-	AccountName      string                  `json:"account_name,omitempty"`
-	Route            AdminUsageRouteSnapshot `json:"route"`
-	UpstreamStatus   *int                    `json:"upstream_status,omitempty"`
-	Outcome          string                  `json:"outcome"`
-	ErrorCategory    string                  `json:"error_category,omitempty"`
-	Reason           string                  `json:"reason,omitempty"`
+	Sequence                  int                     `json:"sequence"`
+	StartedMs                 int                     `json:"started_ms"`
+	FinishedMs                *int                    `json:"finished_ms,omitempty"`
+	ConnectionReused          *bool                   `json:"connection_reused,omitempty"`
+	ConnectionReadyMs         *int                    `json:"connection_ready_ms,omitempty"`
+	DNSLookupMs               *int                    `json:"dns_lookup_ms,omitempty"`
+	TCPConnectMs              *int                    `json:"tcp_connect_ms,omitempty"`
+	TLSHandshakeMs            *int                    `json:"tls_handshake_ms,omitempty"`
+	RequestHeadersWrittenMs   *int                    `json:"request_headers_written_ms,omitempty"`
+	RequestWrittenMs          *int                    `json:"request_written_ms,omitempty"`
+	FirstByteMs               *int                    `json:"first_byte_ms,omitempty"`
+	ResponseHeadersReceivedMs *int                    `json:"response_headers_received_ms,omitempty"`
+	ResponseBodyFirstByteMs   *int                    `json:"response_body_first_byte_ms,omitempty"`
+	FirstEventMs              *int                    `json:"first_event_ms,omitempty"`
+	FirstOutputCharacterMs    *int                    `json:"first_output_character_ms,omitempty"`
+	AccountID                 int64                   `json:"account_id"`
+	AccountName               string                  `json:"account_name,omitempty"`
+	Route                     AdminUsageRouteSnapshot `json:"route"`
+	UpstreamStatus            *int                    `json:"upstream_status,omitempty"`
+	Outcome                   string                  `json:"outcome"`
+	ErrorCategory             string                  `json:"error_category,omitempty"`
+	Reason                    string                  `json:"reason,omitempty"`
 }
 
 type AdminUsageRouteSnapshot struct {

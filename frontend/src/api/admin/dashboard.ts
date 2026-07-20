@@ -15,6 +15,10 @@ import type {
   UserBreakdownItem,
   UsageRequestType
 } from '@/types'
+import type {
+  ModelUsageTrendGranularity,
+  UserUsagePeriod
+} from '@/api/usage'
 
 /**
  * Get dashboard statistics
@@ -47,7 +51,9 @@ export async function getRealtimeMetrics(): Promise<{
 export interface TrendParams {
   start_date?: string
   end_date?: string
-  granularity?: 'day' | 'hour'
+  period?: UserUsagePeriod
+  timezone?: string
+  granularity?: ModelUsageTrendGranularity
   user_id?: number
   api_key_id?: number
   model?: string
@@ -140,6 +146,9 @@ export interface DashboardSnapshotV2Response {
   generated_at: string
   start_date: string
   end_date: string
+  start_time: string
+  end_time: string
+  timezone: string
   granularity: string
   stats?: DashboardSnapshotV2Stats
   trend?: TrendDataPoint[]
@@ -161,6 +170,8 @@ export async function getGroupStats(params?: GroupStatsParams): Promise<GroupSta
 export interface UserBreakdownParams {
   start_date?: string
   end_date?: string
+  period?: UserUsagePeriod
+  timezone?: string
   group_id?: number
   model?: string
   model_source?: 'requested' | 'upstream' | 'mapping'
@@ -238,7 +249,7 @@ export interface UserTrendResponse {
 }
 
 export interface UserSpendingRankingParams
-  extends Pick<TrendParams, 'start_date' | 'end_date'> {
+  extends Pick<TrendParams, 'start_date' | 'end_date' | 'period' | 'timezone'> {
   limit?: number
 }
 

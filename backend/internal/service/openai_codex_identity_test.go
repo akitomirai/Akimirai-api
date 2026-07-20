@@ -7,6 +7,36 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestEnsureCodexIdentityHeaders(t *testing.T) {
+	t.Run("fills missing identity", func(t *testing.T) {
+		headers := make(http.Header)
+
+		ensureCodexIdentityHeaders(headers)
+		enforceCodexIdentityHeaders(headers)
+
+		require.Equal(t, "codex_cli_rs", headers.Get("originator"))
+		require.Equal(t, codexCLIUserAgent, headers.Get("user-agent"))
+		require.Equal(t, codexCLIVersion, headers.Get("version"))
+		require.Equal(t, "responses=experimental", headers.Get("OpenAI-Beta"))
+	})
+
+	t.Run("keeps official user agent and accepted version", func(t *testing.T) {
+		const tuiUA = "codex-tui/9.9.9 (Mac OS X 14.0; arm64) iTerm (codex-tui; 9.9.9)"
+		headers := make(http.Header)
+		headers.Set("user-agent", tuiUA)
+		headers.Set("version", "9.9.9")
+		headers.Set("OpenAI-Beta", "assistants=v2")
+
+		ensureCodexIdentityHeaders(headers)
+		enforceCodexIdentityHeaders(headers)
+
+		require.Equal(t, "codex-tui", headers.Get("originator"))
+		require.Equal(t, tuiUA, headers.Get("user-agent"))
+		require.Equal(t, "9.9.9", headers.Get("version"))
+		require.Equal(t, "responses=experimental", headers.Get("OpenAI-Beta"))
+	})
+}
+
 func TestEnforceCodexIdentityHeaders(t *testing.T) {
 	const tuiUA = "codex-tui/0.140.2 (Mac OS X 14.0; arm64) iTerm (codex-tui; 0.140.2)"
 	tests := []struct {
@@ -37,8 +67,8 @@ func TestEnforceCodexIdentityHeaders(t *testing.T) {
 
 func TestEnforceCodexIdentityHeaders_NoOriginatorIsNoop(t *testing.T) {
 	headers := make(http.Header)
-	headers.Set("user-agent", "luna/1.0.0")
+	headers.Set("user-agent", "third-party-client/1.0.0")
 	enforceCodexIdentityHeaders(headers)
 	require.Empty(t, headers.Get("originator"))
-	require.Equal(t, "luna/1.0.0", headers.Get("user-agent"))
+	require.Equal(t, "third-party-client/1.0.0", headers.Get("user-agent"))
 }

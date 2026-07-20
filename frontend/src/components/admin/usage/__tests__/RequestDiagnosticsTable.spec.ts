@@ -6,7 +6,7 @@ import type { AdminUsageLog } from '@/types'
 const messages: Record<string, string> = {
   'admin.usage.user': 'User',
   'usage.apiKeyFilter': 'API Key',
-  'usage.time': 'Time',
+  'admin.usage.diagnostics.requestStartedAt': 'Request started',
   'admin.usage.diagnostics.requestFeatures': 'Request Features',
   'admin.usage.diagnostics.route': 'Route',
   'admin.usage.diagnostics.timings': 'Stage Timings',
@@ -36,10 +36,11 @@ vi.mock('@/utils/format', () => ({
 }))
 
 const DataTableStub = {
-  props: ['data', 'columns'],
+  props: ['data', 'columns', 'density'],
   template: `
     <div>
       <div data-test="headers">{{ columns.map((column) => column.label).join('|') }}</div>
+      <div data-test="density">{{ density }}</div>
       <div v-for="row in data" :key="row.id" data-test="row">
         <slot name="cell-user" :row="row" />
         <slot name="cell-api_key" :row="row" />
@@ -49,14 +50,13 @@ const DataTableStub = {
         <slot name="cell-timings" :row="row" />
         <slot name="cell-retries" :row="row" />
         <slot name="cell-status" :row="row" />
-        <slot name="cell-actions" :row="row" />
       </div>
     </div>
   `,
 }
 
 describe('RequestDiagnosticsTable', () => {
-  it('shows request-oriented fields and opens the diagnostics drawer', async () => {
+  it('shows request-oriented fields inline in a compact table', () => {
     const row = {
       id: 77,
       user: { id: 12, email: 'user@example.com' },
@@ -88,8 +88,9 @@ describe('RequestDiagnosticsTable', () => {
     })
 
     expect(wrapper.get('[data-test="headers"]').text()).toBe(
-      'User|API Key|Time|Request Features|Route|Stage Timings|Retries / switches|Upstream status|Request Diagnostics',
+      'User|API Key|Request started|Request Features|Route|Stage Timings|Retries / switches|Upstream status',
     )
+    expect(wrapper.get('[data-test="density"]').text()).toBe('compact')
     expect(wrapper.text()).toContain('user@example.com')
     expect(wrapper.text()).toContain('AI02')
     expect(wrapper.text()).toContain('gpt-5.6-sol')
@@ -100,7 +101,44 @@ describe('RequestDiagnosticsTable', () => {
     expect(wrapper.text()).toContain('2 / 1')
     expect(wrapper.text()).toContain('200')
 
-    await wrapper.find('button[title="Open request diagnostics"]').trigger('click')
-    expect(wrapper.emitted('diagnosticsClick')).toEqual([[77]])
+    expect(wrapper.find('button[title="Open request diagnostics"]').exists()).toBe(false)
+  })
+
+  it('renders only the columns selected by the parent view', () => {
+    const wrapper = mount(RequestDiagnosticsTable, {
+      props: {
+        data: [],
+        columns: [
+          { key: 'user', label: 'User' },
+          { key: 'timings', label: 'Stage Timings' },
+        ],
+      },
+      global: { stubs: { DataTable: DataTableStub } },
+    })
+
+    expect(wrapper.get('[data-test="headers"]').text()).toBe('User|Stage Timings')
+  })
+
+  it('does not fabricate request offsets for historical rows', () => {
+    const row = {
+      id: 78,
+      created_at: '2026-07-11T03:12:00Z',
+      first_token_ms: 999,
+      duration_ms: 2222,
+      request_started_at: null,
+      upstream_first_byte_ms: null,
+      request_first_token_ms: null,
+      request_total_ms: null,
+    } as AdminUsageLog
+
+    const wrapper = mount(RequestDiagnosticsTable, {
+      props: { data: [row] },
+      global: { stubs: { DataTable: DataTableStub } },
+    })
+
+    expect(wrapper.text()).not.toContain('2026-07-11T03:12:00Z')
+    expect(wrapper.text()).not.toContain('999ms')
+    expect(wrapper.text()).not.toContain('2.22s')
+    expect(wrapper.text().match(/Unavailable/g)).toHaveLength(5)
   })
 })

@@ -16,8 +16,13 @@ import type {
   UsageRequestType,
   UserErrorRequest,
   UserErrorRequestDetail,
-  UserErrorListParams
+  UserErrorListParams,
+  UserRequestLog,
+  UserRequestLogQueryParams,
+  UserUsagePeriod
 } from '@/types'
+
+export type { UserUsagePeriod } from '@/types'
 
 // ==================== Dashboard Types ====================
 
@@ -56,10 +61,15 @@ export interface UserDashboardStats {
   by_platform?: PlatformDashboardStats[]
 }
 
+export type ModelUsageTrendGranularity = 'hour' | '2h' | '4h' | '8h' | 'day'
+
 export interface TrendParams {
   start_date?: string
   end_date?: string
-  granularity?: 'day' | 'hour'
+  start_time?: string
+  end_time?: string
+  period?: UserUsagePeriod
+  granularity?: ModelUsageTrendGranularity
   api_key_id?: number
   model?: string
   group_id?: number
@@ -81,6 +91,26 @@ export interface ModelStatsResponse {
   models: ModelStat[]
   start_date: string
   end_date: string
+}
+
+export interface ModelUsageTrendPoint {
+  date: string
+  model: string
+  is_other: boolean
+  requests: number
+  total_tokens: number
+  cost: number
+  actual_cost: number
+}
+
+export interface ModelUsageTrendResponse {
+  trend: ModelUsageTrendPoint[]
+  models: string[]
+  start_date: string
+  end_date: string
+  start_time: string
+  end_time: string
+  granularity: string
 }
 
 export interface ApiKeyDailyUsagePoint {
@@ -157,6 +187,20 @@ export async function query(
   config: { signal?: AbortSignal } = {}
 ): Promise<PaginatedResponse<UsageLog>> {
   const { data } = await apiClient.get<PaginatedResponse<UsageLog>>('/usage', {
+    ...config,
+    params
+  })
+  return data
+}
+
+/**
+ * List the current user's API consumption and redacted error logs in one timeline.
+ */
+export async function listRequestLogs(
+  params: UserRequestLogQueryParams,
+  config: { signal?: AbortSignal } = {}
+): Promise<PaginatedResponse<UserRequestLog>> {
+  const { data } = await apiClient.get<PaginatedResponse<UserRequestLog>>('/usage/requests', {
     ...config,
     params
   })
@@ -282,6 +326,9 @@ export async function getDashboardTrend(params?: TrendParams): Promise<TrendResp
 export async function getDashboardModels(params?: {
   start_date?: string
   end_date?: string
+  start_time?: string
+  end_time?: string
+  period?: UserUsagePeriod
   api_key_id?: number
   model?: string
   model_source?: 'requested'
@@ -293,6 +340,22 @@ export async function getDashboardModels(params?: {
   timezone?: string
 }): Promise<ModelStatsResponse> {
   const { data } = await apiClient.get<ModelStatsResponse>('/usage/dashboard/models', { params })
+  return data
+}
+
+/**
+ * Get requested-model usage trend data for the user dashboard.
+ * @param params - Query parameters for filtering
+ * @returns Usage trend data grouped by model and time bucket
+ */
+export async function getDashboardModelTrend(
+  params?: Omit<TrendParams, 'granularity'> & {
+    granularity?: ModelUsageTrendGranularity
+    model_source?: 'requested'
+    period?: UserUsagePeriod
+  }
+): Promise<ModelUsageTrendResponse> {
+  const { data } = await apiClient.get<ModelUsageTrendResponse>('/usage/dashboard/model-trend', { params })
   return data
 }
 
@@ -374,6 +437,7 @@ export async function getMyErrorDetail(id: number): Promise<UserErrorRequestDeta
 export const usageAPI = {
   list,
   query,
+  listRequestLogs,
   getStats,
   getStatsByDateRange,
   getByDateRange,
@@ -382,6 +446,7 @@ export const usageAPI = {
   getDashboardStats,
   getDashboardTrend,
   getDashboardModels,
+  getDashboardModelTrend,
   getMyApiKeyDailyUsage,
   getDashboardSnapshotV2,
   getDashboardApiKeysUsage,

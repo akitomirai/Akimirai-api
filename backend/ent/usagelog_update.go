@@ -544,6 +544,20 @@ func (_u *UsageLogUpdate) AddRateMultiplier(v float64) *UsageLogUpdate {
 	return _u
 }
 
+// SetLongContextBillingApplied sets the "long_context_billing_applied" field.
+func (_u *UsageLogUpdate) SetLongContextBillingApplied(v bool) *UsageLogUpdate {
+	_u.mutation.SetLongContextBillingApplied(v)
+	return _u
+}
+
+// SetNillableLongContextBillingApplied sets the "long_context_billing_applied" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableLongContextBillingApplied(v *bool) *UsageLogUpdate {
+	if v != nil {
+		_u.SetLongContextBillingApplied(*v)
+	}
+	return _u
+}
+
 // SetAccountRateMultiplier sets the "account_rate_multiplier" field.
 func (_u *UsageLogUpdate) SetAccountRateMultiplier(v float64) *UsageLogUpdate {
 	_u.mutation.ResetAccountRateMultiplier()
@@ -889,6 +903,161 @@ func (_u *UsageLogUpdate) ClearRequestBodyBytes() *UsageLogUpdate {
 	return _u
 }
 
+// SetUpstreamConnectionReused sets the "upstream_connection_reused" field.
+func (_u *UsageLogUpdate) SetUpstreamConnectionReused(v bool) *UsageLogUpdate {
+	_u.mutation.SetUpstreamConnectionReused(v)
+	return _u
+}
+
+// SetNillableUpstreamConnectionReused sets the "upstream_connection_reused" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableUpstreamConnectionReused(v *bool) *UsageLogUpdate {
+	if v != nil {
+		_u.SetUpstreamConnectionReused(*v)
+	}
+	return _u
+}
+
+// ClearUpstreamConnectionReused clears the value of the "upstream_connection_reused" field.
+func (_u *UsageLogUpdate) ClearUpstreamConnectionReused() *UsageLogUpdate {
+	_u.mutation.ClearUpstreamConnectionReused()
+	return _u
+}
+
+// SetUpstreamConnectionReadyMs sets the "upstream_connection_ready_ms" field.
+func (_u *UsageLogUpdate) SetUpstreamConnectionReadyMs(v int) *UsageLogUpdate {
+	_u.mutation.ResetUpstreamConnectionReadyMs()
+	_u.mutation.SetUpstreamConnectionReadyMs(v)
+	return _u
+}
+
+// SetNillableUpstreamConnectionReadyMs sets the "upstream_connection_ready_ms" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableUpstreamConnectionReadyMs(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetUpstreamConnectionReadyMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamConnectionReadyMs adds value to the "upstream_connection_ready_ms" field.
+func (_u *UsageLogUpdate) AddUpstreamConnectionReadyMs(v int) *UsageLogUpdate {
+	_u.mutation.AddUpstreamConnectionReadyMs(v)
+	return _u
+}
+
+// ClearUpstreamConnectionReadyMs clears the value of the "upstream_connection_ready_ms" field.
+func (_u *UsageLogUpdate) ClearUpstreamConnectionReadyMs() *UsageLogUpdate {
+	_u.mutation.ClearUpstreamConnectionReadyMs()
+	return _u
+}
+
+// SetUpstreamDNSLookupMs sets the "upstream_dns_lookup_ms" field.
+func (_u *UsageLogUpdate) SetUpstreamDNSLookupMs(v int) *UsageLogUpdate {
+	_u.mutation.ResetUpstreamDNSLookupMs()
+	_u.mutation.SetUpstreamDNSLookupMs(v)
+	return _u
+}
+
+// SetNillableUpstreamDNSLookupMs sets the "upstream_dns_lookup_ms" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableUpstreamDNSLookupMs(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetUpstreamDNSLookupMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamDNSLookupMs adds value to the "upstream_dns_lookup_ms" field.
+func (_u *UsageLogUpdate) AddUpstreamDNSLookupMs(v int) *UsageLogUpdate {
+	_u.mutation.AddUpstreamDNSLookupMs(v)
+	return _u
+}
+
+// ClearUpstreamDNSLookupMs clears the value of the "upstream_dns_lookup_ms" field.
+func (_u *UsageLogUpdate) ClearUpstreamDNSLookupMs() *UsageLogUpdate {
+	_u.mutation.ClearUpstreamDNSLookupMs()
+	return _u
+}
+
+// SetUpstreamTCPConnectMs sets the "upstream_tcp_connect_ms" field.
+func (_u *UsageLogUpdate) SetUpstreamTCPConnectMs(v int) *UsageLogUpdate {
+	_u.mutation.ResetUpstreamTCPConnectMs()
+	_u.mutation.SetUpstreamTCPConnectMs(v)
+	return _u
+}
+
+// SetNillableUpstreamTCPConnectMs sets the "upstream_tcp_connect_ms" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableUpstreamTCPConnectMs(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetUpstreamTCPConnectMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamTCPConnectMs adds value to the "upstream_tcp_connect_ms" field.
+func (_u *UsageLogUpdate) AddUpstreamTCPConnectMs(v int) *UsageLogUpdate {
+	_u.mutation.AddUpstreamTCPConnectMs(v)
+	return _u
+}
+
+// ClearUpstreamTCPConnectMs clears the value of the "upstream_tcp_connect_ms" field.
+func (_u *UsageLogUpdate) ClearUpstreamTCPConnectMs() *UsageLogUpdate {
+	_u.mutation.ClearUpstreamTCPConnectMs()
+	return _u
+}
+
+// SetUpstreamTLSHandshakeMs sets the "upstream_tls_handshake_ms" field.
+func (_u *UsageLogUpdate) SetUpstreamTLSHandshakeMs(v int) *UsageLogUpdate {
+	_u.mutation.ResetUpstreamTLSHandshakeMs()
+	_u.mutation.SetUpstreamTLSHandshakeMs(v)
+	return _u
+}
+
+// SetNillableUpstreamTLSHandshakeMs sets the "upstream_tls_handshake_ms" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableUpstreamTLSHandshakeMs(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetUpstreamTLSHandshakeMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamTLSHandshakeMs adds value to the "upstream_tls_handshake_ms" field.
+func (_u *UsageLogUpdate) AddUpstreamTLSHandshakeMs(v int) *UsageLogUpdate {
+	_u.mutation.AddUpstreamTLSHandshakeMs(v)
+	return _u
+}
+
+// ClearUpstreamTLSHandshakeMs clears the value of the "upstream_tls_handshake_ms" field.
+func (_u *UsageLogUpdate) ClearUpstreamTLSHandshakeMs() *UsageLogUpdate {
+	_u.mutation.ClearUpstreamTLSHandshakeMs()
+	return _u
+}
+
+// SetUpstreamRequestHeadersWrittenMs sets the "upstream_request_headers_written_ms" field.
+func (_u *UsageLogUpdate) SetUpstreamRequestHeadersWrittenMs(v int) *UsageLogUpdate {
+	_u.mutation.ResetUpstreamRequestHeadersWrittenMs()
+	_u.mutation.SetUpstreamRequestHeadersWrittenMs(v)
+	return _u
+}
+
+// SetNillableUpstreamRequestHeadersWrittenMs sets the "upstream_request_headers_written_ms" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableUpstreamRequestHeadersWrittenMs(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetUpstreamRequestHeadersWrittenMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamRequestHeadersWrittenMs adds value to the "upstream_request_headers_written_ms" field.
+func (_u *UsageLogUpdate) AddUpstreamRequestHeadersWrittenMs(v int) *UsageLogUpdate {
+	_u.mutation.AddUpstreamRequestHeadersWrittenMs(v)
+	return _u
+}
+
+// ClearUpstreamRequestHeadersWrittenMs clears the value of the "upstream_request_headers_written_ms" field.
+func (_u *UsageLogUpdate) ClearUpstreamRequestHeadersWrittenMs() *UsageLogUpdate {
+	_u.mutation.ClearUpstreamRequestHeadersWrittenMs()
+	return _u
+}
+
 // SetUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field.
 func (_u *UsageLogUpdate) SetUpstreamRequestWrittenMs(v int) *UsageLogUpdate {
 	_u.mutation.ResetUpstreamRequestWrittenMs()
@@ -940,6 +1109,114 @@ func (_u *UsageLogUpdate) AddUpstreamFirstByteMs(v int) *UsageLogUpdate {
 // ClearUpstreamFirstByteMs clears the value of the "upstream_first_byte_ms" field.
 func (_u *UsageLogUpdate) ClearUpstreamFirstByteMs() *UsageLogUpdate {
 	_u.mutation.ClearUpstreamFirstByteMs()
+	return _u
+}
+
+// SetUpstreamResponseHeadersReceivedMs sets the "upstream_response_headers_received_ms" field.
+func (_u *UsageLogUpdate) SetUpstreamResponseHeadersReceivedMs(v int) *UsageLogUpdate {
+	_u.mutation.ResetUpstreamResponseHeadersReceivedMs()
+	_u.mutation.SetUpstreamResponseHeadersReceivedMs(v)
+	return _u
+}
+
+// SetNillableUpstreamResponseHeadersReceivedMs sets the "upstream_response_headers_received_ms" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableUpstreamResponseHeadersReceivedMs(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetUpstreamResponseHeadersReceivedMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamResponseHeadersReceivedMs adds value to the "upstream_response_headers_received_ms" field.
+func (_u *UsageLogUpdate) AddUpstreamResponseHeadersReceivedMs(v int) *UsageLogUpdate {
+	_u.mutation.AddUpstreamResponseHeadersReceivedMs(v)
+	return _u
+}
+
+// ClearUpstreamResponseHeadersReceivedMs clears the value of the "upstream_response_headers_received_ms" field.
+func (_u *UsageLogUpdate) ClearUpstreamResponseHeadersReceivedMs() *UsageLogUpdate {
+	_u.mutation.ClearUpstreamResponseHeadersReceivedMs()
+	return _u
+}
+
+// SetUpstreamResponseBodyFirstByteMs sets the "upstream_response_body_first_byte_ms" field.
+func (_u *UsageLogUpdate) SetUpstreamResponseBodyFirstByteMs(v int) *UsageLogUpdate {
+	_u.mutation.ResetUpstreamResponseBodyFirstByteMs()
+	_u.mutation.SetUpstreamResponseBodyFirstByteMs(v)
+	return _u
+}
+
+// SetNillableUpstreamResponseBodyFirstByteMs sets the "upstream_response_body_first_byte_ms" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableUpstreamResponseBodyFirstByteMs(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetUpstreamResponseBodyFirstByteMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamResponseBodyFirstByteMs adds value to the "upstream_response_body_first_byte_ms" field.
+func (_u *UsageLogUpdate) AddUpstreamResponseBodyFirstByteMs(v int) *UsageLogUpdate {
+	_u.mutation.AddUpstreamResponseBodyFirstByteMs(v)
+	return _u
+}
+
+// ClearUpstreamResponseBodyFirstByteMs clears the value of the "upstream_response_body_first_byte_ms" field.
+func (_u *UsageLogUpdate) ClearUpstreamResponseBodyFirstByteMs() *UsageLogUpdate {
+	_u.mutation.ClearUpstreamResponseBodyFirstByteMs()
+	return _u
+}
+
+// SetUpstreamFirstEventMs sets the "upstream_first_event_ms" field.
+func (_u *UsageLogUpdate) SetUpstreamFirstEventMs(v int) *UsageLogUpdate {
+	_u.mutation.ResetUpstreamFirstEventMs()
+	_u.mutation.SetUpstreamFirstEventMs(v)
+	return _u
+}
+
+// SetNillableUpstreamFirstEventMs sets the "upstream_first_event_ms" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableUpstreamFirstEventMs(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetUpstreamFirstEventMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamFirstEventMs adds value to the "upstream_first_event_ms" field.
+func (_u *UsageLogUpdate) AddUpstreamFirstEventMs(v int) *UsageLogUpdate {
+	_u.mutation.AddUpstreamFirstEventMs(v)
+	return _u
+}
+
+// ClearUpstreamFirstEventMs clears the value of the "upstream_first_event_ms" field.
+func (_u *UsageLogUpdate) ClearUpstreamFirstEventMs() *UsageLogUpdate {
+	_u.mutation.ClearUpstreamFirstEventMs()
+	return _u
+}
+
+// SetRequestFirstOutputCharacterMs sets the "request_first_output_character_ms" field.
+func (_u *UsageLogUpdate) SetRequestFirstOutputCharacterMs(v int) *UsageLogUpdate {
+	_u.mutation.ResetRequestFirstOutputCharacterMs()
+	_u.mutation.SetRequestFirstOutputCharacterMs(v)
+	return _u
+}
+
+// SetNillableRequestFirstOutputCharacterMs sets the "request_first_output_character_ms" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableRequestFirstOutputCharacterMs(v *int) *UsageLogUpdate {
+	if v != nil {
+		_u.SetRequestFirstOutputCharacterMs(*v)
+	}
+	return _u
+}
+
+// AddRequestFirstOutputCharacterMs adds value to the "request_first_output_character_ms" field.
+func (_u *UsageLogUpdate) AddRequestFirstOutputCharacterMs(v int) *UsageLogUpdate {
+	_u.mutation.AddRequestFirstOutputCharacterMs(v)
+	return _u
+}
+
+// ClearRequestFirstOutputCharacterMs clears the value of the "request_first_output_character_ms" field.
+func (_u *UsageLogUpdate) ClearRequestFirstOutputCharacterMs() *UsageLogUpdate {
+	_u.mutation.ClearRequestFirstOutputCharacterMs()
 	return _u
 }
 
@@ -1730,6 +2007,9 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.AddedRateMultiplier(); ok {
 		_spec.AddField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)
 	}
+	if value, ok := _u.mutation.LongContextBillingApplied(); ok {
+		_spec.SetField(usagelog.FieldLongContextBillingApplied, field.TypeBool, value)
+	}
 	if value, ok := _u.mutation.AccountRateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldAccountRateMultiplier, field.TypeFloat64, value)
 	}
@@ -1841,6 +2121,57 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.RequestBodyBytesCleared() {
 		_spec.ClearField(usagelog.FieldRequestBodyBytes, field.TypeInt64)
 	}
+	if value, ok := _u.mutation.UpstreamConnectionReused(); ok {
+		_spec.SetField(usagelog.FieldUpstreamConnectionReused, field.TypeBool, value)
+	}
+	if _u.mutation.UpstreamConnectionReusedCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamConnectionReused, field.TypeBool)
+	}
+	if value, ok := _u.mutation.UpstreamConnectionReadyMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamConnectionReadyMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamConnectionReadyMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamConnectionReadyMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamConnectionReadyMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamConnectionReadyMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamDNSLookupMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamDNSLookupMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamDNSLookupMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamDNSLookupMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamDNSLookupMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamDNSLookupMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamTCPConnectMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamTCPConnectMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamTCPConnectMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamTCPConnectMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamTCPConnectMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamTCPConnectMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamTLSHandshakeMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamTLSHandshakeMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamTLSHandshakeMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamTLSHandshakeMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamTLSHandshakeMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamTLSHandshakeMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamRequestHeadersWrittenMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamRequestHeadersWrittenMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamRequestHeadersWrittenMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamRequestHeadersWrittenMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamRequestHeadersWrittenMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamRequestHeadersWrittenMs, field.TypeInt)
+	}
 	if value, ok := _u.mutation.UpstreamRequestWrittenMs(); ok {
 		_spec.SetField(usagelog.FieldUpstreamRequestWrittenMs, field.TypeInt, value)
 	}
@@ -1858,6 +2189,42 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.UpstreamFirstByteMsCleared() {
 		_spec.ClearField(usagelog.FieldUpstreamFirstByteMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamResponseHeadersReceivedMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamResponseHeadersReceivedMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamResponseHeadersReceivedMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamResponseHeadersReceivedMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamResponseHeadersReceivedMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamResponseHeadersReceivedMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamResponseBodyFirstByteMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamResponseBodyFirstByteMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamResponseBodyFirstByteMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamResponseBodyFirstByteMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamResponseBodyFirstByteMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamResponseBodyFirstByteMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamFirstEventMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamFirstEventMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamFirstEventMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamFirstEventMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamFirstEventMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamFirstEventMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.RequestFirstOutputCharacterMs(); ok {
+		_spec.SetField(usagelog.FieldRequestFirstOutputCharacterMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRequestFirstOutputCharacterMs(); ok {
+		_spec.AddField(usagelog.FieldRequestFirstOutputCharacterMs, field.TypeInt, value)
+	}
+	if _u.mutation.RequestFirstOutputCharacterMsCleared() {
+		_spec.ClearField(usagelog.FieldRequestFirstOutputCharacterMs, field.TypeInt)
 	}
 	if value, ok := _u.mutation.RequestFirstTokenMs(); ok {
 		_spec.SetField(usagelog.FieldRequestFirstTokenMs, field.TypeInt, value)
@@ -2680,6 +3047,20 @@ func (_u *UsageLogUpdateOne) AddRateMultiplier(v float64) *UsageLogUpdateOne {
 	return _u
 }
 
+// SetLongContextBillingApplied sets the "long_context_billing_applied" field.
+func (_u *UsageLogUpdateOne) SetLongContextBillingApplied(v bool) *UsageLogUpdateOne {
+	_u.mutation.SetLongContextBillingApplied(v)
+	return _u
+}
+
+// SetNillableLongContextBillingApplied sets the "long_context_billing_applied" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableLongContextBillingApplied(v *bool) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetLongContextBillingApplied(*v)
+	}
+	return _u
+}
+
 // SetAccountRateMultiplier sets the "account_rate_multiplier" field.
 func (_u *UsageLogUpdateOne) SetAccountRateMultiplier(v float64) *UsageLogUpdateOne {
 	_u.mutation.ResetAccountRateMultiplier()
@@ -3025,6 +3406,161 @@ func (_u *UsageLogUpdateOne) ClearRequestBodyBytes() *UsageLogUpdateOne {
 	return _u
 }
 
+// SetUpstreamConnectionReused sets the "upstream_connection_reused" field.
+func (_u *UsageLogUpdateOne) SetUpstreamConnectionReused(v bool) *UsageLogUpdateOne {
+	_u.mutation.SetUpstreamConnectionReused(v)
+	return _u
+}
+
+// SetNillableUpstreamConnectionReused sets the "upstream_connection_reused" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableUpstreamConnectionReused(v *bool) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetUpstreamConnectionReused(*v)
+	}
+	return _u
+}
+
+// ClearUpstreamConnectionReused clears the value of the "upstream_connection_reused" field.
+func (_u *UsageLogUpdateOne) ClearUpstreamConnectionReused() *UsageLogUpdateOne {
+	_u.mutation.ClearUpstreamConnectionReused()
+	return _u
+}
+
+// SetUpstreamConnectionReadyMs sets the "upstream_connection_ready_ms" field.
+func (_u *UsageLogUpdateOne) SetUpstreamConnectionReadyMs(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetUpstreamConnectionReadyMs()
+	_u.mutation.SetUpstreamConnectionReadyMs(v)
+	return _u
+}
+
+// SetNillableUpstreamConnectionReadyMs sets the "upstream_connection_ready_ms" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableUpstreamConnectionReadyMs(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetUpstreamConnectionReadyMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamConnectionReadyMs adds value to the "upstream_connection_ready_ms" field.
+func (_u *UsageLogUpdateOne) AddUpstreamConnectionReadyMs(v int) *UsageLogUpdateOne {
+	_u.mutation.AddUpstreamConnectionReadyMs(v)
+	return _u
+}
+
+// ClearUpstreamConnectionReadyMs clears the value of the "upstream_connection_ready_ms" field.
+func (_u *UsageLogUpdateOne) ClearUpstreamConnectionReadyMs() *UsageLogUpdateOne {
+	_u.mutation.ClearUpstreamConnectionReadyMs()
+	return _u
+}
+
+// SetUpstreamDNSLookupMs sets the "upstream_dns_lookup_ms" field.
+func (_u *UsageLogUpdateOne) SetUpstreamDNSLookupMs(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetUpstreamDNSLookupMs()
+	_u.mutation.SetUpstreamDNSLookupMs(v)
+	return _u
+}
+
+// SetNillableUpstreamDNSLookupMs sets the "upstream_dns_lookup_ms" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableUpstreamDNSLookupMs(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetUpstreamDNSLookupMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamDNSLookupMs adds value to the "upstream_dns_lookup_ms" field.
+func (_u *UsageLogUpdateOne) AddUpstreamDNSLookupMs(v int) *UsageLogUpdateOne {
+	_u.mutation.AddUpstreamDNSLookupMs(v)
+	return _u
+}
+
+// ClearUpstreamDNSLookupMs clears the value of the "upstream_dns_lookup_ms" field.
+func (_u *UsageLogUpdateOne) ClearUpstreamDNSLookupMs() *UsageLogUpdateOne {
+	_u.mutation.ClearUpstreamDNSLookupMs()
+	return _u
+}
+
+// SetUpstreamTCPConnectMs sets the "upstream_tcp_connect_ms" field.
+func (_u *UsageLogUpdateOne) SetUpstreamTCPConnectMs(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetUpstreamTCPConnectMs()
+	_u.mutation.SetUpstreamTCPConnectMs(v)
+	return _u
+}
+
+// SetNillableUpstreamTCPConnectMs sets the "upstream_tcp_connect_ms" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableUpstreamTCPConnectMs(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetUpstreamTCPConnectMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamTCPConnectMs adds value to the "upstream_tcp_connect_ms" field.
+func (_u *UsageLogUpdateOne) AddUpstreamTCPConnectMs(v int) *UsageLogUpdateOne {
+	_u.mutation.AddUpstreamTCPConnectMs(v)
+	return _u
+}
+
+// ClearUpstreamTCPConnectMs clears the value of the "upstream_tcp_connect_ms" field.
+func (_u *UsageLogUpdateOne) ClearUpstreamTCPConnectMs() *UsageLogUpdateOne {
+	_u.mutation.ClearUpstreamTCPConnectMs()
+	return _u
+}
+
+// SetUpstreamTLSHandshakeMs sets the "upstream_tls_handshake_ms" field.
+func (_u *UsageLogUpdateOne) SetUpstreamTLSHandshakeMs(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetUpstreamTLSHandshakeMs()
+	_u.mutation.SetUpstreamTLSHandshakeMs(v)
+	return _u
+}
+
+// SetNillableUpstreamTLSHandshakeMs sets the "upstream_tls_handshake_ms" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableUpstreamTLSHandshakeMs(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetUpstreamTLSHandshakeMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamTLSHandshakeMs adds value to the "upstream_tls_handshake_ms" field.
+func (_u *UsageLogUpdateOne) AddUpstreamTLSHandshakeMs(v int) *UsageLogUpdateOne {
+	_u.mutation.AddUpstreamTLSHandshakeMs(v)
+	return _u
+}
+
+// ClearUpstreamTLSHandshakeMs clears the value of the "upstream_tls_handshake_ms" field.
+func (_u *UsageLogUpdateOne) ClearUpstreamTLSHandshakeMs() *UsageLogUpdateOne {
+	_u.mutation.ClearUpstreamTLSHandshakeMs()
+	return _u
+}
+
+// SetUpstreamRequestHeadersWrittenMs sets the "upstream_request_headers_written_ms" field.
+func (_u *UsageLogUpdateOne) SetUpstreamRequestHeadersWrittenMs(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetUpstreamRequestHeadersWrittenMs()
+	_u.mutation.SetUpstreamRequestHeadersWrittenMs(v)
+	return _u
+}
+
+// SetNillableUpstreamRequestHeadersWrittenMs sets the "upstream_request_headers_written_ms" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableUpstreamRequestHeadersWrittenMs(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetUpstreamRequestHeadersWrittenMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamRequestHeadersWrittenMs adds value to the "upstream_request_headers_written_ms" field.
+func (_u *UsageLogUpdateOne) AddUpstreamRequestHeadersWrittenMs(v int) *UsageLogUpdateOne {
+	_u.mutation.AddUpstreamRequestHeadersWrittenMs(v)
+	return _u
+}
+
+// ClearUpstreamRequestHeadersWrittenMs clears the value of the "upstream_request_headers_written_ms" field.
+func (_u *UsageLogUpdateOne) ClearUpstreamRequestHeadersWrittenMs() *UsageLogUpdateOne {
+	_u.mutation.ClearUpstreamRequestHeadersWrittenMs()
+	return _u
+}
+
 // SetUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field.
 func (_u *UsageLogUpdateOne) SetUpstreamRequestWrittenMs(v int) *UsageLogUpdateOne {
 	_u.mutation.ResetUpstreamRequestWrittenMs()
@@ -3076,6 +3612,114 @@ func (_u *UsageLogUpdateOne) AddUpstreamFirstByteMs(v int) *UsageLogUpdateOne {
 // ClearUpstreamFirstByteMs clears the value of the "upstream_first_byte_ms" field.
 func (_u *UsageLogUpdateOne) ClearUpstreamFirstByteMs() *UsageLogUpdateOne {
 	_u.mutation.ClearUpstreamFirstByteMs()
+	return _u
+}
+
+// SetUpstreamResponseHeadersReceivedMs sets the "upstream_response_headers_received_ms" field.
+func (_u *UsageLogUpdateOne) SetUpstreamResponseHeadersReceivedMs(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetUpstreamResponseHeadersReceivedMs()
+	_u.mutation.SetUpstreamResponseHeadersReceivedMs(v)
+	return _u
+}
+
+// SetNillableUpstreamResponseHeadersReceivedMs sets the "upstream_response_headers_received_ms" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableUpstreamResponseHeadersReceivedMs(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetUpstreamResponseHeadersReceivedMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamResponseHeadersReceivedMs adds value to the "upstream_response_headers_received_ms" field.
+func (_u *UsageLogUpdateOne) AddUpstreamResponseHeadersReceivedMs(v int) *UsageLogUpdateOne {
+	_u.mutation.AddUpstreamResponseHeadersReceivedMs(v)
+	return _u
+}
+
+// ClearUpstreamResponseHeadersReceivedMs clears the value of the "upstream_response_headers_received_ms" field.
+func (_u *UsageLogUpdateOne) ClearUpstreamResponseHeadersReceivedMs() *UsageLogUpdateOne {
+	_u.mutation.ClearUpstreamResponseHeadersReceivedMs()
+	return _u
+}
+
+// SetUpstreamResponseBodyFirstByteMs sets the "upstream_response_body_first_byte_ms" field.
+func (_u *UsageLogUpdateOne) SetUpstreamResponseBodyFirstByteMs(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetUpstreamResponseBodyFirstByteMs()
+	_u.mutation.SetUpstreamResponseBodyFirstByteMs(v)
+	return _u
+}
+
+// SetNillableUpstreamResponseBodyFirstByteMs sets the "upstream_response_body_first_byte_ms" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableUpstreamResponseBodyFirstByteMs(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetUpstreamResponseBodyFirstByteMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamResponseBodyFirstByteMs adds value to the "upstream_response_body_first_byte_ms" field.
+func (_u *UsageLogUpdateOne) AddUpstreamResponseBodyFirstByteMs(v int) *UsageLogUpdateOne {
+	_u.mutation.AddUpstreamResponseBodyFirstByteMs(v)
+	return _u
+}
+
+// ClearUpstreamResponseBodyFirstByteMs clears the value of the "upstream_response_body_first_byte_ms" field.
+func (_u *UsageLogUpdateOne) ClearUpstreamResponseBodyFirstByteMs() *UsageLogUpdateOne {
+	_u.mutation.ClearUpstreamResponseBodyFirstByteMs()
+	return _u
+}
+
+// SetUpstreamFirstEventMs sets the "upstream_first_event_ms" field.
+func (_u *UsageLogUpdateOne) SetUpstreamFirstEventMs(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetUpstreamFirstEventMs()
+	_u.mutation.SetUpstreamFirstEventMs(v)
+	return _u
+}
+
+// SetNillableUpstreamFirstEventMs sets the "upstream_first_event_ms" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableUpstreamFirstEventMs(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetUpstreamFirstEventMs(*v)
+	}
+	return _u
+}
+
+// AddUpstreamFirstEventMs adds value to the "upstream_first_event_ms" field.
+func (_u *UsageLogUpdateOne) AddUpstreamFirstEventMs(v int) *UsageLogUpdateOne {
+	_u.mutation.AddUpstreamFirstEventMs(v)
+	return _u
+}
+
+// ClearUpstreamFirstEventMs clears the value of the "upstream_first_event_ms" field.
+func (_u *UsageLogUpdateOne) ClearUpstreamFirstEventMs() *UsageLogUpdateOne {
+	_u.mutation.ClearUpstreamFirstEventMs()
+	return _u
+}
+
+// SetRequestFirstOutputCharacterMs sets the "request_first_output_character_ms" field.
+func (_u *UsageLogUpdateOne) SetRequestFirstOutputCharacterMs(v int) *UsageLogUpdateOne {
+	_u.mutation.ResetRequestFirstOutputCharacterMs()
+	_u.mutation.SetRequestFirstOutputCharacterMs(v)
+	return _u
+}
+
+// SetNillableRequestFirstOutputCharacterMs sets the "request_first_output_character_ms" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableRequestFirstOutputCharacterMs(v *int) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetRequestFirstOutputCharacterMs(*v)
+	}
+	return _u
+}
+
+// AddRequestFirstOutputCharacterMs adds value to the "request_first_output_character_ms" field.
+func (_u *UsageLogUpdateOne) AddRequestFirstOutputCharacterMs(v int) *UsageLogUpdateOne {
+	_u.mutation.AddRequestFirstOutputCharacterMs(v)
+	return _u
+}
+
+// ClearRequestFirstOutputCharacterMs clears the value of the "request_first_output_character_ms" field.
+func (_u *UsageLogUpdateOne) ClearRequestFirstOutputCharacterMs() *UsageLogUpdateOne {
+	_u.mutation.ClearRequestFirstOutputCharacterMs()
 	return _u
 }
 
@@ -3896,6 +4540,9 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	if value, ok := _u.mutation.AddedRateMultiplier(); ok {
 		_spec.AddField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)
 	}
+	if value, ok := _u.mutation.LongContextBillingApplied(); ok {
+		_spec.SetField(usagelog.FieldLongContextBillingApplied, field.TypeBool, value)
+	}
 	if value, ok := _u.mutation.AccountRateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldAccountRateMultiplier, field.TypeFloat64, value)
 	}
@@ -4007,6 +4654,57 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	if _u.mutation.RequestBodyBytesCleared() {
 		_spec.ClearField(usagelog.FieldRequestBodyBytes, field.TypeInt64)
 	}
+	if value, ok := _u.mutation.UpstreamConnectionReused(); ok {
+		_spec.SetField(usagelog.FieldUpstreamConnectionReused, field.TypeBool, value)
+	}
+	if _u.mutation.UpstreamConnectionReusedCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamConnectionReused, field.TypeBool)
+	}
+	if value, ok := _u.mutation.UpstreamConnectionReadyMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamConnectionReadyMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamConnectionReadyMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamConnectionReadyMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamConnectionReadyMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamConnectionReadyMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamDNSLookupMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamDNSLookupMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamDNSLookupMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamDNSLookupMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamDNSLookupMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamDNSLookupMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamTCPConnectMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamTCPConnectMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamTCPConnectMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamTCPConnectMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamTCPConnectMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamTCPConnectMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamTLSHandshakeMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamTLSHandshakeMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamTLSHandshakeMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamTLSHandshakeMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamTLSHandshakeMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamTLSHandshakeMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamRequestHeadersWrittenMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamRequestHeadersWrittenMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamRequestHeadersWrittenMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamRequestHeadersWrittenMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamRequestHeadersWrittenMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamRequestHeadersWrittenMs, field.TypeInt)
+	}
 	if value, ok := _u.mutation.UpstreamRequestWrittenMs(); ok {
 		_spec.SetField(usagelog.FieldUpstreamRequestWrittenMs, field.TypeInt, value)
 	}
@@ -4024,6 +4722,42 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if _u.mutation.UpstreamFirstByteMsCleared() {
 		_spec.ClearField(usagelog.FieldUpstreamFirstByteMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamResponseHeadersReceivedMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamResponseHeadersReceivedMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamResponseHeadersReceivedMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamResponseHeadersReceivedMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamResponseHeadersReceivedMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamResponseHeadersReceivedMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamResponseBodyFirstByteMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamResponseBodyFirstByteMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamResponseBodyFirstByteMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamResponseBodyFirstByteMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamResponseBodyFirstByteMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamResponseBodyFirstByteMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.UpstreamFirstEventMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamFirstEventMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedUpstreamFirstEventMs(); ok {
+		_spec.AddField(usagelog.FieldUpstreamFirstEventMs, field.TypeInt, value)
+	}
+	if _u.mutation.UpstreamFirstEventMsCleared() {
+		_spec.ClearField(usagelog.FieldUpstreamFirstEventMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.RequestFirstOutputCharacterMs(); ok {
+		_spec.SetField(usagelog.FieldRequestFirstOutputCharacterMs, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedRequestFirstOutputCharacterMs(); ok {
+		_spec.AddField(usagelog.FieldRequestFirstOutputCharacterMs, field.TypeInt, value)
+	}
+	if _u.mutation.RequestFirstOutputCharacterMsCleared() {
+		_spec.ClearField(usagelog.FieldRequestFirstOutputCharacterMs, field.TypeInt)
 	}
 	if value, ok := _u.mutation.RequestFirstTokenMs(); ok {
 		_spec.SetField(usagelog.FieldRequestFirstTokenMs, field.TypeInt, value)

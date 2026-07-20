@@ -9,12 +9,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 )
 
-func TestOpenAIGatewayService_Forward_CompactOnlyModelMappingOverridesOAuthUpstreamModel(t *testing.T) {
+func TestOpenAIGatewayService_Forward_CompactRequestKeepsOriginalOAuthUpstreamModel(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	rec := httptest.NewRecorder()
@@ -26,7 +27,7 @@ func TestOpenAIGatewayService_Forward_CompactOnlyModelMappingOverridesOAuthUpstr
 	upstream := &httpUpstreamRecorder{resp: &http.Response{
 		StatusCode: http.StatusOK,
 		Header:     http.Header{"Content-Type": []string{"application/json"}, "x-request-id": []string{"rid-compact-map"}},
-		Body:       io.NopCloser(strings.NewReader(`{"id":"resp_123","status":"completed","model":"gpt-5.4-openai-compact","output":[],"usage":{"input_tokens":1,"output_tokens":1}}`)),
+		Body:       io.NopCloser(strings.NewReader(`{"id":"resp_123","status":"completed","model":"gpt-5.4","output":[],"usage":{"input_tokens":1,"output_tokens":1}}`)),
 	}}
 
 	svc := &OpenAIGatewayService{httpUpstream: upstream}
@@ -49,8 +50,8 @@ func TestOpenAIGatewayService_Forward_CompactOnlyModelMappingOverridesOAuthUpstr
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.Equal(t, "gpt-5.4", result.Model)
-	require.Equal(t, "gpt-5.4-openai-compact", result.UpstreamModel)
-	require.Equal(t, "gpt-5.4-openai-compact", gjson.GetBytes(upstream.lastBody, "model").String())
+	require.Equal(t, "gpt-5.4", result.UpstreamModel)
+	require.Equal(t, "gpt-5.4", gjson.GetBytes(upstream.lastBody, "model").String())
 }
 
 func TestOpenAIGatewayService_Forward_NonCompactRequestIgnoresCompactOnlyModelMapping(t *testing.T) {
@@ -92,7 +93,7 @@ func TestOpenAIGatewayService_Forward_NonCompactRequestIgnoresCompactOnlyModelMa
 	require.Equal(t, "gpt-5.4", gjson.GetBytes(upstream.lastBody, "model").String())
 }
 
-func TestOpenAIGatewayService_OAuthPassthrough_CompactOnlyModelMappingOverridesUpstreamModel(t *testing.T) {
+func TestOpenAIGatewayService_OAuthPassthrough_CompactRequestKeepsOriginalUpstreamModel(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	rec := httptest.NewRecorder()
@@ -105,7 +106,7 @@ func TestOpenAIGatewayService_OAuthPassthrough_CompactOnlyModelMappingOverridesU
 	upstream := &httpUpstreamRecorder{resp: &http.Response{
 		StatusCode: http.StatusOK,
 		Header:     http.Header{"Content-Type": []string{"application/json"}, "x-request-id": []string{"rid-compact-pass-map"}},
-		Body:       io.NopCloser(strings.NewReader(`{"id":"cmp_124","model":"gpt-5.4-openai-compact","usage":{"input_tokens":2,"output_tokens":3}}`)),
+		Body:       io.NopCloser(strings.NewReader(`{"id":"cmp_124","model":"gpt-5.4","usage":{"input_tokens":2,"output_tokens":3}}`)),
 	}}
 
 	svc := &OpenAIGatewayService{httpUpstream: upstream}
@@ -129,7 +130,67 @@ func TestOpenAIGatewayService_OAuthPassthrough_CompactOnlyModelMappingOverridesU
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.Equal(t, "gpt-5.4", result.Model)
-	require.Equal(t, "gpt-5.4-openai-compact", result.UpstreamModel)
-	require.Equal(t, "gpt-5.4-openai-compact", gjson.GetBytes(upstream.lastBody, "model").String())
+	require.Equal(t, "gpt-5.4", result.UpstreamModel)
+	require.Equal(t, "gpt-5.4", gjson.GetBytes(upstream.lastBody, "model").String())
 	require.Equal(t, "gpt-5.4", gjson.GetBytes(rec.Body.Bytes(), "model").String())
+}
+
+func TestOpenAIGatewayService_APIKeyPassthrough_BodySignalCompactPreservesResponsesProtocol(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses/compact", bytes.NewReader(nil))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Request.Header.Set("Accept", "text/event-stream")
+	c.Request.Header.Set("x-codex-beta-features", "remote_compaction_v2")
+
+	originalBody := []byte(`{"model":"gpt-5.6-sol","stream":true,"store":true,"prompt_cache_key":"compact-session","input":[{"type":"message","role":"user","content":"compact me"},{"type":"compaction_trigger"}]}`)
+	normalizedBody := []byte(`{"model":"gpt-5.6-sol","input":[{"type":"message","role":"user","content":"compact me"},{"type":"compaction_trigger"}]}`)
+	MarkOpenAICompactBodySignal(c, originalBody)
+
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"text/event-stream"}, "x-request-id": []string{"rid-body-signal"}},
+		Body: io.NopCloser(strings.NewReader(strings.Join([]string{
+			`data: {"type":"response.completed","response":{"id":"resp_compact","model":"gpt-5.6-sol","usage":{"input_tokens":2,"output_tokens":1,"total_tokens":3}}}`,
+			"",
+			"data: [DONE]",
+			"",
+		}, "\n"))),
+	}}
+
+	svc := &OpenAIGatewayService{
+		cfg:          &config.Config{Security: config.SecurityConfig{URLAllowlist: config.URLAllowlistConfig{Enabled: false}}},
+		httpUpstream: upstream,
+	}
+	account := &Account{
+		ID:          4,
+		Name:        "xcpc-compatible",
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Concurrency: 1,
+		Credentials: map[string]any{
+			"api_key":               "sk-test",
+			"base_url":              "https://example.com/v1",
+			"compact_model_mapping": map[string]any{"gpt-5.6-sol": "gpt-5.6-sol-openai-compact"},
+		},
+		Extra:       map[string]any{"openai_passthrough": true},
+		Status:      StatusActive,
+		Schedulable: true,
+	}
+
+	result, err := svc.Forward(context.Background(), c, account, normalizedBody)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.True(t, result.Stream)
+	require.Equal(t, "gpt-5.6-sol", result.UpstreamModel)
+	require.Equal(t, "https://example.com/v1/responses", upstream.lastReq.URL.String())
+	require.Equal(t, "gpt-5.6-sol", gjson.GetBytes(upstream.lastBody, "model").String())
+	require.True(t, gjson.GetBytes(upstream.lastBody, "stream").Bool())
+	require.True(t, gjson.GetBytes(upstream.lastBody, "store").Bool())
+	require.Equal(t, "compact-session", gjson.GetBytes(upstream.lastBody, "prompt_cache_key").String())
+	require.Equal(t, "compaction_trigger", gjson.GetBytes(upstream.lastBody, "input.1.type").String())
+	require.Equal(t, "text/event-stream", upstream.lastReq.Header.Get("Accept"))
+	require.Equal(t, "remote_compaction_v2", upstream.lastReq.Header.Get("x-codex-beta-features"))
 }

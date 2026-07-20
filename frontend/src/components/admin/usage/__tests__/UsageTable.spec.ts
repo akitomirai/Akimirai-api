@@ -19,8 +19,18 @@ const messages: Record<string, string> = {
   'admin.usage.outputCost': 'Output Cost',
   'admin.usage.cacheCreationCost': 'Cache Creation Cost',
   'admin.usage.cacheReadCost': 'Cache Read Cost',
+  'admin.usage.inputTokens': 'Input Tokens',
+  'admin.usage.outputTokens': 'Output Tokens',
+  'admin.usage.cacheCreationTokens': 'Cache Creation Tokens',
+  'admin.usage.cacheReadTokens': 'Cache Read Tokens',
   'usage.inputTokenPrice': 'Input price',
   'usage.outputTokenPrice': 'Output price',
+  'usage.cacheReadTokenPrice': 'Cache read price',
+  'usage.tokenDetails': 'Token Details',
+  'usage.tokenUnitPrice': 'Unit price',
+  'usage.tokenCost': 'Cost',
+  'usage.totalTokens': 'Total Tokens',
+  'usage.cacheHitRate': 'Cache hit rate',
   'usage.perMillionTokens': '/ 1M tokens',
   'usage.serviceTier': 'Service tier',
   'usage.serviceTierPriority': 'Fast',
@@ -69,6 +79,7 @@ const DataTableStub = {
     <div>
       <div v-for="row in data" :key="row.request_id">
         <slot name="cell-model" :row="row" :value="row.model" />
+        <slot name="cell-group" :row="row" />
         <slot name="cell-account" :row="row" />
         <slot name="cell-billing_mode" :row="row" />
         <slot name="cell-tokens" :row="row" />
@@ -123,6 +134,38 @@ describe('admin UsageTable tooltip', () => {
     } as DOMRect)
   })
 
+  it('marks only usage rows that actually applied long-context billing', () => {
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [
+          {
+            ...baseImageRow,
+            request_id: 'req-long-context-enabled',
+            long_context_billing_applied: true,
+          },
+          {
+            ...baseImageRow,
+            request_id: 'req-long-context-disabled',
+            long_context_billing_applied: false,
+          },
+        ],
+        loading: false,
+        columns: [],
+      },
+      global: {
+        stubs: {
+          DataTable: DataTableStub,
+          EmptyState: true,
+          Icon: true,
+          Teleport: true,
+        },
+      },
+    })
+
+    expect(wrapper.findAll('[data-testid="long-context-billing-marker"]')).toHaveLength(1)
+    expect(wrapper.get('[data-testid="long-context-billing-marker"]').text()).toBe('x2')
+  })
+
   it('shows service tier and billing breakdown in cost tooltip', async () => {
     const row = {
       request_id: 'req-admin-1',
@@ -137,6 +180,7 @@ describe('admin UsageTable tooltip', () => {
       cache_read_cost: 0.069568,
       input_tokens: 4057,
       output_tokens: 101,
+      cache_read_tokens: 100_000,
     }
 
     const wrapper = mount(UsageTable, {
@@ -155,8 +199,11 @@ describe('admin UsageTable tooltip', () => {
       },
     })
 
-    const tooltipTriggers = wrapper.findAll('.group.relative')
-    await tooltipTriggers[tooltipTriggers.length - 1].trigger('mouseenter')
+    await wrapper.get('[data-testid="cost-detail-trigger"]').trigger('click')
+    await nextTick()
+    expect(wrapper.text()).not.toContain('Unit price')
+
+    await wrapper.get('[data-testid="cost-detail-trigger"]').trigger('mouseenter')
     await nextTick()
 
     const text = wrapper.text()
@@ -170,6 +217,7 @@ describe('admin UsageTable tooltip', () => {
     expect(text).toContain('$0.092883')
     expect(text).toContain('$5.0000 / 1M tokens')
     expect(text).toContain('$30.0000 / 1M tokens')
+    expect(text).toContain('$0.6957 / 1M tokens')
     expect(text).toContain('$0.069568')
   })
 
@@ -240,7 +288,7 @@ describe('admin UsageTable tooltip', () => {
     expect(wrapper.text()).toContain('jp-egress')
     expect(wrapper.text()).toContain('R2')
     expect(wrapper.text()).toContain('S1')
-    await wrapper.find('button').trigger('click')
+    await wrapper.get('[data-testid="diagnostics-trigger"]').trigger('click')
     expect(wrapper.emitted('diagnosticsClick')).toEqual([[77]])
   })
 
@@ -320,9 +368,151 @@ describe('admin UsageTable tooltip', () => {
 
     const cacheCell = wrapper.get('[data-test="cache-hit-rate"]')
     expect(cacheCell.text()).toContain('99.6%')
-    expect(cacheCell.text()).toContain('172.0K')
+    expect(cacheCell.text()).toContain('17.20w')
     expect(cacheCell.attributes('class')).toContain('w-[112px]')
     expect(cacheCell.attributes('class')).toContain('text-left')
+    expect(wrapper.get('[data-testid="usage-total-token-count"]').text()).toBe('17.27w')
+    expect(wrapper.text()).not.toContain('631')
+    expect(wrapper.text()).not.toContain('28')
+  })
+
+  it('shows the token detail trigger beside both token layouts', () => {
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [{
+          request_id: 'req-token-trigger',
+          model: 'gpt-5.5',
+          actual_cost: 0,
+          total_cost: 0,
+          input_tokens: 12,
+          output_tokens: 3,
+          cache_read_tokens: 5,
+        }],
+        loading: false,
+        columns: [],
+        tokenBreakdown: true,
+      },
+      global: {
+        stubs: { DataTable: DataTableStub, EmptyState: true, Teleport: true },
+      },
+    })
+
+    expect(wrapper.get('[data-testid="token-detail-trigger"]').exists()).toBe(true)
+  })
+
+  it('opens the cost detail popover when hovering the cost icon', async () => {
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [{
+          request_id: 'req-token-breakdown',
+          model: 'gpt-5.5',
+          input_tokens: 1000,
+          output_tokens: 200,
+          cache_read_tokens: 3000,
+          input_cost: 0.005,
+          output_cost: 0.006,
+          cache_read_cost: 0.0015,
+          total_cost: 0.0125,
+          actual_cost: 0.01,
+          rate_multiplier: 0.8,
+        }],
+        loading: false,
+        columns: [],
+      },
+      global: {
+        stubs: { DataTable: DataTableStub, EmptyState: true, Teleport: true },
+      },
+    })
+
+    await wrapper.get('[data-testid="cost-detail-trigger"]').trigger('mouseenter')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('Unit price')
+    expect(wrapper.text()).toContain('Cost')
+    expect(wrapper.text()).toContain('Total Tokens')
+    expect(wrapper.get('[data-testid="cost-input-token-row"]').text()).toContain('1,000')
+    expect(wrapper.get('[data-testid="cost-output-token-row"]').text()).toContain('200')
+    expect(wrapper.get('[data-testid="cost-cache-token-row"]').text()).toContain('3,000')
+    expect(wrapper.get('[data-testid="cost-input-token-icon"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="cost-output-token-icon"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="cost-cache-token-icon"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('0.80x')
+    expect(wrapper.text()).toContain('$0.010000')
+
+    await wrapper.get('[data-testid="cost-detail-trigger"]').trigger('mouseleave')
+    await nextTick()
+    expect(wrapper.text()).not.toContain('Unit price')
+  })
+
+  it('opens detailed token quantities when hovering the token icon', async () => {
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [{
+          request_id: 'req-token-counts',
+          model: 'gpt-5.5',
+          input_tokens: 1000,
+          output_tokens: 200,
+          cache_creation_tokens: 400,
+          cache_read_tokens: 3000,
+          input_cost: 0.005,
+          output_cost: 0.006,
+          cache_read_cost: 0.0015,
+          total_cost: 0.0125,
+          actual_cost: 0.01,
+          rate_multiplier: 0.8,
+        }],
+        loading: false,
+        columns: [],
+      },
+      global: {
+        stubs: { DataTable: DataTableStub, EmptyState: true, Teleport: true },
+      },
+    })
+
+    await wrapper.get('[data-testid="token-detail-trigger"]').trigger('click')
+    await nextTick()
+    expect(wrapper.text()).not.toContain('Token Details')
+
+    await wrapper.get('[data-testid="token-detail-trigger"]').trigger('mouseenter')
+    await nextTick()
+
+    const text = wrapper.text()
+    expect(text).toContain('Token Details')
+    expect(text).toContain('Input Tokens1,000')
+    expect(text).toContain('Output Tokens200')
+    expect(text).toContain('Cache Creation Tokens400')
+    expect(text).toContain('Cache Read Tokens3,000')
+    expect(text).toContain('Total Tokens4,600')
+    expect(text).not.toContain('Unit price')
+    expect(text).not.toContain('User billed')
+
+    await wrapper.get('[data-testid="token-detail-trigger"]').trigger('mouseleave')
+    await nextTick()
+    expect(wrapper.text()).not.toContain('Token Details')
+  })
+
+  it('joins the group name and multiplier in the group badge', () => {
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [{
+          request_id: 'req-group-label',
+          model: 'gpt-5.5',
+          group: { name: 'Pro pool', rate_multiplier: 0.07 },
+          actual_cost: 0,
+          total_cost: 0,
+          input_tokens: 0,
+          output_tokens: 0,
+          cache_read_tokens: 0,
+        }],
+        loading: false,
+        columns: [],
+      },
+      global: {
+        stubs: { DataTable: DataTableStub, EmptyState: true, Teleport: true },
+      },
+    })
+
+    expect(wrapper.text()).toContain('Pro pool · 0.07x')
   })
 
   it.each([
@@ -392,7 +582,7 @@ describe('admin UsageTable tooltip', () => {
       },
     })
 
-    await wrapper.find('.group.relative').trigger('mouseenter')
+    await wrapper.get('[data-testid="cost-detail-trigger"]').trigger('mouseenter')
     await nextTick()
 
     const text = wrapper.text()
@@ -436,7 +626,7 @@ describe('admin UsageTable tooltip', () => {
       },
     })
 
-    await wrapper.find('.group.relative').trigger('mouseenter')
+    await wrapper.get('[data-testid="cost-detail-trigger"]').trigger('mouseenter')
     await nextTick()
 
     const text = wrapper.text()

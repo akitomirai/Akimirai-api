@@ -65,6 +65,7 @@ func resetDashboardReadCachesForTest() {
 	dashboardModelStatsCache = newSnapshotCache(30 * time.Second)
 	dashboardGroupStatsCache = newSnapshotCache(30 * time.Second)
 	dashboardSnapshotV2Cache = newSnapshotCache(30 * time.Second)
+	dashboardUsersRankingCache = newSnapshotCache(5 * time.Minute)
 }
 
 func TestDashboardHandler_GetUsageTrend_UsesCache(t *testing.T) {

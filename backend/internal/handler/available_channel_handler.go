@@ -319,6 +319,14 @@ type userModelCatalogItem struct {
 	Channels              []string                   `json:"channels"`
 	Groups                []userAvailableGroup       `json:"groups"`
 	Pricing               *userSupportedModelPricing `json:"pricing"`
+	Offers                []userModelCatalogOffer    `json:"offers"`
+}
+
+type userModelCatalogOffer struct {
+	Channel  string                     `json:"channel"`
+	Platform string                     `json:"platform"`
+	Groups   []userAvailableGroup       `json:"groups"`
+	Pricing  *userSupportedModelPricing `json:"pricing"`
 }
 
 type catalogAccumulator struct {
@@ -407,6 +415,7 @@ func (h *AvailableChannelHandler) buildModelCatalog(
 			if acc.item.Pricing == nil && model.Pricing != nil {
 				acc.item.Pricing = toUserPricing(model.Pricing)
 			}
+			acc.addOffer(ch.Name, model.Platform, visibleGroups, model.Pricing, userGroupRates)
 			acc.addGroups(visibleGroups, model.Platform, userGroupRates)
 			acc.updatedAt = latestTime(acc.updatedAt, ch.UpdatedAt)
 			switch ch.Status {
@@ -421,6 +430,7 @@ func (h *AvailableChannelHandler) buildModelCatalog(
 		for _, model := range configuredModelsWithoutSupported(ch, supportedModels, visiblePlatforms) {
 			acc := h.catalogAccumulatorFor(accs, model.Platform, model.Name)
 			acc.configuredOnlyCount++
+			acc.addOffer(ch.Name, model.Platform, visibleGroups, model.Pricing, userGroupRates)
 			acc.addGroups(visibleGroups, model.Platform, userGroupRates)
 			acc.updatedAt = latestTime(acc.updatedAt, ch.UpdatedAt)
 			h.applyCatalogMetadata(&acc.item, model.Name)
@@ -462,6 +472,7 @@ func (h *AvailableChannelHandler) catalogAccumulatorFor(
 		QuickStartURL: "/quick-start?model=" + url.QueryEscape(modelID),
 		Channels:      []string{},
 		Groups:        []userAvailableGroup{},
+		Offers:        []userModelCatalogOffer{},
 	}
 	if family := modelFamilyLabel(provider, modelID); family != "" {
 		item.Family = &family
@@ -521,14 +532,68 @@ func (a *catalogAccumulator) addGroups(
 			a.multipliers = append(a.multipliers, rate)
 		}
 		a.item.Groups = append(a.item.Groups, userAvailableGroup{
-			ID:               group.ID,
-			Name:             group.Name,
-			Platform:         group.Platform,
-			SubscriptionType: group.SubscriptionType,
-			RateMultiplier:   rate,
-			IsExclusive:      group.IsExclusive,
+			ID:                 group.ID,
+			Name:               group.Name,
+			Platform:           group.Platform,
+			SubscriptionType:   group.SubscriptionType,
+			RateMultiplier:     rate,
+			PeakRateEnabled:    group.PeakRateEnabled,
+			PeakStart:          group.PeakStart,
+			PeakEnd:            group.PeakEnd,
+			PeakRateMultiplier: group.PeakRateMultiplier,
+			IsExclusive:        group.IsExclusive,
 		})
 	}
+}
+
+func (a *catalogAccumulator) addOffer(
+	channel string,
+	platform string,
+	groups []service.AvailableGroupRef,
+	pricing *service.ChannelModelPricing,
+	userGroupRates map[int64]float64,
+) {
+	a.item.Offers = append(a.item.Offers, userModelCatalogOffer{
+		Channel:  channel,
+		Platform: platform,
+		Groups:   userAvailableGroupsForPlatform(groups, platform, userGroupRates),
+		Pricing:  toUserPricing(pricing),
+	})
+}
+
+func userAvailableGroupsForPlatform(
+	groups []service.AvailableGroupRef,
+	platform string,
+	userGroupRates map[int64]float64,
+) []userAvailableGroup {
+	out := make([]userAvailableGroup, 0, len(groups))
+	seen := make(map[int64]struct{}, len(groups))
+	for _, group := range groups {
+		if group.Platform != platform {
+			continue
+		}
+		if _, ok := seen[group.ID]; ok {
+			continue
+		}
+		seen[group.ID] = struct{}{}
+		rate := group.RateMultiplier
+		if override, ok := userGroupRates[group.ID]; ok {
+			rate = override
+		}
+		out = append(out, userAvailableGroup{
+			ID:                 group.ID,
+			Name:               group.Name,
+			Platform:           group.Platform,
+			SubscriptionType:   group.SubscriptionType,
+			RateMultiplier:     rate,
+			PeakRateEnabled:    group.PeakRateEnabled,
+			PeakStart:          group.PeakStart,
+			PeakEnd:            group.PeakEnd,
+			PeakRateMultiplier: group.PeakRateMultiplier,
+			IsExclusive:        group.IsExclusive,
+		})
+	}
+	return out
 }
 
 func (a *catalogAccumulator) finalize() {
@@ -537,6 +602,12 @@ func (a *catalogAccumulator) finalize() {
 	a.item.UpdatedAt = a.updatedAt
 	a.item.BillingMultiplier = minFloatPtr(a.multipliers)
 	a.item.BillingDescription = billingDescription(a.multipliers)
+	sort.SliceStable(a.item.Offers, func(i, j int) bool {
+		if a.item.Offers[i].Channel != a.item.Offers[j].Channel {
+			return strings.ToLower(a.item.Offers[i].Channel) < strings.ToLower(a.item.Offers[j].Channel)
+		}
+		return a.item.Offers[i].Platform < a.item.Offers[j].Platform
+	})
 	switch {
 	case a.activeVisibleCount > 0:
 		a.item.Status = "available"
@@ -557,12 +628,16 @@ func toAvailableGroupRefs(groups []service.Group) []service.AvailableGroupRef {
 	out := make([]service.AvailableGroupRef, 0, len(groups))
 	for _, group := range groups {
 		out = append(out, service.AvailableGroupRef{
-			ID:               group.ID,
-			Name:             group.Name,
-			Platform:         group.Platform,
-			SubscriptionType: group.SubscriptionType,
-			RateMultiplier:   group.RateMultiplier,
-			IsExclusive:      group.IsExclusive,
+			ID:                 group.ID,
+			Name:               group.Name,
+			Platform:           group.Platform,
+			SubscriptionType:   group.SubscriptionType,
+			RateMultiplier:     group.RateMultiplier,
+			PeakRateEnabled:    group.PeakRateEnabled,
+			PeakStart:          group.PeakStart,
+			PeakEnd:            group.PeakEnd,
+			PeakRateMultiplier: group.PeakRateMultiplier,
+			IsExclusive:        group.IsExclusive,
 		})
 	}
 	return out

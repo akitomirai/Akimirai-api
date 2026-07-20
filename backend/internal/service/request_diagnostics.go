@@ -25,6 +25,7 @@ const (
 var requestDiagnosticsURLRegex = regexp.MustCompile(`(?i)\b(?:https?|socks5h?|socks5)://[^\s]+`)
 
 type requestDiagnosticsContextKey struct{}
+type requestDiagnosticsAttemptContextKey struct{}
 
 // RequestRouteSnapshot identifies an egress route without persisting its host or credentials.
 type RequestRouteSnapshot struct {
@@ -37,34 +38,54 @@ type RequestRouteSnapshot struct {
 
 // RequestAttemptEvent is a bounded, sanitized timeline entry for one upstream HTTP attempt.
 type RequestAttemptEvent struct {
-	Sequence         int                  `json:"sequence"`
-	StartedMs        int                  `json:"started_ms"`
-	FinishedMs       *int                 `json:"finished_ms,omitempty"`
-	RequestWrittenMs *int                 `json:"request_written_ms,omitempty"`
-	FirstByteMs      *int                 `json:"first_byte_ms,omitempty"`
-	AccountID        int64                `json:"account_id"`
-	AccountName      string               `json:"account_name,omitempty"`
-	Route            RequestRouteSnapshot `json:"route"`
-	UpstreamStatus   *int                 `json:"upstream_status,omitempty"`
-	Outcome          string               `json:"outcome"`
-	ErrorCategory    string               `json:"error_category,omitempty"`
-	Reason           string               `json:"reason,omitempty"`
+	Sequence                  int                  `json:"sequence"`
+	StartedMs                 int                  `json:"started_ms"`
+	FinishedMs                *int                 `json:"finished_ms,omitempty"`
+	ConnectionReused          *bool                `json:"connection_reused,omitempty"`
+	ConnectionReadyMs         *int                 `json:"connection_ready_ms,omitempty"`
+	DNSLookupMs               *int                 `json:"dns_lookup_ms,omitempty"`
+	TCPConnectMs              *int                 `json:"tcp_connect_ms,omitempty"`
+	TLSHandshakeMs            *int                 `json:"tls_handshake_ms,omitempty"`
+	RequestHeadersWrittenMs   *int                 `json:"request_headers_written_ms,omitempty"`
+	RequestWrittenMs          *int                 `json:"request_written_ms,omitempty"`
+	FirstByteMs               *int                 `json:"first_byte_ms,omitempty"`
+	ResponseHeadersReceivedMs *int                 `json:"response_headers_received_ms,omitempty"`
+	ResponseBodyFirstByteMs   *int                 `json:"response_body_first_byte_ms,omitempty"`
+	FirstEventMs              *int                 `json:"first_event_ms,omitempty"`
+	FirstOutputCharacterMs    *int                 `json:"first_output_character_ms,omitempty"`
+	AccountID                 int64                `json:"account_id"`
+	AccountName               string               `json:"account_name,omitempty"`
+	Route                     RequestRouteSnapshot `json:"route"`
+	UpstreamStatus            *int                 `json:"upstream_status,omitempty"`
+	Outcome                   string               `json:"outcome"`
+	ErrorCategory             string               `json:"error_category,omitempty"`
+	Reason                    string               `json:"reason,omitempty"`
 }
 
 // RequestDiagnosticsSnapshot is copied into the asynchronous usage-record task.
 type RequestDiagnosticsSnapshot struct {
-	RequestStartedAt         time.Time
-	RequestTotalMs           *int
-	RequestBodyReadMs        *int
-	RequestBodyBytes         *int64
-	UpstreamRequestWrittenMs *int
-	UpstreamFirstByteMs      *int
-	RequestFirstTokenMs      *int
-	Route                    RequestRouteSnapshot
-	FinalUpstreamStatus      *int
-	RetryCount               int
-	AccountSwitchCount       int
-	AttemptTimeline          []RequestAttemptEvent
+	RequestStartedAt                  time.Time
+	RequestTotalMs                    *int
+	RequestBodyReadMs                 *int
+	RequestBodyBytes                  *int64
+	UpstreamConnectionReused          *bool
+	UpstreamConnectionReadyMs         *int
+	UpstreamDNSLookupMs               *int
+	UpstreamTCPConnectMs              *int
+	UpstreamTLSHandshakeMs            *int
+	UpstreamRequestHeadersWrittenMs   *int
+	UpstreamRequestWrittenMs          *int
+	UpstreamFirstByteMs               *int
+	UpstreamResponseHeadersReceivedMs *int
+	UpstreamResponseBodyFirstByteMs   *int
+	UpstreamFirstEventMs              *int
+	RequestFirstOutputCharacterMs     *int
+	RequestFirstTokenMs               *int
+	Route                             RequestRouteSnapshot
+	FinalUpstreamStatus               *int
+	RetryCount                        int
+	AccountSwitchCount                int
+	AttemptTimeline                   []RequestAttemptEvent
 }
 
 type requestDiagnosticsSelectedAccount struct {
@@ -98,6 +119,11 @@ type RequestDiagnosticsAttempt struct {
 	once        sync.Once
 	mu          sync.Mutex
 	event       RequestAttemptEvent
+	finished    bool
+
+	dnsStartedAt     time.Time
+	connectStartedAt time.Time
+	tlsStartedAt     time.Time
 }
 
 func NewRequestDiagnostics(startedAt time.Time) *RequestDiagnostics {
@@ -127,6 +153,24 @@ func RequestDiagnosticsFromContext(ctx context.Context) *RequestDiagnostics {
 	}
 	diagnostics, _ := ctx.Value(requestDiagnosticsContextKey{}).(*RequestDiagnostics)
 	return diagnostics
+}
+
+func WithRequestDiagnosticsAttempt(ctx context.Context, attempt *RequestDiagnosticsAttempt) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if attempt == nil {
+		return ctx
+	}
+	return context.WithValue(ctx, requestDiagnosticsAttemptContextKey{}, attempt)
+}
+
+func RequestDiagnosticsAttemptFromContext(ctx context.Context) *RequestDiagnosticsAttempt {
+	if ctx == nil {
+		return nil
+	}
+	attempt, _ := ctx.Value(requestDiagnosticsAttemptContextKey{}).(*RequestDiagnosticsAttempt)
+	return attempt
 }
 
 func (d *RequestDiagnostics) RecordBodyRead(duration time.Duration, bytes int64) {
@@ -192,28 +236,177 @@ func (d *RequestDiagnostics) BeginHTTPAttemptAt(accountID int64, proxyURL string
 	}
 }
 
-func (a *RequestDiagnosticsAttempt) MarkRequestWrittenAt(at time.Time) {
+func (a *RequestDiagnosticsAttempt) MarkDNSStartAt(at time.Time) {
 	if a == nil || a.diagnostics == nil {
 		return
 	}
-	value := a.diagnostics.elapsedMs(at)
 	a.mu.Lock()
-	if a.event.RequestWrittenMs == nil {
-		a.event.RequestWrittenMs = &value
+	if a.dnsStartedAt.IsZero() || at.Before(a.dnsStartedAt) {
+		a.dnsStartedAt = at
 	}
 	a.mu.Unlock()
 }
 
-func (a *RequestDiagnosticsAttempt) MarkFirstResponseByteAt(at time.Time) {
+// BeginConnectionAcquisitionAt starts the wire generation selected by net/http.
+// A single RoundTrip can transparently retry and invoke GetConn more than once.
+func (a *RequestDiagnosticsAttempt) BeginConnectionAcquisitionAt(_ time.Time) {
+	if a == nil || a.diagnostics == nil {
+		return
+	}
+	a.mu.Lock()
+	a.dnsStartedAt = time.Time{}
+	a.connectStartedAt = time.Time{}
+	a.tlsStartedAt = time.Time{}
+	a.event.ConnectionReused = nil
+	a.event.ConnectionReadyMs = nil
+	a.event.DNSLookupMs = nil
+	a.event.TCPConnectMs = nil
+	a.event.TLSHandshakeMs = nil
+	a.event.RequestHeadersWrittenMs = nil
+	a.event.RequestWrittenMs = nil
+	a.event.FirstByteMs = nil
+	a.event.ResponseHeadersReceivedMs = nil
+	a.event.ResponseBodyFirstByteMs = nil
+	a.event.FirstEventMs = nil
+	a.event.FirstOutputCharacterMs = nil
+	event, finished := a.finishedEventLocked()
+	a.mu.Unlock()
+	a.updateFinishedEvent(event, finished)
+}
+
+func (a *RequestDiagnosticsAttempt) MarkDNSDoneAt(at time.Time, err error) {
+	if a == nil || a.diagnostics == nil || err != nil {
+		return
+	}
+	a.mu.Lock()
+	if a.event.DNSLookupMs == nil && !a.dnsStartedAt.IsZero() {
+		value := nonNegativeDurationMs(a.dnsStartedAt, at)
+		a.event.DNSLookupMs = &value
+	}
+	event, finished := a.finishedEventLocked()
+	a.mu.Unlock()
+	a.updateFinishedEvent(event, finished)
+}
+
+func (a *RequestDiagnosticsAttempt) MarkConnectStartAt(at time.Time) {
+	if a == nil || a.diagnostics == nil {
+		return
+	}
+	a.mu.Lock()
+	if a.connectStartedAt.IsZero() || at.Before(a.connectStartedAt) {
+		a.connectStartedAt = at
+	}
+	a.mu.Unlock()
+}
+
+func (a *RequestDiagnosticsAttempt) MarkConnectDoneAt(at time.Time, err error) {
+	if a == nil || a.diagnostics == nil || err != nil {
+		return
+	}
+	a.mu.Lock()
+	if a.event.TCPConnectMs == nil && !a.connectStartedAt.IsZero() {
+		value := nonNegativeDurationMs(a.connectStartedAt, at)
+		a.event.TCPConnectMs = &value
+	}
+	event, finished := a.finishedEventLocked()
+	a.mu.Unlock()
+	a.updateFinishedEvent(event, finished)
+}
+
+func (a *RequestDiagnosticsAttempt) MarkTLSHandshakeStartAt(at time.Time) {
+	if a == nil || a.diagnostics == nil {
+		return
+	}
+	a.mu.Lock()
+	if a.tlsStartedAt.IsZero() {
+		a.tlsStartedAt = at
+	}
+	a.mu.Unlock()
+}
+
+func (a *RequestDiagnosticsAttempt) MarkTLSHandshakeDoneAt(at time.Time, err error) {
+	if a == nil || a.diagnostics == nil || err != nil {
+		return
+	}
+	a.mu.Lock()
+	if a.event.TLSHandshakeMs == nil && !a.tlsStartedAt.IsZero() {
+		value := nonNegativeDurationMs(a.tlsStartedAt, at)
+		a.event.TLSHandshakeMs = &value
+	}
+	event, finished := a.finishedEventLocked()
+	a.mu.Unlock()
+	a.updateFinishedEvent(event, finished)
+}
+
+func (a *RequestDiagnosticsAttempt) MarkConnectionReadyAt(at time.Time, reused bool) {
 	if a == nil || a.diagnostics == nil {
 		return
 	}
 	value := a.diagnostics.elapsedMs(at)
 	a.mu.Lock()
-	if a.event.FirstByteMs == nil {
-		a.event.FirstByteMs = &value
+	if a.event.ConnectionReadyMs == nil {
+		a.event.ConnectionReadyMs = &value
+		a.event.ConnectionReused = cloneBool(&reused)
 	}
+	event, finished := a.finishedEventLocked()
 	a.mu.Unlock()
+	a.updateFinishedEvent(event, finished)
+}
+
+func (a *RequestDiagnosticsAttempt) MarkRequestHeadersWrittenAt(at time.Time) {
+	a.markOffsetAt(at, func(event *RequestAttemptEvent, value *int) {
+		if event.RequestHeadersWrittenMs == nil {
+			event.RequestHeadersWrittenMs = value
+		}
+	})
+}
+
+func (a *RequestDiagnosticsAttempt) MarkRequestWrittenAt(at time.Time) {
+	a.markOffsetAt(at, func(event *RequestAttemptEvent, value *int) {
+		if event.RequestWrittenMs == nil {
+			event.RequestWrittenMs = value
+		}
+	})
+}
+
+func (a *RequestDiagnosticsAttempt) MarkFirstResponseByteAt(at time.Time) {
+	a.markOffsetAt(at, func(event *RequestAttemptEvent, value *int) {
+		if event.FirstByteMs == nil {
+			event.FirstByteMs = value
+		}
+	})
+}
+
+func (a *RequestDiagnosticsAttempt) MarkResponseHeadersReceivedAt(at time.Time) {
+	a.markOffsetAt(at, func(event *RequestAttemptEvent, value *int) {
+		if event.ResponseHeadersReceivedMs == nil {
+			event.ResponseHeadersReceivedMs = value
+		}
+	})
+}
+
+func (a *RequestDiagnosticsAttempt) MarkResponseBodyFirstByteAt(at time.Time) {
+	a.markOffsetAt(at, func(event *RequestAttemptEvent, value *int) {
+		if event.ResponseBodyFirstByteMs == nil {
+			event.ResponseBodyFirstByteMs = value
+		}
+	})
+}
+
+func (a *RequestDiagnosticsAttempt) MarkFirstStreamEventAt(at time.Time) {
+	a.markOffsetAt(at, func(event *RequestAttemptEvent, value *int) {
+		if event.FirstEventMs == nil {
+			event.FirstEventMs = value
+		}
+	})
+}
+
+func (a *RequestDiagnosticsAttempt) MarkFirstOutputCharacterAt(at time.Time) {
+	a.markOffsetAt(at, func(event *RequestAttemptEvent, value *int) {
+		if event.FirstOutputCharacterMs == nil {
+			event.FirstOutputCharacterMs = value
+		}
+	})
 }
 
 func (a *RequestDiagnosticsAttempt) FinishAt(at time.Time, upstreamStatus int, err error) {
@@ -231,10 +424,36 @@ func (a *RequestDiagnosticsAttempt) FinishAt(at time.Time, upstreamStatus int, e
 		if err != nil {
 			a.event.Reason = sanitizeRequestDiagnosticReason(err.Error())
 		}
+		a.finished = true
 		event := cloneRequestAttemptEvent(a.event)
 		a.mu.Unlock()
 		a.diagnostics.finishAttempt(event)
 	})
+}
+
+func (a *RequestDiagnosticsAttempt) markOffsetAt(at time.Time, update func(*RequestAttemptEvent, *int)) {
+	if a == nil || a.diagnostics == nil || update == nil {
+		return
+	}
+	value := a.diagnostics.elapsedMs(at)
+	a.mu.Lock()
+	update(&a.event, &value)
+	event, finished := a.finishedEventLocked()
+	a.mu.Unlock()
+	a.updateFinishedEvent(event, finished)
+}
+
+func (a *RequestDiagnosticsAttempt) finishedEventLocked() (RequestAttemptEvent, bool) {
+	if !a.finished {
+		return RequestAttemptEvent{}, false
+	}
+	return cloneRequestAttemptEvent(a.event), true
+}
+
+func (a *RequestDiagnosticsAttempt) updateFinishedEvent(event RequestAttemptEvent, finished bool) {
+	if finished && a != nil && a.diagnostics != nil {
+		a.diagnostics.updateFinishedAttempt(event)
+	}
 }
 
 func (d *RequestDiagnostics) MarkFirstSemanticToken(forwardStartedAt time.Time, firstTokenMs *int) {
@@ -268,8 +487,18 @@ func (d *RequestDiagnostics) SnapshotAt(completedAt time.Time, fallbackAccount *
 	}
 	if d.finalAttempt != nil {
 		snapshot.Route = cloneRequestRouteSnapshot(d.finalAttempt.Route)
+		snapshot.UpstreamConnectionReused = cloneBool(d.finalAttempt.ConnectionReused)
+		snapshot.UpstreamConnectionReadyMs = cloneInt(d.finalAttempt.ConnectionReadyMs)
+		snapshot.UpstreamDNSLookupMs = cloneInt(d.finalAttempt.DNSLookupMs)
+		snapshot.UpstreamTCPConnectMs = cloneInt(d.finalAttempt.TCPConnectMs)
+		snapshot.UpstreamTLSHandshakeMs = cloneInt(d.finalAttempt.TLSHandshakeMs)
+		snapshot.UpstreamRequestHeadersWrittenMs = cloneInt(d.finalAttempt.RequestHeadersWrittenMs)
 		snapshot.UpstreamRequestWrittenMs = cloneInt(d.finalAttempt.RequestWrittenMs)
 		snapshot.UpstreamFirstByteMs = cloneInt(d.finalAttempt.FirstByteMs)
+		snapshot.UpstreamResponseHeadersReceivedMs = cloneInt(d.finalAttempt.ResponseHeadersReceivedMs)
+		snapshot.UpstreamResponseBodyFirstByteMs = cloneInt(d.finalAttempt.ResponseBodyFirstByteMs)
+		snapshot.UpstreamFirstEventMs = cloneInt(d.finalAttempt.FirstEventMs)
+		snapshot.RequestFirstOutputCharacterMs = cloneInt(d.finalAttempt.FirstOutputCharacterMs)
 		snapshot.FinalUpstreamStatus = cloneInt(d.finalAttempt.UpstreamStatus)
 	}
 	if snapshot.RetryCount > 0 || snapshot.AccountSwitchCount > 0 {
@@ -296,6 +525,24 @@ func (d *RequestDiagnostics) finishAttempt(event RequestAttemptEvent) {
 	}
 	copy := cloneRequestAttemptEvent(event)
 	d.finalAttempt = &copy
+	d.mu.Unlock()
+}
+
+func (d *RequestDiagnostics) updateFinishedAttempt(event RequestAttemptEvent) {
+	if d == nil || event.Sequence <= 0 {
+		return
+	}
+	d.mu.Lock()
+	for i := range d.attemptTimeline {
+		if d.attemptTimeline[i].Sequence == event.Sequence {
+			d.attemptTimeline[i] = cloneRequestAttemptEvent(event)
+			break
+		}
+	}
+	if d.finalAttempt != nil && d.finalAttempt.Sequence == event.Sequence {
+		copy := cloneRequestAttemptEvent(event)
+		d.finalAttempt = &copy
+	}
 	d.mu.Unlock()
 }
 
@@ -397,8 +644,18 @@ func SanitizeRequestDiagnosticReason(reason string) string {
 
 func cloneRequestAttemptEvent(event RequestAttemptEvent) RequestAttemptEvent {
 	event.FinishedMs = cloneInt(event.FinishedMs)
+	event.ConnectionReused = cloneBool(event.ConnectionReused)
+	event.ConnectionReadyMs = cloneInt(event.ConnectionReadyMs)
+	event.DNSLookupMs = cloneInt(event.DNSLookupMs)
+	event.TCPConnectMs = cloneInt(event.TCPConnectMs)
+	event.TLSHandshakeMs = cloneInt(event.TLSHandshakeMs)
+	event.RequestHeadersWrittenMs = cloneInt(event.RequestHeadersWrittenMs)
 	event.RequestWrittenMs = cloneInt(event.RequestWrittenMs)
 	event.FirstByteMs = cloneInt(event.FirstByteMs)
+	event.ResponseHeadersReceivedMs = cloneInt(event.ResponseHeadersReceivedMs)
+	event.ResponseBodyFirstByteMs = cloneInt(event.ResponseBodyFirstByteMs)
+	event.FirstEventMs = cloneInt(event.FirstEventMs)
+	event.FirstOutputCharacterMs = cloneInt(event.FirstOutputCharacterMs)
 	event.UpstreamStatus = cloneInt(event.UpstreamStatus)
 	event.Route = cloneRequestRouteSnapshot(event.Route)
 	return event
@@ -423,4 +680,20 @@ func cloneInt64(value *int64) *int64 {
 	}
 	copy := *value
 	return &copy
+}
+
+func cloneBool(value *bool) *bool {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	return &copy
+}
+
+func nonNegativeDurationMs(start, end time.Time) int {
+	value := end.Sub(start).Milliseconds()
+	if value < 0 {
+		return 0
+	}
+	return int(value)
 }

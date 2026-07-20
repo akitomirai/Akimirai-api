@@ -50,10 +50,13 @@ import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
 import type { GrokQuotaProbeResult, GrokQuotaWindow } from '@/api/admin/grok'
 import type { Account } from '@/types'
+import { formatTokenCount } from '@/utils/format'
 
 const props = defineProps<{
   account: Account
 }>()
+
+const emit = defineEmits<{ probed: [result: GrokQuotaProbeResult] }>()
 
 const { t } = useI18n()
 
@@ -77,9 +80,13 @@ const extractErrorMessage = (e: unknown): string => {
   )
 }
 
-const formatWindow = (label: string, window?: GrokQuotaWindow | null): string | null => {
+const formatWindow = (
+  label: string,
+  window?: GrokQuotaWindow | null,
+  formatValue: (value: number) => string = String,
+): string | null => {
   if (!window || window.limit == null || window.remaining == null) return null
-  return `${label} ${window.remaining}/${window.limit}`
+  return `${label} ${formatValue(window.remaining)}/${formatValue(window.limit)}`
 }
 
 const retryAfterLabel = computed(() => {
@@ -92,18 +99,27 @@ const retryAfterLabel = computed(() => {
 const summary = computed(() => {
   const snapshot = data.value?.snapshot
   if (!data.value) return ''
-  if (!snapshot) return t('admin.accounts.usageWindow.grokNoHeaders')
-  const parts = [
-    formatWindow(t('admin.accounts.usageWindow.grokRequests'), snapshot.requests),
-    formatWindow(t('admin.accounts.usageWindow.grokTokens'), snapshot.tokens)
-  ].filter(Boolean)
+  const billing = data.value.billing
+  const parts: Array<string | null> = []
+  if (billing?.period_type?.toLowerCase() === 'weekly' && billing.usage_percent != null) {
+    parts.push(t('admin.accounts.usageWindow.grokWeeklyUsage', {
+      percent: Math.round(Math.min(100, Math.max(0, billing.usage_percent)))
+    }))
+  }
+  if (snapshot) {
+    parts.push(
+      formatWindow(t('admin.accounts.usageWindow.grokRequests'), snapshot.requests),
+      formatWindow(t('admin.accounts.usageWindow.grokTokens'), snapshot.tokens, formatTokenCount)
+    )
+  }
   if (retryAfterLabel.value) {
     parts.push(t('admin.accounts.usageWindow.grokRetryAfter', { time: retryAfterLabel.value }))
   }
-  if (snapshot.entitlement_status) {
+  if (snapshot?.entitlement_status) {
     parts.push(snapshot.entitlement_status)
   }
-  return parts.length > 0 ? parts.join(' | ') : t('admin.accounts.usageWindow.grokNoHeaders')
+  const visibleParts = parts.filter((part): part is string => Boolean(part))
+  return visibleParts.length > 0 ? visibleParts.join(' | ') : t('admin.accounts.usageWindow.grokNoHeaders')
 })
 
 const truncatedError = computed(() => {
@@ -117,6 +133,8 @@ const handleProbe = async () => {
   error.value = null
   try {
     data.value = await adminAPI.grok.queryQuota(props.account.id)
+    error.value = data.value.probe_error || null
+    emit('probed', data.value)
   } catch (e) {
     error.value = extractErrorMessage(e)
   } finally {

@@ -1,0 +1,4 @@
+add_header Deprecation "true" always;
+add_header Sunset "{{SUNSET_HTTP_DATE}}" always;
+add_header Link "<https://{{PRIMARY_DOMAIN}}$request_uri>; rel=\"successor-version\"" always;
+add_header X-MiraiAPI-New-Origin "https://{{PRIMARY_DOMAIN}}" always;

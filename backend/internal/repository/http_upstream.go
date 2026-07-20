@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -20,13 +21,16 @@ import (
 
 	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/zstd"
+	"golang.org/x/net/http2"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/proxyurl"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/proxyutil"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/servertiming"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/tlsfingerprint"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/Wei-Shaw/sub2api/internal/util/urlvalidator"
+	"golang.org/x/mod/semver"
 )
 
 // 默认配置常量
@@ -57,6 +61,12 @@ const (
 	defaultOpenAIHTTP2FallbackErrorThreshold = 2
 	defaultOpenAIHTTP2FallbackWindow         = 60 * time.Second
 	defaultOpenAIHTTP2FallbackTTL            = 10 * time.Minute
+	// Active PING probes evict pooled H2 connections silently dropped by a proxy or NAT.
+	openAIHTTP2ReadIdleTimeout = 15 * time.Second
+	openAIHTTP2PingTimeout     = 15 * time.Second
+	grokCLIProxyHost           = "cli-chat-proxy.grok.com"
+	grokCLIStableVersion       = "0.2.93"
+	grokCLIVersionOverride     = "XAI_GROK_CLI_VERSION"
 )
 
 const (
@@ -161,6 +171,7 @@ func NewHTTPUpstream(cfg *config.Config) service.HTTPUpstream {
 //   - 调用方必须关闭 resp.Body，否则会导致 inFlight 计数泄漏
 //   - inFlight > 0 的客户端不会被淘汰，确保活跃请求不被中断
 func (s *httpUpstreamService) Do(req *http.Request, proxyURL string, accountID int64, accountConcurrency int) (*http.Response, error) {
+	applyGrokCLIProxyHeaders(req)
 	if err := s.validateRequestHost(req); err != nil {
 		return nil, err
 	}
@@ -177,7 +188,7 @@ func (s *httpUpstreamService) Do(req *http.Request, proxyURL string, accountID i
 
 	// 执行请求
 	req, diagnosticsAttempt := attachHTTPUpstreamDiagnostics(req, proxyURL, accountID)
-	resp, err := entry.client.Do(req)
+	resp, err := servertiming.Do(entry.client, req)
 	finishHTTPUpstreamDiagnostics(diagnosticsAttempt, resp, err)
 	if err != nil {
 		s.recordOpenAIHTTP2Failure(profile, entry.protocolMode, entry.proxyKey, err)
@@ -190,6 +201,7 @@ func (s *httpUpstreamService) Do(req *http.Request, proxyURL string, accountID i
 
 	// 如果上游返回了压缩内容，解压后再交给业务层
 	decompressResponseBody(resp)
+	wrapHTTPUpstreamDiagnosticsBody(resp, diagnosticsAttempt)
 
 	// 包装响应体，在关闭时自动减少计数并更新时间戳
 	// 这确保了流式响应（如 SSE）在完全读取前不会被淘汰
@@ -209,6 +221,7 @@ func (s *httpUpstreamService) DoWithTLS(req *http.Request, proxyURL string, acco
 	if profile == nil {
 		return s.Do(req, proxyURL, accountID, accountConcurrency)
 	}
+	applyGrokCLIProxyHeaders(req)
 	upstreamProfile := service.HTTPUpstreamProfileDefault
 	if req != nil {
 		upstreamProfile = service.HTTPUpstreamProfileFromContext(req.Context())
@@ -235,7 +248,7 @@ func (s *httpUpstreamService) DoWithTLS(req *http.Request, proxyURL string, acco
 	}
 
 	req, diagnosticsAttempt := attachHTTPUpstreamDiagnostics(req, proxyURL, accountID)
-	resp, err := entry.client.Do(req)
+	resp, err := servertiming.Do(entry.client, req)
 	finishHTTPUpstreamDiagnostics(diagnosticsAttempt, resp, err)
 	if err != nil {
 		atomic.AddInt64(&entry.inFlight, -1)
@@ -245,6 +258,7 @@ func (s *httpUpstreamService) DoWithTLS(req *http.Request, proxyURL string, acco
 	}
 
 	decompressResponseBody(resp)
+	wrapHTTPUpstreamDiagnosticsBody(resp, diagnosticsAttempt)
 
 	resp.Body = wrapTrackedBody(resp.Body, func() {
 		atomic.AddInt64(&entry.inFlight, -1)
@@ -255,6 +269,30 @@ func (s *httpUpstreamService) DoWithTLS(req *http.Request, proxyURL string, acco
 }
 
 // acquireClientWithTLS 获取或创建带 TLS 指纹的客户端
+func applyGrokCLIProxyHeaders(req *http.Request) {
+	if req == nil || req.URL == nil || !strings.EqualFold(strings.TrimSpace(req.URL.Hostname()), grokCLIProxyHost) {
+		return
+	}
+	if req.Header == nil {
+		req.Header = make(http.Header)
+	}
+	version := strings.TrimSpace(os.Getenv(grokCLIVersionOverride))
+	if !isSupportedGrokCLIVersion(version) {
+		version = grokCLIStableVersion
+	}
+	req.Header.Set("X-XAI-Token-Auth", "xai-grok-cli")
+	req.Header.Set("x-grok-client-version", version)
+	req.Header.Set("User-Agent", "xai-grok-workspace/"+version)
+}
+
+func isSupportedGrokCLIVersion(version string) bool {
+	canonical := "v" + version
+	minimum := "v" + grokCLIStableVersion
+	return semver.IsValid(canonical) &&
+		semver.Canonical(canonical) == canonical &&
+		semver.Compare(canonical, minimum) >= 0
+}
+
 func (s *httpUpstreamService) acquireClientWithTLS(proxyURL string, accountID int64, accountConcurrency int, profile *tlsfingerprint.Profile, upstreamProfile service.HTTPUpstreamProfile) (*upstreamClientEntry, error) {
 	return s.getClientEntryWithTLS(proxyURL, accountID, accountConcurrency, profile, upstreamProfile, true, true)
 }
@@ -1066,6 +1104,9 @@ func buildUpstreamTransport(settings poolSettings, proxyURL *url.URL, protocolMo
 	switch protocolMode {
 	case upstreamProtocolModeOpenAIH2:
 		transport.ForceAttemptHTTP2 = true
+		if _, err := enableOpenAIHTTP2KeepAlive(transport); err != nil {
+			return nil, err
+		}
 	case upstreamProtocolModeOpenAIH1:
 		transport.ForceAttemptHTTP2 = false
 		transport.TLSNextProto = make(map[string]func(string, *tls.Conn) http.RoundTripper)
@@ -1078,6 +1119,19 @@ func buildUpstreamTransport(settings poolSettings, proxyURL *url.URL, protocolMo
 		return nil, err
 	}
 	return transport, nil
+}
+
+// enableOpenAIHTTP2KeepAlive enables active health probes for the OpenAI H2 pool.
+func enableOpenAIHTTP2KeepAlive(transport *http.Transport) (*http2.Transport, error) {
+	h2, err := http2.ConfigureTransports(transport)
+	if err != nil {
+		return nil, err
+	}
+	if h2 != nil {
+		h2.ReadIdleTimeout = openAIHTTP2ReadIdleTimeout
+		h2.PingTimeout = openAIHTTP2PingTimeout
+	}
+	return h2, nil
 }
 
 // buildUpstreamTransportWithTLSFingerprint 构建带 TLS 指纹伪装的 Transport

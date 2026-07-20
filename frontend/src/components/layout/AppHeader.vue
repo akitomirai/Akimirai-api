@@ -33,6 +33,21 @@
       <!-- Right: Announcements + Docs + Language + Subscriptions + Balance + User Dropdown -->
       <div class="flex shrink-0 items-center gap-3">
         <button
+          v-if="user && modelPlazaEnabled"
+          type="button"
+          class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors"
+          :class="isModelPlazaActive
+            ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white'"
+          :aria-pressed="isModelPlazaActive"
+          :title="isModelPlazaActive ? t('common.close', 'Close') : t('nav.modelPlaza')"
+          @click="handleModelPlazaClick"
+        >
+          <Icon :name="isModelPlazaActive ? 'x' : 'grid'" size="sm" />
+          <span class="hidden sm:inline">{{ t('nav.modelPlaza') }}</span>
+        </button>
+
+        <button
           v-if="user"
           type="button"
           class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors"
@@ -266,6 +281,8 @@ import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMi
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { sanitizeUrl } from '@/utils/url'
+import { FeatureFlags, isFeatureFlagEnabled } from '@/utils/featureFlags'
+import { createFeatureReturnNavigation } from '@/utils/featureReturnNavigation'
 
 interface HeaderQuote {
   text: string
@@ -325,15 +342,30 @@ const showOnboardingButton = computed(() => {
   return !authStore.isSimpleMode && user.value?.role === 'admin'
 })
 
-const GPT_IMAGE_RETURN_PATH_KEY = 'sub2api:gpt-image-return-path'
-
 function isGptImagePath(path: string): boolean {
   return path === '/images' || path.startsWith('/images/') || path.startsWith('/image-management')
 }
 
-const isGptImageActive = computed(() => {
-  return isGptImagePath(route.path)
+function isModelPlazaPath(path: string): boolean {
+  return path === '/model-plaza' || path.startsWith('/model-plaza/')
+}
+
+const fallbackFeaturePath = () => authStore.isAdmin ? '/admin/dashboard' : '/dashboard'
+const gptImageNavigation = createFeatureReturnNavigation({
+  storageKey: 'sub2api:gpt-image-return-path',
+  isFeaturePath: isGptImagePath,
+  entryPath: '/images',
+  fallbackPath: fallbackFeaturePath,
 })
+const modelPlazaNavigation = createFeatureReturnNavigation({
+  storageKey: 'sub2api:model-plaza-return-path',
+  isFeaturePath: isModelPlazaPath,
+  entryPath: '/model-plaza',
+  fallbackPath: fallbackFeaturePath,
+})
+const isGptImageActive = computed(() => gptImageNavigation.isActive(route.path))
+const isModelPlazaActive = computed(() => modelPlazaNavigation.isActive(route.path))
+const modelPlazaEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.modelPlaza))
 
 const quoteTitle = computed(() => {
   const author = randomQuote.value.author ? ` - ${randomQuote.value.author}` : ''
@@ -398,74 +430,16 @@ function closeDropdown() {
   dropdownOpen.value = false
 }
 
-function getSameOriginReferrerPath(): string {
-  if (!document.referrer) return ''
-
-  try {
-    const referrerUrl = new URL(document.referrer)
-    if (referrerUrl.origin !== window.location.origin) return ''
-
-    const path = `${referrerUrl.pathname}${referrerUrl.search}${referrerUrl.hash}`
-    return path.startsWith('/') && !isGptImagePath(referrerUrl.pathname) ? path : ''
-  } catch {
-    return ''
-  }
-}
-
-function getStoredGptImageReturnPath(): string {
-  try {
-    const storedPath = window.sessionStorage.getItem(GPT_IMAGE_RETURN_PATH_KEY)?.trim() ?? ''
-    return storedPath.startsWith('/') && !isGptImagePath(storedPath.split(/[?#]/, 1)[0]) ? storedPath : ''
-  } catch {
-    return ''
-  }
-}
-
-function setStoredGptImageReturnPath(path: string) {
-  if (!path.startsWith('/') || isGptImagePath(path.split(/[?#]/, 1)[0])) return
-
-  try {
-    window.sessionStorage.setItem(GPT_IMAGE_RETURN_PATH_KEY, path)
-  } catch {
-    // Session storage can be unavailable in hardened browser modes.
-  }
-}
-
-function clearStoredGptImageReturnPath() {
-  try {
-    window.sessionStorage.removeItem(GPT_IMAGE_RETURN_PATH_KEY)
-  } catch {
-    // Session storage can be unavailable in hardened browser modes.
-  }
-}
-
 async function handleGptImageClick() {
-  if (!isGptImageActive.value) {
-    setStoredGptImageReturnPath(route.fullPath)
-    await router.push('/images')
-    return
-  }
+  const wasActive = isGptImageActive.value
+  const target = gptImageNavigation.getToggleTarget(route.fullPath)
+  await (wasActive ? router.replace(target) : router.push(target))
+}
 
-  const returnPath = getStoredGptImageReturnPath()
-  clearStoredGptImageReturnPath()
-
-  if (returnPath) {
-    await router.replace(returnPath)
-    return
-  }
-
-  const referrerPath = getSameOriginReferrerPath()
-  if (referrerPath) {
-    await router.replace(referrerPath)
-    return
-  }
-
-  if (window.history.length > 1) {
-    router.back()
-    return
-  }
-
-  await router.replace(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
+async function handleModelPlazaClick() {
+  const wasActive = isModelPlazaActive.value
+  const target = modelPlazaNavigation.getToggleTarget(route.fullPath)
+  await (wasActive ? router.replace(target) : router.push(target))
 }
 
 async function handleLogout() {

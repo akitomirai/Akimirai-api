@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,6 +33,20 @@ func newAPIKeyRepoSQLite(t *testing.T) (*apiKeyRepository, *dbent.Client) {
 	t.Cleanup(func() { _ = client.Close() })
 
 	return &apiKeyRepository{client: client, sql: db}, client
+}
+
+func TestLatestUsageLogIPsQueryPostgresUsesPerKeyLateralLookup(t *testing.T) {
+	query, args := latestUsageLogIPsQuery([]int64{11, 22}, dialect.Postgres)
+	normalizedQuery := strings.Join(strings.Fields(query), " ")
+
+	require.Contains(t, normalizedQuery, "FROM unnest($1::bigint[]) AS requested(api_key_id)")
+	require.Contains(t, normalizedQuery, "CROSS JOIN LATERAL")
+	require.Contains(t, normalizedQuery, "WHERE ul.api_key_id = requested.api_key_id")
+	require.Contains(t, normalizedQuery, "AND ul.ip_address IS NOT NULL")
+	require.Contains(t, normalizedQuery, "AND ul.ip_address <> ''")
+	require.Contains(t, normalizedQuery, "ORDER BY ul.created_at DESC, ul.id DESC LIMIT 1")
+	require.NotContains(t, normalizedQuery, "ROW_NUMBER")
+	require.Len(t, args, 1)
 }
 
 func mustCreateAPIKeyRepoUser(t *testing.T, ctx context.Context, client *dbent.Client, email string) *service.User {

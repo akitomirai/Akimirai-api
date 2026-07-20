@@ -833,6 +833,9 @@ func ensureOpenAIResponsesImageGenerationTool(reqBody map[string]any) bool {
 	if isCodexSparkModel(firstNonEmptyString(reqBody["model"])) {
 		return false
 	}
+	if hasOpenAIImageGenerationTool(reqBody) {
+		return false
+	}
 
 	tool := map[string]any{
 		"type":          "image_generation",
@@ -849,15 +852,6 @@ func ensureOpenAIResponsesImageGenerationTool(reqBody map[string]any) bool {
 	if !ok {
 		reqBody["tools"] = []any{tool}
 		return true
-	}
-	for _, rawTool := range tools {
-		toolMap, ok := rawTool.(map[string]any)
-		if !ok {
-			continue
-		}
-		if strings.TrimSpace(firstNonEmptyString(toolMap["type"])) == "image_generation" {
-			return false
-		}
 	}
 
 	reqBody["tools"] = append(tools, tool)
@@ -1397,6 +1391,13 @@ func filterCodexInputWithOptions(input []any, opts codexInputFilterOptions) []an
 			// 来自客户端回放，需要删除。
 			// 注意：function_call_output 等 output 类的 id 无此约束，不动。
 			if id, ok := m["id"].(string); ok && id != "" && !strings.HasPrefix(id, "fc") {
+				ensureCopy()
+				delete(newItem, "id")
+			}
+		} else if typ == "message" {
+			// Upstream requires message item ids to begin with "msg". Replayed
+			// item_* ids are invalid references, so drop rather than rewrite them.
+			if id, ok := m["id"].(string); ok && id != "" && !strings.HasPrefix(id, "msg") {
 				ensureCopy()
 				delete(newItem, "id")
 			}

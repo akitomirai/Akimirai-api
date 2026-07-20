@@ -142,27 +142,9 @@ func (h *UsageHandler) List(c *gin.Context) {
 		billingType = &bt
 	}
 
-	// Parse date range
-	var startTime, endTime *time.Time
-	userTZ := c.Query("timezone") // Get user's timezone from request
-	if startDateStr := c.Query("start_date"); startDateStr != "" {
-		t, err := timezone.ParseInUserLocation("2006-01-02", startDateStr, userTZ)
-		if err != nil {
-			response.BadRequest(c, "Invalid start_date format, use YYYY-MM-DD")
-			return
-		}
-		startTime = &t
-	}
-
-	if endDateStr := c.Query("end_date"); endDateStr != "" {
-		t, err := timezone.ParseInUserLocation("2006-01-02", endDateStr, userTZ)
-		if err != nil {
-			response.BadRequest(c, "Invalid end_date format, use YYYY-MM-DD")
-			return
-		}
-		// Use half-open range [start, end), move to next calendar day start (DST-safe).
-		t = t.AddDate(0, 0, 1)
-		endTime = &t
+	startTime, endTime, ok := parseOptionalAdminUsageTimeRange(c)
+	if !ok {
+		return
 	}
 
 	params := pagination.PaginationParams{
@@ -276,41 +258,9 @@ func (h *UsageHandler) Stats(c *gin.Context) {
 		billingType = &bt
 	}
 
-	// Parse date range
-	userTZ := c.Query("timezone")
-	now := timezone.NowInUserLocation(userTZ)
-	var startTime, endTime time.Time
-
-	startDateStr := c.Query("start_date")
-	endDateStr := c.Query("end_date")
-
-	if startDateStr != "" && endDateStr != "" {
-		var err error
-		startTime, err = timezone.ParseInUserLocation("2006-01-02", startDateStr, userTZ)
-		if err != nil {
-			response.BadRequest(c, "Invalid start_date format, use YYYY-MM-DD")
-			return
-		}
-		endTime, err = timezone.ParseInUserLocation("2006-01-02", endDateStr, userTZ)
-		if err != nil {
-			response.BadRequest(c, "Invalid end_date format, use YYYY-MM-DD")
-			return
-		}
-		// 与 SQL 条件 created_at < end 对齐，使用次日 00:00 作为上边界（DST-safe）。
-		endTime = endTime.AddDate(0, 0, 1)
-	} else {
-		period := c.DefaultQuery("period", "today")
-		switch period {
-		case "today":
-			startTime = timezone.StartOfDayInUserLocation(now, userTZ)
-		case "week":
-			startTime = now.AddDate(0, 0, -7)
-		case "month":
-			startTime = now.AddDate(0, -1, 0)
-		default:
-			startTime = timezone.StartOfDayInUserLocation(now, userTZ)
-		}
-		endTime = now
+	startTime, endTime, ok := parseAdminUsageStatsTimeRange(c)
+	if !ok {
+		return
 	}
 
 	// Build filters and call GetStatsWithFilters
@@ -352,6 +302,76 @@ func (h *UsageHandler) Stats(c *gin.Context) {
 	}
 
 	response.Success(c, stats)
+}
+
+func parseOptionalAdminUsageTimeRange(c *gin.Context) (*time.Time, *time.Time, bool) {
+	userTZ := c.Query("timezone")
+	if period := strings.TrimSpace(c.Query("period")); period != "" {
+		now := timezone.NowInUserLocation(userTZ)
+		startTime, endTime, valid := resolveDashboardPeriodRange(now, userTZ, period)
+		if !valid {
+			response.BadRequest(c, "Invalid period")
+			return nil, nil, false
+		}
+		return &startTime, &endTime, true
+	}
+
+	var startTime, endTime *time.Time
+	if startDateStr := c.Query("start_date"); startDateStr != "" {
+		t, err := timezone.ParseInUserLocation("2006-01-02", startDateStr, userTZ)
+		if err != nil {
+			response.BadRequest(c, "Invalid start_date format, use YYYY-MM-DD")
+			return nil, nil, false
+		}
+		startTime = &t
+	}
+	if endDateStr := c.Query("end_date"); endDateStr != "" {
+		t, err := timezone.ParseInUserLocation("2006-01-02", endDateStr, userTZ)
+		if err != nil {
+			response.BadRequest(c, "Invalid end_date format, use YYYY-MM-DD")
+			return nil, nil, false
+		}
+		t = t.AddDate(0, 0, 1)
+		endTime = &t
+	}
+	return startTime, endTime, true
+}
+
+func parseAdminUsageStatsTimeRange(c *gin.Context) (time.Time, time.Time, bool) {
+	userTZ := c.Query("timezone")
+	now := timezone.NowInUserLocation(userTZ)
+	if period := strings.TrimSpace(c.Query("period")); period != "" {
+		if startTime, endTime, valid := resolveDashboardPeriodRange(now, userTZ, period); valid {
+			return startTime, endTime, true
+		}
+		switch period {
+		case "week":
+			return now.AddDate(0, 0, -7), now, true
+		case "month":
+			return now.AddDate(0, -1, 0), now, true
+		default:
+			response.BadRequest(c, "Invalid period")
+			return time.Time{}, time.Time{}, false
+		}
+	}
+
+	startDateStr := c.Query("start_date")
+	endDateStr := c.Query("end_date")
+	if startDateStr != "" && endDateStr != "" {
+		startTime, err := timezone.ParseInUserLocation("2006-01-02", startDateStr, userTZ)
+		if err != nil {
+			response.BadRequest(c, "Invalid start_date format, use YYYY-MM-DD")
+			return time.Time{}, time.Time{}, false
+		}
+		endTime, err := timezone.ParseInUserLocation("2006-01-02", endDateStr, userTZ)
+		if err != nil {
+			response.BadRequest(c, "Invalid end_date format, use YYYY-MM-DD")
+			return time.Time{}, time.Time{}, false
+		}
+		return startTime, endTime.AddDate(0, 0, 1), true
+	}
+
+	return timezone.StartOfDayInUserLocation(now, userTZ), now, true
 }
 
 // SearchUsers handles searching users by email keyword

@@ -2,9 +2,7 @@
   <div class="card p-4">
     <div class="mb-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
       <h3 class="whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
-        {{ !enableRankingView || activeView === 'model_distribution'
-          ? t('admin.dashboard.modelDistribution')
-          : t('admin.dashboard.spendingRankingTitle') }}
+        {{ t('admin.dashboard.modelDistribution') }}
       </h3>
       <div class="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
         <div
@@ -67,46 +65,20 @@
             {{ t('admin.dashboard.metricActualCost') }}
           </button>
         </div>
-        <div v-if="enableRankingView" class="inline-flex rounded-lg bg-gray-100 p-1 dark:bg-dark-800">
-          <button
-            type="button"
-            class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
-            :class="
-              activeView === 'model_distribution'
-                ? 'bg-white text-gray-900 shadow-sm dark:bg-dark-700 dark:text-white'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-            "
-            @click="activeView = 'model_distribution'"
-          >
-            {{ t('admin.dashboard.viewModelDistribution') }}
-          </button>
-          <button
-            type="button"
-            class="rounded-md px-2.5 py-1 text-xs font-medium transition-colors"
-            :class="
-              activeView === 'spending_ranking'
-                ? 'bg-white text-gray-900 shadow-sm dark:bg-dark-700 dark:text-white'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-            "
-            @click="activeView = 'spending_ranking'"
-          >
-            {{ t('admin.dashboard.viewSpendingRanking') }}
-          </button>
-        </div>
       </div>
     </div>
 
-    <div v-if="activeView === 'model_distribution' && loading" class="flex h-48 items-center justify-center">
+    <div v-if="loading" class="flex h-48 items-center justify-center">
       <LoadingSpinner />
     </div>
     <div
-      v-else-if="activeView === 'model_distribution' && displayModelStats.length > 0 && chartData"
-      class="flex items-center gap-6"
+      v-else-if="displayModelStats.length > 0 && chartData"
+      class="flex flex-col items-center gap-6 sm:flex-row"
     >
-      <div class="h-48 w-48">
+      <div class="h-48 w-48 shrink-0">
         <Doughnut :data="chartData" :options="doughnutOptions" />
       </div>
-      <div class="max-h-48 flex-1 overflow-y-auto">
+      <div class="max-h-48 w-full min-w-0 flex-1 overflow-auto">
         <table class="w-full text-xs">
           <thead>
             <tr class="text-gray-500 dark:text-gray-400">
@@ -140,7 +112,7 @@
                   {{ formatNumber(model.requests) }}
                 </td>
                 <td class="py-1.5 text-right text-gray-600 dark:text-gray-400">
-                  {{ formatTokens(model.total_tokens) }}
+                  {{ formatTokenCount(model.total_tokens) }}
                 </td>
                 <td class="py-1.5 text-right text-green-600 dark:text-green-400">
                   ${{ formatCost(model.actual_cost) }}
@@ -167,73 +139,6 @@
       </div>
     </div>
     <div
-      v-else-if="activeView === 'model_distribution'"
-      class="flex h-48 items-center justify-center text-sm text-gray-500 dark:text-gray-400"
-    >
-      {{ t('admin.dashboard.noDataAvailable') }}
-    </div>
-
-    <div v-else-if="rankingLoading" class="flex h-48 items-center justify-center">
-      <LoadingSpinner />
-    </div>
-    <div
-      v-else-if="rankingError"
-      class="flex h-48 items-center justify-center text-sm text-gray-500 dark:text-gray-400"
-    >
-      {{ t('admin.dashboard.failedToLoad') }}
-    </div>
-    <div v-else-if="rankingDisplayItems.length > 0 && rankingChartData" class="flex items-center gap-6">
-      <div class="h-48 w-48">
-        <Doughnut :data="rankingChartData" :options="rankingDoughnutOptions" />
-      </div>
-      <div class="max-h-48 flex-1 overflow-y-auto">
-        <table class="w-full text-xs">
-          <thead>
-            <tr class="text-gray-500 dark:text-gray-400">
-              <th class="pb-2 text-left">{{ t('admin.dashboard.spendingRankingUser') }}</th>
-              <th class="pb-2 text-right">{{ t('admin.dashboard.spendingRankingRequests') }}</th>
-              <th class="pb-2 text-right">{{ t('admin.dashboard.spendingRankingTokens') }}</th>
-              <th class="pb-2 text-right">{{ t('admin.dashboard.spendingRankingSpend') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(item, index) in rankingDisplayItems"
-              :key="item.isOther ? 'others' : `${item.user_id}-${index}`"
-              class="border-t border-gray-100 transition-colors dark:border-gray-700"
-              :class="item.isOther
-                ? 'bg-gray-50/70 dark:bg-dark-700/20'
-                : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-700/40'"
-              @click="item.isOther ? undefined : emit('ranking-click', item)"
-            >
-              <td class="py-1.5">
-                <div class="flex min-w-0 items-center gap-2">
-                  <span class="shrink-0 text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-                    {{ item.isOther ? '危' : `#${index + 1}` }}
-                  </span>
-                  <span
-                    class="block max-w-[140px] truncate font-medium text-gray-900 dark:text-white"
-                    :title="getRankingRowLabel(item)"
-                  >
-                    {{ getRankingRowLabel(item) }}
-                  </span>
-                </div>
-              </td>
-              <td class="py-1.5 text-right text-gray-600 dark:text-gray-400">
-                {{ formatNumber(item.requests) }}
-              </td>
-              <td class="py-1.5 text-right text-gray-600 dark:text-gray-400">
-                {{ formatTokens(item.tokens) }}
-              </td>
-              <td class="py-1.5 text-right text-green-600 dark:text-green-400">
-                ${{ formatCost(item.actual_cost) }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div
       v-else
       class="flex h-48 items-center justify-center text-sm text-gray-500 dark:text-gray-400"
     >
@@ -249,8 +154,10 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
 import { Doughnut } from 'vue-chartjs'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import UserBreakdownSubTable from './UserBreakdownSubTable.vue'
-import type { ModelStat, UserSpendingRankingItem, UserBreakdownItem } from '@/types'
+import type { ModelStat, UserBreakdownItem } from '@/types'
+import type { UserUsagePeriod } from '@/api/usage'
 import { getUserBreakdown } from '@/api/admin/dashboard'
+import { formatTokenCount } from '@/utils/format'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
@@ -258,45 +165,32 @@ const { t } = useI18n()
 
 type DistributionMetric = 'tokens' | 'actual_cost'
 type ModelSource = 'requested' | 'upstream' | 'mapping'
-type RankingDisplayItem = UserSpendingRankingItem & { isOther?: boolean }
 const props = withDefaults(defineProps<{
   modelStats: ModelStat[]
   upstreamModelStats?: ModelStat[]
   mappingModelStats?: ModelStat[]
   source?: ModelSource
-  enableRankingView?: boolean
-  rankingItems?: UserSpendingRankingItem[]
-  rankingTotalActualCost?: number
-  rankingTotalRequests?: number
-  rankingTotalTokens?: number
   loading?: boolean
   metric?: DistributionMetric
   showSourceToggle?: boolean
   showMetricToggle?: boolean
   enableBreakdown?: boolean
   showAccountCost?: boolean
-  rankingLoading?: boolean
-  rankingError?: boolean
   startDate?: string
   endDate?: string
+  period?: UserUsagePeriod | null
+  timezone?: string
   filters?: Record<string, any>
 }>(), {
   upstreamModelStats: () => [],
   mappingModelStats: () => [],
   source: 'requested',
-  enableRankingView: false,
-  rankingItems: () => [],
-  rankingTotalActualCost: 0,
-  rankingTotalRequests: 0,
-  rankingTotalTokens: 0,
   loading: false,
   metric: 'tokens',
   showSourceToggle: false,
   showMetricToggle: false,
   enableBreakdown: true,
-  showAccountCost: true,
-  rankingLoading: false,
-  rankingError: false
+  showAccountCost: true
 })
 
 const expandedKey = ref<string | null>(null)
@@ -315,8 +209,9 @@ const toggleBreakdown = async (type: string, id: string) => {
   try {
     const res = await getUserBreakdown({
       ...props.filters,
-      start_date: props.startDate,
-      end_date: props.endDate,
+      ...(props.period
+        ? { period: props.period, timezone: props.timezone }
+        : { start_date: props.startDate, end_date: props.endDate, timezone: props.timezone }),
       model: id,
       model_source: props.source,
     })
@@ -331,13 +226,10 @@ const toggleBreakdown = async (type: string, id: string) => {
 const emit = defineEmits<{
   'update:metric': [value: DistributionMetric]
   'update:source': [value: ModelSource]
-  'ranking-click': [item: UserSpendingRankingItem]
 }>()
 
-const enableRankingView = computed(() => props.enableRankingView)
 const showAccountCost = computed(() => props.showAccountCost)
 const distributionColspan = computed(() => showAccountCost.value ? 6 : 5)
-const activeView = ref<'model_distribution' | 'spending_ranking'>('model_distribution')
 
 const toFiniteNumber = (value: unknown): number => {
   const numericValue = Number(value)
@@ -386,61 +278,6 @@ const chartData = computed(() => {
   }
 })
 
-const rankingChartData = computed(() => {
-  if (!props.rankingItems?.length) return null
-
-  const labels = props.rankingItems.map((item, index) => `#${index + 1} ${getRankingUserLabel(item)}`)
-  const data = props.rankingItems.map((item) => toFiniteNumber(item.actual_cost))
-  const backgroundColor = chartColors.slice(0, props.rankingItems.length)
-
-  if (otherRankingItem.value) {
-    labels.push(t('admin.dashboard.spendingRankingOther'))
-    data.push(otherRankingItem.value.actual_cost)
-    backgroundColor.push('#94a3b8')
-  }
-
-  return {
-    labels,
-    datasets: [
-      {
-        data,
-        backgroundColor,
-        borderWidth: 0
-      }
-    ]
-  }
-})
-
-const otherRankingItem = computed<RankingDisplayItem | null>(() => {
-  if (!props.rankingItems?.length) return null
-
-  const rankedActualCost = props.rankingItems.reduce((sum, item) => sum + toFiniteNumber(item.actual_cost), 0)
-  const rankedRequests = props.rankingItems.reduce((sum, item) => sum + toFiniteNumber(item.requests), 0)
-  const rankedTokens = props.rankingItems.reduce((sum, item) => sum + toFiniteNumber(item.tokens), 0)
-
-  const otherActualCost = Math.max((props.rankingTotalActualCost || 0) - rankedActualCost, 0)
-  const otherRequests = Math.max((props.rankingTotalRequests || 0) - rankedRequests, 0)
-  const otherTokens = Math.max((props.rankingTotalTokens || 0) - rankedTokens, 0)
-
-  if (otherActualCost <= 0.000001 && otherRequests <= 0 && otherTokens <= 0) return null
-
-  return {
-    user_id: 0,
-    email: '',
-    actual_cost: otherActualCost,
-    requests: otherRequests,
-    tokens: otherTokens,
-    isOther: true
-  }
-})
-
-const rankingDisplayItems = computed<RankingDisplayItem[]>(() => {
-  if (!props.rankingItems?.length) return []
-  return otherRankingItem.value
-    ? [...props.rankingItems, otherRankingItem.value]
-    : [...props.rankingItems]
-})
-
 const doughnutOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
@@ -456,7 +293,7 @@ const doughnutOptions = computed(() => ({
           const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0'
           const formattedValue = props.metric === 'actual_cost'
             ? `$${formatCost(value)}`
-            : formatTokens(value)
+            : formatTokenCount(value)
           return `${context.label}: ${formattedValue} (${percentage}%)`
         }
       }
@@ -464,49 +301,8 @@ const doughnutOptions = computed(() => ({
   }
 }))
 
-const rankingDoughnutOptions = computed(() => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      display: false
-    },
-    tooltip: {
-      callbacks: {
-        label: (context: any) => {
-          const value = context.raw as number
-          const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0)
-          const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0'
-          return `${context.label}: $${formatCost(value)} (${percentage}%)`
-        }
-      }
-    }
-  }
-}))
-
-const formatTokens = (value: number): string => {
-  if (value >= 1_000_000_000) {
-    return `${(value / 1_000_000_000).toFixed(2)}B`
-  } else if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(2)}M`
-  } else if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(2)}K`
-  }
-  return value.toLocaleString()
-}
-
 const formatNumber = (value: number): string => {
   return toFiniteNumber(value).toLocaleString()
-}
-
-const getRankingUserLabel = (item: UserSpendingRankingItem): string => {
-  if (item.email) return item.email
-  return t('admin.redeem.userPrefix', { id: item.user_id })
-}
-
-const getRankingRowLabel = (item: RankingDisplayItem): string => {
-  if (item.isOther) return t('admin.dashboard.spendingRankingOther')
-  return getRankingUserLabel(item)
 }
 
 const formatCost = (value: number | null | undefined): string => {

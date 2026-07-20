@@ -351,6 +351,20 @@ func (_c *UsageLogCreate) SetNillableRateMultiplier(v *float64) *UsageLogCreate 
 	return _c
 }
 
+// SetLongContextBillingApplied sets the "long_context_billing_applied" field.
+func (_c *UsageLogCreate) SetLongContextBillingApplied(v bool) *UsageLogCreate {
+	_c.mutation.SetLongContextBillingApplied(v)
+	return _c
+}
+
+// SetNillableLongContextBillingApplied sets the "long_context_billing_applied" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableLongContextBillingApplied(v *bool) *UsageLogCreate {
+	if v != nil {
+		_c.SetLongContextBillingApplied(*v)
+	}
+	return _c
+}
+
 // SetAccountRateMultiplier sets the "account_rate_multiplier" field.
 func (_c *UsageLogCreate) SetAccountRateMultiplier(v float64) *UsageLogCreate {
 	_c.mutation.SetAccountRateMultiplier(v)
@@ -547,6 +561,90 @@ func (_c *UsageLogCreate) SetNillableRequestBodyBytes(v *int64) *UsageLogCreate 
 	return _c
 }
 
+// SetUpstreamConnectionReused sets the "upstream_connection_reused" field.
+func (_c *UsageLogCreate) SetUpstreamConnectionReused(v bool) *UsageLogCreate {
+	_c.mutation.SetUpstreamConnectionReused(v)
+	return _c
+}
+
+// SetNillableUpstreamConnectionReused sets the "upstream_connection_reused" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableUpstreamConnectionReused(v *bool) *UsageLogCreate {
+	if v != nil {
+		_c.SetUpstreamConnectionReused(*v)
+	}
+	return _c
+}
+
+// SetUpstreamConnectionReadyMs sets the "upstream_connection_ready_ms" field.
+func (_c *UsageLogCreate) SetUpstreamConnectionReadyMs(v int) *UsageLogCreate {
+	_c.mutation.SetUpstreamConnectionReadyMs(v)
+	return _c
+}
+
+// SetNillableUpstreamConnectionReadyMs sets the "upstream_connection_ready_ms" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableUpstreamConnectionReadyMs(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetUpstreamConnectionReadyMs(*v)
+	}
+	return _c
+}
+
+// SetUpstreamDNSLookupMs sets the "upstream_dns_lookup_ms" field.
+func (_c *UsageLogCreate) SetUpstreamDNSLookupMs(v int) *UsageLogCreate {
+	_c.mutation.SetUpstreamDNSLookupMs(v)
+	return _c
+}
+
+// SetNillableUpstreamDNSLookupMs sets the "upstream_dns_lookup_ms" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableUpstreamDNSLookupMs(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetUpstreamDNSLookupMs(*v)
+	}
+	return _c
+}
+
+// SetUpstreamTCPConnectMs sets the "upstream_tcp_connect_ms" field.
+func (_c *UsageLogCreate) SetUpstreamTCPConnectMs(v int) *UsageLogCreate {
+	_c.mutation.SetUpstreamTCPConnectMs(v)
+	return _c
+}
+
+// SetNillableUpstreamTCPConnectMs sets the "upstream_tcp_connect_ms" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableUpstreamTCPConnectMs(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetUpstreamTCPConnectMs(*v)
+	}
+	return _c
+}
+
+// SetUpstreamTLSHandshakeMs sets the "upstream_tls_handshake_ms" field.
+func (_c *UsageLogCreate) SetUpstreamTLSHandshakeMs(v int) *UsageLogCreate {
+	_c.mutation.SetUpstreamTLSHandshakeMs(v)
+	return _c
+}
+
+// SetNillableUpstreamTLSHandshakeMs sets the "upstream_tls_handshake_ms" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableUpstreamTLSHandshakeMs(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetUpstreamTLSHandshakeMs(*v)
+	}
+	return _c
+}
+
+// SetUpstreamRequestHeadersWrittenMs sets the "upstream_request_headers_written_ms" field.
+func (_c *UsageLogCreate) SetUpstreamRequestHeadersWrittenMs(v int) *UsageLogCreate {
+	_c.mutation.SetUpstreamRequestHeadersWrittenMs(v)
+	return _c
+}
+
+// SetNillableUpstreamRequestHeadersWrittenMs sets the "upstream_request_headers_written_ms" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableUpstreamRequestHeadersWrittenMs(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetUpstreamRequestHeadersWrittenMs(*v)
+	}
+	return _c
+}
+
 // SetUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field.
 func (_c *UsageLogCreate) SetUpstreamRequestWrittenMs(v int) *UsageLogCreate {
 	_c.mutation.SetUpstreamRequestWrittenMs(v)
@@ -571,6 +669,62 @@ func (_c *UsageLogCreate) SetUpstreamFirstByteMs(v int) *UsageLogCreate {
 func (_c *UsageLogCreate) SetNillableUpstreamFirstByteMs(v *int) *UsageLogCreate {
 	if v != nil {
 		_c.SetUpstreamFirstByteMs(*v)
+	}
+	return _c
+}
+
+// SetUpstreamResponseHeadersReceivedMs sets the "upstream_response_headers_received_ms" field.
+func (_c *UsageLogCreate) SetUpstreamResponseHeadersReceivedMs(v int) *UsageLogCreate {
+	_c.mutation.SetUpstreamResponseHeadersReceivedMs(v)
+	return _c
+}
+
+// SetNillableUpstreamResponseHeadersReceivedMs sets the "upstream_response_headers_received_ms" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableUpstreamResponseHeadersReceivedMs(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetUpstreamResponseHeadersReceivedMs(*v)
+	}
+	return _c
+}
+
+// SetUpstreamResponseBodyFirstByteMs sets the "upstream_response_body_first_byte_ms" field.
+func (_c *UsageLogCreate) SetUpstreamResponseBodyFirstByteMs(v int) *UsageLogCreate {
+	_c.mutation.SetUpstreamResponseBodyFirstByteMs(v)
+	return _c
+}
+
+// SetNillableUpstreamResponseBodyFirstByteMs sets the "upstream_response_body_first_byte_ms" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableUpstreamResponseBodyFirstByteMs(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetUpstreamResponseBodyFirstByteMs(*v)
+	}
+	return _c
+}
+
+// SetUpstreamFirstEventMs sets the "upstream_first_event_ms" field.
+func (_c *UsageLogCreate) SetUpstreamFirstEventMs(v int) *UsageLogCreate {
+	_c.mutation.SetUpstreamFirstEventMs(v)
+	return _c
+}
+
+// SetNillableUpstreamFirstEventMs sets the "upstream_first_event_ms" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableUpstreamFirstEventMs(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetUpstreamFirstEventMs(*v)
+	}
+	return _c
+}
+
+// SetRequestFirstOutputCharacterMs sets the "request_first_output_character_ms" field.
+func (_c *UsageLogCreate) SetRequestFirstOutputCharacterMs(v int) *UsageLogCreate {
+	_c.mutation.SetRequestFirstOutputCharacterMs(v)
+	return _c
+}
+
+// SetNillableRequestFirstOutputCharacterMs sets the "request_first_output_character_ms" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableRequestFirstOutputCharacterMs(v *int) *UsageLogCreate {
+	if v != nil {
+		_c.SetRequestFirstOutputCharacterMs(*v)
 	}
 	return _c
 }
@@ -993,6 +1147,10 @@ func (_c *UsageLogCreate) defaults() {
 		v := usagelog.DefaultRateMultiplier
 		_c.mutation.SetRateMultiplier(v)
 	}
+	if _, ok := _c.mutation.LongContextBillingApplied(); !ok {
+		v := usagelog.DefaultLongContextBillingApplied
+		_c.mutation.SetLongContextBillingApplied(v)
+	}
 	if _, ok := _c.mutation.BillingType(); !ok {
 		v := usagelog.DefaultBillingType
 		_c.mutation.SetBillingType(v)
@@ -1117,6 +1275,9 @@ func (_c *UsageLogCreate) check() error {
 	}
 	if _, ok := _c.mutation.RateMultiplier(); !ok {
 		return &ValidationError{Name: "rate_multiplier", err: errors.New(`ent: missing required field "UsageLog.rate_multiplier"`)}
+	}
+	if _, ok := _c.mutation.LongContextBillingApplied(); !ok {
+		return &ValidationError{Name: "long_context_billing_applied", err: errors.New(`ent: missing required field "UsageLog.long_context_billing_applied"`)}
 	}
 	if _, ok := _c.mutation.BillingType(); !ok {
 		return &ValidationError{Name: "billing_type", err: errors.New(`ent: missing required field "UsageLog.billing_type"`)}
@@ -1322,6 +1483,10 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 		_spec.SetField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)
 		_node.RateMultiplier = value
 	}
+	if value, ok := _c.mutation.LongContextBillingApplied(); ok {
+		_spec.SetField(usagelog.FieldLongContextBillingApplied, field.TypeBool, value)
+		_node.LongContextBillingApplied = value
+	}
 	if value, ok := _c.mutation.AccountRateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldAccountRateMultiplier, field.TypeFloat64, value)
 		_node.AccountRateMultiplier = &value
@@ -1378,6 +1543,30 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 		_spec.SetField(usagelog.FieldRequestBodyBytes, field.TypeInt64, value)
 		_node.RequestBodyBytes = &value
 	}
+	if value, ok := _c.mutation.UpstreamConnectionReused(); ok {
+		_spec.SetField(usagelog.FieldUpstreamConnectionReused, field.TypeBool, value)
+		_node.UpstreamConnectionReused = &value
+	}
+	if value, ok := _c.mutation.UpstreamConnectionReadyMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamConnectionReadyMs, field.TypeInt, value)
+		_node.UpstreamConnectionReadyMs = &value
+	}
+	if value, ok := _c.mutation.UpstreamDNSLookupMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamDNSLookupMs, field.TypeInt, value)
+		_node.UpstreamDNSLookupMs = &value
+	}
+	if value, ok := _c.mutation.UpstreamTCPConnectMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamTCPConnectMs, field.TypeInt, value)
+		_node.UpstreamTCPConnectMs = &value
+	}
+	if value, ok := _c.mutation.UpstreamTLSHandshakeMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamTLSHandshakeMs, field.TypeInt, value)
+		_node.UpstreamTLSHandshakeMs = &value
+	}
+	if value, ok := _c.mutation.UpstreamRequestHeadersWrittenMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamRequestHeadersWrittenMs, field.TypeInt, value)
+		_node.UpstreamRequestHeadersWrittenMs = &value
+	}
 	if value, ok := _c.mutation.UpstreamRequestWrittenMs(); ok {
 		_spec.SetField(usagelog.FieldUpstreamRequestWrittenMs, field.TypeInt, value)
 		_node.UpstreamRequestWrittenMs = &value
@@ -1385,6 +1574,22 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.UpstreamFirstByteMs(); ok {
 		_spec.SetField(usagelog.FieldUpstreamFirstByteMs, field.TypeInt, value)
 		_node.UpstreamFirstByteMs = &value
+	}
+	if value, ok := _c.mutation.UpstreamResponseHeadersReceivedMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamResponseHeadersReceivedMs, field.TypeInt, value)
+		_node.UpstreamResponseHeadersReceivedMs = &value
+	}
+	if value, ok := _c.mutation.UpstreamResponseBodyFirstByteMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamResponseBodyFirstByteMs, field.TypeInt, value)
+		_node.UpstreamResponseBodyFirstByteMs = &value
+	}
+	if value, ok := _c.mutation.UpstreamFirstEventMs(); ok {
+		_spec.SetField(usagelog.FieldUpstreamFirstEventMs, field.TypeInt, value)
+		_node.UpstreamFirstEventMs = &value
+	}
+	if value, ok := _c.mutation.RequestFirstOutputCharacterMs(); ok {
+		_spec.SetField(usagelog.FieldRequestFirstOutputCharacterMs, field.TypeInt, value)
+		_node.RequestFirstOutputCharacterMs = &value
 	}
 	if value, ok := _c.mutation.RequestFirstTokenMs(); ok {
 		_spec.SetField(usagelog.FieldRequestFirstTokenMs, field.TypeInt, value)
@@ -2059,6 +2264,18 @@ func (u *UsageLogUpsert) AddRateMultiplier(v float64) *UsageLogUpsert {
 	return u
 }
 
+// SetLongContextBillingApplied sets the "long_context_billing_applied" field.
+func (u *UsageLogUpsert) SetLongContextBillingApplied(v bool) *UsageLogUpsert {
+	u.Set(usagelog.FieldLongContextBillingApplied, v)
+	return u
+}
+
+// UpdateLongContextBillingApplied sets the "long_context_billing_applied" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateLongContextBillingApplied() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldLongContextBillingApplied)
+	return u
+}
+
 // SetAccountRateMultiplier sets the "account_rate_multiplier" field.
 func (u *UsageLogUpsert) SetAccountRateMultiplier(v float64) *UsageLogUpsert {
 	u.Set(usagelog.FieldAccountRateMultiplier, v)
@@ -2365,6 +2582,144 @@ func (u *UsageLogUpsert) ClearRequestBodyBytes() *UsageLogUpsert {
 	return u
 }
 
+// SetUpstreamConnectionReused sets the "upstream_connection_reused" field.
+func (u *UsageLogUpsert) SetUpstreamConnectionReused(v bool) *UsageLogUpsert {
+	u.Set(usagelog.FieldUpstreamConnectionReused, v)
+	return u
+}
+
+// UpdateUpstreamConnectionReused sets the "upstream_connection_reused" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateUpstreamConnectionReused() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldUpstreamConnectionReused)
+	return u
+}
+
+// ClearUpstreamConnectionReused clears the value of the "upstream_connection_reused" field.
+func (u *UsageLogUpsert) ClearUpstreamConnectionReused() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldUpstreamConnectionReused)
+	return u
+}
+
+// SetUpstreamConnectionReadyMs sets the "upstream_connection_ready_ms" field.
+func (u *UsageLogUpsert) SetUpstreamConnectionReadyMs(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldUpstreamConnectionReadyMs, v)
+	return u
+}
+
+// UpdateUpstreamConnectionReadyMs sets the "upstream_connection_ready_ms" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateUpstreamConnectionReadyMs() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldUpstreamConnectionReadyMs)
+	return u
+}
+
+// AddUpstreamConnectionReadyMs adds v to the "upstream_connection_ready_ms" field.
+func (u *UsageLogUpsert) AddUpstreamConnectionReadyMs(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldUpstreamConnectionReadyMs, v)
+	return u
+}
+
+// ClearUpstreamConnectionReadyMs clears the value of the "upstream_connection_ready_ms" field.
+func (u *UsageLogUpsert) ClearUpstreamConnectionReadyMs() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldUpstreamConnectionReadyMs)
+	return u
+}
+
+// SetUpstreamDNSLookupMs sets the "upstream_dns_lookup_ms" field.
+func (u *UsageLogUpsert) SetUpstreamDNSLookupMs(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldUpstreamDNSLookupMs, v)
+	return u
+}
+
+// UpdateUpstreamDNSLookupMs sets the "upstream_dns_lookup_ms" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateUpstreamDNSLookupMs() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldUpstreamDNSLookupMs)
+	return u
+}
+
+// AddUpstreamDNSLookupMs adds v to the "upstream_dns_lookup_ms" field.
+func (u *UsageLogUpsert) AddUpstreamDNSLookupMs(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldUpstreamDNSLookupMs, v)
+	return u
+}
+
+// ClearUpstreamDNSLookupMs clears the value of the "upstream_dns_lookup_ms" field.
+func (u *UsageLogUpsert) ClearUpstreamDNSLookupMs() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldUpstreamDNSLookupMs)
+	return u
+}
+
+// SetUpstreamTCPConnectMs sets the "upstream_tcp_connect_ms" field.
+func (u *UsageLogUpsert) SetUpstreamTCPConnectMs(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldUpstreamTCPConnectMs, v)
+	return u
+}
+
+// UpdateUpstreamTCPConnectMs sets the "upstream_tcp_connect_ms" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateUpstreamTCPConnectMs() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldUpstreamTCPConnectMs)
+	return u
+}
+
+// AddUpstreamTCPConnectMs adds v to the "upstream_tcp_connect_ms" field.
+func (u *UsageLogUpsert) AddUpstreamTCPConnectMs(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldUpstreamTCPConnectMs, v)
+	return u
+}
+
+// ClearUpstreamTCPConnectMs clears the value of the "upstream_tcp_connect_ms" field.
+func (u *UsageLogUpsert) ClearUpstreamTCPConnectMs() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldUpstreamTCPConnectMs)
+	return u
+}
+
+// SetUpstreamTLSHandshakeMs sets the "upstream_tls_handshake_ms" field.
+func (u *UsageLogUpsert) SetUpstreamTLSHandshakeMs(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldUpstreamTLSHandshakeMs, v)
+	return u
+}
+
+// UpdateUpstreamTLSHandshakeMs sets the "upstream_tls_handshake_ms" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateUpstreamTLSHandshakeMs() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldUpstreamTLSHandshakeMs)
+	return u
+}
+
+// AddUpstreamTLSHandshakeMs adds v to the "upstream_tls_handshake_ms" field.
+func (u *UsageLogUpsert) AddUpstreamTLSHandshakeMs(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldUpstreamTLSHandshakeMs, v)
+	return u
+}
+
+// ClearUpstreamTLSHandshakeMs clears the value of the "upstream_tls_handshake_ms" field.
+func (u *UsageLogUpsert) ClearUpstreamTLSHandshakeMs() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldUpstreamTLSHandshakeMs)
+	return u
+}
+
+// SetUpstreamRequestHeadersWrittenMs sets the "upstream_request_headers_written_ms" field.
+func (u *UsageLogUpsert) SetUpstreamRequestHeadersWrittenMs(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldUpstreamRequestHeadersWrittenMs, v)
+	return u
+}
+
+// UpdateUpstreamRequestHeadersWrittenMs sets the "upstream_request_headers_written_ms" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateUpstreamRequestHeadersWrittenMs() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldUpstreamRequestHeadersWrittenMs)
+	return u
+}
+
+// AddUpstreamRequestHeadersWrittenMs adds v to the "upstream_request_headers_written_ms" field.
+func (u *UsageLogUpsert) AddUpstreamRequestHeadersWrittenMs(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldUpstreamRequestHeadersWrittenMs, v)
+	return u
+}
+
+// ClearUpstreamRequestHeadersWrittenMs clears the value of the "upstream_request_headers_written_ms" field.
+func (u *UsageLogUpsert) ClearUpstreamRequestHeadersWrittenMs() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldUpstreamRequestHeadersWrittenMs)
+	return u
+}
+
 // SetUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field.
 func (u *UsageLogUpsert) SetUpstreamRequestWrittenMs(v int) *UsageLogUpsert {
 	u.Set(usagelog.FieldUpstreamRequestWrittenMs, v)
@@ -2410,6 +2765,102 @@ func (u *UsageLogUpsert) AddUpstreamFirstByteMs(v int) *UsageLogUpsert {
 // ClearUpstreamFirstByteMs clears the value of the "upstream_first_byte_ms" field.
 func (u *UsageLogUpsert) ClearUpstreamFirstByteMs() *UsageLogUpsert {
 	u.SetNull(usagelog.FieldUpstreamFirstByteMs)
+	return u
+}
+
+// SetUpstreamResponseHeadersReceivedMs sets the "upstream_response_headers_received_ms" field.
+func (u *UsageLogUpsert) SetUpstreamResponseHeadersReceivedMs(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldUpstreamResponseHeadersReceivedMs, v)
+	return u
+}
+
+// UpdateUpstreamResponseHeadersReceivedMs sets the "upstream_response_headers_received_ms" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateUpstreamResponseHeadersReceivedMs() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldUpstreamResponseHeadersReceivedMs)
+	return u
+}
+
+// AddUpstreamResponseHeadersReceivedMs adds v to the "upstream_response_headers_received_ms" field.
+func (u *UsageLogUpsert) AddUpstreamResponseHeadersReceivedMs(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldUpstreamResponseHeadersReceivedMs, v)
+	return u
+}
+
+// ClearUpstreamResponseHeadersReceivedMs clears the value of the "upstream_response_headers_received_ms" field.
+func (u *UsageLogUpsert) ClearUpstreamResponseHeadersReceivedMs() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldUpstreamResponseHeadersReceivedMs)
+	return u
+}
+
+// SetUpstreamResponseBodyFirstByteMs sets the "upstream_response_body_first_byte_ms" field.
+func (u *UsageLogUpsert) SetUpstreamResponseBodyFirstByteMs(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldUpstreamResponseBodyFirstByteMs, v)
+	return u
+}
+
+// UpdateUpstreamResponseBodyFirstByteMs sets the "upstream_response_body_first_byte_ms" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateUpstreamResponseBodyFirstByteMs() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldUpstreamResponseBodyFirstByteMs)
+	return u
+}
+
+// AddUpstreamResponseBodyFirstByteMs adds v to the "upstream_response_body_first_byte_ms" field.
+func (u *UsageLogUpsert) AddUpstreamResponseBodyFirstByteMs(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldUpstreamResponseBodyFirstByteMs, v)
+	return u
+}
+
+// ClearUpstreamResponseBodyFirstByteMs clears the value of the "upstream_response_body_first_byte_ms" field.
+func (u *UsageLogUpsert) ClearUpstreamResponseBodyFirstByteMs() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldUpstreamResponseBodyFirstByteMs)
+	return u
+}
+
+// SetUpstreamFirstEventMs sets the "upstream_first_event_ms" field.
+func (u *UsageLogUpsert) SetUpstreamFirstEventMs(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldUpstreamFirstEventMs, v)
+	return u
+}
+
+// UpdateUpstreamFirstEventMs sets the "upstream_first_event_ms" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateUpstreamFirstEventMs() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldUpstreamFirstEventMs)
+	return u
+}
+
+// AddUpstreamFirstEventMs adds v to the "upstream_first_event_ms" field.
+func (u *UsageLogUpsert) AddUpstreamFirstEventMs(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldUpstreamFirstEventMs, v)
+	return u
+}
+
+// ClearUpstreamFirstEventMs clears the value of the "upstream_first_event_ms" field.
+func (u *UsageLogUpsert) ClearUpstreamFirstEventMs() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldUpstreamFirstEventMs)
+	return u
+}
+
+// SetRequestFirstOutputCharacterMs sets the "request_first_output_character_ms" field.
+func (u *UsageLogUpsert) SetRequestFirstOutputCharacterMs(v int) *UsageLogUpsert {
+	u.Set(usagelog.FieldRequestFirstOutputCharacterMs, v)
+	return u
+}
+
+// UpdateRequestFirstOutputCharacterMs sets the "request_first_output_character_ms" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateRequestFirstOutputCharacterMs() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldRequestFirstOutputCharacterMs)
+	return u
+}
+
+// AddRequestFirstOutputCharacterMs adds v to the "request_first_output_character_ms" field.
+func (u *UsageLogUpsert) AddRequestFirstOutputCharacterMs(v int) *UsageLogUpsert {
+	u.Add(usagelog.FieldRequestFirstOutputCharacterMs, v)
+	return u
+}
+
+// ClearRequestFirstOutputCharacterMs clears the value of the "request_first_output_character_ms" field.
+func (u *UsageLogUpsert) ClearRequestFirstOutputCharacterMs() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldRequestFirstOutputCharacterMs)
 	return u
 }
 
@@ -3390,6 +3841,20 @@ func (u *UsageLogUpsertOne) UpdateRateMultiplier() *UsageLogUpsertOne {
 	})
 }
 
+// SetLongContextBillingApplied sets the "long_context_billing_applied" field.
+func (u *UsageLogUpsertOne) SetLongContextBillingApplied(v bool) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetLongContextBillingApplied(v)
+	})
+}
+
+// UpdateLongContextBillingApplied sets the "long_context_billing_applied" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateLongContextBillingApplied() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateLongContextBillingApplied()
+	})
+}
+
 // SetAccountRateMultiplier sets the "account_rate_multiplier" field.
 func (u *UsageLogUpsertOne) SetAccountRateMultiplier(v float64) *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
@@ -3747,6 +4212,167 @@ func (u *UsageLogUpsertOne) ClearRequestBodyBytes() *UsageLogUpsertOne {
 	})
 }
 
+// SetUpstreamConnectionReused sets the "upstream_connection_reused" field.
+func (u *UsageLogUpsertOne) SetUpstreamConnectionReused(v bool) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamConnectionReused(v)
+	})
+}
+
+// UpdateUpstreamConnectionReused sets the "upstream_connection_reused" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateUpstreamConnectionReused() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamConnectionReused()
+	})
+}
+
+// ClearUpstreamConnectionReused clears the value of the "upstream_connection_reused" field.
+func (u *UsageLogUpsertOne) ClearUpstreamConnectionReused() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamConnectionReused()
+	})
+}
+
+// SetUpstreamConnectionReadyMs sets the "upstream_connection_ready_ms" field.
+func (u *UsageLogUpsertOne) SetUpstreamConnectionReadyMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamConnectionReadyMs(v)
+	})
+}
+
+// AddUpstreamConnectionReadyMs adds v to the "upstream_connection_ready_ms" field.
+func (u *UsageLogUpsertOne) AddUpstreamConnectionReadyMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamConnectionReadyMs(v)
+	})
+}
+
+// UpdateUpstreamConnectionReadyMs sets the "upstream_connection_ready_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateUpstreamConnectionReadyMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamConnectionReadyMs()
+	})
+}
+
+// ClearUpstreamConnectionReadyMs clears the value of the "upstream_connection_ready_ms" field.
+func (u *UsageLogUpsertOne) ClearUpstreamConnectionReadyMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamConnectionReadyMs()
+	})
+}
+
+// SetUpstreamDNSLookupMs sets the "upstream_dns_lookup_ms" field.
+func (u *UsageLogUpsertOne) SetUpstreamDNSLookupMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamDNSLookupMs(v)
+	})
+}
+
+// AddUpstreamDNSLookupMs adds v to the "upstream_dns_lookup_ms" field.
+func (u *UsageLogUpsertOne) AddUpstreamDNSLookupMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamDNSLookupMs(v)
+	})
+}
+
+// UpdateUpstreamDNSLookupMs sets the "upstream_dns_lookup_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateUpstreamDNSLookupMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamDNSLookupMs()
+	})
+}
+
+// ClearUpstreamDNSLookupMs clears the value of the "upstream_dns_lookup_ms" field.
+func (u *UsageLogUpsertOne) ClearUpstreamDNSLookupMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamDNSLookupMs()
+	})
+}
+
+// SetUpstreamTCPConnectMs sets the "upstream_tcp_connect_ms" field.
+func (u *UsageLogUpsertOne) SetUpstreamTCPConnectMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamTCPConnectMs(v)
+	})
+}
+
+// AddUpstreamTCPConnectMs adds v to the "upstream_tcp_connect_ms" field.
+func (u *UsageLogUpsertOne) AddUpstreamTCPConnectMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamTCPConnectMs(v)
+	})
+}
+
+// UpdateUpstreamTCPConnectMs sets the "upstream_tcp_connect_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateUpstreamTCPConnectMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamTCPConnectMs()
+	})
+}
+
+// ClearUpstreamTCPConnectMs clears the value of the "upstream_tcp_connect_ms" field.
+func (u *UsageLogUpsertOne) ClearUpstreamTCPConnectMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamTCPConnectMs()
+	})
+}
+
+// SetUpstreamTLSHandshakeMs sets the "upstream_tls_handshake_ms" field.
+func (u *UsageLogUpsertOne) SetUpstreamTLSHandshakeMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamTLSHandshakeMs(v)
+	})
+}
+
+// AddUpstreamTLSHandshakeMs adds v to the "upstream_tls_handshake_ms" field.
+func (u *UsageLogUpsertOne) AddUpstreamTLSHandshakeMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamTLSHandshakeMs(v)
+	})
+}
+
+// UpdateUpstreamTLSHandshakeMs sets the "upstream_tls_handshake_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateUpstreamTLSHandshakeMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamTLSHandshakeMs()
+	})
+}
+
+// ClearUpstreamTLSHandshakeMs clears the value of the "upstream_tls_handshake_ms" field.
+func (u *UsageLogUpsertOne) ClearUpstreamTLSHandshakeMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamTLSHandshakeMs()
+	})
+}
+
+// SetUpstreamRequestHeadersWrittenMs sets the "upstream_request_headers_written_ms" field.
+func (u *UsageLogUpsertOne) SetUpstreamRequestHeadersWrittenMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamRequestHeadersWrittenMs(v)
+	})
+}
+
+// AddUpstreamRequestHeadersWrittenMs adds v to the "upstream_request_headers_written_ms" field.
+func (u *UsageLogUpsertOne) AddUpstreamRequestHeadersWrittenMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamRequestHeadersWrittenMs(v)
+	})
+}
+
+// UpdateUpstreamRequestHeadersWrittenMs sets the "upstream_request_headers_written_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateUpstreamRequestHeadersWrittenMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamRequestHeadersWrittenMs()
+	})
+}
+
+// ClearUpstreamRequestHeadersWrittenMs clears the value of the "upstream_request_headers_written_ms" field.
+func (u *UsageLogUpsertOne) ClearUpstreamRequestHeadersWrittenMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamRequestHeadersWrittenMs()
+	})
+}
+
 // SetUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field.
 func (u *UsageLogUpsertOne) SetUpstreamRequestWrittenMs(v int) *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
@@ -3800,6 +4426,118 @@ func (u *UsageLogUpsertOne) UpdateUpstreamFirstByteMs() *UsageLogUpsertOne {
 func (u *UsageLogUpsertOne) ClearUpstreamFirstByteMs() *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearUpstreamFirstByteMs()
+	})
+}
+
+// SetUpstreamResponseHeadersReceivedMs sets the "upstream_response_headers_received_ms" field.
+func (u *UsageLogUpsertOne) SetUpstreamResponseHeadersReceivedMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamResponseHeadersReceivedMs(v)
+	})
+}
+
+// AddUpstreamResponseHeadersReceivedMs adds v to the "upstream_response_headers_received_ms" field.
+func (u *UsageLogUpsertOne) AddUpstreamResponseHeadersReceivedMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamResponseHeadersReceivedMs(v)
+	})
+}
+
+// UpdateUpstreamResponseHeadersReceivedMs sets the "upstream_response_headers_received_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateUpstreamResponseHeadersReceivedMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamResponseHeadersReceivedMs()
+	})
+}
+
+// ClearUpstreamResponseHeadersReceivedMs clears the value of the "upstream_response_headers_received_ms" field.
+func (u *UsageLogUpsertOne) ClearUpstreamResponseHeadersReceivedMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamResponseHeadersReceivedMs()
+	})
+}
+
+// SetUpstreamResponseBodyFirstByteMs sets the "upstream_response_body_first_byte_ms" field.
+func (u *UsageLogUpsertOne) SetUpstreamResponseBodyFirstByteMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamResponseBodyFirstByteMs(v)
+	})
+}
+
+// AddUpstreamResponseBodyFirstByteMs adds v to the "upstream_response_body_first_byte_ms" field.
+func (u *UsageLogUpsertOne) AddUpstreamResponseBodyFirstByteMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamResponseBodyFirstByteMs(v)
+	})
+}
+
+// UpdateUpstreamResponseBodyFirstByteMs sets the "upstream_response_body_first_byte_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateUpstreamResponseBodyFirstByteMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamResponseBodyFirstByteMs()
+	})
+}
+
+// ClearUpstreamResponseBodyFirstByteMs clears the value of the "upstream_response_body_first_byte_ms" field.
+func (u *UsageLogUpsertOne) ClearUpstreamResponseBodyFirstByteMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamResponseBodyFirstByteMs()
+	})
+}
+
+// SetUpstreamFirstEventMs sets the "upstream_first_event_ms" field.
+func (u *UsageLogUpsertOne) SetUpstreamFirstEventMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamFirstEventMs(v)
+	})
+}
+
+// AddUpstreamFirstEventMs adds v to the "upstream_first_event_ms" field.
+func (u *UsageLogUpsertOne) AddUpstreamFirstEventMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamFirstEventMs(v)
+	})
+}
+
+// UpdateUpstreamFirstEventMs sets the "upstream_first_event_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateUpstreamFirstEventMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamFirstEventMs()
+	})
+}
+
+// ClearUpstreamFirstEventMs clears the value of the "upstream_first_event_ms" field.
+func (u *UsageLogUpsertOne) ClearUpstreamFirstEventMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamFirstEventMs()
+	})
+}
+
+// SetRequestFirstOutputCharacterMs sets the "request_first_output_character_ms" field.
+func (u *UsageLogUpsertOne) SetRequestFirstOutputCharacterMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRequestFirstOutputCharacterMs(v)
+	})
+}
+
+// AddRequestFirstOutputCharacterMs adds v to the "request_first_output_character_ms" field.
+func (u *UsageLogUpsertOne) AddRequestFirstOutputCharacterMs(v int) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddRequestFirstOutputCharacterMs(v)
+	})
+}
+
+// UpdateRequestFirstOutputCharacterMs sets the "request_first_output_character_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateRequestFirstOutputCharacterMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRequestFirstOutputCharacterMs()
+	})
+}
+
+// ClearRequestFirstOutputCharacterMs clears the value of the "request_first_output_character_ms" field.
+func (u *UsageLogUpsertOne) ClearRequestFirstOutputCharacterMs() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRequestFirstOutputCharacterMs()
 	})
 }
 
@@ -5015,6 +5753,20 @@ func (u *UsageLogUpsertBulk) UpdateRateMultiplier() *UsageLogUpsertBulk {
 	})
 }
 
+// SetLongContextBillingApplied sets the "long_context_billing_applied" field.
+func (u *UsageLogUpsertBulk) SetLongContextBillingApplied(v bool) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetLongContextBillingApplied(v)
+	})
+}
+
+// UpdateLongContextBillingApplied sets the "long_context_billing_applied" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateLongContextBillingApplied() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateLongContextBillingApplied()
+	})
+}
+
 // SetAccountRateMultiplier sets the "account_rate_multiplier" field.
 func (u *UsageLogUpsertBulk) SetAccountRateMultiplier(v float64) *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
@@ -5372,6 +6124,167 @@ func (u *UsageLogUpsertBulk) ClearRequestBodyBytes() *UsageLogUpsertBulk {
 	})
 }
 
+// SetUpstreamConnectionReused sets the "upstream_connection_reused" field.
+func (u *UsageLogUpsertBulk) SetUpstreamConnectionReused(v bool) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamConnectionReused(v)
+	})
+}
+
+// UpdateUpstreamConnectionReused sets the "upstream_connection_reused" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateUpstreamConnectionReused() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamConnectionReused()
+	})
+}
+
+// ClearUpstreamConnectionReused clears the value of the "upstream_connection_reused" field.
+func (u *UsageLogUpsertBulk) ClearUpstreamConnectionReused() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamConnectionReused()
+	})
+}
+
+// SetUpstreamConnectionReadyMs sets the "upstream_connection_ready_ms" field.
+func (u *UsageLogUpsertBulk) SetUpstreamConnectionReadyMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamConnectionReadyMs(v)
+	})
+}
+
+// AddUpstreamConnectionReadyMs adds v to the "upstream_connection_ready_ms" field.
+func (u *UsageLogUpsertBulk) AddUpstreamConnectionReadyMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamConnectionReadyMs(v)
+	})
+}
+
+// UpdateUpstreamConnectionReadyMs sets the "upstream_connection_ready_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateUpstreamConnectionReadyMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamConnectionReadyMs()
+	})
+}
+
+// ClearUpstreamConnectionReadyMs clears the value of the "upstream_connection_ready_ms" field.
+func (u *UsageLogUpsertBulk) ClearUpstreamConnectionReadyMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamConnectionReadyMs()
+	})
+}
+
+// SetUpstreamDNSLookupMs sets the "upstream_dns_lookup_ms" field.
+func (u *UsageLogUpsertBulk) SetUpstreamDNSLookupMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamDNSLookupMs(v)
+	})
+}
+
+// AddUpstreamDNSLookupMs adds v to the "upstream_dns_lookup_ms" field.
+func (u *UsageLogUpsertBulk) AddUpstreamDNSLookupMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamDNSLookupMs(v)
+	})
+}
+
+// UpdateUpstreamDNSLookupMs sets the "upstream_dns_lookup_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateUpstreamDNSLookupMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamDNSLookupMs()
+	})
+}
+
+// ClearUpstreamDNSLookupMs clears the value of the "upstream_dns_lookup_ms" field.
+func (u *UsageLogUpsertBulk) ClearUpstreamDNSLookupMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamDNSLookupMs()
+	})
+}
+
+// SetUpstreamTCPConnectMs sets the "upstream_tcp_connect_ms" field.
+func (u *UsageLogUpsertBulk) SetUpstreamTCPConnectMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamTCPConnectMs(v)
+	})
+}
+
+// AddUpstreamTCPConnectMs adds v to the "upstream_tcp_connect_ms" field.
+func (u *UsageLogUpsertBulk) AddUpstreamTCPConnectMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamTCPConnectMs(v)
+	})
+}
+
+// UpdateUpstreamTCPConnectMs sets the "upstream_tcp_connect_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateUpstreamTCPConnectMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamTCPConnectMs()
+	})
+}
+
+// ClearUpstreamTCPConnectMs clears the value of the "upstream_tcp_connect_ms" field.
+func (u *UsageLogUpsertBulk) ClearUpstreamTCPConnectMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamTCPConnectMs()
+	})
+}
+
+// SetUpstreamTLSHandshakeMs sets the "upstream_tls_handshake_ms" field.
+func (u *UsageLogUpsertBulk) SetUpstreamTLSHandshakeMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamTLSHandshakeMs(v)
+	})
+}
+
+// AddUpstreamTLSHandshakeMs adds v to the "upstream_tls_handshake_ms" field.
+func (u *UsageLogUpsertBulk) AddUpstreamTLSHandshakeMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamTLSHandshakeMs(v)
+	})
+}
+
+// UpdateUpstreamTLSHandshakeMs sets the "upstream_tls_handshake_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateUpstreamTLSHandshakeMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamTLSHandshakeMs()
+	})
+}
+
+// ClearUpstreamTLSHandshakeMs clears the value of the "upstream_tls_handshake_ms" field.
+func (u *UsageLogUpsertBulk) ClearUpstreamTLSHandshakeMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamTLSHandshakeMs()
+	})
+}
+
+// SetUpstreamRequestHeadersWrittenMs sets the "upstream_request_headers_written_ms" field.
+func (u *UsageLogUpsertBulk) SetUpstreamRequestHeadersWrittenMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamRequestHeadersWrittenMs(v)
+	})
+}
+
+// AddUpstreamRequestHeadersWrittenMs adds v to the "upstream_request_headers_written_ms" field.
+func (u *UsageLogUpsertBulk) AddUpstreamRequestHeadersWrittenMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamRequestHeadersWrittenMs(v)
+	})
+}
+
+// UpdateUpstreamRequestHeadersWrittenMs sets the "upstream_request_headers_written_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateUpstreamRequestHeadersWrittenMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamRequestHeadersWrittenMs()
+	})
+}
+
+// ClearUpstreamRequestHeadersWrittenMs clears the value of the "upstream_request_headers_written_ms" field.
+func (u *UsageLogUpsertBulk) ClearUpstreamRequestHeadersWrittenMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamRequestHeadersWrittenMs()
+	})
+}
+
 // SetUpstreamRequestWrittenMs sets the "upstream_request_written_ms" field.
 func (u *UsageLogUpsertBulk) SetUpstreamRequestWrittenMs(v int) *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
@@ -5425,6 +6338,118 @@ func (u *UsageLogUpsertBulk) UpdateUpstreamFirstByteMs() *UsageLogUpsertBulk {
 func (u *UsageLogUpsertBulk) ClearUpstreamFirstByteMs() *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearUpstreamFirstByteMs()
+	})
+}
+
+// SetUpstreamResponseHeadersReceivedMs sets the "upstream_response_headers_received_ms" field.
+func (u *UsageLogUpsertBulk) SetUpstreamResponseHeadersReceivedMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamResponseHeadersReceivedMs(v)
+	})
+}
+
+// AddUpstreamResponseHeadersReceivedMs adds v to the "upstream_response_headers_received_ms" field.
+func (u *UsageLogUpsertBulk) AddUpstreamResponseHeadersReceivedMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamResponseHeadersReceivedMs(v)
+	})
+}
+
+// UpdateUpstreamResponseHeadersReceivedMs sets the "upstream_response_headers_received_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateUpstreamResponseHeadersReceivedMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamResponseHeadersReceivedMs()
+	})
+}
+
+// ClearUpstreamResponseHeadersReceivedMs clears the value of the "upstream_response_headers_received_ms" field.
+func (u *UsageLogUpsertBulk) ClearUpstreamResponseHeadersReceivedMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamResponseHeadersReceivedMs()
+	})
+}
+
+// SetUpstreamResponseBodyFirstByteMs sets the "upstream_response_body_first_byte_ms" field.
+func (u *UsageLogUpsertBulk) SetUpstreamResponseBodyFirstByteMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamResponseBodyFirstByteMs(v)
+	})
+}
+
+// AddUpstreamResponseBodyFirstByteMs adds v to the "upstream_response_body_first_byte_ms" field.
+func (u *UsageLogUpsertBulk) AddUpstreamResponseBodyFirstByteMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamResponseBodyFirstByteMs(v)
+	})
+}
+
+// UpdateUpstreamResponseBodyFirstByteMs sets the "upstream_response_body_first_byte_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateUpstreamResponseBodyFirstByteMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamResponseBodyFirstByteMs()
+	})
+}
+
+// ClearUpstreamResponseBodyFirstByteMs clears the value of the "upstream_response_body_first_byte_ms" field.
+func (u *UsageLogUpsertBulk) ClearUpstreamResponseBodyFirstByteMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamResponseBodyFirstByteMs()
+	})
+}
+
+// SetUpstreamFirstEventMs sets the "upstream_first_event_ms" field.
+func (u *UsageLogUpsertBulk) SetUpstreamFirstEventMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetUpstreamFirstEventMs(v)
+	})
+}
+
+// AddUpstreamFirstEventMs adds v to the "upstream_first_event_ms" field.
+func (u *UsageLogUpsertBulk) AddUpstreamFirstEventMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddUpstreamFirstEventMs(v)
+	})
+}
+
+// UpdateUpstreamFirstEventMs sets the "upstream_first_event_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateUpstreamFirstEventMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateUpstreamFirstEventMs()
+	})
+}
+
+// ClearUpstreamFirstEventMs clears the value of the "upstream_first_event_ms" field.
+func (u *UsageLogUpsertBulk) ClearUpstreamFirstEventMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearUpstreamFirstEventMs()
+	})
+}
+
+// SetRequestFirstOutputCharacterMs sets the "request_first_output_character_ms" field.
+func (u *UsageLogUpsertBulk) SetRequestFirstOutputCharacterMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRequestFirstOutputCharacterMs(v)
+	})
+}
+
+// AddRequestFirstOutputCharacterMs adds v to the "request_first_output_character_ms" field.
+func (u *UsageLogUpsertBulk) AddRequestFirstOutputCharacterMs(v int) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddRequestFirstOutputCharacterMs(v)
+	})
+}
+
+// UpdateRequestFirstOutputCharacterMs sets the "request_first_output_character_ms" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateRequestFirstOutputCharacterMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRequestFirstOutputCharacterMs()
+	})
+}
+
+// ClearRequestFirstOutputCharacterMs clears the value of the "request_first_output_character_ms" field.
+func (u *UsageLogUpsertBulk) ClearRequestFirstOutputCharacterMs() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRequestFirstOutputCharacterMs()
 	})
 }
 

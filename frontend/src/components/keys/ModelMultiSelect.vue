@@ -1,6 +1,7 @@
 <template>
   <div ref="rootRef" class="space-y-2">
     <button
+      ref="triggerRef"
       type="button"
       class="flex min-h-11 w-full items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-sm transition-colors focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-70 dark:border-dark-600 dark:bg-dark-800 dark:disabled:bg-dark-900"
       :disabled="disabled || loading || Boolean(error)"
@@ -43,11 +44,14 @@
       {{ error }}
     </p>
 
-    <div
-      v-if="open && !loading && !error"
-      class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-dark-600 dark:bg-dark-800"
-      data-test="model-multi-select-dropdown"
-    >
+    <Teleport to="body">
+      <div
+        v-if="open && !loading && !error"
+        ref="dropdownRef"
+        class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg shadow-black/10 dark:border-dark-600 dark:bg-dark-800 dark:shadow-black/30"
+        :style="dropdownStyle"
+        data-test="model-multi-select-dropdown"
+      >
       <div class="flex items-center gap-2 border-b border-gray-100 px-3 py-2 dark:border-dark-700">
         <Icon name="search" size="sm" class="shrink-0 text-gray-400" />
         <input
@@ -90,7 +94,8 @@
           {{ t('keys.modelRestriction.clear') }}
         </button>
       </div>
-    </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -119,9 +124,38 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const rootRef = ref<HTMLElement | null>(null)
+const triggerRef = ref<HTMLButtonElement | null>(null)
+const dropdownRef = ref<HTMLElement | null>(null)
 const searchRef = ref<HTMLInputElement | null>(null)
 const open = ref(false)
 const query = ref('')
+const triggerRect = ref<DOMRect | null>(null)
+const dropdownPosition = ref<'bottom' | 'top'>('bottom')
+
+const dropdownStyle = computed(() => {
+  const rect = triggerRect.value
+  if (!rect) return { display: 'none' }
+
+  const viewportPadding = 8
+  const width = Math.min(rect.width, window.innerWidth - viewportPadding * 2)
+  const left = Math.min(
+    Math.max(rect.left, viewportPadding),
+    window.innerWidth - width - viewportPadding
+  )
+  const style: Record<string, string> = {
+    position: 'fixed',
+    left: `${left}px`,
+    width: `${width}px`,
+    zIndex: '100000020'
+  }
+
+  if (dropdownPosition.value === 'top') {
+    style.bottom = `${window.innerHeight - rect.top + 4}px`
+  } else {
+    style.top = `${rect.bottom + 4}px`
+  }
+  return style
+})
 
 const filteredOptions = computed(() => {
   const normalized = query.value.trim().toLowerCase()
@@ -132,10 +166,15 @@ const filteredOptions = computed(() => {
 watch(open, async (isOpen) => {
   if (!isOpen) {
     query.value = ''
+    window.removeEventListener('scroll', updateDropdownPosition, { capture: true })
+    window.removeEventListener('resize', updateDropdownPosition)
     return
   }
   await nextTick()
+  updateDropdownPosition()
   searchRef.value?.focus()
+  window.addEventListener('scroll', updateDropdownPosition, { capture: true, passive: true })
+  window.addEventListener('resize', updateDropdownPosition)
 })
 
 watch(() => [props.disabled, props.loading, props.error] as const, ([disabled, loading, error]) => {
@@ -157,10 +196,29 @@ const remove = (model: string) => {
 
 const clear = () => emit('update:modelValue', [])
 
+const updateDropdownPosition = () => {
+  const trigger = triggerRef.value
+  if (!trigger) return
+
+  const rect = trigger.getBoundingClientRect()
+  triggerRect.value = rect
+  const dropdownHeight = dropdownRef.value?.offsetHeight || 280
+  const spaceBelow = window.innerHeight - rect.bottom
+  const spaceAbove = rect.top
+  dropdownPosition.value = spaceBelow < dropdownHeight + 8 && spaceAbove > spaceBelow
+    ? 'top'
+    : 'bottom'
+}
+
 const onDocumentClick = (event: MouseEvent) => {
-  if (!rootRef.value?.contains(event.target as Node)) open.value = false
+  const target = event.target as Node
+  if (!rootRef.value?.contains(target) && !dropdownRef.value?.contains(target)) open.value = false
 }
 
 onMounted(() => document.addEventListener('click', onDocumentClick))
-onUnmounted(() => document.removeEventListener('click', onDocumentClick))
+onUnmounted(() => {
+  document.removeEventListener('click', onDocumentClick)
+  window.removeEventListener('scroll', updateDropdownPosition, { capture: true })
+  window.removeEventListener('resize', updateDropdownPosition)
+})
 </script>

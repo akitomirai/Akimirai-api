@@ -250,16 +250,19 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/available-channels',
-    name: 'UserAvailableChannels',
-    component: () => import('@/views/user/AvailableChannelsView.vue'),
+    path: '/model-plaza',
+    name: 'ModelPlaza',
+    component: () => import('@/views/user/ModelPlazaView.vue'),
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
-      title: 'Available Channels',
-      titleKey: 'availableChannels.title',
-      descriptionKey: 'availableChannels.description'
+      title: 'Model Plaza',
+      titleKey: 'nav.modelPlaza'
     }
+  },
+  {
+    path: '/available-channels',
+    redirect: '/model-plaza'
   },
   {
     path: '/images',
@@ -458,12 +461,23 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin/channels/pricing',
-    name: 'AdminChannels',
+    name: 'AdminModelPricing',
+    component: () => import('@/views/admin/ModelPricingView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Model Pricing',
+      titleKey: 'nav.modelPricing'
+    }
+  },
+  {
+    path: '/admin/channels/config',
+    name: 'AdminChannelConfig',
     component: () => import('@/views/admin/ChannelsView.vue'),
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
-      title: 'Channel Management',
+      title: 'Channel Configuration',
       titleKey: 'admin.channels.title',
       descriptionKey: 'admin.channels.description'
     }

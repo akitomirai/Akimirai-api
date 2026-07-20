@@ -3,6 +3,7 @@ package service
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -2413,6 +2414,50 @@ func TestOpenAIBuildUpstreamRequestOpenAIPassthroughPreservesCompactPath(t *test
 	require.Equal(t, HTTPUpstreamProfileOpenAI, HTTPUpstreamProfileFromContext(req.Context()))
 }
 
+func TestOpenAIBuildUpstreamRequestsApplyHostScopedGzipWithoutChangingBody(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	body := []byte(`{"model":"gpt-5.5","input":"` + strings.Repeat("payload-", 1024) + `"}`)
+	svc := &OpenAIGatewayService{cfg: &config.Config{Gateway: config.GatewayConfig{
+		UpstreamRequestGzip:      true,
+		UpstreamRequestGzipHosts: []string{"xcpcai.com"},
+	}}}
+	account := &Account{
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Credentials: map[string]any{"base_url": "https://xcpcai.com"},
+	}
+
+	assertCompressedBody := func(t *testing.T, req *http.Request) {
+		t.Helper()
+		require.Equal(t, "xcpcai.com", req.URL.Hostname())
+		require.Equal(t, "gzip", req.Header.Get("Content-Encoding"))
+		reader, err := gzip.NewReader(req.Body)
+		require.NoError(t, err)
+		decompressed, err := io.ReadAll(reader)
+		require.NoError(t, err)
+		require.NoError(t, reader.Close())
+		require.Equal(t, body, decompressed)
+	}
+
+	t.Run("managed", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(rec)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+		req, err := svc.buildUpstreamRequest(c.Request.Context(), c, account, body, "token", false, "", false)
+		require.NoError(t, err)
+		assertCompressedBody(t, req)
+	})
+
+	t.Run("passthrough", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(rec)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+		req, err := svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
+		require.NoError(t, err)
+		assertCompressedBody(t, req)
+	})
+}
+
 func TestOpenAIBuildUpstreamRequestCompactForcesJSONAcceptForOAuth(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	rec := httptest.NewRecorder()
@@ -2934,7 +2979,7 @@ func TestHandleSSEToJSON_ReconstructsImageGenerationOutputItemDone(t *testing.T)
 		Header:     http.Header{"Content-Type": []string{"text/event-stream"}},
 	}
 	body := []byte(strings.Join([]string{
-		`data: {"type":"response.output_item.done","item":{"id":"ig_123","type":"image_generation_call","result":"aGVsbG8=","revised_prompt":"draw a cat","output_format":"png"}}`,
+		`data: {"type":"response.output_item.done","item":{"id":"ig_123","type":"image_generation_call","status":"generating","result":"aGVsbG8=","revised_prompt":"draw a cat","output_format":"png"}}`,
 		`data: {"type":"response.completed","response":{"id":"resp_img","model":"gpt-5.4","output":[],"usage":{"input_tokens":7,"output_tokens":9,"output_tokens_details":{"image_tokens":4}}}}`,
 		`data: [DONE]`,
 	}, "\n"))
@@ -2945,6 +2990,7 @@ func TestHandleSSEToJSON_ReconstructsImageGenerationOutputItemDone(t *testing.T)
 	require.Equal(t, 4, usage.ImageOutputTokens)
 	require.NotContains(t, rec.Body.String(), "data:")
 	require.Equal(t, "image_generation_call", gjson.Get(rec.Body.String(), "output.0.type").String())
+	require.Equal(t, "completed", gjson.Get(rec.Body.String(), "output.0.status").String())
 	require.Equal(t, "aGVsbG8=", gjson.Get(rec.Body.String(), "output.0.result").String())
 	require.Equal(t, "draw a cat", gjson.Get(rec.Body.String(), "output.0.revised_prompt").String())
 }

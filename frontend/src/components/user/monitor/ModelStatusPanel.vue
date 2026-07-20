@@ -18,7 +18,7 @@
           </div>
           <div class="lg:text-right">
             <p class="text-gray-500 dark:text-dark-400">{{ t('channelStatus.modelStats.token24h') }}</p>
-            <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ formatCompactNumber(totalTokens) }}</p>
+            <p class="mt-1 font-semibold text-gray-900 dark:text-white">{{ formatTokenCount(totalTokens) }}</p>
           </div>
           <div class="lg:text-right">
             <p class="text-gray-500 dark:text-dark-400">{{ t('channelStatus.modelStats.normalModels') }}</p>
@@ -121,7 +121,7 @@
         <div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-500 dark:text-dark-400">
           <span>{{ t('channelStatus.modelStats.successRate') }} <b>{{ formatPercent(row.availability) }}</b></span>
           <span>{{ t('channelStatus.modelStats.successFailed') }} <b>{{ formatNumber(row.successCount) }}/{{ formatNumber(row.failureCount) }}</b></span>
-          <span>{{ t('channelStatus.modelStats.token24h') }} <b>{{ formatCompactNumber(row.totalTokens) }}</b></span>
+          <span>{{ t('channelStatus.modelStats.token24h') }} <b>{{ formatTokenCount(row.totalTokens) }}</b></span>
           <span>{{ t('channelStatus.modelStats.avgLatency') }} <b>{{ row.avgLatencyMs == null ? '-' : `${row.avgLatencyMs}ms` }}</b></span>
           <span>{{ t('channelStatus.modelStats.cacheRate') }} <b>{{ formatPercent(row.cacheRate) }}</b></span>
           <span>{{ t('channelStatus.modelStats.monitors') }} <b>{{ row.monitorCount }}</b></span>
@@ -143,7 +143,7 @@ import type {
 import type { ModelStat } from '@/types'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Icon from '@/components/icons/Icon.vue'
-import { formatCompactNumber } from '@/utils/format'
+import { formatTokenCount } from '@/utils/format'
 import { useChannelMonitorFormat } from '@/composables/useChannelMonitorFormat'
 
 type MonitorWindow = '7d' | '15d' | '30d'

@@ -201,3 +201,72 @@ export function applyHeaderOverride(
     delete credentials[HEADER_OVERRIDES_CREDENTIAL_KEY]
   }
 }
+
+export interface PlanTypeOption {
+  value: string
+  label: string
+  [key: string]: unknown
+}
+
+export function planTypeDisplayLabel(value: string): string {
+  switch (value.trim().toLowerCase()) {
+    case 'plus':
+      return 'Plus'
+    case 'pro':
+    case 'chatgptpro':
+      return 'Pro'
+    case 'free':
+      return 'Free'
+    case 'team':
+      return 'Team'
+    default:
+      return value
+  }
+}
+
+export function readPlanType(credentials: Record<string, unknown> | undefined | null): string {
+  const value = credentials?.plan_type
+  return typeof value === 'string' ? value : ''
+}
+
+export function buildPlanTypeOptions(current: string, clearLabel: string): PlanTypeOption[] {
+  const normalizedCurrent = (current || '').trim()
+  const currentLabel = normalizedCurrent ? planTypeDisplayLabel(normalizedCurrent) : ''
+  const presets: PlanTypeOption[] = [
+    { value: 'plus', label: 'Plus' },
+    { value: 'pro', label: 'Pro' },
+    { value: 'free', label: 'Free' }
+  ]
+  const options: PlanTypeOption[] = [{ value: '', label: clearLabel }]
+  for (const preset of presets) {
+    if (
+      normalizedCurrent &&
+      preset.value !== normalizedCurrent.toLowerCase() &&
+      preset.label === currentLabel
+    ) {
+      options.push({ value: normalizedCurrent, label: preset.label })
+    } else {
+      options.push(preset)
+    }
+  }
+  if (
+    normalizedCurrent &&
+    !options.some((option) => option.value.toLowerCase() === normalizedCurrent.toLowerCase())
+  ) {
+    options.push({ value: normalizedCurrent, label: planTypeDisplayLabel(normalizedCurrent) })
+  }
+  return options
+}
+
+export function applyPlanType(
+  credentials: Record<string, unknown>,
+  planType: string
+): Record<string, unknown> {
+  const normalized = (planType || '').trim()
+  if (normalized) {
+    credentials.plan_type = normalized
+  } else {
+    delete credentials.plan_type
+  }
+  return credentials
+}

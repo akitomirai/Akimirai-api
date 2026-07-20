@@ -62,7 +62,7 @@
               </div>
               <div>
                 <div class="diagnostic-label">{{ t('admin.usage.diagnostics.totalDuration') }}</div>
-                <div class="diagnostic-value">{{ formatDuration(diagnostics.request_total_ms ?? diagnostics.duration_ms) }}</div>
+                <div class="diagnostic-value">{{ formatDuration(diagnostics.request_total_ms) }}</div>
               </div>
               <div>
                 <div class="diagnostic-label">{{ t('admin.usage.diagnostics.upstreamStatus') }}</div>
@@ -99,11 +99,22 @@
 
             <section class="border-b border-gray-200 px-5 py-5 dark:border-dark-700">
               <h3 class="diagnostic-heading mb-4">{{ t('admin.usage.diagnostics.timeline') }}</h3>
+              <p class="mb-3 text-[11px] leading-4 text-gray-400 dark:text-gray-500">
+                {{ t('admin.usage.diagnostics.timelineDetail') }}
+              </p>
               <div class="relative space-y-0 pl-5">
                 <div class="absolute bottom-2 left-[5px] top-2 w-px bg-gray-200 dark:bg-dark-700"></div>
-                <div v-for="step in timingSteps" :key="step.key" class="relative flex min-h-10 items-start justify-between gap-4 py-2">
+                <div
+                  v-for="step in timingSteps"
+                  :key="step.key"
+                  :data-testid="`timing-step-${step.key}`"
+                  class="relative flex min-h-10 items-start justify-between gap-4 py-2.5"
+                >
                   <span class="absolute -left-5 top-3.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-primary-500 ring-1 ring-primary-200 dark:border-dark-900 dark:ring-primary-900"></span>
-                  <span class="text-sm text-gray-600 dark:text-gray-300">{{ step.label }}</span>
+                  <span class="min-w-0">
+                    <span class="block text-sm text-gray-700 dark:text-gray-200">{{ step.label }}</span>
+                    <span class="mt-0.5 block text-[11px] leading-4 text-gray-400 dark:text-gray-500">{{ step.detail }}</span>
+                  </span>
                   <span class="whitespace-nowrap font-mono text-sm font-medium text-gray-900 dark:text-white">
                     {{ formatDuration(step.value) }}
                   </span>
@@ -205,13 +216,44 @@ const loadDiagnostics = async () => {
 const timingSteps = computed(() => {
   const row = diagnostics.value
   if (!row) return []
+
   return [
-    { key: 'body', label: t('admin.usage.diagnostics.bodyRead'), value: row.request_body_read_ms },
-    { key: 'routing', label: t('admin.usage.diagnostics.routing'), value: row.routing_latency_ms },
-    { key: 'written', label: t('admin.usage.diagnostics.requestWritten'), value: row.upstream_request_written_ms },
-    { key: 'first-byte', label: t('admin.usage.diagnostics.firstByte'), value: row.upstream_first_byte_ms },
-    { key: 'first-token', label: t('admin.usage.diagnostics.firstToken'), value: row.request_first_token_ms ?? row.first_token_ms },
-    { key: 'total', label: t('admin.usage.diagnostics.completed'), value: row.request_total_ms ?? row.duration_ms },
+    {
+      key: 'body',
+      label: t('admin.usage.diagnostics.bodyRead'),
+      detail: t('admin.usage.diagnostics.bodyReadDetail'),
+      value: row.request_body_read_ms,
+    },
+    {
+      key: 'routing',
+      label: t('admin.usage.diagnostics.routing'),
+      detail: t('admin.usage.diagnostics.routingDetail'),
+      value: row.routing_latency_ms,
+    },
+    {
+      key: 'written',
+      label: t('admin.usage.diagnostics.requestWritten'),
+      detail: t('admin.usage.diagnostics.requestWrittenDetail'),
+      value: row.upstream_request_written_ms,
+    },
+    {
+      key: 'first-byte',
+      label: t('admin.usage.diagnostics.firstByte'),
+      detail: t('admin.usage.diagnostics.firstByteDetail'),
+      value: row.upstream_first_byte_ms,
+    },
+    {
+      key: 'first-token',
+      label: t('admin.usage.diagnostics.firstToken'),
+      detail: t('admin.usage.diagnostics.firstTokenDetail'),
+      value: row.request_first_token_ms,
+    },
+    {
+      key: 'total',
+      label: t('admin.usage.diagnostics.completed'),
+      detail: t('admin.usage.diagnostics.completedDetail'),
+      value: row.request_total_ms,
+    },
   ]
 })
 

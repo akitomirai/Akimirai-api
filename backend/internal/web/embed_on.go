@@ -23,6 +23,7 @@ import (
 const (
 	// NonceHTMLPlaceholder is the placeholder for nonce in HTML script tags
 	NonceHTMLPlaceholder = "__CSP_NONCE_VALUE__"
+	imagePlaygroundIndex = "images/index.html"
 )
 
 //go:embed all:dist
@@ -98,8 +99,16 @@ func (s *FrontendServer) Middleware() gin.HandlerFunc {
 			cleanPath = "index.html"
 		}
 
+		if tryServeImagePlaygroundEntry(c, s.distFS, cleanPath) {
+			return
+		}
+
 		// For index.html or SPA routes, serve with injected settings
 		if cleanPath == "index.html" || !s.fileExists(cleanPath) {
+			if strings.HasPrefix(cleanPath, "images/") {
+				serveHTMLFile(c, s.distFS, imagePlaygroundIndex)
+				return
+			}
 			s.serveIndexHTML(c)
 			return
 		}
@@ -129,6 +138,20 @@ func (s *FrontendServer) fileExists(path string) bool {
 	}
 	_ = file.Close()
 	return true
+}
+
+func tryServeImagePlaygroundEntry(c *gin.Context, fsys fs.FS, cleanPath string) bool {
+	switch cleanPath {
+	case "images":
+		c.Redirect(http.StatusPermanentRedirect, "/images/")
+		c.Abort()
+		return true
+	case "images/", imagePlaygroundIndex:
+		serveHTMLFile(c, fsys, imagePlaygroundIndex)
+		return true
+	default:
+		return false
+	}
 }
 
 // tryServeOverride checks if a local override file exists and serves it.
@@ -274,6 +297,10 @@ func ServeEmbeddedFrontend() gin.HandlerFunc {
 			cleanPath = "index.html"
 		}
 
+		if tryServeImagePlaygroundEntry(c, distFS, cleanPath) {
+			return
+		}
+
 		if file, err := distFS.Open(cleanPath); err == nil {
 			_ = file.Close()
 			// Try local override first
@@ -283,6 +310,11 @@ func ServeEmbeddedFrontend() gin.HandlerFunc {
 			setStaticCacheHeaders(c, cleanPath)
 			fileServer.ServeHTTP(c.Writer, c.Request)
 			c.Abort()
+			return
+		}
+
+		if strings.HasPrefix(cleanPath, "images/") {
+			serveHTMLFile(c, distFS, imagePlaygroundIndex)
 			return
 		}
 
@@ -316,7 +348,8 @@ func shouldBypassEmbeddedFrontend(path string) bool {
 		trimmed == "/health" ||
 		trimmed == "/responses" ||
 		strings.HasPrefix(trimmed, "/responses/") ||
-		isEmbeddedImagesAPIPath(trimmed)
+		isEmbeddedImagesAPIPath(trimmed) ||
+		strings.HasPrefix(trimmed, "/videos/")
 }
 
 func isEmbeddedImagesAPIPath(path string) bool {
@@ -325,7 +358,11 @@ func isEmbeddedImagesAPIPath(path string) bool {
 }
 
 func serveIndexHTML(c *gin.Context, fsys fs.FS) {
-	file, err := fsys.Open("index.html")
+	serveHTMLFile(c, fsys, "index.html")
+}
+
+func serveHTMLFile(c *gin.Context, fsys fs.FS, name string) {
+	file, err := fsys.Open(name)
 	if err != nil {
 		c.String(http.StatusNotFound, "Frontend not found")
 		c.Abort()

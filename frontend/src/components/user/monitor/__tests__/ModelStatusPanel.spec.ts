@@ -101,7 +101,7 @@ describe('ModelStatusPanel', () => {
     expect(text).toContain('Model Status')
     expect(text).toContain('gpt-5.5')
     expect(text).toContain('gpt-5.4-mini')
-    expect(text).toContain('100.0M')
+    expect(text).toContain('10000.00w')
     expect(text).toContain('90.00%')
     expect(text).toContain('2/1')
     expect(wrapper.findAll('[data-test="model-status-bar"]')).toHaveLength(120)

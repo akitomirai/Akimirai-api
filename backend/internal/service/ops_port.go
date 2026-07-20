@@ -13,6 +13,7 @@ type OpsRepository interface {
 	// LookupDeletedKeyAudit 按明文 key 反查最近一条已删除 key 审计;未命中返回 (nil, nil)。
 	LookupDeletedKeyAudit(ctx context.Context, key string) (*DeletedKeyAuditResult, error)
 	ListRequestDetails(ctx context.Context, filter *OpsRequestDetailFilter) ([]*OpsRequestDetail, int64, error)
+	ListUserRequestLogs(ctx context.Context, filter *UserRequestLogFilter) ([]*UserRequestLog, int64, error)
 	BatchInsertSystemLogs(ctx context.Context, inputs []*OpsInsertSystemLogInput) (int64, error)
 	ListSystemLogs(ctx context.Context, filter *OpsSystemLogFilter) (*OpsSystemLogList, error)
 	DeleteSystemLogs(ctx context.Context, filter *OpsSystemLogCleanupFilter) (int64, error)
@@ -194,6 +195,7 @@ type OpsInsertSystemMetricsInput struct {
 
 type OpsInsertSystemLogInput struct {
 	CreatedAt       time.Time
+	Host            string
 	Level           string
 	Component       string
 	Message         string
@@ -210,6 +212,7 @@ type OpsInsertSystemLogInput struct {
 type OpsSystemLogFilter struct {
 	StartTime *time.Time
 	EndTime   *time.Time
+	Host      string
 
 	Level     string
 	Component string
@@ -230,6 +233,7 @@ type OpsSystemLogFilter struct {
 type OpsSystemLogCleanupFilter struct {
 	StartTime *time.Time
 	EndTime   *time.Time
+	Host      string
 
 	Level     string
 	Component string

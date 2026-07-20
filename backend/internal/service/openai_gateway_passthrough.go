@@ -34,16 +34,15 @@ func (s *OpenAIGatewayService) forwardOpenAIPassthrough(
 	reqStream bool,
 	startTime time.Time,
 ) (*OpenAIForwardResult, error) {
-	upstreamPassthroughModel := ""
-	if isOpenAIResponsesCompactPath(c) {
-		compactMappedModel := resolveOpenAICompactForwardModel(account, reqModel)
-		if compactMappedModel != "" && compactMappedModel != reqModel {
-			nextBody, setErr := sjson.SetBytes(body, "model", compactMappedModel)
-			if setErr != nil {
-				return nil, fmt.Errorf("set compact passthrough model: %w", setErr)
+	upstreamPassthroughModel := strings.TrimSpace(reqModel)
+	if account != nil && account.Type == AccountTypeAPIKey {
+		if originalBody, ok := GetOpenAICompactBodySignal(c); ok {
+			body = originalBody
+			if originalModel := strings.TrimSpace(gjson.GetBytes(body, "model").String()); originalModel != "" {
+				reqModel = originalModel
+				upstreamPassthroughModel = originalModel
 			}
-			body = nextBody
-			upstreamPassthroughModel = compactMappedModel
+			reqStream = gjson.GetBytes(body, "stream").Bool()
 		}
 	}
 
@@ -298,6 +297,8 @@ func (s *OpenAIGatewayService) buildUpstreamRequestOpenAIPassthrough(
 	body []byte,
 	token string,
 ) (*http.Request, error) {
+	_, hasBodySignal := GetOpenAICompactBodySignal(c)
+	bodySignalPassthrough := account != nil && account.Type == AccountTypeAPIKey && hasBodySignal
 	targetURL := openaiPlatformAPIURL
 	switch account.Type {
 	case AccountTypeOAuth:
@@ -312,9 +313,13 @@ func (s *OpenAIGatewayService) buildUpstreamRequestOpenAIPassthrough(
 			targetURL = buildOpenAIResponsesURL(validatedURL)
 		}
 	}
-	targetURL = appendOpenAIResponsesRequestPathSuffix(targetURL, openAIResponsesRequestPathSuffix(c))
+	requestPathSuffix := openAIResponsesRequestPathSuffix(c)
+	if bodySignalPassthrough {
+		requestPathSuffix = ""
+	}
+	targetURL = appendOpenAIResponsesRequestPathSuffix(targetURL, requestPathSuffix)
 
-	wireBody, gzipCompressed := s.maybeGzipCompressBody(body)
+	wireBody, gzipCompressed := s.maybeGzipCompressBody(body, targetURL)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, targetURL, bytes.NewReader(wireBody))
 	if err != nil {
 		return nil, err
@@ -385,7 +390,7 @@ func (s *OpenAIGatewayService) buildUpstreamRequestOpenAIPassthrough(
 		if clientConversationID != "" {
 			req.Header.Set("conversation_id", isolateOpenAISessionID(apiKeyID, clientConversationID))
 		}
-	} else if isOpenAIResponsesCompactPath(c) {
+	} else if isOpenAIResponsesCompactPath(c) && !bodySignalPassthrough {
 		// 透传白名单会放行客户端的 Accept: text/event-stream；compact 上游是
 		// unary JSON 协议，API-key 账号同样强制 Accept，避免上游按 SSE 返回
 		// （#3777 期望行为 4）。
@@ -915,7 +920,24 @@ func (s *OpenAIGatewayService) handleStreamingResponsePassthrough(
 				trimmedData = strings.TrimSpace(string(normalizedData))
 				line = "data: " + string(normalizedData)
 			}
+			if normalizedData, normalized := normalizeCompletedImageGenerationStatus(dataBytes); normalized {
+				dataBytes = normalizedData
+				trimmedData = strings.TrimSpace(string(normalizedData))
+				line = "data: " + string(normalizedData)
+			}
+			if trimmedData != "[DONE]" {
+				restoredData, restoreErr := restoreOpenAIResponsesNamespacePayload(c, dataBytes)
+				if restoreErr != nil {
+					return resultWithUsage(), fmt.Errorf("restore OpenAI passthrough namespace response: %w", restoreErr)
+				}
+				if !bytes.Equal(restoredData, dataBytes) {
+					dataBytes = restoredData
+					trimmedData = strings.TrimSpace(string(restoredData))
+					line = "data: " + string(restoredData)
+				}
+			}
 			eventType := strings.TrimSpace(gjson.Get(trimmedData, "type").String())
+			markOpenAIStreamDiagnosticEvent(resp, dataBytes)
 			if eventType == "response.failed" {
 				failedMessage = extractOpenAISSEErrorMessage(dataBytes)
 				// response.failed 自带上游已消耗的 usage（input token 通常已扣）；必须先解析
@@ -1095,6 +1117,10 @@ func (s *OpenAIGatewayService) handleNonStreamingResponsePassthrough(
 	if originalModel != "" && mappedModel != "" && originalModel != mappedModel {
 		body = s.replaceModelInResponseBody(body, mappedModel, originalModel)
 	}
+	body, err = restoreOpenAIResponsesNamespacePayload(c, body)
+	if err != nil {
+		return nil, fmt.Errorf("restore OpenAI passthrough namespace response: %w", err)
+	}
 	if !writeOpenAICompactSSEBridge(c, resp.StatusCode, body) {
 		c.Data(resp.StatusCode, contentType, body)
 	}
@@ -1136,6 +1162,11 @@ func (s *OpenAIGatewayService) handlePassthroughSSEToJSON(resp *http.Response, c
 		}
 		// Correct tool calls in final response
 		body = s.correctToolCallsInResponseBody(body)
+		restoredBody, restoreErr := restoreOpenAIResponsesNamespacePayload(c, body)
+		if restoreErr != nil {
+			return nil, fmt.Errorf("restore OpenAI passthrough namespace response: %w", restoreErr)
+		}
+		body = restoredBody
 	} else {
 		terminalType, terminalPayload, terminalOK := extractOpenAISSETerminalEvent(bodyText)
 		if terminalOK && terminalType == "response.failed" {

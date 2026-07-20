@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useClipboard } from '@/composables/useClipboard'
+import Icon from '@/components/icons/Icon.vue'
 import type { CustomEndpoint } from '@/types'
 
 const props = defineProps<{
@@ -12,6 +13,12 @@ const props = defineProps<{
 const { t } = useI18n()
 const { copyToClipboard } = useClipboard()
 const copiedEndpoint = ref<string | null>(null)
+type LatencyStatus = 'idle' | 'testing' | 'success' | 'failed'
+type LatencyResult = { status: LatencyStatus; milliseconds?: number }
+
+const latencyResults = ref<Record<string, LatencyResult>>({})
+const latencyRequests = new Map<string, { controller: AbortController; timeoutId: number }>()
+const latencyTimeoutMs = 10_000
 
 let copiedResetTimer: number | undefined
 
@@ -56,10 +63,51 @@ function speedTestUrl(endpoint: string): string {
   return `https://www.tcptest.cn/http/${encodeURIComponent(endpoint)}`
 }
 
+function latencyResult(endpoint: string): LatencyResult {
+  return latencyResults.value[endpoint] ?? { status: 'idle' }
+}
+
+async function testLatency(endpoint: string) {
+  if (latencyRequests.has(endpoint)) return
+
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), latencyTimeoutMs)
+  latencyRequests.set(endpoint, { controller, timeoutId })
+  latencyResults.value[endpoint] = { status: 'testing' }
+
+  const startedAt = performance.now()
+  const separator = endpoint.includes('?') ? '&' : '?'
+
+  try {
+    await fetch(`${endpoint}${separator}_latency_test=${Date.now()}`, {
+      cache: 'no-store',
+      mode: 'no-cors',
+      signal: controller.signal,
+    })
+    latencyResults.value[endpoint] = {
+      status: 'success',
+      milliseconds: Math.max(0, Math.round(performance.now() - startedAt)),
+    }
+  } catch {
+    latencyResults.value[endpoint] = { status: 'failed' }
+  } finally {
+    const request = latencyRequests.get(endpoint)
+    if (request?.controller === controller) {
+      window.clearTimeout(request.timeoutId)
+      latencyRequests.delete(endpoint)
+    }
+  }
+}
+
 onBeforeUnmount(() => {
   if (copiedResetTimer !== undefined) {
     window.clearTimeout(copiedResetTimer)
   }
+  for (const request of latencyRequests.values()) {
+    window.clearTimeout(request.timeoutId)
+    request.controller.abort()
+  }
+  latencyRequests.clear()
 })
 </script>
 
@@ -129,12 +177,40 @@ onBeforeUnmount(() => {
           target="_blank"
           rel="noopener noreferrer"
           class="shrink-0 rounded p-0.5 text-gray-400 transition-colors hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400"
-          :title="t('keys.endpoints.speedTest')"
+          :aria-label="t('keys.endpoints.externalSpeedTest')"
+          :title="t('keys.endpoints.externalSpeedTest')"
         >
-          <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
+          <Icon name="gauge" size="xs" :stroke-width="2" />
         </a>
+
+        <button
+          type="button"
+          class="shrink-0 rounded p-0.5 text-gray-400 transition-colors hover:text-amber-500 disabled:cursor-wait disabled:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400 dark:disabled:text-amber-400"
+          :aria-label="latencyResult(item.endpoint).status === 'testing'
+            ? t('keys.endpoints.testingLatency')
+            : t('keys.endpoints.testLatency')"
+          :title="latencyResult(item.endpoint).status === 'testing'
+            ? t('keys.endpoints.testingLatency')
+            : t('keys.endpoints.testLatency')"
+          :disabled="latencyResult(item.endpoint).status === 'testing'"
+          @click="testLatency(item.endpoint)"
+        >
+          <Icon
+            :name="latencyResult(item.endpoint).status === 'testing' ? 'refresh' : 'bolt'"
+            size="xs"
+            :class="latencyResult(item.endpoint).status === 'testing' ? 'animate-spin' : ''"
+            :stroke-width="2"
+          />
+        </button>
+
+        <span
+          v-if="latencyResult(item.endpoint).status === 'success'"
+          class="min-w-9 text-right font-mono text-[10px] text-emerald-600 dark:text-emerald-400"
+        >{{ latencyResult(item.endpoint).milliseconds }}ms</span>
+        <span
+          v-else-if="latencyResult(item.endpoint).status === 'failed'"
+          class="text-[10px] text-red-500 dark:text-red-400"
+        >{{ t('keys.endpoints.latencyFailed') }}</span>
       </div>
     </div>
   </div>

@@ -44,6 +44,7 @@ describe('EntityDistributionChart', () => {
     expect(chartData.labels).toEqual(['key-a', 'key-b'])
     expect(chartData.datasets[0].data).toEqual([1200, 600])
     expect(wrapper.findAll('tbody tr')[0].text()).toContain('key-a')
+    expect(wrapper.findAll('tbody tr')[0].text()).toContain('1,200')
     expect(wrapper.text()).not.toContain('Account Cost')
   })
 

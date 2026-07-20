@@ -28,7 +28,7 @@
             <Icon name="copy" size="sm" />
             {{ copiedKey === 'model' ? t('common.copied') : t('common.copy') }}
           </button>
-          <router-link class="btn btn-sm btn-secondary" to="/available-channels">
+          <router-link class="btn btn-sm btn-secondary" to="/model-plaza">
             <Icon name="externalLink" size="sm" />
             {{ t('quickStart.viewModels') }}
           </router-link>

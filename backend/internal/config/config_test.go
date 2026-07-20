@@ -25,6 +25,23 @@ func resetViperWithEmptyConfig(t *testing.T) {
 	t.Setenv("DATA_DIR", tempDir)
 }
 
+func TestLoadServerTimingConfig(t *testing.T) {
+	t.Run("disabled by default", func(t *testing.T) {
+		resetViperWithJWTSecret(t)
+		cfg, err := Load()
+		require.NoError(t, err)
+		require.False(t, cfg.Server.EnableServerTiming)
+	})
+
+	t.Run("enabled by exact environment variable", func(t *testing.T) {
+		resetViperWithJWTSecret(t)
+		t.Setenv("ENABLE_SERVER_TIMING", "true")
+		cfg, err := Load()
+		require.NoError(t, err)
+		require.True(t, cfg.Server.EnableServerTiming)
+	})
+}
+
 func TestLoadForBootstrapAllowsMissingJWTSecret(t *testing.T) {
 	resetViperWithEmptyConfig(t)
 	t.Setenv("JWT_SECRET", "")
@@ -227,6 +244,17 @@ func TestLoadOpenAIHTTP2DisabledFromEnv(t *testing.T) {
 	require.False(t, cfg.Gateway.OpenAIHTTP2.Enabled)
 }
 
+func TestLoadUpstreamRequestGzipHostsFromEnv(t *testing.T) {
+	resetViperWithJWTSecret(t)
+	t.Setenv("GATEWAY_UPSTREAM_REQUEST_GZIP", "true")
+	t.Setenv("GATEWAY_UPSTREAM_REQUEST_GZIP_HOSTS", "xcpcai.com,api.example.com")
+
+	cfg, err := Load()
+	require.NoError(t, err)
+	require.True(t, cfg.Gateway.UpstreamRequestGzip)
+	require.Equal(t, []string{"xcpcai.com", "api.example.com"}, cfg.Gateway.UpstreamRequestGzipHosts)
+}
+
 func TestLoadDefaultOpenAIResponseHeaderTimeoutUnlimited(t *testing.T) {
 	resetViperWithJWTSecret(t)
 
@@ -242,6 +270,15 @@ func TestLoadOpenAIResponseHeaderTimeoutFromEnv(t *testing.T) {
 	cfg, err := Load()
 	require.NoError(t, err)
 	require.Equal(t, 1800, cfg.Gateway.OpenAIResponseHeaderTimeout)
+}
+
+func TestLoadImageNonstreamKeepaliveFromEnv(t *testing.T) {
+	resetViperWithJWTSecret(t)
+	t.Setenv("GATEWAY_IMAGE_NONSTREAM_KEEPALIVE_INTERVAL", "15")
+
+	cfg, err := Load()
+	require.NoError(t, err)
+	require.Equal(t, 15, cfg.Gateway.ImageNonstreamKeepaliveInterval)
 }
 
 func TestLoadOpenAIWSStickyTTLCompatibility(t *testing.T) {
@@ -1417,6 +1454,16 @@ func TestValidateConfigErrors(t *testing.T) {
 			wantErr: "gateway.image_stream_keepalive_interval must be non-negative",
 		},
 		{
+			name:    "gateway image nonstream keepalive range",
+			mutate:  func(c *Config) { c.Gateway.ImageNonstreamKeepaliveInterval = 4 },
+			wantErr: "gateway.image_nonstream_keepalive_interval",
+		},
+		{
+			name:    "gateway image nonstream keepalive negative",
+			mutate:  func(c *Config) { c.Gateway.ImageNonstreamKeepaliveInterval = -1 },
+			wantErr: "gateway.image_nonstream_keepalive_interval must be non-negative",
+		},
+		{
 			name:    "gateway image stream data interval range",
 			mutate:  func(c *Config) { c.Gateway.ImageStreamDataIntervalTimeout = 30 },
 			wantErr: "gateway.image_stream_data_interval_timeout",
@@ -1973,6 +2020,9 @@ func TestLoad_DefaultGatewayImageStreamConfig(t *testing.T) {
 	}
 	if cfg.Gateway.ImageStreamKeepaliveInterval != 10 {
 		t.Fatalf("image_stream_keepalive_interval = %d, want 10", cfg.Gateway.ImageStreamKeepaliveInterval)
+	}
+	if cfg.Gateway.ImageNonstreamKeepaliveInterval != 0 {
+		t.Fatalf("image_nonstream_keepalive_interval = %d, want 0", cfg.Gateway.ImageNonstreamKeepaliveInterval)
 	}
 	if cfg.Gateway.ImageConcurrency.Enabled {
 		t.Fatalf("image_concurrency.enabled = true, want false")

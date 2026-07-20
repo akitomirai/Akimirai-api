@@ -19,7 +19,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
-const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, client_transport, auth_latency_ms, routing_latency_ms, upstream_latency_ms, response_latency_ms, request_started_at, request_total_ms, request_body_read_ms, request_body_bytes, upstream_request_written_ms, upstream_first_byte_ms, request_first_token_ms, route_kind, proxy_id_snapshot, proxy_name_snapshot, proxy_protocol_snapshot, route_fingerprint, final_upstream_status, retry_count, account_switch_count, attempt_timeline, user_agent, ip_address, image_count, image_size, image_input_size, image_output_size, image_size_source, image_size_breakdown, video_count, video_resolution, video_duration_seconds, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, account_stats_cost, created_at"
+const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, client_transport, auth_latency_ms, routing_latency_ms, upstream_latency_ms, response_latency_ms, request_started_at, request_total_ms, request_body_read_ms, request_body_bytes, upstream_connection_reused, upstream_connection_ready_ms, upstream_dns_lookup_ms, upstream_tcp_connect_ms, upstream_tls_handshake_ms, upstream_request_headers_written_ms, upstream_request_written_ms, upstream_first_byte_ms, upstream_response_headers_received_ms, upstream_response_body_first_byte_ms, upstream_first_event_ms, request_first_output_character_ms, request_first_token_ms, route_kind, proxy_id_snapshot, proxy_name_snapshot, proxy_protocol_snapshot, route_fingerprint, final_upstream_status, retry_count, account_switch_count, attempt_timeline, user_agent, ip_address, image_count, image_size, image_input_size, image_output_size, image_size_source, image_size_breakdown, video_count, video_resolution, video_duration_seconds, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, long_context_billing_applied, channel_id, model_mapping_chain, billing_tier, billing_mode, account_stats_cost, created_at"
 
 func (r *usageLogRepository) GetByID(ctx context.Context, id int64) (log *service.UsageLog, err error) {
 	query := "SELECT " + usageLogSelectColumns + " FROM usage_logs WHERE id = $1"
@@ -468,81 +468,92 @@ func (r *usageLogRepository) loadSubscriptions(ctx context.Context, ids []int64)
 
 func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, error) {
 	var (
-		id                       int64
-		userID                   int64
-		apiKeyID                 int64
-		accountID                int64
-		requestID                sql.NullString
-		model                    string
-		requestedModel           sql.NullString
-		upstreamModel            sql.NullString
-		groupID                  sql.NullInt64
-		subscriptionID           sql.NullInt64
-		inputTokens              int
-		outputTokens             int
-		cacheCreationTokens      int
-		cacheReadTokens          int
-		cacheCreation5m          int
-		cacheCreation1h          int
-		imageOutputTokens        int
-		imageOutputCost          float64
-		inputCost                float64
-		outputCost               float64
-		cacheCreationCost        float64
-		cacheReadCost            float64
-		totalCost                float64
-		actualCost               float64
-		rateMultiplier           float64
-		accountRateMultiplier    sql.NullFloat64
-		billingType              int16
-		requestTypeRaw           int16
-		stream                   bool
-		openaiWSMode             bool
-		durationMs               sql.NullInt64
-		firstTokenMs             sql.NullInt64
-		clientTransport          sql.NullString
-		authLatencyMs            sql.NullInt64
-		routingLatencyMs         sql.NullInt64
-		upstreamLatencyMs        sql.NullInt64
-		responseLatencyMs        sql.NullInt64
-		requestStartedAt         sql.NullTime
-		requestTotalMs           sql.NullInt64
-		requestBodyReadMs        sql.NullInt64
-		requestBodyBytes         sql.NullInt64
-		upstreamRequestWrittenMs sql.NullInt64
-		upstreamFirstByteMs      sql.NullInt64
-		requestFirstTokenMs      sql.NullInt64
-		routeKind                sql.NullString
-		proxyIDSnapshot          sql.NullInt64
-		proxyNameSnapshot        sql.NullString
-		proxyProtocolSnapshot    sql.NullString
-		routeFingerprint         sql.NullString
-		finalUpstreamStatus      sql.NullInt64
-		retryCount               int
-		accountSwitchCount       int
-		attemptTimeline          sql.NullString
-		userAgent                sql.NullString
-		ipAddress                sql.NullString
-		imageCount               int
-		imageSize                sql.NullString
-		imageInputSize           sql.NullString
-		imageOutputSize          sql.NullString
-		imageSizeSource          sql.NullString
-		imageSizeBreakdown       sql.NullString
-		videoCount               int
-		videoResolution          sql.NullString
-		videoDurationSeconds     sql.NullInt64
-		serviceTier              sql.NullString
-		reasoningEffort          sql.NullString
-		inboundEndpoint          sql.NullString
-		upstreamEndpoint         sql.NullString
-		cacheTTLOverridden       bool
-		channelID                sql.NullInt64
-		modelMappingChain        sql.NullString
-		billingTier              sql.NullString
-		billingMode              sql.NullString
-		accountStatsCost         sql.NullFloat64
-		createdAt                time.Time
+		id                                int64
+		userID                            int64
+		apiKeyID                          int64
+		accountID                         int64
+		requestID                         sql.NullString
+		model                             string
+		requestedModel                    sql.NullString
+		upstreamModel                     sql.NullString
+		groupID                           sql.NullInt64
+		subscriptionID                    sql.NullInt64
+		inputTokens                       int
+		outputTokens                      int
+		cacheCreationTokens               int
+		cacheReadTokens                   int
+		cacheCreation5m                   int
+		cacheCreation1h                   int
+		imageOutputTokens                 int
+		imageOutputCost                   float64
+		inputCost                         float64
+		outputCost                        float64
+		cacheCreationCost                 float64
+		cacheReadCost                     float64
+		totalCost                         float64
+		actualCost                        float64
+		rateMultiplier                    float64
+		accountRateMultiplier             sql.NullFloat64
+		billingType                       int16
+		requestTypeRaw                    int16
+		stream                            bool
+		openaiWSMode                      bool
+		durationMs                        sql.NullInt64
+		firstTokenMs                      sql.NullInt64
+		clientTransport                   sql.NullString
+		authLatencyMs                     sql.NullInt64
+		routingLatencyMs                  sql.NullInt64
+		upstreamLatencyMs                 sql.NullInt64
+		responseLatencyMs                 sql.NullInt64
+		requestStartedAt                  sql.NullTime
+		requestTotalMs                    sql.NullInt64
+		requestBodyReadMs                 sql.NullInt64
+		requestBodyBytes                  sql.NullInt64
+		upstreamConnectionReused          sql.NullBool
+		upstreamConnectionReadyMs         sql.NullInt64
+		upstreamDNSLookupMs               sql.NullInt64
+		upstreamTCPConnectMs              sql.NullInt64
+		upstreamTLSHandshakeMs            sql.NullInt64
+		upstreamRequestHeadersWrittenMs   sql.NullInt64
+		upstreamRequestWrittenMs          sql.NullInt64
+		upstreamFirstByteMs               sql.NullInt64
+		upstreamResponseHeadersReceivedMs sql.NullInt64
+		upstreamResponseBodyFirstByteMs   sql.NullInt64
+		upstreamFirstEventMs              sql.NullInt64
+		requestFirstOutputCharacterMs     sql.NullInt64
+		requestFirstTokenMs               sql.NullInt64
+		routeKind                         sql.NullString
+		proxyIDSnapshot                   sql.NullInt64
+		proxyNameSnapshot                 sql.NullString
+		proxyProtocolSnapshot             sql.NullString
+		routeFingerprint                  sql.NullString
+		finalUpstreamStatus               sql.NullInt64
+		retryCount                        int
+		accountSwitchCount                int
+		attemptTimeline                   sql.NullString
+		userAgent                         sql.NullString
+		ipAddress                         sql.NullString
+		imageCount                        int
+		imageSize                         sql.NullString
+		imageInputSize                    sql.NullString
+		imageOutputSize                   sql.NullString
+		imageSizeSource                   sql.NullString
+		imageSizeBreakdown                sql.NullString
+		videoCount                        int
+		videoResolution                   sql.NullString
+		videoDurationSeconds              sql.NullInt64
+		serviceTier                       sql.NullString
+		reasoningEffort                   sql.NullString
+		inboundEndpoint                   sql.NullString
+		upstreamEndpoint                  sql.NullString
+		cacheTTLOverridden                bool
+		longContextBillingApplied         bool
+		channelID                         sql.NullInt64
+		modelMappingChain                 sql.NullString
+		billingTier                       sql.NullString
+		billingMode                       sql.NullString
+		accountStatsCost                  sql.NullFloat64
+		createdAt                         time.Time
 	)
 
 	if err := scanner.Scan(
@@ -587,8 +598,18 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		&requestTotalMs,
 		&requestBodyReadMs,
 		&requestBodyBytes,
+		&upstreamConnectionReused,
+		&upstreamConnectionReadyMs,
+		&upstreamDNSLookupMs,
+		&upstreamTCPConnectMs,
+		&upstreamTLSHandshakeMs,
+		&upstreamRequestHeadersWrittenMs,
 		&upstreamRequestWrittenMs,
 		&upstreamFirstByteMs,
+		&upstreamResponseHeadersReceivedMs,
+		&upstreamResponseBodyFirstByteMs,
+		&upstreamFirstEventMs,
+		&requestFirstOutputCharacterMs,
 		&requestFirstTokenMs,
 		&routeKind,
 		&proxyIDSnapshot,
@@ -615,6 +636,7 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		&inboundEndpoint,
 		&upstreamEndpoint,
 		&cacheTTLOverridden,
+		&longContextBillingApplied,
 		&channelID,
 		&modelMappingChain,
 		&billingTier,
@@ -626,36 +648,37 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 	}
 
 	log := &service.UsageLog{
-		ID:                    id,
-		UserID:                userID,
-		APIKeyID:              apiKeyID,
-		AccountID:             accountID,
-		Model:                 model,
-		RequestedModel:        coalesceTrimmedString(requestedModel, model),
-		InputTokens:           inputTokens,
-		OutputTokens:          outputTokens,
-		CacheCreationTokens:   cacheCreationTokens,
-		CacheReadTokens:       cacheReadTokens,
-		CacheCreation5mTokens: cacheCreation5m,
-		CacheCreation1hTokens: cacheCreation1h,
-		ImageOutputTokens:     imageOutputTokens,
-		ImageOutputCost:       imageOutputCost,
-		InputCost:             inputCost,
-		OutputCost:            outputCost,
-		CacheCreationCost:     cacheCreationCost,
-		CacheReadCost:         cacheReadCost,
-		TotalCost:             totalCost,
-		ActualCost:            actualCost,
-		RateMultiplier:        rateMultiplier,
-		AccountRateMultiplier: nullFloat64Ptr(accountRateMultiplier),
-		BillingType:           int8(billingType),
-		RequestType:           service.RequestTypeFromInt16(requestTypeRaw),
-		ImageCount:            imageCount,
-		VideoCount:            videoCount,
-		RetryCount:            retryCount,
-		AccountSwitchCount:    accountSwitchCount,
-		CacheTTLOverridden:    cacheTTLOverridden,
-		CreatedAt:             createdAt,
+		ID:                        id,
+		UserID:                    userID,
+		APIKeyID:                  apiKeyID,
+		AccountID:                 accountID,
+		Model:                     model,
+		RequestedModel:            coalesceTrimmedString(requestedModel, model),
+		InputTokens:               inputTokens,
+		OutputTokens:              outputTokens,
+		CacheCreationTokens:       cacheCreationTokens,
+		CacheReadTokens:           cacheReadTokens,
+		CacheCreation5mTokens:     cacheCreation5m,
+		CacheCreation1hTokens:     cacheCreation1h,
+		ImageOutputTokens:         imageOutputTokens,
+		ImageOutputCost:           imageOutputCost,
+		InputCost:                 inputCost,
+		OutputCost:                outputCost,
+		CacheCreationCost:         cacheCreationCost,
+		CacheReadCost:             cacheReadCost,
+		TotalCost:                 totalCost,
+		ActualCost:                actualCost,
+		RateMultiplier:            rateMultiplier,
+		AccountRateMultiplier:     nullFloat64Ptr(accountRateMultiplier),
+		BillingType:               int8(billingType),
+		RequestType:               service.RequestTypeFromInt16(requestTypeRaw),
+		ImageCount:                imageCount,
+		VideoCount:                videoCount,
+		RetryCount:                retryCount,
+		AccountSwitchCount:        accountSwitchCount,
+		CacheTTLOverridden:        cacheTTLOverridden,
+		LongContextBillingApplied: longContextBillingApplied,
+		CreatedAt:                 createdAt,
 	}
 	// 先回填 legacy 字段，再基于 legacy + request_type 计算最终请求类型，保证历史数据兼容。
 	log.Stream = stream
@@ -717,6 +740,30 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		value := requestBodyBytes.Int64
 		log.RequestBodyBytes = &value
 	}
+	if upstreamConnectionReused.Valid {
+		value := upstreamConnectionReused.Bool
+		log.UpstreamConnectionReused = &value
+	}
+	if upstreamConnectionReadyMs.Valid {
+		value := int(upstreamConnectionReadyMs.Int64)
+		log.UpstreamConnectionReadyMs = &value
+	}
+	if upstreamDNSLookupMs.Valid {
+		value := int(upstreamDNSLookupMs.Int64)
+		log.UpstreamDNSLookupMs = &value
+	}
+	if upstreamTCPConnectMs.Valid {
+		value := int(upstreamTCPConnectMs.Int64)
+		log.UpstreamTCPConnectMs = &value
+	}
+	if upstreamTLSHandshakeMs.Valid {
+		value := int(upstreamTLSHandshakeMs.Int64)
+		log.UpstreamTLSHandshakeMs = &value
+	}
+	if upstreamRequestHeadersWrittenMs.Valid {
+		value := int(upstreamRequestHeadersWrittenMs.Int64)
+		log.UpstreamRequestHeadersWrittenMs = &value
+	}
 	if upstreamRequestWrittenMs.Valid {
 		value := int(upstreamRequestWrittenMs.Int64)
 		log.UpstreamRequestWrittenMs = &value
@@ -724,6 +771,22 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 	if upstreamFirstByteMs.Valid {
 		value := int(upstreamFirstByteMs.Int64)
 		log.UpstreamFirstByteMs = &value
+	}
+	if upstreamResponseHeadersReceivedMs.Valid {
+		value := int(upstreamResponseHeadersReceivedMs.Int64)
+		log.UpstreamResponseHeadersReceivedMs = &value
+	}
+	if upstreamResponseBodyFirstByteMs.Valid {
+		value := int(upstreamResponseBodyFirstByteMs.Int64)
+		log.UpstreamResponseBodyFirstByteMs = &value
+	}
+	if upstreamFirstEventMs.Valid {
+		value := int(upstreamFirstEventMs.Int64)
+		log.UpstreamFirstEventMs = &value
+	}
+	if requestFirstOutputCharacterMs.Valid {
+		value := int(requestFirstOutputCharacterMs.Int64)
+		log.RequestFirstOutputCharacterMs = &value
 	}
 	if requestFirstTokenMs.Valid {
 		value := int(requestFirstTokenMs.Int64)
@@ -823,6 +886,13 @@ func nullInt(v *int) sql.NullInt64 {
 		return sql.NullInt64{}
 	}
 	return sql.NullInt64{Int64: int64(*v), Valid: true}
+}
+
+func nullBool(v *bool) sql.NullBool {
+	if v == nil {
+		return sql.NullBool{}
+	}
+	return sql.NullBool{Bool: *v, Valid: true}
 }
 
 func nullFloat64Ptr(v sql.NullFloat64) *float64 {

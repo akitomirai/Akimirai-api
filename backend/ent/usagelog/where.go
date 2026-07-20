@@ -185,6 +185,11 @@ func RateMultiplier(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldRateMultiplier, v))
 }
 
+// LongContextBillingApplied applies equality check predicate on the "long_context_billing_applied" field. It's identical to LongContextBillingAppliedEQ.
+func LongContextBillingApplied(v bool) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldLongContextBillingApplied, v))
+}
+
 // AccountRateMultiplier applies equality check predicate on the "account_rate_multiplier" field. It's identical to AccountRateMultiplierEQ.
 func AccountRateMultiplier(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldAccountRateMultiplier, v))
@@ -255,6 +260,36 @@ func RequestBodyBytes(v int64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldRequestBodyBytes, v))
 }
 
+// UpstreamConnectionReused applies equality check predicate on the "upstream_connection_reused" field. It's identical to UpstreamConnectionReusedEQ.
+func UpstreamConnectionReused(v bool) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamConnectionReused, v))
+}
+
+// UpstreamConnectionReadyMs applies equality check predicate on the "upstream_connection_ready_ms" field. It's identical to UpstreamConnectionReadyMsEQ.
+func UpstreamConnectionReadyMs(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamConnectionReadyMs, v))
+}
+
+// UpstreamDNSLookupMs applies equality check predicate on the "upstream_dns_lookup_ms" field. It's identical to UpstreamDNSLookupMsEQ.
+func UpstreamDNSLookupMs(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamDNSLookupMs, v))
+}
+
+// UpstreamTCPConnectMs applies equality check predicate on the "upstream_tcp_connect_ms" field. It's identical to UpstreamTCPConnectMsEQ.
+func UpstreamTCPConnectMs(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamTCPConnectMs, v))
+}
+
+// UpstreamTLSHandshakeMs applies equality check predicate on the "upstream_tls_handshake_ms" field. It's identical to UpstreamTLSHandshakeMsEQ.
+func UpstreamTLSHandshakeMs(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamTLSHandshakeMs, v))
+}
+
+// UpstreamRequestHeadersWrittenMs applies equality check predicate on the "upstream_request_headers_written_ms" field. It's identical to UpstreamRequestHeadersWrittenMsEQ.
+func UpstreamRequestHeadersWrittenMs(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamRequestHeadersWrittenMs, v))
+}
+
 // UpstreamRequestWrittenMs applies equality check predicate on the "upstream_request_written_ms" field. It's identical to UpstreamRequestWrittenMsEQ.
 func UpstreamRequestWrittenMs(v int) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamRequestWrittenMs, v))
@@ -263,6 +298,26 @@ func UpstreamRequestWrittenMs(v int) predicate.UsageLog {
 // UpstreamFirstByteMs applies equality check predicate on the "upstream_first_byte_ms" field. It's identical to UpstreamFirstByteMsEQ.
 func UpstreamFirstByteMs(v int) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamFirstByteMs, v))
+}
+
+// UpstreamResponseHeadersReceivedMs applies equality check predicate on the "upstream_response_headers_received_ms" field. It's identical to UpstreamResponseHeadersReceivedMsEQ.
+func UpstreamResponseHeadersReceivedMs(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamResponseHeadersReceivedMs, v))
+}
+
+// UpstreamResponseBodyFirstByteMs applies equality check predicate on the "upstream_response_body_first_byte_ms" field. It's identical to UpstreamResponseBodyFirstByteMsEQ.
+func UpstreamResponseBodyFirstByteMs(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamResponseBodyFirstByteMs, v))
+}
+
+// UpstreamFirstEventMs applies equality check predicate on the "upstream_first_event_ms" field. It's identical to UpstreamFirstEventMsEQ.
+func UpstreamFirstEventMs(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamFirstEventMs, v))
+}
+
+// RequestFirstOutputCharacterMs applies equality check predicate on the "request_first_output_character_ms" field. It's identical to RequestFirstOutputCharacterMsEQ.
+func RequestFirstOutputCharacterMs(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldRequestFirstOutputCharacterMs, v))
 }
 
 // RequestFirstTokenMs applies equality check predicate on the "request_first_token_ms" field. It's identical to RequestFirstTokenMsEQ.
@@ -1565,6 +1620,16 @@ func RateMultiplierLTE(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldLTE(FieldRateMultiplier, v))
 }
 
+// LongContextBillingAppliedEQ applies the EQ predicate on the "long_context_billing_applied" field.
+func LongContextBillingAppliedEQ(v bool) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldLongContextBillingApplied, v))
+}
+
+// LongContextBillingAppliedNEQ applies the NEQ predicate on the "long_context_billing_applied" field.
+func LongContextBillingAppliedNEQ(v bool) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldLongContextBillingApplied, v))
+}
+
 // AccountRateMultiplierEQ applies the EQ predicate on the "account_rate_multiplier" field.
 func AccountRateMultiplierEQ(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldAccountRateMultiplier, v))
@@ -2240,6 +2305,276 @@ func RequestBodyBytesNotNil() predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldNotNull(FieldRequestBodyBytes))
 }
 
+// UpstreamConnectionReusedEQ applies the EQ predicate on the "upstream_connection_reused" field.
+func UpstreamConnectionReusedEQ(v bool) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamConnectionReused, v))
+}
+
+// UpstreamConnectionReusedNEQ applies the NEQ predicate on the "upstream_connection_reused" field.
+func UpstreamConnectionReusedNEQ(v bool) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldUpstreamConnectionReused, v))
+}
+
+// UpstreamConnectionReusedIsNil applies the IsNil predicate on the "upstream_connection_reused" field.
+func UpstreamConnectionReusedIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldUpstreamConnectionReused))
+}
+
+// UpstreamConnectionReusedNotNil applies the NotNil predicate on the "upstream_connection_reused" field.
+func UpstreamConnectionReusedNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldUpstreamConnectionReused))
+}
+
+// UpstreamConnectionReadyMsEQ applies the EQ predicate on the "upstream_connection_ready_ms" field.
+func UpstreamConnectionReadyMsEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamConnectionReadyMs, v))
+}
+
+// UpstreamConnectionReadyMsNEQ applies the NEQ predicate on the "upstream_connection_ready_ms" field.
+func UpstreamConnectionReadyMsNEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldUpstreamConnectionReadyMs, v))
+}
+
+// UpstreamConnectionReadyMsIn applies the In predicate on the "upstream_connection_ready_ms" field.
+func UpstreamConnectionReadyMsIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldUpstreamConnectionReadyMs, vs...))
+}
+
+// UpstreamConnectionReadyMsNotIn applies the NotIn predicate on the "upstream_connection_ready_ms" field.
+func UpstreamConnectionReadyMsNotIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldUpstreamConnectionReadyMs, vs...))
+}
+
+// UpstreamConnectionReadyMsGT applies the GT predicate on the "upstream_connection_ready_ms" field.
+func UpstreamConnectionReadyMsGT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldUpstreamConnectionReadyMs, v))
+}
+
+// UpstreamConnectionReadyMsGTE applies the GTE predicate on the "upstream_connection_ready_ms" field.
+func UpstreamConnectionReadyMsGTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldUpstreamConnectionReadyMs, v))
+}
+
+// UpstreamConnectionReadyMsLT applies the LT predicate on the "upstream_connection_ready_ms" field.
+func UpstreamConnectionReadyMsLT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldUpstreamConnectionReadyMs, v))
+}
+
+// UpstreamConnectionReadyMsLTE applies the LTE predicate on the "upstream_connection_ready_ms" field.
+func UpstreamConnectionReadyMsLTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldUpstreamConnectionReadyMs, v))
+}
+
+// UpstreamConnectionReadyMsIsNil applies the IsNil predicate on the "upstream_connection_ready_ms" field.
+func UpstreamConnectionReadyMsIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldUpstreamConnectionReadyMs))
+}
+
+// UpstreamConnectionReadyMsNotNil applies the NotNil predicate on the "upstream_connection_ready_ms" field.
+func UpstreamConnectionReadyMsNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldUpstreamConnectionReadyMs))
+}
+
+// UpstreamDNSLookupMsEQ applies the EQ predicate on the "upstream_dns_lookup_ms" field.
+func UpstreamDNSLookupMsEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamDNSLookupMs, v))
+}
+
+// UpstreamDNSLookupMsNEQ applies the NEQ predicate on the "upstream_dns_lookup_ms" field.
+func UpstreamDNSLookupMsNEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldUpstreamDNSLookupMs, v))
+}
+
+// UpstreamDNSLookupMsIn applies the In predicate on the "upstream_dns_lookup_ms" field.
+func UpstreamDNSLookupMsIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldUpstreamDNSLookupMs, vs...))
+}
+
+// UpstreamDNSLookupMsNotIn applies the NotIn predicate on the "upstream_dns_lookup_ms" field.
+func UpstreamDNSLookupMsNotIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldUpstreamDNSLookupMs, vs...))
+}
+
+// UpstreamDNSLookupMsGT applies the GT predicate on the "upstream_dns_lookup_ms" field.
+func UpstreamDNSLookupMsGT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldUpstreamDNSLookupMs, v))
+}
+
+// UpstreamDNSLookupMsGTE applies the GTE predicate on the "upstream_dns_lookup_ms" field.
+func UpstreamDNSLookupMsGTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldUpstreamDNSLookupMs, v))
+}
+
+// UpstreamDNSLookupMsLT applies the LT predicate on the "upstream_dns_lookup_ms" field.
+func UpstreamDNSLookupMsLT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldUpstreamDNSLookupMs, v))
+}
+
+// UpstreamDNSLookupMsLTE applies the LTE predicate on the "upstream_dns_lookup_ms" field.
+func UpstreamDNSLookupMsLTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldUpstreamDNSLookupMs, v))
+}
+
+// UpstreamDNSLookupMsIsNil applies the IsNil predicate on the "upstream_dns_lookup_ms" field.
+func UpstreamDNSLookupMsIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldUpstreamDNSLookupMs))
+}
+
+// UpstreamDNSLookupMsNotNil applies the NotNil predicate on the "upstream_dns_lookup_ms" field.
+func UpstreamDNSLookupMsNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldUpstreamDNSLookupMs))
+}
+
+// UpstreamTCPConnectMsEQ applies the EQ predicate on the "upstream_tcp_connect_ms" field.
+func UpstreamTCPConnectMsEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamTCPConnectMs, v))
+}
+
+// UpstreamTCPConnectMsNEQ applies the NEQ predicate on the "upstream_tcp_connect_ms" field.
+func UpstreamTCPConnectMsNEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldUpstreamTCPConnectMs, v))
+}
+
+// UpstreamTCPConnectMsIn applies the In predicate on the "upstream_tcp_connect_ms" field.
+func UpstreamTCPConnectMsIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldUpstreamTCPConnectMs, vs...))
+}
+
+// UpstreamTCPConnectMsNotIn applies the NotIn predicate on the "upstream_tcp_connect_ms" field.
+func UpstreamTCPConnectMsNotIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldUpstreamTCPConnectMs, vs...))
+}
+
+// UpstreamTCPConnectMsGT applies the GT predicate on the "upstream_tcp_connect_ms" field.
+func UpstreamTCPConnectMsGT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldUpstreamTCPConnectMs, v))
+}
+
+// UpstreamTCPConnectMsGTE applies the GTE predicate on the "upstream_tcp_connect_ms" field.
+func UpstreamTCPConnectMsGTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldUpstreamTCPConnectMs, v))
+}
+
+// UpstreamTCPConnectMsLT applies the LT predicate on the "upstream_tcp_connect_ms" field.
+func UpstreamTCPConnectMsLT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldUpstreamTCPConnectMs, v))
+}
+
+// UpstreamTCPConnectMsLTE applies the LTE predicate on the "upstream_tcp_connect_ms" field.
+func UpstreamTCPConnectMsLTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldUpstreamTCPConnectMs, v))
+}
+
+// UpstreamTCPConnectMsIsNil applies the IsNil predicate on the "upstream_tcp_connect_ms" field.
+func UpstreamTCPConnectMsIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldUpstreamTCPConnectMs))
+}
+
+// UpstreamTCPConnectMsNotNil applies the NotNil predicate on the "upstream_tcp_connect_ms" field.
+func UpstreamTCPConnectMsNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldUpstreamTCPConnectMs))
+}
+
+// UpstreamTLSHandshakeMsEQ applies the EQ predicate on the "upstream_tls_handshake_ms" field.
+func UpstreamTLSHandshakeMsEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamTLSHandshakeMs, v))
+}
+
+// UpstreamTLSHandshakeMsNEQ applies the NEQ predicate on the "upstream_tls_handshake_ms" field.
+func UpstreamTLSHandshakeMsNEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldUpstreamTLSHandshakeMs, v))
+}
+
+// UpstreamTLSHandshakeMsIn applies the In predicate on the "upstream_tls_handshake_ms" field.
+func UpstreamTLSHandshakeMsIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldUpstreamTLSHandshakeMs, vs...))
+}
+
+// UpstreamTLSHandshakeMsNotIn applies the NotIn predicate on the "upstream_tls_handshake_ms" field.
+func UpstreamTLSHandshakeMsNotIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldUpstreamTLSHandshakeMs, vs...))
+}
+
+// UpstreamTLSHandshakeMsGT applies the GT predicate on the "upstream_tls_handshake_ms" field.
+func UpstreamTLSHandshakeMsGT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldUpstreamTLSHandshakeMs, v))
+}
+
+// UpstreamTLSHandshakeMsGTE applies the GTE predicate on the "upstream_tls_handshake_ms" field.
+func UpstreamTLSHandshakeMsGTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldUpstreamTLSHandshakeMs, v))
+}
+
+// UpstreamTLSHandshakeMsLT applies the LT predicate on the "upstream_tls_handshake_ms" field.
+func UpstreamTLSHandshakeMsLT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldUpstreamTLSHandshakeMs, v))
+}
+
+// UpstreamTLSHandshakeMsLTE applies the LTE predicate on the "upstream_tls_handshake_ms" field.
+func UpstreamTLSHandshakeMsLTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldUpstreamTLSHandshakeMs, v))
+}
+
+// UpstreamTLSHandshakeMsIsNil applies the IsNil predicate on the "upstream_tls_handshake_ms" field.
+func UpstreamTLSHandshakeMsIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldUpstreamTLSHandshakeMs))
+}
+
+// UpstreamTLSHandshakeMsNotNil applies the NotNil predicate on the "upstream_tls_handshake_ms" field.
+func UpstreamTLSHandshakeMsNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldUpstreamTLSHandshakeMs))
+}
+
+// UpstreamRequestHeadersWrittenMsEQ applies the EQ predicate on the "upstream_request_headers_written_ms" field.
+func UpstreamRequestHeadersWrittenMsEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamRequestHeadersWrittenMs, v))
+}
+
+// UpstreamRequestHeadersWrittenMsNEQ applies the NEQ predicate on the "upstream_request_headers_written_ms" field.
+func UpstreamRequestHeadersWrittenMsNEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldUpstreamRequestHeadersWrittenMs, v))
+}
+
+// UpstreamRequestHeadersWrittenMsIn applies the In predicate on the "upstream_request_headers_written_ms" field.
+func UpstreamRequestHeadersWrittenMsIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldUpstreamRequestHeadersWrittenMs, vs...))
+}
+
+// UpstreamRequestHeadersWrittenMsNotIn applies the NotIn predicate on the "upstream_request_headers_written_ms" field.
+func UpstreamRequestHeadersWrittenMsNotIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldUpstreamRequestHeadersWrittenMs, vs...))
+}
+
+// UpstreamRequestHeadersWrittenMsGT applies the GT predicate on the "upstream_request_headers_written_ms" field.
+func UpstreamRequestHeadersWrittenMsGT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldUpstreamRequestHeadersWrittenMs, v))
+}
+
+// UpstreamRequestHeadersWrittenMsGTE applies the GTE predicate on the "upstream_request_headers_written_ms" field.
+func UpstreamRequestHeadersWrittenMsGTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldUpstreamRequestHeadersWrittenMs, v))
+}
+
+// UpstreamRequestHeadersWrittenMsLT applies the LT predicate on the "upstream_request_headers_written_ms" field.
+func UpstreamRequestHeadersWrittenMsLT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldUpstreamRequestHeadersWrittenMs, v))
+}
+
+// UpstreamRequestHeadersWrittenMsLTE applies the LTE predicate on the "upstream_request_headers_written_ms" field.
+func UpstreamRequestHeadersWrittenMsLTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldUpstreamRequestHeadersWrittenMs, v))
+}
+
+// UpstreamRequestHeadersWrittenMsIsNil applies the IsNil predicate on the "upstream_request_headers_written_ms" field.
+func UpstreamRequestHeadersWrittenMsIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldUpstreamRequestHeadersWrittenMs))
+}
+
+// UpstreamRequestHeadersWrittenMsNotNil applies the NotNil predicate on the "upstream_request_headers_written_ms" field.
+func UpstreamRequestHeadersWrittenMsNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldUpstreamRequestHeadersWrittenMs))
+}
+
 // UpstreamRequestWrittenMsEQ applies the EQ predicate on the "upstream_request_written_ms" field.
 func UpstreamRequestWrittenMsEQ(v int) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamRequestWrittenMs, v))
@@ -2338,6 +2673,206 @@ func UpstreamFirstByteMsIsNil() predicate.UsageLog {
 // UpstreamFirstByteMsNotNil applies the NotNil predicate on the "upstream_first_byte_ms" field.
 func UpstreamFirstByteMsNotNil() predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldNotNull(FieldUpstreamFirstByteMs))
+}
+
+// UpstreamResponseHeadersReceivedMsEQ applies the EQ predicate on the "upstream_response_headers_received_ms" field.
+func UpstreamResponseHeadersReceivedMsEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamResponseHeadersReceivedMs, v))
+}
+
+// UpstreamResponseHeadersReceivedMsNEQ applies the NEQ predicate on the "upstream_response_headers_received_ms" field.
+func UpstreamResponseHeadersReceivedMsNEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldUpstreamResponseHeadersReceivedMs, v))
+}
+
+// UpstreamResponseHeadersReceivedMsIn applies the In predicate on the "upstream_response_headers_received_ms" field.
+func UpstreamResponseHeadersReceivedMsIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldUpstreamResponseHeadersReceivedMs, vs...))
+}
+
+// UpstreamResponseHeadersReceivedMsNotIn applies the NotIn predicate on the "upstream_response_headers_received_ms" field.
+func UpstreamResponseHeadersReceivedMsNotIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldUpstreamResponseHeadersReceivedMs, vs...))
+}
+
+// UpstreamResponseHeadersReceivedMsGT applies the GT predicate on the "upstream_response_headers_received_ms" field.
+func UpstreamResponseHeadersReceivedMsGT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldUpstreamResponseHeadersReceivedMs, v))
+}
+
+// UpstreamResponseHeadersReceivedMsGTE applies the GTE predicate on the "upstream_response_headers_received_ms" field.
+func UpstreamResponseHeadersReceivedMsGTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldUpstreamResponseHeadersReceivedMs, v))
+}
+
+// UpstreamResponseHeadersReceivedMsLT applies the LT predicate on the "upstream_response_headers_received_ms" field.
+func UpstreamResponseHeadersReceivedMsLT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldUpstreamResponseHeadersReceivedMs, v))
+}
+
+// UpstreamResponseHeadersReceivedMsLTE applies the LTE predicate on the "upstream_response_headers_received_ms" field.
+func UpstreamResponseHeadersReceivedMsLTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldUpstreamResponseHeadersReceivedMs, v))
+}
+
+// UpstreamResponseHeadersReceivedMsIsNil applies the IsNil predicate on the "upstream_response_headers_received_ms" field.
+func UpstreamResponseHeadersReceivedMsIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldUpstreamResponseHeadersReceivedMs))
+}
+
+// UpstreamResponseHeadersReceivedMsNotNil applies the NotNil predicate on the "upstream_response_headers_received_ms" field.
+func UpstreamResponseHeadersReceivedMsNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldUpstreamResponseHeadersReceivedMs))
+}
+
+// UpstreamResponseBodyFirstByteMsEQ applies the EQ predicate on the "upstream_response_body_first_byte_ms" field.
+func UpstreamResponseBodyFirstByteMsEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamResponseBodyFirstByteMs, v))
+}
+
+// UpstreamResponseBodyFirstByteMsNEQ applies the NEQ predicate on the "upstream_response_body_first_byte_ms" field.
+func UpstreamResponseBodyFirstByteMsNEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldUpstreamResponseBodyFirstByteMs, v))
+}
+
+// UpstreamResponseBodyFirstByteMsIn applies the In predicate on the "upstream_response_body_first_byte_ms" field.
+func UpstreamResponseBodyFirstByteMsIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldUpstreamResponseBodyFirstByteMs, vs...))
+}
+
+// UpstreamResponseBodyFirstByteMsNotIn applies the NotIn predicate on the "upstream_response_body_first_byte_ms" field.
+func UpstreamResponseBodyFirstByteMsNotIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldUpstreamResponseBodyFirstByteMs, vs...))
+}
+
+// UpstreamResponseBodyFirstByteMsGT applies the GT predicate on the "upstream_response_body_first_byte_ms" field.
+func UpstreamResponseBodyFirstByteMsGT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldUpstreamResponseBodyFirstByteMs, v))
+}
+
+// UpstreamResponseBodyFirstByteMsGTE applies the GTE predicate on the "upstream_response_body_first_byte_ms" field.
+func UpstreamResponseBodyFirstByteMsGTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldUpstreamResponseBodyFirstByteMs, v))
+}
+
+// UpstreamResponseBodyFirstByteMsLT applies the LT predicate on the "upstream_response_body_first_byte_ms" field.
+func UpstreamResponseBodyFirstByteMsLT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldUpstreamResponseBodyFirstByteMs, v))
+}
+
+// UpstreamResponseBodyFirstByteMsLTE applies the LTE predicate on the "upstream_response_body_first_byte_ms" field.
+func UpstreamResponseBodyFirstByteMsLTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldUpstreamResponseBodyFirstByteMs, v))
+}
+
+// UpstreamResponseBodyFirstByteMsIsNil applies the IsNil predicate on the "upstream_response_body_first_byte_ms" field.
+func UpstreamResponseBodyFirstByteMsIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldUpstreamResponseBodyFirstByteMs))
+}
+
+// UpstreamResponseBodyFirstByteMsNotNil applies the NotNil predicate on the "upstream_response_body_first_byte_ms" field.
+func UpstreamResponseBodyFirstByteMsNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldUpstreamResponseBodyFirstByteMs))
+}
+
+// UpstreamFirstEventMsEQ applies the EQ predicate on the "upstream_first_event_ms" field.
+func UpstreamFirstEventMsEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamFirstEventMs, v))
+}
+
+// UpstreamFirstEventMsNEQ applies the NEQ predicate on the "upstream_first_event_ms" field.
+func UpstreamFirstEventMsNEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldUpstreamFirstEventMs, v))
+}
+
+// UpstreamFirstEventMsIn applies the In predicate on the "upstream_first_event_ms" field.
+func UpstreamFirstEventMsIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldUpstreamFirstEventMs, vs...))
+}
+
+// UpstreamFirstEventMsNotIn applies the NotIn predicate on the "upstream_first_event_ms" field.
+func UpstreamFirstEventMsNotIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldUpstreamFirstEventMs, vs...))
+}
+
+// UpstreamFirstEventMsGT applies the GT predicate on the "upstream_first_event_ms" field.
+func UpstreamFirstEventMsGT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldUpstreamFirstEventMs, v))
+}
+
+// UpstreamFirstEventMsGTE applies the GTE predicate on the "upstream_first_event_ms" field.
+func UpstreamFirstEventMsGTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldUpstreamFirstEventMs, v))
+}
+
+// UpstreamFirstEventMsLT applies the LT predicate on the "upstream_first_event_ms" field.
+func UpstreamFirstEventMsLT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldUpstreamFirstEventMs, v))
+}
+
+// UpstreamFirstEventMsLTE applies the LTE predicate on the "upstream_first_event_ms" field.
+func UpstreamFirstEventMsLTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldUpstreamFirstEventMs, v))
+}
+
+// UpstreamFirstEventMsIsNil applies the IsNil predicate on the "upstream_first_event_ms" field.
+func UpstreamFirstEventMsIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldUpstreamFirstEventMs))
+}
+
+// UpstreamFirstEventMsNotNil applies the NotNil predicate on the "upstream_first_event_ms" field.
+func UpstreamFirstEventMsNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldUpstreamFirstEventMs))
+}
+
+// RequestFirstOutputCharacterMsEQ applies the EQ predicate on the "request_first_output_character_ms" field.
+func RequestFirstOutputCharacterMsEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldRequestFirstOutputCharacterMs, v))
+}
+
+// RequestFirstOutputCharacterMsNEQ applies the NEQ predicate on the "request_first_output_character_ms" field.
+func RequestFirstOutputCharacterMsNEQ(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldRequestFirstOutputCharacterMs, v))
+}
+
+// RequestFirstOutputCharacterMsIn applies the In predicate on the "request_first_output_character_ms" field.
+func RequestFirstOutputCharacterMsIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldRequestFirstOutputCharacterMs, vs...))
+}
+
+// RequestFirstOutputCharacterMsNotIn applies the NotIn predicate on the "request_first_output_character_ms" field.
+func RequestFirstOutputCharacterMsNotIn(vs ...int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldRequestFirstOutputCharacterMs, vs...))
+}
+
+// RequestFirstOutputCharacterMsGT applies the GT predicate on the "request_first_output_character_ms" field.
+func RequestFirstOutputCharacterMsGT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldRequestFirstOutputCharacterMs, v))
+}
+
+// RequestFirstOutputCharacterMsGTE applies the GTE predicate on the "request_first_output_character_ms" field.
+func RequestFirstOutputCharacterMsGTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldRequestFirstOutputCharacterMs, v))
+}
+
+// RequestFirstOutputCharacterMsLT applies the LT predicate on the "request_first_output_character_ms" field.
+func RequestFirstOutputCharacterMsLT(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldRequestFirstOutputCharacterMs, v))
+}
+
+// RequestFirstOutputCharacterMsLTE applies the LTE predicate on the "request_first_output_character_ms" field.
+func RequestFirstOutputCharacterMsLTE(v int) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldRequestFirstOutputCharacterMs, v))
+}
+
+// RequestFirstOutputCharacterMsIsNil applies the IsNil predicate on the "request_first_output_character_ms" field.
+func RequestFirstOutputCharacterMsIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldRequestFirstOutputCharacterMs))
+}
+
+// RequestFirstOutputCharacterMsNotNil applies the NotNil predicate on the "request_first_output_character_ms" field.
+func RequestFirstOutputCharacterMsNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldRequestFirstOutputCharacterMs))
 }
 
 // RequestFirstTokenMsEQ applies the EQ predicate on the "request_first_token_ms" field.

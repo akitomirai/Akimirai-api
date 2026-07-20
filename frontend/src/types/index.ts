@@ -533,6 +533,8 @@ export interface Group {
   video_price_480p: number | null
   video_price_720p: number | null
   video_price_1080p: number | null
+  // Codex 网页搜索单次价格（USD/次）；null 表示使用默认价 0.01
+  web_search_price_per_call: number | null
   // 高峰时段倍率配置
   peak_rate_enabled: boolean
   peak_start: string
@@ -671,6 +673,7 @@ export interface CreateGroupRequest {
   video_price_480p?: number | null
   video_price_720p?: number | null
   video_price_1080p?: number | null
+  web_search_price_per_call?: number | null
   peak_rate_enabled?: boolean
   peak_start?: string
   peak_end?: string
@@ -717,6 +720,7 @@ export interface UpdateGroupRequest {
   video_price_480p?: number | null
   video_price_720p?: number | null
   video_price_1080p?: number | null
+  web_search_price_per_call?: number | null
   peak_rate_enabled?: boolean
   peak_start?: string
   peak_end?: string
@@ -1020,10 +1024,38 @@ export interface AntigravityModelQuota {
 }
 
 export interface GrokQuotaWindow {
-  limit?: number
-  remaining?: number
-  reset_unix?: number
-  reset_at?: string
+  limit?: number | null
+  remaining?: number | null
+  reset_unix?: number | null
+  reset_at?: string | null
+}
+
+export interface GrokBillingProductUsage {
+  product: string
+  usage_percent?: number | null
+}
+
+export interface GrokBillingSummary {
+  period_type?: string
+  usage_percent?: number | null
+  period_start?: string
+  period_end?: string
+  product_usage?: GrokBillingProductUsage[]
+  monthly_limit_cents?: number | null
+  used_cents?: number | null
+  included_used_cents?: number | null
+  billing_period_start?: string
+  billing_period_end?: string
+  used_percent?: number | null
+  plan?: string
+  status_code?: number
+  source?: string
+  fetched_at?: string
+  updated_at?: string
+  weekly_updated_at?: string
+  monthly_updated_at?: string
+  partial?: boolean
+  failed_windows?: string[]
 }
 
 export interface AccountUsageInfo {
@@ -1049,6 +1081,12 @@ export interface AccountUsageInfo {
   grok_last_headers_seen_at?: string
   grok_last_status_code?: number
   grok_local_usage?: WindowStats | null
+  grok_local_usage_24h?: WindowStats | null
+  grok_local_usage_7d?: WindowStats | null
+  grok_local_usage_monthly?: WindowStats | null
+  grok_billing?: GrokBillingSummary | null
+  subscription_tier?: string
+  subscription_tier_raw?: string
   ai_credits?: Array<{
     credit_type?: string
     amount?: number
@@ -1342,6 +1380,7 @@ export interface UsageLog {
   total_cost: number
   actual_cost: number
   rate_multiplier: number
+  long_context_billing_applied: boolean
   billing_type: number
 
   request_type?: UsageRequestType
@@ -1398,8 +1437,18 @@ export interface AdminUsageAttemptEvent {
   sequence: number
   started_ms: number
   finished_ms?: number | null
+  connection_reused?: boolean | null
+  connection_ready_ms?: number | null
+  dns_lookup_ms?: number | null
+  tcp_connect_ms?: number | null
+  tls_handshake_ms?: number | null
+  request_headers_written_ms?: number | null
   request_written_ms?: number | null
   first_byte_ms?: number | null
+  response_headers_received_ms?: number | null
+  response_body_first_byte_ms?: number | null
+  first_event_ms?: number | null
+  first_output_character_ms?: number | null
   account_id: number
   account_name?: string | null
   route: AdminUsageRouteSnapshot
@@ -1448,6 +1497,16 @@ export interface AdminUsageLog extends UsageLog {
 }
 
 export interface AdminUsageDiagnostics extends AdminUsageLog {
+  upstream_connection_reused?: boolean | null
+  upstream_connection_ready_ms?: number | null
+  upstream_dns_lookup_ms?: number | null
+  upstream_tcp_connect_ms?: number | null
+  upstream_tls_handshake_ms?: number | null
+  upstream_request_headers_written_ms?: number | null
+  upstream_response_headers_received_ms?: number | null
+  upstream_response_body_first_byte_ms?: number | null
+  upstream_first_event_ms?: number | null
+  request_first_output_character_ms?: number | null
   attempt_timeline?: AdminUsageAttemptEvent[]
 }
 
@@ -1816,6 +1875,9 @@ export interface UserErrorListParams {
   page_size?: number
   start_date?: string
   end_date?: string
+  start_time?: string
+  end_time?: string
+  period?: UserUsagePeriod
   timezone?: string
   model?: string
   status_code?: number
@@ -1823,6 +1885,58 @@ export interface UserErrorListParams {
   api_key_id?: number
   // 服务端排序,列白名单见后端 opsErrorLogsOrderBy(created_at/model/status_code)
   sort_by?: string
+  sort_order?: 'asc' | 'desc'
+}
+
+export type UserUsagePeriod = 'yesterday' | 'today' | '24h' | '48h' | '7d' | '14d' | '30d'
+export type UserRequestLogKind = 'consumption' | 'error'
+
+export interface UserRequestLog {
+  id: number
+  kind: UserRequestLogKind
+  created_at: string
+  request_id: string
+  api_key_id: number | null
+  api_key_name: string
+  api_key_deleted: boolean
+  group_id: number | null
+  group_name: string
+  rate_multiplier: number | null
+  model: string
+  reasoning_effort: string | null
+  first_token_ms: number | null
+  duration_ms: number | null
+  input_tokens: number | null
+  output_tokens: number | null
+  cache_creation_tokens: number | null
+  cache_read_tokens: number | null
+  total_tokens: number | null
+  input_cost: number | null
+  output_cost: number | null
+  cache_creation_cost: number | null
+  cache_read_cost: number | null
+  total_cost: number | null
+  actual_cost: number | null
+  status_code: number | null
+  error_code: string | null
+  error_message: string | null
+}
+
+export interface UserRequestLogQueryParams {
+  page?: number
+  page_size?: number
+  kind?: 'all' | UserRequestLogKind
+  start_date?: string
+  end_date?: string
+  start_time?: string
+  end_time?: string
+  period?: UserUsagePeriod
+  timezone?: string
+  api_key_id?: number
+  group_id?: number
+  model?: string
+  request_id?: string
+  sort_by?: 'created_at' | 'duration_ms'
   sort_order?: 'asc' | 'desc'
 }
 
@@ -1840,6 +1954,9 @@ export interface UsageQueryParams {
   billing_mode?: string | null
   start_date?: string
   end_date?: string
+  start_time?: string
+  end_time?: string
+  period?: UserUsagePeriod
   timezone?: string
   sort_by?: string
   sort_order?: 'asc' | 'desc'

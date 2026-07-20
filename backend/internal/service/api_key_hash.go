@@ -9,7 +9,10 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/config"
 )
 
-const apiKeyHashPrefix = "ak_hmac_sha256_v1:"
+const (
+	apiKeyHashPrefix               = "ak_hmac_sha256_v1:"
+	apiKeyStoragePlaceholderPrefix = "__hashed__"
+)
 
 func (s *APIKeyService) hashAPIKey(raw string) string {
 	if s == nil {
@@ -78,6 +81,16 @@ func apiKeyDisplayPrefix(raw string) string {
 	return raw[:8]
 }
 
+func apiKeyAuthCacheIdentity(apiKey *APIKey) string {
+	if apiKey == nil {
+		return ""
+	}
+	if keyHash := strings.TrimSpace(apiKey.KeyHash); IsAPIKeyHash(keyHash) {
+		return keyHash
+	}
+	return strings.TrimSpace(apiKey.Key)
+}
+
 func apiKeyStoragePlaceholder(hash, prefix string) string {
 	hash = strings.TrimSpace(hash)
 	prefix = strings.TrimSpace(prefix)
@@ -85,9 +98,32 @@ func apiKeyStoragePlaceholder(hash, prefix string) string {
 		if len(digest) > 24 {
 			digest = digest[:24]
 		}
-		return "__hashed__" + prefix + "__" + digest
+		return apiKeyStoragePlaceholderPrefix + prefix + "__" + digest
 	}
-	return "__hashed__" + prefix
+	return apiKeyStoragePlaceholderPrefix + prefix
+}
+
+func isAPIKeyStoragePlaceholder(value string) bool {
+	value = strings.TrimSpace(value)
+	if !strings.HasPrefix(value, apiKeyStoragePlaceholderPrefix) {
+		return false
+	}
+	remainder := strings.TrimPrefix(value, apiKeyStoragePlaceholderPrefix)
+	separator := strings.LastIndex(remainder, "__")
+	if separator <= 0 || separator > 8 {
+		return false
+	}
+	digest := remainder[separator+2:]
+	if len(digest) != 24 {
+		return false
+	}
+	for _, ch := range digest {
+		if (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func MaskAPIKey(prefix, raw string) string {
@@ -99,7 +135,7 @@ func MaskAPIKey(prefix, raw string) string {
 	if prefix == "" {
 		return ""
 	}
-	if strings.HasPrefix(raw, "__hashed__") || strings.HasPrefix(raw, apiKeyHashPrefix) {
+	if strings.HasPrefix(raw, apiKeyStoragePlaceholderPrefix) || strings.HasPrefix(raw, apiKeyHashPrefix) {
 		return prefix + "..."
 	}
 	if len(raw) <= len(prefix)+4 {

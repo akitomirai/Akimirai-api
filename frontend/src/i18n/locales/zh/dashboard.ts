@@ -16,6 +16,10 @@ export default {
     granularity: '粒度',
     day: '按天',
     hour: '按小时',
+    oneHour: '1 小时',
+    twoHours: '2 小时',
+    fourHours: '4 小时',
+    eightHours: '8 小时',
     modelDistribution: '模型分布',
     groupDistribution: '分组使用分布',
     platformBreakdown: '按平台拆分',
@@ -32,6 +36,15 @@ export default {
       disabled: '已禁用',
     },
     tokenUsageTrend: 'Token 使用趋势',
+    spendingDistribution: '消耗分布',
+    callTrend: '调用趋势',
+    chartType: '图表类型',
+    metricType: '纵轴指标',
+    quotaConsumption: '配额消费',
+    actualConsumption: '实际消费',
+    barChart: '柱状图',
+    areaChart: '面积图',
+    other: '其他',
     noDataAvailable: '暂无数据',
     model: '模型',
     group: '分组',
@@ -75,7 +88,10 @@ export default {
       copied: '已复制',
       copiedHint: '已复制到剪贴板',
       clickToCopy: '点击可复制此端点',
-      speedTest: '测速',
+      testLatency: '测试延迟',
+      testingLatency: '正在测试延迟',
+      latencyFailed: '延迟测试失败',
+      externalSpeedTest: '外部测速',
     },
     allGroups: '全部分组',
     allStatus: '全部状态',
@@ -147,6 +163,7 @@ export default {
         geminiCli: 'Gemini CLI',
         codexCli: 'Codex CLI',
         codexCliWs: 'Codex CLI (WebSocket)',
+        grokCli: 'Grok CLI',
         opencode: 'OpenCode'
       },
       antigravity: {
@@ -163,6 +180,12 @@ export default {
           '将以下环境变量添加到您的终端配置文件或直接在终端中运行，以配置 Gemini CLI 访问。',
         modelComment: '如果你有 Gemini 3 权限可以填：gemini-3-pro-preview',
         note: '这些环境变量将在当前终端会话中生效。如需永久配置，请将其添加到 ~/.bashrc、~/.zshrc 或相应的配置文件中。'
+      },
+      grok: {
+        description: '配置 Grok Build 或 OpenCode，让 Responses API 请求通过当前 Sub2API Grok 分组发送。',
+        configTomlHint: '如已有 config.toml，请先备份再合并此模型配置。保存后运行 grok inspect 验证生效配置。',
+        note: '保存为 ~/.grok/config.toml，然后运行 grok inspect，并在 /model 中选择 sub2api-grok。',
+        noteWindows: '保存为 %USERPROFILE%\\.grok\\config.toml，然后运行 grok inspect，并在 /model 中选择 sub2api-grok。'
       },
       opencode: {
         title: 'OpenCode 配置示例',
@@ -214,9 +237,8 @@ export default {
       nameRequired: '请输入名称。',
       modelRequired: '请选择或输入主模型。',
       catalogFallback: '模型目录暂不可用，请手动输入模型名称。',
-      remoteCompaction: '启用远程压缩',
-      remoteCompactionHint: '保留自定义显示名称，并在 Codex 内部配置中启用 OpenAI 特性门控。',
-      remoteCompactionNameHint: '显示名称保持不变。'
+      remoteCompaction: '是否启用远程压缩',
+      remoteCompactionHint: '启用后，CC Switch 供应商名称将设为 OpenAI。'
     },
     // 配额和有效期
     quotaLimit: '额度限制',
@@ -252,9 +274,11 @@ export default {
   // Usage
   usage: {
     title: '使用记录',
-    description: '查看和分析您的 API 使用历史',
+    description: '查看 API 消耗与错误日志',
     costDetails: '费用明细',
     tokenDetails: 'Token 明细',
+    tokenUnitPrice: '单价',
+    tokenCost: '费用',
     cacheTtlOverriddenHint: '缓存 TTL Override 已启用',
     cacheTtlOverriddenLabel: 'TTL 替换',
     cacheTtlOverridden5m: '按 5m 计费',
@@ -327,6 +351,7 @@ export default {
     cacheHitRate: '缓存命中率',
     inputTokenPrice: '输入单价',
     outputTokenPrice: '输出单价',
+    cacheReadTokenPrice: '缓存读取单价',
     perMillionTokens: '/ 1M Token',
     unitPrice: '单次价格',
     imageUnitPrice: '单张价格',
@@ -381,6 +406,36 @@ export default {
       detailAccuracy: '定位精度',
       detailCoordinates: '坐标',
     },
+    logs: {
+      typeFilter: '类型',
+      kinds: {
+        all: '全部类型',
+        consumption: '消耗',
+        error: '错误',
+      },
+      columns: {
+        time: '时间',
+        key: '密钥',
+        model: '模型',
+        latency: '延迟',
+        details: '详情',
+      },
+      noGroup: '无号池',
+      empty: '所选条件下暂无 API 日志',
+      failedToLoad: '加载 API 日志失败',
+      detailTitle: '日志详情',
+      detailLoadFailed: '日志详情加载失败，请重试',
+      requestDetails: '请求详情',
+      requestId: '请求 ID',
+      billingDetails: '计费详情',
+      openDetail: '查看日志详情',
+      errorFallback: '请求失败',
+    },
+    countMode: {
+      label: 'Token 计数方式',
+      modern: 'w/单位',
+      legacy: 'k/单位',
+    },
     tabs: { usage: '用量明细', errors: '错误请求', ranking: '用户排行' },
     errors: {
       time: '时间', model: '模型', endpoint: '端点', status: '状态码',
@@ -414,7 +469,8 @@ export default {
     providers: {
       openai: 'OpenAI',
       anthropic: 'Anthropic',
-      gemini: 'Gemini'
+      gemini: 'Gemini',
+      grok: 'Grok'
     },
     extraModelsHeader: '附加模型',
     extraModelsEmpty: '无附加模型',
@@ -865,12 +921,17 @@ export default {
     thisMonth: '本月',
     lastMonth: '上月',
     last24Hours: '近24小时',
+    last48Hours: '近48小时',
     last7Days: '近 7 天',
     last14Days: '近 14 天',
     last30Days: '近 30 天',
     custom: '自定义',
+    customTimeRange: '自定义时间范围',
     startDate: '开始日期',
     endDate: '结束日期',
+    startTime: '开始时间',
+    endTime: '结束时间',
+    invalidRange: '结束时间必须晚于开始时间',
     apply: '应用',
     selectDateRange: '选择日期范围'
   },

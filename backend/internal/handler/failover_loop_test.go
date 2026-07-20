@@ -40,6 +40,19 @@ func newTestFailoverErr(statusCode int, retryable, forceBilling bool) *service.U
 	}
 }
 
+func TestHandleFailoverErrorHonorsAccountRetryLimit(t *testing.T) {
+	fs := NewFailoverState(0, false)
+	mock := &mockTempUnscheduler{}
+	err := newTestFailoverErr(500, true, false)
+
+	action := fs.HandleFailoverError(context.Background(), mock, 42, service.PlatformAnthropic, err, 0)
+
+	require.Equal(t, FailoverExhausted, action)
+	require.Zero(t, fs.SameAccountRetryCount[42])
+	require.Len(t, mock.calls, 1)
+	require.Equal(t, int64(42), mock.calls[0].accountID)
+}
+
 // ---------------------------------------------------------------------------
 // NewFailoverState 测试
 // ---------------------------------------------------------------------------

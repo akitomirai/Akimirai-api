@@ -61,6 +61,53 @@ type UsageHandler struct {
 	settingService *service.SettingService
 }
 
+func parseUserUsageExplicitRange(c *gin.Context) (*time.Time, *time.Time, bool) {
+	userTZ := c.Query("timezone")
+	startTimeValue := strings.TrimSpace(c.Query("start_time"))
+	endTimeValue := strings.TrimSpace(c.Query("end_time"))
+	if startTimeValue != "" || endTimeValue != "" {
+		if startTimeValue == "" || endTimeValue == "" {
+			response.BadRequest(c, "start_time and end_time are required together")
+			return nil, nil, false
+		}
+		startTime, err := timezone.ParseInUserLocation("2006-01-02T15:04", startTimeValue, userTZ)
+		if err != nil {
+			response.BadRequest(c, "Invalid start_time format, use YYYY-MM-DDTHH:mm")
+			return nil, nil, false
+		}
+		endTime, err := timezone.ParseInUserLocation("2006-01-02T15:04", endTimeValue, userTZ)
+		if err != nil {
+			response.BadRequest(c, "Invalid end_time format, use YYYY-MM-DDTHH:mm")
+			return nil, nil, false
+		}
+		if !endTime.After(startTime) {
+			response.BadRequest(c, "end_time must be after start_time")
+			return nil, nil, false
+		}
+		return &startTime, &endTime, true
+	}
+
+	var startPtr, endPtr *time.Time
+	if startDateValue := strings.TrimSpace(c.Query("start_date")); startDateValue != "" {
+		startTime, err := timezone.ParseInUserLocation("2006-01-02", startDateValue, userTZ)
+		if err != nil {
+			response.BadRequest(c, "Invalid start_date format, use YYYY-MM-DD")
+			return nil, nil, false
+		}
+		startPtr = &startTime
+	}
+	if endDateValue := strings.TrimSpace(c.Query("end_date")); endDateValue != "" {
+		endTime, err := timezone.ParseInUserLocation("2006-01-02", endDateValue, userTZ)
+		if err != nil {
+			response.BadRequest(c, "Invalid end_date format, use YYYY-MM-DD")
+			return nil, nil, false
+		}
+		endTime = endTime.AddDate(0, 0, 1)
+		endPtr = &endTime
+	}
+	return startPtr, endPtr, true
+}
+
 // NewUsageHandler creates a new UsageHandler
 func NewUsageHandler(
 	usageService *service.UsageService,
@@ -155,49 +202,35 @@ func (h *UsageHandler) parseUserUsageFilters(c *gin.Context, requireRange bool) 
 	userTZ := c.Query("timezone")
 	now := timezone.NowInUserLocation(userTZ)
 	var startTime, endTime time.Time
-	var startPtr, endPtr *time.Time
-	startDateStr := strings.TrimSpace(c.Query("start_date"))
-	endDateStr := strings.TrimSpace(c.Query("end_date"))
-
-	if startDateStr != "" {
-		t, err := timezone.ParseInUserLocation("2006-01-02", startDateStr, userTZ)
-		if err != nil {
-			response.BadRequest(c, "Invalid start_date format, use YYYY-MM-DD")
-			return nil, false
-		}
-		startTime = t
-		startPtr = &startTime
+	startPtr, endPtr, rangeOK := parseUserUsageExplicitRange(c)
+	if !rangeOK {
+		return nil, false
 	}
-	if endDateStr != "" {
-		t, err := timezone.ParseInUserLocation("2006-01-02", endDateStr, userTZ)
-		if err != nil {
-			response.BadRequest(c, "Invalid end_date format, use YYYY-MM-DD")
-			return nil, false
-		}
-		endTime = t.AddDate(0, 0, 1)
-		endPtr = &endTime
+	if startPtr != nil {
+		startTime = *startPtr
+	}
+	if endPtr != nil {
+		endTime = *endPtr
 	}
 
 	if requireRange {
-		if startPtr == nil {
-			switch c.DefaultQuery("period", "") {
-			case "today":
-				startTime = timezone.StartOfDayInUserLocation(now, userTZ)
-			case "week":
-				startTime = now.AddDate(0, 0, -7)
-			case "month":
-				startTime = now.AddDate(0, -1, 0)
-			default:
-				startTime = timezone.StartOfDayInUserLocation(now.AddDate(0, 0, -7), userTZ)
+		period := strings.TrimSpace(c.Query("period"))
+		if startPtr == nil && endPtr == nil && period != "" {
+			var valid bool
+			startTime, endTime, valid = resolveUserUsagePeriodRange(now, userTZ, period)
+			if !valid {
+				response.BadRequest(c, "Invalid period")
+				return nil, false
 			}
+			startPtr = &startTime
+			endPtr = &endTime
+		}
+		if startPtr == nil {
+			startTime = timezone.StartOfDayInUserLocation(now.AddDate(0, 0, -7), userTZ)
 			startPtr = &startTime
 		}
 		if endPtr == nil {
-			if strings.TrimSpace(c.Query("period")) != "" {
-				endTime = now
-			} else {
-				endTime = timezone.StartOfDayInUserLocation(now.AddDate(0, 0, 1), userTZ)
-			}
+			endTime = timezone.StartOfDayInUserLocation(now.AddDate(0, 0, 1), userTZ)
 			endPtr = &endTime
 		}
 	}
@@ -221,11 +254,49 @@ func (h *UsageHandler) parseUserUsageFilters(c *gin.Context, requireRange bool) 
 	}, true
 }
 
+func resolveUserUsagePeriodRange(now time.Time, userTZ, period string) (time.Time, time.Time, bool) {
+	switch period {
+	case "yesterday":
+		end := timezone.StartOfDayInUserLocation(now, userTZ)
+		return end.AddDate(0, 0, -1), end, true
+	case "today":
+		return timezone.StartOfDayInUserLocation(now, userTZ), now, true
+	case "24h":
+		return now.Add(-24 * time.Hour), now, true
+	case "48h":
+		return now.Add(-48 * time.Hour), now, true
+	case "week", "7d":
+		return now.Add(-7 * 24 * time.Hour), now, true
+	case "14d":
+		return now.Add(-14 * 24 * time.Hour), now, true
+	case "month":
+		return now.AddDate(0, -1, 0), now, true
+	case "30d":
+		return now.Add(-30 * 24 * time.Hour), now, true
+	default:
+		return time.Time{}, time.Time{}, false
+	}
+}
+
 func derefTime(value *time.Time) time.Time {
 	if value == nil {
 		return time.Time{}
 	}
 	return *value
+}
+
+func userUsageResponseEndDate(c *gin.Context, endTime time.Time) string {
+	if strings.TrimSpace(c.Query("end_time")) != "" {
+		return endTime.Format("2006-01-02")
+	}
+	switch strings.TrimSpace(c.Query("period")) {
+	case "yesterday":
+		return endTime.AddDate(0, 0, -1).Format("2006-01-02")
+	case "today", "24h", "48h", "7d", "14d", "30d":
+		return endTime.Format("2006-01-02")
+	default:
+		return endTime.AddDate(0, 0, -1).Format("2006-01-02")
+	}
 }
 
 // List handles listing usage records with pagination
@@ -257,6 +328,88 @@ func (h *UsageHandler) List(c *gin.Context) {
 	response.Paginated(c, out, result.Total, page, pageSize)
 }
 
+// ListRequestLogs returns one user-scoped, globally paginated projection across
+// successful consumption rows and user-visible failed requests.
+// GET /api/v1/usage/requests
+func (h *UsageHandler) ListRequestLogs(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	if h.opsService == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
+		return
+	}
+
+	parsed, ok := h.parseUserUsageFilters(c, true)
+	if !ok {
+		return
+	}
+	page, pageSize := response.ParsePagination(c)
+	if pageSize > 100 {
+		pageSize = 100
+	}
+
+	kind := service.UserRequestLogKind(strings.ToLower(strings.TrimSpace(c.DefaultQuery("kind", "all"))))
+	if kind != service.UserRequestLogKindAll &&
+		kind != service.UserRequestLogKindConsumption &&
+		kind != service.UserRequestLogKindError {
+		response.BadRequest(c, "Invalid kind")
+		return
+	}
+	allowErrors := h.settingService != nil && h.settingService.IsUserErrorViewAllowed(c.Request.Context())
+	if kind == service.UserRequestLogKindError && !allowErrors {
+		response.Forbidden(c, "Error requests view is disabled")
+		return
+	}
+
+	var apiKeyID *int64
+	if parsed.Filters.APIKeyID > 0 {
+		value := parsed.Filters.APIKeyID
+		apiKeyID = &value
+	}
+	var groupID *int64
+	if parsed.Filters.GroupID > 0 {
+		value := parsed.Filters.GroupID
+		groupID = &value
+	}
+
+	filter := &service.UserRequestLogFilter{
+		StartTime: parsed.StartTime,
+		EndTime:   parsed.EndTime,
+		Kind:      kind,
+		APIKeyID:  apiKeyID,
+		GroupID:   groupID,
+		Model:     parsed.Filters.Model,
+		RequestID: strings.TrimSpace(c.Query("request_id")),
+		SortBy:    strings.TrimSpace(c.DefaultQuery("sort_by", "created_at")),
+		SortOrder: strings.TrimSpace(c.DefaultQuery("sort_order", "desc")),
+		Page:      page,
+		PageSize:  pageSize,
+	}
+	if filter.SortBy != "created_at" && filter.SortBy != "duration_ms" {
+		response.BadRequest(c, "Invalid sort_by")
+		return
+	}
+	if filter.SortOrder != "asc" && filter.SortOrder != "desc" {
+		response.BadRequest(c, "Invalid sort_order")
+		return
+	}
+
+	result, err := h.opsService.ListUserRequestLogs(
+		c.Request.Context(),
+		subject.UserID,
+		allowErrors,
+		filter,
+	)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Paginated(c, result.Items, result.Total, result.Page, result.PageSize)
+}
+
 // ListErrors handles listing the current user's failed requests (redacted).
 // GET /api/v1/usage/errors
 func (h *UsageHandler) ListErrors(c *gin.Context) {
@@ -283,25 +436,27 @@ func (h *UsageHandler) ListErrors(c *gin.Context) {
 
 	filter := &service.OpsErrorLogFilter{Page: page, PageSize: pageSize}
 
-	// Date range (half-open [start, end)), reuse usage-list semantics.
-	userTZ := c.Query("timezone")
-	if startDateStr := c.Query("start_date"); startDateStr != "" {
-		t, err := timezone.ParseInUserLocation("2006-01-02", startDateStr, userTZ)
-		if err != nil {
-			response.BadRequest(c, "Invalid start_date format, use YYYY-MM-DD")
-			return
-		}
-		filter.StartTime = &t
+	// Date range is a half-open interval. Custom minute precision and rolling
+	// presets share the same semantics as the usage endpoints.
+	startPtr, endPtr, rangeOK := parseUserUsageExplicitRange(c)
+	if !rangeOK {
+		return
 	}
-	if endDateStr := c.Query("end_date"); endDateStr != "" {
-		t, err := timezone.ParseInUserLocation("2006-01-02", endDateStr, userTZ)
-		if err != nil {
-			response.BadRequest(c, "Invalid end_date format, use YYYY-MM-DD")
-			return
+	if startPtr == nil && endPtr == nil {
+		if period := strings.TrimSpace(c.Query("period")); period != "" {
+			userTZ := c.Query("timezone")
+			now := timezone.NowInUserLocation(userTZ)
+			startTime, endTime, valid := resolveUserUsagePeriodRange(now, userTZ, period)
+			if !valid {
+				response.BadRequest(c, "Invalid period")
+				return
+			}
+			startPtr = &startTime
+			endPtr = &endTime
 		}
-		t = t.AddDate(0, 0, 1)
-		filter.EndTime = &t
 	}
+	filter.StartTime = startPtr
+	filter.EndTime = endPtr
 
 	filter.Model = strings.TrimSpace(c.Query("model"))
 
@@ -469,7 +624,7 @@ func (h *UsageHandler) DashboardTrend(c *gin.Context) {
 	if !ok {
 		return
 	}
-	granularity := c.DefaultQuery("granularity", "day")
+	granularity := normalizeUsageDashboardGranularity(c.DefaultQuery("granularity", "day"))
 
 	trend, err := h.usageService.GetUsageTrendWithFilters(c.Request.Context(), parsed.StartTime, parsed.EndTime, granularity, parsed.Filters)
 	if err != nil {
@@ -480,7 +635,7 @@ func (h *UsageHandler) DashboardTrend(c *gin.Context) {
 	response.Success(c, gin.H{
 		"trend":       trend,
 		"start_date":  parsed.StartTime.Format("2006-01-02"),
-		"end_date":    parsed.EndTime.Add(-24 * time.Hour).Format("2006-01-02"),
+		"end_date":    userUsageResponseEndDate(c, parsed.EndTime),
 		"granularity": granularity,
 	})
 }
@@ -508,7 +663,53 @@ func (h *UsageHandler) DashboardModels(c *gin.Context) {
 	response.Success(c, gin.H{
 		"models":     userModelStatsFromUsageStats(stats),
 		"start_date": parsed.StartTime.Format("2006-01-02"),
-		"end_date":   parsed.EndTime.Add(-24 * time.Hour).Format("2006-01-02"),
+		"end_date":   userUsageResponseEndDate(c, parsed.EndTime),
+	})
+}
+
+// DashboardModelTrend handles requested-model usage trends for the user dashboard.
+// GET /api/v1/usage/dashboard/model-trend
+func (h *UsageHandler) DashboardModelTrend(c *gin.Context) {
+	parsed, ok := h.parseUserUsageFilters(c, true)
+	if !ok {
+		return
+	}
+
+	modelSource := strings.TrimSpace(c.Query("model_source"))
+	if modelSource != "" && modelSource != usagestats.ModelSourceRequested {
+		response.BadRequest(c, "Invalid model_source, user usage only supports requested")
+		return
+	}
+
+	granularity := normalizeUsageDashboardGranularity(c.DefaultQuery("granularity", "day"))
+	trend, err := h.usageService.GetModelUsageTrendWithFilters(c.Request.Context(), parsed.StartTime, parsed.EndTime, granularity, parsed.Filters, 8)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	models := make([]string, 0, 8)
+	seen := make(map[string]struct{}, 8)
+	for _, point := range trend {
+		if point.IsOther || point.Model == "" {
+			continue
+		}
+		if _, exists := seen[point.Model]; exists {
+			continue
+		}
+		seen[point.Model] = struct{}{}
+		models = append(models, point.Model)
+	}
+	endDate := userUsageResponseEndDate(c, parsed.EndTime)
+
+	response.Success(c, gin.H{
+		"trend":       trend,
+		"models":      models,
+		"start_date":  parsed.StartTime.Format("2006-01-02"),
+		"end_date":    endDate,
+		"start_time":  parsed.StartTime.Format(time.RFC3339),
+		"end_time":    parsed.EndTime.Format(time.RFC3339),
+		"granularity": granularity,
 	})
 }
 
@@ -520,10 +721,7 @@ func (h *UsageHandler) DashboardSnapshotV2(c *gin.Context) {
 		return
 	}
 
-	granularity := strings.TrimSpace(c.DefaultQuery("granularity", "day"))
-	if granularity != "hour" {
-		granularity = "day"
-	}
+	granularity := normalizeUsageDashboardGranularity(c.DefaultQuery("granularity", "day"))
 	includeTrend, ok := parseBoolQueryWithDefault(c, "include_trend", true)
 	if !ok {
 		return
@@ -544,7 +742,7 @@ func (h *UsageHandler) DashboardSnapshotV2(c *gin.Context) {
 	resp := gin.H{
 		"generated_at": time.Now().UTC().Format(time.RFC3339),
 		"start_date":   parsed.StartTime.Format("2006-01-02"),
-		"end_date":     parsed.EndTime.Add(-24 * time.Hour).Format("2006-01-02"),
+		"end_date":     userUsageResponseEndDate(c, parsed.EndTime),
 		"granularity":  granularity,
 	}
 
@@ -582,6 +780,15 @@ func (h *UsageHandler) DashboardSnapshotV2(c *gin.Context) {
 	}
 
 	response.Success(c, resp)
+}
+
+func normalizeUsageDashboardGranularity(raw string) string {
+	switch strings.TrimSpace(raw) {
+	case "hour", "2h", "4h", "8h", "day":
+		return strings.TrimSpace(raw)
+	default:
+		return "day"
+	}
 }
 
 func userAPIKeyStatsFromUsageStats(stats []usagestats.APIKeyStat) []userAPIKeyStat {

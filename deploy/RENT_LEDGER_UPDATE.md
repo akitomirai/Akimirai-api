@@ -3,18 +3,18 @@
 App 会检查：
 
 ```text
-https://akimirai.xyz/rent-ledger/latest.json
+https://miraiapi.cloud/rent-ledger/latest.json
 ```
 
 清单示例在 `deploy/rent-ledger-updates/latest.json`。`apkUrl` 可以写相对路径，例如 `rent-ledger-app.apk`，App 会解析为：
 
 ```text
-https://akimirai.xyz/rent-ledger/rent-ledger-app.apk
+https://miraiapi.cloud/rent-ledger/rent-ledger-app.apk
 ```
 
 ## Nginx
 
-当前服务器如果由 Nginx 接入 `akimirai.xyz`，在 HTTPS `server` 块里给反向代理 `location /` 前面增加：
+当前服务器如果由 Nginx 接入 `miraiapi.cloud`，在 HTTPS `server` 块里给反向代理 `location /` 前面增加：
 
 ```nginx
 location ^~ /rent-ledger/ {
@@ -32,11 +32,11 @@ location / {
 }
 ```
 
-这样 `https://akimirai.xyz/rent-ledger/latest.json` 会读取 `/var/www/rent-ledger/latest.json`。
+这样 `https://miraiapi.cloud/rent-ledger/latest.json` 会读取 `/var/www/rent-ledger/latest.json`。
 
 ## Caddy
 
-参考 `deploy/rent-ledger-update.Caddyfile.example`，给 `akimirai.xyz` 增加静态目录：
+参考 `deploy/rent-ledger-update.Caddyfile.example`，给 `miraiapi.cloud` 增加静态目录：
 
 ```caddy
 handle_path /rent-ledger/* {
@@ -78,5 +78,5 @@ sha256sum /var/www/rent-ledger/rent-ledger-app.apk
 5. 确认清单可访问：
 
 ```bash
-curl https://akimirai.xyz/rent-ledger/latest.json
+curl https://miraiapi.cloud/rent-ledger/latest.json
 ```

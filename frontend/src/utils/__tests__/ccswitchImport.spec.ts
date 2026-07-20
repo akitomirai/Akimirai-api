@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  CC_SWITCH_CODEX_AUTO_COMPACT_LIMIT,
-  CC_SWITCH_CODEX_CONTEXT_WINDOW,
   OPENAI_CC_SWITCH_CODEX_MODEL,
   buildCcSwitchImportDeeplink
 } from '@/utils/ccswitchImport'
@@ -47,7 +45,7 @@ describe('ccswitchImport utils', () => {
     expect(atob(params.get('usageScript') || '')).toBe(baseInput.usageScript)
   })
 
-  it('keeps the display name while embedding the Codex OpenAI feature gate', () => {
+  it('uses the stock CC Switch OpenAI name gate for remote compaction', () => {
     const params = paramsFromDeeplink(
       buildCcSwitchImportDeeplink({
         ...baseInput,
@@ -57,11 +55,11 @@ describe('ccswitchImport utils', () => {
       })
     )
 
-    expect(params.get('name')).toBe('Aki')
+    expect(params.get('name')).toBe('OpenAI')
     const embedded = decodeConfig(params).config
     expect(embedded).toContain('name = "OpenAI"')
-    expect(embedded).toContain(`model_context_window = ${CC_SWITCH_CODEX_CONTEXT_WINDOW}`)
-    expect(embedded).toContain(`model_auto_compact_token_limit = ${CC_SWITCH_CODEX_AUTO_COMPACT_LIMIT}`)
+    expect(embedded).not.toContain('model_context_window')
+    expect(embedded).not.toContain('model_auto_compact_token_limit')
   })
 
   it('preserves the provider name when Codex remote compaction is disabled', () => {

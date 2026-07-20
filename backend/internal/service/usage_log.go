@@ -142,47 +142,58 @@ type UsageLog struct {
 	ImageOutputTokens int
 	ImageOutputCost   float64
 
-	InputCost         float64
-	OutputCost        float64
-	CacheCreationCost float64
-	CacheReadCost     float64
-	TotalCost         float64
-	ActualCost        float64
-	RateMultiplier    float64
+	InputCost                 float64
+	OutputCost                float64
+	CacheCreationCost         float64
+	CacheReadCost             float64
+	TotalCost                 float64
+	ActualCost                float64
+	RateMultiplier            float64
+	LongContextBillingApplied bool
 	// AccountRateMultiplier 账号计费倍率快照（nil 表示历史数据，按 1.0 处理）
 	AccountRateMultiplier *float64
 	// AccountStatsCost 账号统计定价预计算费用（nil = 使用默认公式 total_cost × account_rate_multiplier）
 	AccountStatsCost *float64
 
-	BillingType              int8
-	RequestType              RequestType
-	Stream                   bool
-	OpenAIWSMode             bool
-	DurationMs               *int
-	FirstTokenMs             *int
-	ClientTransport          *string // "http" / "ws"
-	AuthLatencyMs            *int
-	RoutingLatencyMs         *int
-	UpstreamLatencyMs        *int
-	ResponseLatencyMs        *int
-	RequestStartedAt         *time.Time
-	RequestTotalMs           *int
-	RequestBodyReadMs        *int
-	RequestBodyBytes         *int64
-	UpstreamRequestWrittenMs *int
-	UpstreamFirstByteMs      *int
-	RequestFirstTokenMs      *int
-	RouteKind                *string
-	ProxyIDSnapshot          *int64
-	ProxyNameSnapshot        *string
-	ProxyProtocolSnapshot    *string
-	RouteFingerprint         *string
-	FinalUpstreamStatus      *int
-	RetryCount               int
-	AccountSwitchCount       int
-	AttemptTimeline          []RequestAttemptEvent
-	UserAgent                *string
-	IPAddress                *string
+	BillingType                       int8
+	RequestType                       RequestType
+	Stream                            bool
+	OpenAIWSMode                      bool
+	DurationMs                        *int
+	FirstTokenMs                      *int
+	ClientTransport                   *string // "http" / "ws"
+	AuthLatencyMs                     *int
+	RoutingLatencyMs                  *int
+	UpstreamLatencyMs                 *int
+	ResponseLatencyMs                 *int
+	RequestStartedAt                  *time.Time
+	RequestTotalMs                    *int
+	RequestBodyReadMs                 *int
+	RequestBodyBytes                  *int64
+	UpstreamConnectionReused          *bool
+	UpstreamConnectionReadyMs         *int
+	UpstreamDNSLookupMs               *int
+	UpstreamTCPConnectMs              *int
+	UpstreamTLSHandshakeMs            *int
+	UpstreamRequestHeadersWrittenMs   *int
+	UpstreamRequestWrittenMs          *int
+	UpstreamFirstByteMs               *int
+	UpstreamResponseHeadersReceivedMs *int
+	UpstreamResponseBodyFirstByteMs   *int
+	UpstreamFirstEventMs              *int
+	RequestFirstOutputCharacterMs     *int
+	RequestFirstTokenMs               *int
+	RouteKind                         *string
+	ProxyIDSnapshot                   *int64
+	ProxyNameSnapshot                 *string
+	ProxyProtocolSnapshot             *string
+	RouteFingerprint                  *string
+	FinalUpstreamStatus               *int
+	RetryCount                        int
+	AccountSwitchCount                int
+	AttemptTimeline                   []RequestAttemptEvent
+	UserAgent                         *string
+	IPAddress                         *string
 
 	// Cache TTL Override 标记（管理员强制替换了缓存 TTL 计费）
 	CacheTTLOverridden bool

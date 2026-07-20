@@ -75,6 +75,8 @@ type UsageLog struct {
 	ActualCost float64 `json:"actual_cost,omitempty"`
 	// RateMultiplier holds the value of the "rate_multiplier" field.
 	RateMultiplier float64 `json:"rate_multiplier,omitempty"`
+	// Whether long-context pricing changed token prices for this request
+	LongContextBillingApplied bool `json:"long_context_billing_applied,omitempty"`
 	// AccountRateMultiplier holds the value of the "account_rate_multiplier" field.
 	AccountRateMultiplier *float64 `json:"account_rate_multiplier,omitempty"`
 	// BillingType holds the value of the "billing_type" field.
@@ -103,10 +105,30 @@ type UsageLog struct {
 	RequestBodyReadMs *int `json:"request_body_read_ms,omitempty"`
 	// RequestBodyBytes holds the value of the "request_body_bytes" field.
 	RequestBodyBytes *int64 `json:"request_body_bytes,omitempty"`
+	// UpstreamConnectionReused holds the value of the "upstream_connection_reused" field.
+	UpstreamConnectionReused *bool `json:"upstream_connection_reused,omitempty"`
+	// UpstreamConnectionReadyMs holds the value of the "upstream_connection_ready_ms" field.
+	UpstreamConnectionReadyMs *int `json:"upstream_connection_ready_ms,omitempty"`
+	// UpstreamDNSLookupMs holds the value of the "upstream_dns_lookup_ms" field.
+	UpstreamDNSLookupMs *int `json:"upstream_dns_lookup_ms,omitempty"`
+	// UpstreamTCPConnectMs holds the value of the "upstream_tcp_connect_ms" field.
+	UpstreamTCPConnectMs *int `json:"upstream_tcp_connect_ms,omitempty"`
+	// UpstreamTLSHandshakeMs holds the value of the "upstream_tls_handshake_ms" field.
+	UpstreamTLSHandshakeMs *int `json:"upstream_tls_handshake_ms,omitempty"`
+	// UpstreamRequestHeadersWrittenMs holds the value of the "upstream_request_headers_written_ms" field.
+	UpstreamRequestHeadersWrittenMs *int `json:"upstream_request_headers_written_ms,omitempty"`
 	// UpstreamRequestWrittenMs holds the value of the "upstream_request_written_ms" field.
 	UpstreamRequestWrittenMs *int `json:"upstream_request_written_ms,omitempty"`
 	// UpstreamFirstByteMs holds the value of the "upstream_first_byte_ms" field.
 	UpstreamFirstByteMs *int `json:"upstream_first_byte_ms,omitempty"`
+	// UpstreamResponseHeadersReceivedMs holds the value of the "upstream_response_headers_received_ms" field.
+	UpstreamResponseHeadersReceivedMs *int `json:"upstream_response_headers_received_ms,omitempty"`
+	// UpstreamResponseBodyFirstByteMs holds the value of the "upstream_response_body_first_byte_ms" field.
+	UpstreamResponseBodyFirstByteMs *int `json:"upstream_response_body_first_byte_ms,omitempty"`
+	// UpstreamFirstEventMs holds the value of the "upstream_first_event_ms" field.
+	UpstreamFirstEventMs *int `json:"upstream_first_event_ms,omitempty"`
+	// RequestFirstOutputCharacterMs holds the value of the "request_first_output_character_ms" field.
+	RequestFirstOutputCharacterMs *int `json:"request_first_output_character_ms,omitempty"`
 	// RequestFirstTokenMs holds the value of the "request_first_token_ms" field.
 	RequestFirstTokenMs *int `json:"request_first_token_ms,omitempty"`
 	// RouteKind holds the value of the "route_kind" field.
@@ -238,11 +260,11 @@ func (*UsageLog) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case usagelog.FieldAttemptTimeline, usagelog.FieldImageSizeBreakdown:
 			values[i] = new([]byte)
-		case usagelog.FieldStream, usagelog.FieldCacheTTLOverridden:
+		case usagelog.FieldLongContextBillingApplied, usagelog.FieldStream, usagelog.FieldUpstreamConnectionReused, usagelog.FieldCacheTTLOverridden:
 			values[i] = new(sql.NullBool)
 		case usagelog.FieldInputCost, usagelog.FieldOutputCost, usagelog.FieldCacheCreationCost, usagelog.FieldCacheReadCost, usagelog.FieldTotalCost, usagelog.FieldActualCost, usagelog.FieldRateMultiplier, usagelog.FieldAccountRateMultiplier:
 			values[i] = new(sql.NullFloat64)
-		case usagelog.FieldID, usagelog.FieldUserID, usagelog.FieldAPIKeyID, usagelog.FieldAccountID, usagelog.FieldChannelID, usagelog.FieldGroupID, usagelog.FieldSubscriptionID, usagelog.FieldInputTokens, usagelog.FieldOutputTokens, usagelog.FieldCacheCreationTokens, usagelog.FieldCacheReadTokens, usagelog.FieldCacheCreation5mTokens, usagelog.FieldCacheCreation1hTokens, usagelog.FieldBillingType, usagelog.FieldDurationMs, usagelog.FieldFirstTokenMs, usagelog.FieldAuthLatencyMs, usagelog.FieldRoutingLatencyMs, usagelog.FieldUpstreamLatencyMs, usagelog.FieldResponseLatencyMs, usagelog.FieldRequestTotalMs, usagelog.FieldRequestBodyReadMs, usagelog.FieldRequestBodyBytes, usagelog.FieldUpstreamRequestWrittenMs, usagelog.FieldUpstreamFirstByteMs, usagelog.FieldRequestFirstTokenMs, usagelog.FieldProxyIDSnapshot, usagelog.FieldFinalUpstreamStatus, usagelog.FieldRetryCount, usagelog.FieldAccountSwitchCount, usagelog.FieldImageCount, usagelog.FieldVideoCount, usagelog.FieldVideoDurationSeconds:
+		case usagelog.FieldID, usagelog.FieldUserID, usagelog.FieldAPIKeyID, usagelog.FieldAccountID, usagelog.FieldChannelID, usagelog.FieldGroupID, usagelog.FieldSubscriptionID, usagelog.FieldInputTokens, usagelog.FieldOutputTokens, usagelog.FieldCacheCreationTokens, usagelog.FieldCacheReadTokens, usagelog.FieldCacheCreation5mTokens, usagelog.FieldCacheCreation1hTokens, usagelog.FieldBillingType, usagelog.FieldDurationMs, usagelog.FieldFirstTokenMs, usagelog.FieldAuthLatencyMs, usagelog.FieldRoutingLatencyMs, usagelog.FieldUpstreamLatencyMs, usagelog.FieldResponseLatencyMs, usagelog.FieldRequestTotalMs, usagelog.FieldRequestBodyReadMs, usagelog.FieldRequestBodyBytes, usagelog.FieldUpstreamConnectionReadyMs, usagelog.FieldUpstreamDNSLookupMs, usagelog.FieldUpstreamTCPConnectMs, usagelog.FieldUpstreamTLSHandshakeMs, usagelog.FieldUpstreamRequestHeadersWrittenMs, usagelog.FieldUpstreamRequestWrittenMs, usagelog.FieldUpstreamFirstByteMs, usagelog.FieldUpstreamResponseHeadersReceivedMs, usagelog.FieldUpstreamResponseBodyFirstByteMs, usagelog.FieldUpstreamFirstEventMs, usagelog.FieldRequestFirstOutputCharacterMs, usagelog.FieldRequestFirstTokenMs, usagelog.FieldProxyIDSnapshot, usagelog.FieldFinalUpstreamStatus, usagelog.FieldRetryCount, usagelog.FieldAccountSwitchCount, usagelog.FieldImageCount, usagelog.FieldVideoCount, usagelog.FieldVideoDurationSeconds:
 			values[i] = new(sql.NullInt64)
 		case usagelog.FieldRequestID, usagelog.FieldModel, usagelog.FieldRequestedModel, usagelog.FieldUpstreamModel, usagelog.FieldModelMappingChain, usagelog.FieldBillingTier, usagelog.FieldBillingMode, usagelog.FieldClientTransport, usagelog.FieldRouteKind, usagelog.FieldProxyNameSnapshot, usagelog.FieldProxyProtocolSnapshot, usagelog.FieldRouteFingerprint, usagelog.FieldUserAgent, usagelog.FieldIPAddress, usagelog.FieldImageSize, usagelog.FieldImageInputSize, usagelog.FieldImageOutputSize, usagelog.FieldImageSizeSource, usagelog.FieldVideoResolution:
 			values[i] = new(sql.NullString)
@@ -433,6 +455,12 @@ func (_m *UsageLog) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.RateMultiplier = value.Float64
 			}
+		case usagelog.FieldLongContextBillingApplied:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field long_context_billing_applied", values[i])
+			} else if value.Valid {
+				_m.LongContextBillingApplied = value.Bool
+			}
 		case usagelog.FieldAccountRateMultiplier:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
 				return fmt.Errorf("unexpected type %T for field account_rate_multiplier", values[i])
@@ -529,6 +557,48 @@ func (_m *UsageLog) assignValues(columns []string, values []any) error {
 				_m.RequestBodyBytes = new(int64)
 				*_m.RequestBodyBytes = value.Int64
 			}
+		case usagelog.FieldUpstreamConnectionReused:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field upstream_connection_reused", values[i])
+			} else if value.Valid {
+				_m.UpstreamConnectionReused = new(bool)
+				*_m.UpstreamConnectionReused = value.Bool
+			}
+		case usagelog.FieldUpstreamConnectionReadyMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field upstream_connection_ready_ms", values[i])
+			} else if value.Valid {
+				_m.UpstreamConnectionReadyMs = new(int)
+				*_m.UpstreamConnectionReadyMs = int(value.Int64)
+			}
+		case usagelog.FieldUpstreamDNSLookupMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field upstream_dns_lookup_ms", values[i])
+			} else if value.Valid {
+				_m.UpstreamDNSLookupMs = new(int)
+				*_m.UpstreamDNSLookupMs = int(value.Int64)
+			}
+		case usagelog.FieldUpstreamTCPConnectMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field upstream_tcp_connect_ms", values[i])
+			} else if value.Valid {
+				_m.UpstreamTCPConnectMs = new(int)
+				*_m.UpstreamTCPConnectMs = int(value.Int64)
+			}
+		case usagelog.FieldUpstreamTLSHandshakeMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field upstream_tls_handshake_ms", values[i])
+			} else if value.Valid {
+				_m.UpstreamTLSHandshakeMs = new(int)
+				*_m.UpstreamTLSHandshakeMs = int(value.Int64)
+			}
+		case usagelog.FieldUpstreamRequestHeadersWrittenMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field upstream_request_headers_written_ms", values[i])
+			} else if value.Valid {
+				_m.UpstreamRequestHeadersWrittenMs = new(int)
+				*_m.UpstreamRequestHeadersWrittenMs = int(value.Int64)
+			}
 		case usagelog.FieldUpstreamRequestWrittenMs:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field upstream_request_written_ms", values[i])
@@ -542,6 +612,34 @@ func (_m *UsageLog) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.UpstreamFirstByteMs = new(int)
 				*_m.UpstreamFirstByteMs = int(value.Int64)
+			}
+		case usagelog.FieldUpstreamResponseHeadersReceivedMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field upstream_response_headers_received_ms", values[i])
+			} else if value.Valid {
+				_m.UpstreamResponseHeadersReceivedMs = new(int)
+				*_m.UpstreamResponseHeadersReceivedMs = int(value.Int64)
+			}
+		case usagelog.FieldUpstreamResponseBodyFirstByteMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field upstream_response_body_first_byte_ms", values[i])
+			} else if value.Valid {
+				_m.UpstreamResponseBodyFirstByteMs = new(int)
+				*_m.UpstreamResponseBodyFirstByteMs = int(value.Int64)
+			}
+		case usagelog.FieldUpstreamFirstEventMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field upstream_first_event_ms", values[i])
+			} else if value.Valid {
+				_m.UpstreamFirstEventMs = new(int)
+				*_m.UpstreamFirstEventMs = int(value.Int64)
+			}
+		case usagelog.FieldRequestFirstOutputCharacterMs:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field request_first_output_character_ms", values[i])
+			} else if value.Valid {
+				_m.RequestFirstOutputCharacterMs = new(int)
+				*_m.RequestFirstOutputCharacterMs = int(value.Int64)
 			}
 		case usagelog.FieldRequestFirstTokenMs:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -855,6 +953,9 @@ func (_m *UsageLog) String() string {
 	builder.WriteString("rate_multiplier=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RateMultiplier))
 	builder.WriteString(", ")
+	builder.WriteString("long_context_billing_applied=")
+	builder.WriteString(fmt.Sprintf("%v", _m.LongContextBillingApplied))
+	builder.WriteString(", ")
 	if v := _m.AccountRateMultiplier; v != nil {
 		builder.WriteString("account_rate_multiplier=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
@@ -921,6 +1022,36 @@ func (_m *UsageLog) String() string {
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")
+	if v := _m.UpstreamConnectionReused; v != nil {
+		builder.WriteString("upstream_connection_reused=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.UpstreamConnectionReadyMs; v != nil {
+		builder.WriteString("upstream_connection_ready_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.UpstreamDNSLookupMs; v != nil {
+		builder.WriteString("upstream_dns_lookup_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.UpstreamTCPConnectMs; v != nil {
+		builder.WriteString("upstream_tcp_connect_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.UpstreamTLSHandshakeMs; v != nil {
+		builder.WriteString("upstream_tls_handshake_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.UpstreamRequestHeadersWrittenMs; v != nil {
+		builder.WriteString("upstream_request_headers_written_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
 	if v := _m.UpstreamRequestWrittenMs; v != nil {
 		builder.WriteString("upstream_request_written_ms=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
@@ -928,6 +1059,26 @@ func (_m *UsageLog) String() string {
 	builder.WriteString(", ")
 	if v := _m.UpstreamFirstByteMs; v != nil {
 		builder.WriteString("upstream_first_byte_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.UpstreamResponseHeadersReceivedMs; v != nil {
+		builder.WriteString("upstream_response_headers_received_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.UpstreamResponseBodyFirstByteMs; v != nil {
+		builder.WriteString("upstream_response_body_first_byte_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.UpstreamFirstEventMs; v != nil {
+		builder.WriteString("upstream_first_event_ms=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.RequestFirstOutputCharacterMs; v != nil {
+		builder.WriteString("request_first_output_character_ms=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")

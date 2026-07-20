@@ -55,9 +55,11 @@ describe('AppSidebar header styles', () => {
 })
 
 describe('AppSidebar navigation visibility', () => {
-  it('keeps GPTImage out of the sidebar and consolidates orders into the store', () => {
+  it('keeps header-only features out of the sidebar and consolidates orders into the store', () => {
     expect(componentSource).not.toContain("path: '/images'")
     expect(componentSource).not.toContain("path: '/image-management'")
+    expect(componentSource).not.toContain("path: '/model-plaza'")
+    expect(componentSource).not.toContain("path: '/available-channels'")
 
     const purchaseItem = componentSource.match(/\{ path: '\/purchase'[\s\S]*?\}/)?.[0] ?? ''
     const ordersItem = componentSource.match(/\{ path: '\/orders'[\s\S]*?\}/)?.[0] ?? ''
@@ -70,6 +72,13 @@ describe('AppSidebar navigation visibility', () => {
   it('removes channel status from personal navigation while keeping the admin monitor', () => {
     expect(componentSource).not.toContain("{ path: '/monitor'")
     expect(componentSource).toContain("{ path: '/admin/channels/monitor'")
+  })
+
+  it('separates model pricing from channel configuration', () => {
+    expect(componentSource).toContain("path: '/admin/channels/pricing'")
+    expect(componentSource).toContain("label: t('nav.modelPricing')")
+    expect(componentSource).toContain("path: '/admin/channels/config'")
+    expect(componentSource).toContain("label: t('nav.channelConfiguration')")
   })
 
   it('removes the user subscription entry while keeping subscription management', () => {

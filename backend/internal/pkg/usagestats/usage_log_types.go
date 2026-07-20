@@ -92,6 +92,17 @@ type TrendDataPoint struct {
 	ActualCost          float64 `json:"actual_cost"` // 实际扣除
 }
 
+// ModelUsageTrendPoint represents usage for one requested model in one time bucket.
+type ModelUsageTrendPoint struct {
+	Date        string  `json:"date"`
+	Model       string  `json:"model"`
+	IsOther     bool    `json:"is_other"`
+	Requests    int64   `json:"requests"`
+	TotalTokens int64   `json:"total_tokens"`
+	Cost        float64 `json:"cost"`
+	ActualCost  float64 `json:"actual_cost"`
+}
+
 // ModelStat represents usage statistics for a single model
 type ModelStat struct {
 	Model               string  `json:"model"`

@@ -9,7 +9,7 @@ import { adminAPI } from '@/api'
 import { opsAPI, type OpsDashboardOverview, type OpsMetricThresholds, type OpsRealtimeTrafficSummary } from '@/api/admin/ops'
 import type { OpsRequestDetailsPreset } from './OpsRequestDetailsModal.vue'
 import { useAdminSettingsStore } from '@/stores'
-import { formatNumber } from '@/utils/format'
+import { formatNumber, formatTokenCount } from '@/utils/format'
 
 type RealtimeWindow = '1min' | '5min' | '30min' | '1h'
 
@@ -276,7 +276,7 @@ function getThresholdColorClass(level: ThresholdLevel): string {
 // --- Realtime / Overview labels ---
 
 const totalRequestsLabel = computed(() => formatNumber(overview.value?.request_count_total ?? 0))
-const totalTokensLabel = computed(() => formatNumber(overview.value?.token_consumed ?? 0))
+const totalTokensLabel = computed(() => formatTokenCount(overview.value?.token_consumed ?? 0))
 
 const realtimeTrafficSummary = ref<OpsRealtimeTrafficSummary | null>(null)
 const realtimeTrafficLoading = ref(false)

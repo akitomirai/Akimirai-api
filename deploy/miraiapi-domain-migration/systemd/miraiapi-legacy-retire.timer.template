@@ -1,0 +1,11 @@
+[Unit]
+Description=Schedule retirement of the MiraiAPI compatibility vhost
+
+[Timer]
+OnCalendar={{RETIRE_AT_UTC}}
+AccuracySec=1min
+Persistent=true
+Unit=miraiapi-legacy-retire.service
+
+[Install]
+WantedBy=timers.target

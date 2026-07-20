@@ -1,0 +1,9 @@
+[Unit]
+Description=Retire the 30-day MiraiAPI compatibility vhost on akimirai.xyz
+After=network.target nginx.service
+Requires=nginx.service
+ConditionPathExists=/etc/nginx/sites-enabled/akimirai.xyz-miraiapi-compat
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/retire-miraiapi-legacy

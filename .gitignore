@@ -125,6 +125,12 @@ CLAUDE.md
 scripts
 !backend/scripts/
 !backend/scripts/resolve-version.sh
+!deploy/miraiapi-domain-migration/scripts/
+!deploy/miraiapi-domain-migration/scripts/**
+!deploy/miraiapi-domain-migration/tests/
+!deploy/miraiapi-domain-migration/tests/**
+deploy/miraiapi-domain-migration/**/__pycache__/
+deploy/miraiapi-domain-migration/**/*.py[cod]
 .code-review-state
 #openspec/
 code-reviews/
@@ -157,6 +163,10 @@ output/
 /.wrangler/
 /config.yaml
 /dump.rdb
+
+# Repository-root local runtime state
+/data/
+/.runtime/
 
 # Build artifacts (large binaries)
 backend/build-artifacts/
