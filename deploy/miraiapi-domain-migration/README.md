@@ -110,8 +110,10 @@ Install the rendered compatibility vhost as:
 
 Disable the previous catch-all old-domain vhost only after the new-domain
 health gates pass. The compatibility vhost proxies API/setup/health and
-rent-ledger paths; all other routes use a path-preserving 308 redirect to
-`miraiapi.cloud`.
+rent-ledger paths, including bare Codex routes such as `/responses` and
+`/backend-api/codex/*`; all other routes use a path-preserving 308 redirect to
+`miraiapi.cloud`. API paths must never redirect because cross-origin clients
+may remove `Authorization` while following the redirect.
 
 Install the retirement script and systemd units, then verify the scheduled
 time with:

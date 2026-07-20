@@ -104,9 +104,19 @@ class StaticContractTests(unittest.TestCase):
         ):
             self.assertIn(directive, proxy)
         self.assertIn("client_max_body_size 256m", primary)
-        self.assertIn("(?:v1|v1beta|antigravity|api|setup)", compat)
+        self.assertIn("(?:v1|v1beta|backend-api|antigravity|api|setup)", compat)
         self.assertIn("location = /health", compat)
         self.assertIn("location ^~ /rent-ledger/", compat)
+
+    def test_legacy_compatibility_proxies_bare_gateway_aliases(self):
+        compat = (ROOT / "nginx" / "akimirai.xyz-compat.conf.template").read_text(encoding="utf-8")
+        for route_contract in (
+            "(?:v1|v1beta|backend-api|antigravity|api|setup)",
+            "(?:responses|videos)",
+            "chat/completions|embeddings|alpha/search",
+            "images/(?:generations|edits)",
+        ):
+            self.assertIn(route_contract, compat)
 
     def test_retirement_script_has_validation_and_restore_path(self):
         script = (ROOT / "scripts" / "retire_miraiapi_legacy.sh").read_text(encoding="utf-8")

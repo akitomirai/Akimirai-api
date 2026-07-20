@@ -27,7 +27,17 @@ server {
 
     include /etc/nginx/snippets/cloudflare-real-ip.conf;
 
-    location ~ ^/(?:v1|v1beta|antigravity|api|setup)(?:/|$) {
+    location ~ ^/(?:v1|v1beta|backend-api|antigravity|api|setup)(?:/|$) {
+        include /etc/nginx/snippets/miraiapi-proxy.conf;
+        include /etc/nginx/snippets/miraiapi-legacy-headers.conf;
+    }
+
+    location ~ ^/(?:responses|videos)(?:/|$) {
+        include /etc/nginx/snippets/miraiapi-proxy.conf;
+        include /etc/nginx/snippets/miraiapi-legacy-headers.conf;
+    }
+
+    location ~ ^/(?:chat/completions|embeddings|alpha/search|images/(?:generations|edits))/?$ {
         include /etc/nginx/snippets/miraiapi-proxy.conf;
         include /etc/nginx/snippets/miraiapi-legacy-headers.conf;
     }
