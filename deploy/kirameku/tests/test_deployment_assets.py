@@ -1,3 +1,5 @@
+import importlib.util
+from http.cookiejar import Cookie, CookieJar
 import unittest
 from pathlib import Path
 
@@ -6,6 +8,42 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class DeploymentAssetTests(unittest.TestCase):
+    def test_site_access_cookie_jar_clone_is_independent(self):
+        script = ROOT / "scripts" / "verify-site-access.py"
+        spec = importlib.util.spec_from_file_location("verify_site_access", script)
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+
+        source = CookieJar()
+        source.set_cookie(
+            Cookie(
+                version=0,
+                name="kirameku_site_access",
+                value="opaque",
+                port=None,
+                port_specified=False,
+                domain="akimirai.xyz",
+                domain_specified=False,
+                domain_initial_dot=False,
+                path="/",
+                path_specified=True,
+                secure=True,
+                expires=None,
+                discard=True,
+                comment=None,
+                comment_url=None,
+                rest={"HttpOnly": None, "SameSite": "lax"},
+                rfc2109=False,
+            )
+        )
+
+        clone = module.clone_cookie_jar(source)
+        clone.clear()
+        self.assertEqual(len(list(source)), 1)
+        self.assertEqual(len(list(clone)), 0)
+
     def test_nginx_routes_frontend_backend_admin_and_uploads(self):
         nginx = (ROOT / "nginx" / "akimirai.xyz.conf").read_text(encoding="utf-8")
         for contract in (
@@ -70,6 +108,59 @@ class DeploymentAssetTests(unittest.TestCase):
             "wait_for_url http://127.0.0.1:3001/",
         ):
             self.assertIn(contract, installer)
+
+    def test_nginx_enforces_site_access_without_exposing_all_auth_routes(self):
+        nginx = (ROOT / "nginx" / "akimirai.xyz.conf").read_text(encoding="utf-8")
+        rate_limit = (ROOT / "nginx" / "kirameku-access-limit.conf").read_text(
+            encoding="utf-8"
+        )
+        activator = (ROOT / "scripts" / "activate-site-access.sh").read_text(
+            encoding="utf-8"
+        )
+
+        for contract in (
+            "location = /_site_access_verify",
+            "internal;",
+            "auth_request /_site_access_verify;",
+            "location = /access",
+            "location = /api/site-access/login",
+            "location = /api/site-access/logout",
+            "error_page 401 = @site_access_login",
+            "limit_req zone=kirameku_site_access",
+            "limit_req_status 429",
+        ):
+            self.assertIn(contract, nginx)
+        self.assertIn("limit_req_zone", rate_limit)
+        self.assertNotIn("location ^~ /api/site-access/", nginx)
+        self.assertIn("nginx -t", activator)
+        self.assertIn("akimirai.xyz.before-site-access", activator)
+
+    def test_release_install_does_not_enable_gate_before_password_bootstrap(self):
+        installer = (ROOT / "scripts" / "install-release.sh").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+        self.assertNotIn("/etc/nginx/sites-available/akimirai.xyz", installer)
+        self.assertIn("bootstrap_site_access.py --password-stdin", readme)
+        self.assertIn("activate-site-access.sh", readme)
+
+    def test_site_access_verifier_checks_cookie_and_logout_contracts(self):
+        verifier = (ROOT / "scripts" / "verify-site-access.py").read_text(
+            encoding="utf-8"
+        )
+        for contract in (
+            "getpass(",
+            "cookie.domain_specified",
+            "cookie.secure",
+            '"HttpOnly"',
+            '"SameSite"',
+            'expect(request("/api/site-access/logout"',
+            '"--check-rotation"',
+            '"stale cookie"',
+            "clone.set_cookie(copy(cookie))",
+            'print("site access verification passed")',
+        ):
+            self.assertIn(contract, verifier)
+        self.assertNotIn("print(password", verifier)
 
 
 if __name__ == "__main__":

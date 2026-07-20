@@ -101,6 +101,17 @@ if [[ "$schema_exists" == f ]]; then
     -U sub2api -d kirameku
 fi
 
+if [[ -d "$release_root/backend/migrations" ]]; then
+  while IFS= read -r -d '' migration; do
+    {
+      printf 'SET ROLE kirameku;\n'
+      cat "$migration"
+    } | docker exec -i sub2api-postgres psql -v ON_ERROR_STOP=1 \
+      -U sub2api -d kirameku
+  done < <(find "$release_root/backend/migrations" -maxdepth 1 -type f \
+    -name '*.sql' -print0 | sort -z)
+fi
+
 ln -sfn "$release_root" /opt/kirameku/current.new
 mv -Tf /opt/kirameku/current.new /opt/kirameku/current
 switched=1
@@ -116,16 +127,10 @@ systemctl restart kirameku-backend.service kirameku-frontend.service
 wait_for_url http://127.0.0.1:8000/api/health
 wait_for_url http://127.0.0.1:3001/
 
-install -o root -g root -m 0644 /tmp/akimirai.xyz.conf \
-  /etc/nginx/sites-available/akimirai.xyz
-ln -sfn /etc/nginx/sites-available/akimirai.xyz \
-  /etc/nginx/sites-enabled/akimirai.xyz
 nginx -t
-systemctl reload nginx
 
 rm -f "$frontend_archive" "$backend_archive" \
-  /tmp/kirameku-backend.service /tmp/kirameku-frontend.service \
-  /tmp/akimirai.xyz.conf
+  /tmp/kirameku-backend.service /tmp/kirameku-frontend.service
 trap - ERR
 
 echo "release=$release"
