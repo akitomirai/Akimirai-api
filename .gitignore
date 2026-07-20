@@ -129,8 +129,14 @@ scripts
 !deploy/miraiapi-domain-migration/scripts/**
 !deploy/miraiapi-domain-migration/tests/
 !deploy/miraiapi-domain-migration/tests/**
+!deploy/kirameku/tests/
+!deploy/kirameku/tests/**
+!deploy/kirameku/scripts/
+!deploy/kirameku/scripts/**
 deploy/miraiapi-domain-migration/**/__pycache__/
 deploy/miraiapi-domain-migration/**/*.py[cod]
+deploy/kirameku/**/__pycache__/
+deploy/kirameku/**/*.py[cod]
 .code-review-state
 #openspec/
 code-reviews/

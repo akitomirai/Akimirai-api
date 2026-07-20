@@ -1,0 +1,51 @@
+[Unit]
+Description=Kirameku Next.js frontend
+After=network-online.target kirameku-backend.service
+Wants=network-online.target
+Requires=kirameku-backend.service
+
+[Service]
+Type=simple
+User=kirameku
+Group=kirameku
+WorkingDirectory=/opt/kirameku/current/frontend
+Environment=NODE_ENV=production
+Environment=HOSTNAME=127.0.0.1
+Environment=PORT=3001
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=30
+KillSignal=SIGINT
+SuccessExitStatus=130
+UMask=0027
+
+NoNewPrivileges=true
+CapabilityBoundingSet=
+LockPersonality=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectHome=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectProc=invisible
+ProtectSystem=strict
+ProcSubset=pid
+ReadWritePaths=/opt/kirameku/current/frontend/.next/cache
+ReadWritePaths=/opt/kirameku/current/frontend/.next/server/app
+ReadWritePaths=/opt/kirameku/current/frontend/.next/server/pages
+RemoveIPC=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+MemoryMax=768M
+TasksMax=256
+
+[Install]
+WantedBy=multi-user.target

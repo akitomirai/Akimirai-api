@@ -1,0 +1,45 @@
+[Unit]
+Description=Kirameku FastAPI backend
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kirameku
+Group=kirameku
+WorkingDirectory=/opt/kirameku/current/backend
+EnvironmentFile=/etc/kirameku/backend.env
+ExecStart=/opt/kirameku/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=30
+KillSignal=SIGINT
+UMask=0027
+
+NoNewPrivileges=true
+CapabilityBoundingSet=
+LockPersonality=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectHome=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectProc=invisible
+ProtectSystem=strict
+ProcSubset=pid
+ReadWritePaths=/var/lib/kirameku/uploads
+RemoveIPC=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+MemoryMax=512M
+TasksMax=256
+
+[Install]
+WantedBy=multi-user.target
