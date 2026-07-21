@@ -26,6 +26,8 @@ func RegisterUserRoutes(
 		user := authenticated.Group("/user")
 		{
 			user.GET("/profile", h.User.GetProfile)
+			user.GET("/check-in", h.DailyCheckIn.GetStatus)
+			user.POST("/check-in", h.DailyCheckIn.Claim)
 			user.GET("/avatar/qq-suggestion", h.User.GetQQAvatarSuggestion)
 			user.PUT("/password", h.User.ChangePassword)
 			user.PUT("", h.User.UpdateProfile)

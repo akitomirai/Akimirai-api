@@ -423,6 +423,19 @@ export default {
     invalidOrExpiredToken: '密码重置链接无效或已过期。请重新请求一个新链接。'
   },
 
+  checkIn: {
+    available: '签到',
+    availableTitle: '领取今日 1-3 配额奖励',
+    loading: '查询中...',
+    claiming: '签到中...',
+    claimed: '+{amount} 配额',
+    claimedTitle: '今日已签到：+{amount} 配额',
+    error: '重试签到',
+    errorTitle: '先刷新签到状态，再重试领取',
+    success: '签到成功：+{amount} 配额',
+    profileRefreshWarning: '奖励已到账，余额显示稍后自动刷新。'
+  },
+
   // Step-up（敏感操作二次验证）
   stepUp: {
     title: '需要二次验证',

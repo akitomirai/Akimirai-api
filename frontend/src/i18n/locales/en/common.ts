@@ -424,6 +424,19 @@ export default {
     invalidOrExpiredToken: 'The password reset link is invalid or has expired. Please request a new one.'
   },
 
+  checkIn: {
+    available: 'Check in',
+    availableTitle: 'Claim today\'s 1-3 quota reward',
+    loading: 'Checking...',
+    claiming: 'Claiming...',
+    claimed: '+{amount} quota',
+    claimedTitle: 'Checked in today: +{amount} quota',
+    error: 'Retry check-in',
+    errorTitle: 'Refresh check-in status before retrying',
+    success: 'Check-in complete: +{amount} quota',
+    profileRefreshWarning: 'Reward claimed. The balance display will refresh shortly.'
+  },
+
   // Step-up (sudo) 2FA prompt
   stepUp: {
     title: 'Two-Factor Verification Required',
