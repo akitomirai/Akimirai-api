@@ -162,6 +162,118 @@ func TestGetGeminiBaseURL(t *testing.T) {
 	}
 }
 
+func TestGetGrokBaseURLUsesSubscriptionProxyForOAuth(t *testing.T) {
+	tests := []struct {
+		name     string
+		account  Account
+		expected string
+	}{
+		{
+			name: "oauth without base_url uses CLI subscription proxy",
+			account: Account{
+				Type:        AccountTypeOAuth,
+				Platform:    PlatformGrok,
+				Credentials: map[string]any{},
+			},
+			expected: xai.DefaultCLIBaseURL,
+		},
+		{
+			name: "oauth stored main API endpoint migrates to CLI subscription proxy",
+			account: Account{
+				Type:     AccountTypeOAuth,
+				Platform: PlatformGrok,
+				Credentials: map[string]any{
+					"base_url": xai.DefaultBaseURL,
+				},
+			},
+			expected: xai.DefaultCLIBaseURL,
+		},
+		{
+			name: "oauth stored regional API endpoint is honored",
+			account: Account{
+				Type:     AccountTypeOAuth,
+				Platform: PlatformGrok,
+				Credentials: map[string]any{
+					"base_url": "https://us-west-2.api.x.ai/v1",
+				},
+			},
+			expected: "https://us-west-2.api.x.ai/v1",
+		},
+		{
+			name: "oauth stored CLI proxy is honored verbatim",
+			account: Account{
+				Type:     AccountTypeOAuth,
+				Platform: PlatformGrok,
+				Credentials: map[string]any{
+					"base_url": xai.DefaultCLIBaseURL,
+				},
+			},
+			expected: xai.DefaultCLIBaseURL,
+		},
+		{
+			name: "oauth unparseable base_url falls back to CLI proxy",
+			account: Account{
+				Type:     AccountTypeOAuth,
+				Platform: PlatformGrok,
+				Credentials: map[string]any{
+					"base_url": "not a url",
+				},
+			},
+			expected: xai.DefaultCLIBaseURL,
+		},
+		{
+			name: "oauth explicit custom base_url redirects forwarding traffic",
+			account: Account{
+				Type:     AccountTypeOAuth,
+				Platform: PlatformGrok,
+				Credentials: map[string]any{
+					"base_url": "https://custom.example.com/v1",
+				},
+			},
+			expected: "https://custom.example.com/v1",
+		},
+		{
+			name: "oauth custom base_url with path prefix redirects forwarding traffic",
+			account: Account{
+				Type:     AccountTypeOAuth,
+				Platform: PlatformGrok,
+				Credentials: map[string]any{
+					"base_url": "https://relay.example.com/xai/v1",
+				},
+			},
+			expected: "https://relay.example.com/xai/v1",
+		},
+		{
+			name: "API key without base_url uses official credit-backed API",
+			account: Account{
+				Type:        AccountTypeAPIKey,
+				Platform:    PlatformGrok,
+				Credentials: map[string]any{},
+			},
+			expected: xai.DefaultBaseURL,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, tt.account.GetGrokBaseURL())
+		})
+	}
+}
+
+func TestGetGrokBaseURLHonorsOAuthCustomRegardlessOfUnsafeOverrides(t *testing.T) {
+	t.Setenv(xai.EnvAllowUnsafeURLOverrides, "true")
+	account := Account{
+		Type:     AccountTypeOAuth,
+		Platform: PlatformGrok,
+		Credentials: map[string]any{
+			"base_url": "https://custom.example.com/v1",
+		},
+	}
+
+	require.Equal(t, "https://custom.example.com/v1", account.GetGrokBaseURL())
+}
+
 func TestGetOpenAIApiKeySupportsGrok(t *testing.T) {
 	account := Account{
 		Type:        AccountTypeAPIKey,
@@ -174,7 +286,7 @@ func TestGetOpenAIApiKeySupportsGrok(t *testing.T) {
 	}
 }
 
-func TestGetGrokMediaBaseURLSeparatesOAuthMediaFromCLIProxy(t *testing.T) {
+func TestGetGrokMediaBaseURLRedirectsCLIGatewayToOfficialAPI(t *testing.T) {
 	tests := []struct {
 		name     string
 		account  Account
@@ -190,7 +302,7 @@ func TestGetGrokMediaBaseURLSeparatesOAuthMediaFromCLIProxy(t *testing.T) {
 			expected: xai.DefaultBaseURL,
 		},
 		{
-			name: "oauth stored CLI proxy uses official media API",
+			name: "oauth stored CLI proxy is separated from the media API",
 			account: Account{
 				Type:     AccountTypeOAuth,
 				Platform: PlatformGrok,
@@ -201,7 +313,7 @@ func TestGetGrokMediaBaseURLSeparatesOAuthMediaFromCLIProxy(t *testing.T) {
 			expected: xai.DefaultBaseURL,
 		},
 		{
-			name: "oauth stored CLI proxy variant uses official media API",
+			name: "oauth stored CLI proxy variant is canonicalized to the media API",
 			account: Account{
 				Type:     AccountTypeOAuth,
 				Platform: PlatformGrok,
@@ -212,7 +324,18 @@ func TestGetGrokMediaBaseURLSeparatesOAuthMediaFromCLIProxy(t *testing.T) {
 			expected: xai.DefaultBaseURL,
 		},
 		{
-			name: "oauth legacy official API remains on official media API",
+			name: "oauth unparseable base_url falls back to official media API",
+			account: Account{
+				Type:     AccountTypeOAuth,
+				Platform: PlatformGrok,
+				Credentials: map[string]any{
+					"base_url": "not a url",
+				},
+			},
+			expected: xai.DefaultBaseURL,
+		},
+		{
+			name: "oauth stored official API endpoint is honored (manual endpoint switch)",
 			account: Account{
 				Type:     AccountTypeOAuth,
 				Platform: PlatformGrok,
@@ -223,7 +346,18 @@ func TestGetGrokMediaBaseURLSeparatesOAuthMediaFromCLIProxy(t *testing.T) {
 			expected: xai.DefaultBaseURL,
 		},
 		{
-			name: "oauth untrusted custom base_url is pinned to official media API",
+			name: "oauth stored regional API endpoint is honored for media",
+			account: Account{
+				Type:     AccountTypeOAuth,
+				Platform: PlatformGrok,
+				Credentials: map[string]any{
+					"base_url": "https://us-west-2.api.x.ai/v1",
+				},
+			},
+			expected: "https://us-west-2.api.x.ai/v1",
+		},
+		{
+			name: "oauth custom base_url redirects media traffic",
 			account: Account{
 				Type:     AccountTypeOAuth,
 				Platform: PlatformGrok,
@@ -231,7 +365,7 @@ func TestGetGrokMediaBaseURLSeparatesOAuthMediaFromCLIProxy(t *testing.T) {
 					"base_url": "https://custom.example.com/v1",
 				},
 			},
-			expected: xai.DefaultBaseURL,
+			expected: "https://custom.example.com/v1",
 		},
 		{
 			name: "API key retains its configured media API",
@@ -262,7 +396,7 @@ func TestGetGrokMediaBaseURLSeparatesOAuthMediaFromCLIProxy(t *testing.T) {
 	}
 }
 
-func TestGetGrokMediaBaseURLAllowsExplicitOAuthOverrideWhenUnsafeOverridesEnabled(t *testing.T) {
+func TestGetGrokMediaBaseURLHonorsOAuthCustomRegardlessOfUnsafeOverrides(t *testing.T) {
 	t.Setenv(xai.EnvAllowUnsafeURLOverrides, "true")
 	account := Account{
 		Type:     AccountTypeOAuth,

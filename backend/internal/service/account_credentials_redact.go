@@ -5,7 +5,7 @@ package service
 var SensitiveCredentialKeys = []string{
 	// OAuth
 	"access_token", "accesstoken", "refresh_token", "refreshtoken", "id_token", "idtoken",
-	"client_secret", "clientsecret",
+	"client_secret", "clientsecret", "agent_private_key",
 	// API Key 类
 	"api_key", "apikey", "x_api_key", "session_key", "sessionkey", "session_token", "sessiontoken", "session_cookie", "cookie",
 	// 云服务凭据

@@ -93,7 +93,7 @@ func TestV0152GrokAPIKeyResponsesRequestUsesOfficialEndpoint(t *testing.T) {
 		},
 	}
 
-	req, err := buildGrokResponsesRequest(context.Background(), nil, account, []byte(`{"model":"grok-4.3"}`), "xai-test-key", "")
+	req, err := buildGrokResponsesRequest(context.Background(), nil, account, []byte(`{"model":"grok-4.3"}`), "xai-test-key", "", nil)
 
 	require.NoError(t, err)
 	require.Equal(t, "https://api.x.ai/v1/responses", req.URL.String())

@@ -1,36 +1,41 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import AdminPaymentPlansView from '../AdminPaymentPlansView.vue'
 import type { AdminGroup } from '@/types'
 import type { ProviderInstance, SubscriptionPlan } from '@/types/payment'
+import AdminPaymentPlansView from '../AdminPaymentPlansView.vue'
 
-const getAllGroups = vi.hoisted(() => vi.fn())
-const getPlans = vi.hoisted(() => vi.fn())
-const getProviders = vi.hoisted(() => vi.fn())
-const updatePlan = vi.hoisted(() => vi.fn())
-const deletePlan = vi.hoisted(() => vi.fn())
-const routerPush = vi.hoisted(() => vi.fn())
+const mocks = vi.hoisted(() => ({
+  deletePlan: vi.fn(),
+  getConfig: vi.fn(),
+  getGroups: vi.fn(),
+  getPlans: vi.fn(),
+  getProviders: vi.fn(),
+  routerPush: vi.fn(),
+  updatePlan: vi.fn(),
+}))
 
 vi.mock('@/api/admin', () => ({
   default: {
     groups: {
-      getAll: getAllGroups,
+      getAll: mocks.getGroups,
     },
   },
   adminAPI: {
     groups: {
-      getAll: getAllGroups,
+      getAll: mocks.getGroups,
     },
   },
 }))
 
 vi.mock('@/api/admin/payment', () => ({
   adminPaymentAPI: {
-    getPlans,
-    getProviders,
-    updatePlan,
-    deletePlan,
+    deletePlan: mocks.deletePlan,
+    getConfig: mocks.getConfig,
+    getPlans: mocks.getPlans,
+    getProviders: mocks.getProviders,
+    updatePlan: mocks.updatePlan,
   },
 }))
 
@@ -46,7 +51,7 @@ vi.mock('vue-router', async () => {
   return {
     ...actual,
     useRouter: () => ({
-      push: routerPush,
+      push: mocks.routerPush,
     }),
   }
 })
@@ -92,7 +97,7 @@ function groupFixture(overrides: Partial<AdminGroup> = {}): AdminGroup {
     mcp_xml_inject: false,
     sort_order: 0,
     ...overrides,
-  }
+  } as AdminGroup
 }
 
 function planFixture(overrides: Partial<SubscriptionPlan> = {}): SubscriptionPlan {
@@ -104,7 +109,7 @@ function planFixture(overrides: Partial<SubscriptionPlan> = {}): SubscriptionPla
     price: 19.9,
     original_price: 0,
     validity_days: 30,
-    validity_unit: 'days',
+    validity_unit: 'day',
     features: [],
     for_sale: true,
     sort_order: 1,
@@ -129,40 +134,45 @@ function providerFixture(overrides: Partial<ProviderInstance> = {}): ProviderIns
   }
 }
 
+const DataTableStub = {
+  props: ['columns', 'data', 'loading'],
+  template: `
+    <div>
+      <div data-test="plan-count">{{ data.length }}</div>
+      <slot v-if="!data.length" name="empty" />
+      <div v-for="row in data" :key="row.id">
+        <slot name="cell-name" :value="row.name" :row="row" />
+        <slot name="cell-price" :value="row.price" :row="row" />
+      </div>
+    </div>
+  `,
+}
+
 function mountView() {
   return mount(AdminPaymentPlansView, {
     global: {
+      plugins: [createPinia()],
       stubs: {
         AppLayout: { template: '<div><slot /></div>' },
         ConfirmDialog: true,
+        DataTable: DataTableStub,
         GroupBadge: true,
         Icon: true,
         PlanEditDialog: true,
-        DataTable: {
-          props: ['columns', 'data', 'loading'],
-          template: `
-            <div>
-              <div data-test="plan-count">{{ data.length }}</div>
-              <slot v-if="!data.length" name="empty" />
-              <div v-for="row in data" :key="row.id">
-                <slot name="cell-name" :value="row.name" :row="row" />
-              </div>
-            </div>
-          `,
-        },
       },
     },
   })
 }
 
-describe('AdminPaymentPlansView launch checklist', () => {
+describe('AdminPaymentPlansView', () => {
   beforeEach(() => {
-    getAllGroups.mockReset().mockResolvedValue([])
-    getPlans.mockReset().mockResolvedValue({ data: [] })
-    getProviders.mockReset().mockResolvedValue({ data: [] })
-    updatePlan.mockReset()
-    deletePlan.mockReset()
-    routerPush.mockReset()
+    mocks.deletePlan.mockReset()
+    mocks.getConfig.mockReset().mockResolvedValue({ data: {} })
+    mocks.getGroups.mockReset().mockResolvedValue([])
+    mocks.getPlans.mockReset().mockResolvedValue({ data: [] })
+    mocks.getProviders.mockReset().mockResolvedValue({ data: [] })
+    mocks.routerPush.mockReset()
+    mocks.updatePlan.mockReset()
   })
 
   it('shows missing launch prerequisites when store configuration is empty', async () => {
@@ -179,9 +189,9 @@ describe('AdminPaymentPlansView launch checklist', () => {
   })
 
   it('marks the store launch checklist ready when group, plan, and provider exist', async () => {
-    getAllGroups.mockResolvedValue([groupFixture()])
-    getPlans.mockResolvedValue({ data: [planFixture()] })
-    getProviders.mockResolvedValue({ data: [providerFixture()] })
+    mocks.getGroups.mockResolvedValue([groupFixture()])
+    mocks.getPlans.mockResolvedValue({ data: [planFixture()] })
+    mocks.getProviders.mockResolvedValue({ data: [providerFixture()] })
 
     const wrapper = mountView()
     await flushPromises()
@@ -197,13 +207,44 @@ describe('AdminPaymentPlansView launch checklist', () => {
     await flushPromises()
 
     const buttons = wrapper.findAll('button')
-    const groupButton = buttons.find(button => button.text() === 'payment.admin.launchSubscriptionGroupAction')
-    const providerButton = buttons.find(button => button.text() === 'payment.admin.launchPaymentProviderAction')
+    const groupButton = buttons.find(
+      (button) => button.text() === 'payment.admin.launchSubscriptionGroupAction',
+    )
+    const providerButton = buttons.find(
+      (button) => button.text() === 'payment.admin.launchPaymentProviderAction',
+    )
 
     await groupButton?.trigger('click')
     await providerButton?.trigger('click')
 
-    expect(routerPush).toHaveBeenCalledWith('/admin/groups')
-    expect(routerPush).toHaveBeenCalledWith('/admin/settings')
+    expect(mocks.routerPush).toHaveBeenCalledWith('/admin/groups')
+    expect(mocks.routerPush).toHaveBeenCalledWith('/admin/settings')
+  })
+
+  it('uses the configured currency symbol and keeps legacy prices in USD', async () => {
+    mocks.getPlans.mockResolvedValue({
+      data: [
+        planFixture({
+          id: 1,
+          name: 'CNY plan',
+          price: 499,
+          original_price: 599,
+          currency: 'CNY',
+        }),
+        planFixture({
+          id: 2,
+          name: 'Legacy plan',
+          price: 10,
+          currency: '',
+        }),
+      ],
+    })
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('¥499.00CNY')
+    expect(wrapper.text()).toContain('¥599.00')
+    expect(wrapper.text()).toContain('$10.00')
   })
 })

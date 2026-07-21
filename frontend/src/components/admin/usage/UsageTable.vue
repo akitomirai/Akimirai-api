@@ -318,9 +318,14 @@
               <Icon data-testid="cost-input-token-icon" name="arrowDown" size="xs" class="shrink-0 text-emerald-400" />
               {{ t('admin.usage.inputTokens') }}
             </span>
-            <span class="font-medium tabular-nums text-emerald-300">{{ formatTokenCount(tokenTooltipData?.input_tokens ?? 0, { display: 'exact' }) }}</span>
-            <span class="font-medium text-sky-300">{{ formatTokenUnitPrice(tokenTooltipData?.input_cost, tokenTooltipData?.input_tokens) }}</span>
+            <span class="font-medium tabular-nums text-emerald-300">{{ formatTokenCount(textInputTokens(tokenTooltipData), { display: 'exact' }) }}</span>
+            <span class="font-medium text-sky-300">{{ formatTokenUnitPrice(tokenTooltipData?.input_cost, textInputTokens(tokenTooltipData)) }}</span>
             <span class="font-medium tabular-nums text-white">${{ tokenTooltipData?.input_cost?.toFixed(6) || '0.000000' }}</span>
+          </div>
+          <div v-if="tokenTooltipData && hasImageInputTokens(tokenTooltipData)" data-testid="cost-image-input-token-row" class="usage-cost-grid">
+            <span class="col-span-2 text-gray-400">{{ t('usage.imageInputTokens') }}</span>
+            <span class="font-medium text-fuchsia-300">{{ formatTokenUnitPrice(tokenTooltipData.image_input_cost, tokenTooltipData.image_input_tokens) }}</span>
+            <span class="font-medium tabular-nums text-fuchsia-300">${{ tokenTooltipData.image_input_cost?.toFixed(6) || '0.000000' }}</span>
           </div>
           <div data-testid="cost-output-token-row" class="usage-cost-grid">
             <span class="inline-flex items-center gap-1.5 text-gray-400">
@@ -330,6 +335,11 @@
             <span class="font-medium tabular-nums text-violet-300">{{ formatTokenCount(textOutputTokens(tokenTooltipData), { display: 'exact' }) }}</span>
             <span class="font-medium text-violet-300">{{ formatTokenUnitPrice(tokenTooltipData?.output_cost, textOutputTokens(tokenTooltipData)) }}</span>
             <span class="font-medium tabular-nums text-white">${{ tokenTooltipData?.output_cost?.toFixed(6) || '0.000000' }}</span>
+          </div>
+          <div v-if="tokenTooltipData && hasImageOutputTokens(tokenTooltipData)" data-testid="cost-image-output-token-row" class="usage-cost-grid">
+            <span class="col-span-2 text-gray-400">{{ t('usage.imageOutputTokens') }}</span>
+            <span class="font-medium text-pink-300">{{ formatTokenUnitPrice(tokenTooltipData.image_output_cost, tokenTooltipData.image_output_tokens) }}</span>
+            <span class="font-medium tabular-nums text-pink-300">${{ tokenTooltipData.image_output_cost?.toFixed(6) || '0.000000' }}</span>
           </div>
           <div data-testid="cost-cache-token-row" class="usage-cost-grid">
             <span class="inline-flex items-center gap-1.5 text-gray-400">
@@ -381,11 +391,19 @@
           <div class="text-xs font-semibold text-gray-300">{{ t('usage.tokenDetails') }}</div>
           <div class="flex items-center justify-between gap-4 border-t border-gray-700 pt-1.5">
             <span class="text-gray-400">{{ t('admin.usage.inputTokens') }}</span>
-            <span class="font-medium text-white">{{ formatTokenCount(tokenTooltipData?.input_tokens ?? 0, { display: 'exact' }) }}</span>
+            <span class="font-medium text-white">{{ formatTokenCount(textInputTokens(tokenTooltipData), { display: 'exact' }) }}</span>
+          </div>
+          <div v-if="tokenTooltipData && hasImageInputTokens(tokenTooltipData)" class="flex items-center justify-between gap-4">
+            <span class="text-gray-400">{{ t('usage.imageInputTokens') }}</span>
+            <span class="font-medium text-fuchsia-300">{{ formatTokenCount(tokenTooltipData.image_input_tokens, { display: 'exact' }) }}</span>
           </div>
           <div class="flex items-center justify-between gap-4">
             <span class="text-gray-400">{{ t('admin.usage.outputTokens') }}</span>
             <span class="font-medium text-white">{{ formatTokenCount(textOutputTokens(tokenTooltipData), { display: 'exact' }) }}</span>
+          </div>
+          <div v-if="tokenTooltipData && hasImageOutputTokens(tokenTooltipData)" class="flex items-center justify-between gap-4">
+            <span class="text-gray-400">{{ t('usage.imageOutputTokens') }}</span>
+            <span class="font-medium text-pink-300">{{ formatTokenCount(tokenTooltipData.image_output_tokens, { display: 'exact' }) }}</span>
           </div>
           <div v-if="tokenTooltipData && tokenTooltipData.cache_creation_tokens > 0" class="flex items-center justify-between gap-4">
             <span class="text-gray-400">{{ t('admin.usage.cacheCreationTokens') }}</span>
@@ -433,6 +451,10 @@
               <span class="text-gray-400">{{ t('admin.usage.inputCost') }}</span>
               <span class="font-medium text-white">${{ tooltipData.input_cost.toFixed(6) }}</span>
             </div>
+            <div v-if="tooltipData && hasImageInputCost(tooltipData)" class="flex items-center justify-between gap-4">
+              <span class="text-gray-400">{{ t('usage.imageInputCost') }}</span>
+              <span class="font-medium text-fuchsia-300">${{ tooltipData.image_input_cost.toFixed(6) }}</span>
+            </div>
             <div v-if="tooltipData && tooltipData.output_cost > 0" class="flex items-center justify-between gap-4">
               <span class="text-gray-400">{{ t('admin.usage.outputCost') }}</span>
               <span class="font-medium text-white">${{ tooltipData.output_cost.toFixed(6) }}</span>
@@ -442,10 +464,14 @@
               <span class="font-medium text-pink-300">${{ tooltipData.image_output_cost.toFixed(6) }}</span>
             </div>
             <!-- Token billing: show unit prices per 1M tokens -->
-            <template v-if="!isImageUsage(tooltipData) && (!tooltipData?.billing_mode || tooltipData.billing_mode === BILLING_MODE_TOKEN)">
-              <div v-if="tooltipData && tooltipData.input_tokens > 0" class="flex items-center justify-between gap-4">
+            <template v-if="tooltipData && !isImageUsage(tooltipData) && (!tooltipData.billing_mode || tooltipData.billing_mode === BILLING_MODE_TOKEN)">
+              <div v-if="tooltipData && textInputTokens(tooltipData) > 0" class="flex items-center justify-between gap-4">
                 <span class="text-gray-400">{{ t('usage.inputTokenPrice') }}</span>
-                <span class="font-medium text-sky-300">{{ formatTokenPricePerMillion(tooltipData.input_cost, tooltipData.input_tokens) }} {{ t('usage.perMillionTokens') }}</span>
+                <span class="font-medium text-sky-300">{{ formatTokenPricePerMillion(tooltipData.input_cost, textInputTokens(tooltipData)) }} {{ t('usage.perMillionTokens') }}</span>
+              </div>
+              <div v-if="tooltipData && hasImageInputTokens(tooltipData)" class="flex items-center justify-between gap-4">
+                <span class="text-gray-400">{{ t('usage.imageInputTokenPrice') }}</span>
+                <span class="font-medium text-fuchsia-300">{{ formatTokenPricePerMillion(tooltipData.image_input_cost ?? 0, tooltipData.image_input_tokens) }} {{ t('usage.perMillionTokens') }}</span>
               </div>
               <div v-if="tooltipData && tooltipData.output_cost > 0 && textOutputTokens(tooltipData) > 0" class="flex items-center justify-between gap-4">
                 <span class="text-gray-400">{{ t('usage.outputTokenPrice') }}</span>
@@ -628,6 +654,9 @@ import {
   hasImageOutputTokens,
   textOutputTokens,
   hasImageOutputCost,
+  hasImageInputTokens,
+  textInputTokens,
+  hasImageInputCost,
 } from '@/utils/imageUsage'
 
 /** Compute the account-billed cost for display: (account_stats_cost ?? total_cost) * rate_multiplier */
