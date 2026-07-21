@@ -205,12 +205,10 @@ func (s *AccountRepoSuite) TestUpdateWithEncryptedCredentialsPreservesBillingPro
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, account))
 
-	var storedAPIKey string
-	s.Require().NoError(s.repo.sql.QueryRowContext(
-		s.ctx,
-		"SELECT credentials ->> 'api_key' FROM accounts WHERE id = $1",
-		account.ID,
-	).Scan(&storedAPIKey))
+	storedAccount, err := s.client.Account.Get(s.ctx, account.ID)
+	s.Require().NoError(err)
+	storedAPIKey, ok := storedAccount.Credentials["api_key"].(string)
+	s.Require().True(ok)
 	s.Require().NotEqual("sk-encrypted-probe", storedAPIKey)
 	s.Require().True(strings.HasPrefix(storedAPIKey, accountCredentialCipherPrefix))
 
@@ -219,13 +217,12 @@ func (s *AccountRepoSuite) TestUpdateWithEncryptedCredentialsPreservesBillingPro
 	loaded.Name = "encrypted-probe-updated"
 	s.Require().NoError(s.repo.Update(s.ctx, loaded))
 
-	var snapshot []byte
-	s.Require().NoError(s.repo.sql.QueryRowContext(
-		s.ctx,
-		"SELECT extra -> 'upstream_billing_probe' FROM accounts WHERE id = $1",
-		account.ID,
-	).Scan(&snapshot))
-	s.Require().JSONEq(`{"status":"ok"}`, string(snapshot))
+	storedAccount, err = s.client.Account.Get(s.ctx, account.ID)
+	s.Require().NoError(err)
+	s.Require().Equal(
+		map[string]any{"status": "ok"},
+		storedAccount.Extra[service.UpstreamBillingProbeExtraKey],
+	)
 }
 
 func (s *AccountRepoSuite) TestCreateWithAccountGroupsEncryptsCredentials() {
@@ -242,12 +239,10 @@ func (s *AccountRepoSuite) TestCreateWithAccountGroupsEncryptsCredentials() {
 
 	s.Require().NoError(s.repo.CreateWithAccountGroups(s.ctx, account, nil))
 
-	var storedAPIKey string
-	s.Require().NoError(s.repo.sql.QueryRowContext(
-		s.ctx,
-		"SELECT credentials ->> 'api_key' FROM accounts WHERE id = $1",
-		account.ID,
-	).Scan(&storedAPIKey))
+	storedAccount, err := s.client.Account.Get(s.ctx, account.ID)
+	s.Require().NoError(err)
+	storedAPIKey, ok := storedAccount.Credentials["api_key"].(string)
+	s.Require().True(ok)
 	s.Require().NotEqual("sk-duplicate-secret", storedAPIKey)
 	s.Require().True(strings.HasPrefix(storedAPIKey, accountCredentialCipherPrefix))
 }
