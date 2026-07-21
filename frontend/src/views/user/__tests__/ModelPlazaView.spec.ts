@@ -64,7 +64,7 @@ function catalogItem(modelId: string, provider: string, group: string): UserMode
       }],
       pricing: {
         billing_mode: 'token', input_price: 0.000001, output_price: 0.000002,
-        cache_write_price: null, cache_read_price: null, image_output_price: null,
+        cache_write_price: null, cache_read_price: null, image_input_price: null, image_output_price: null,
         per_request_price: null, intervals: [],
       },
     }],

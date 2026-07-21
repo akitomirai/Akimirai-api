@@ -336,6 +336,7 @@ function normalizePricing(pricing: UserSupportedModelPricing | null | undefined)
     output_price: finiteNumberOrNull(pricing.output_price),
     cache_write_price: finiteNumberOrNull(pricing.cache_write_price),
     cache_read_price: finiteNumberOrNull(pricing.cache_read_price),
+    image_input_price: finiteNumberOrNull(pricing.image_input_price),
     image_output_price: finiteNumberOrNull(pricing.image_output_price),
     per_request_price: finiteNumberOrNull(pricing.per_request_price),
     intervals: Array.isArray(pricing.intervals) ? pricing.intervals.map(normalizeInterval) : [],
