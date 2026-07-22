@@ -101,11 +101,11 @@
           </template>
 
           <template #cell-action="{ row }">
-            <div class="min-w-0 max-w-xs">
-              <div class="truncate font-mono text-sm text-gray-800 dark:text-gray-200" :title="row.action">
+            <div class="w-full min-w-0 whitespace-normal">
+              <div class="break-all font-mono text-sm text-gray-800 dark:text-gray-200" :title="row.action">
                 {{ row.action }}
               </div>
-              <div class="mt-0.5 truncate font-mono text-xs text-gray-400" :title="`${row.method} ${row.path}`">
+              <div class="mt-0.5 break-all font-mono text-xs text-gray-400" :title="`${row.method} ${row.path}`">
                 {{ row.method }} {{ row.path }}
               </div>
             </div>
@@ -466,7 +466,11 @@ function handleCustomTimeRangeCancel() {
 const columns = computed<Column[]>(() => [
   { key: 'created_at', label: t('admin.audit.columns.time') },
   { key: 'actor', label: t('admin.audit.columns.actor') },
-  { key: 'action', label: t('admin.audit.columns.action') },
+  {
+    key: 'action',
+    label: t('admin.audit.columns.action'),
+    class: 'w-[28rem] min-w-[28rem] max-w-[28rem] whitespace-normal'
+  },
   { key: 'status_code', label: t('admin.audit.columns.result') },
   { key: 'latency_ms', label: t('admin.audit.detail.latency') },
   { key: 'client_ip', label: t('admin.audit.columns.clientIp') },
