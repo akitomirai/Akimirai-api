@@ -95,3 +95,59 @@ func TestDailyCheckInRepositoryGetForServiceDateReturnsCurrentBalanceWhenAvailab
 	require.Equal(t, 9.5, balance)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
+
+func TestDailyCheckInRepositoryListForAdminFiltersAndScansLedgerRows(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	checkedAt := time.Date(2026, 7, 21, 3, 4, 5, 0, time.FixedZone("Asia/Shanghai", 8*60*60))
+	filter := service.DailyCheckInAdminFilter{
+		Page: 2, PageSize: 25, Query: "alice", ServiceDate: "2026-07-21",
+	}
+	likeQuery := "%alice%"
+	mock.ExpectQuery(`SELECT COUNT\(\*\).*FROM daily_check_ins d.*JOIN users u.*d\.user_id::text ILIKE \$1.*d\.service_date = \$2`).
+		WithArgs(likeQuery, filter.ServiceDate).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+	mock.ExpectQuery(`SELECT d\.id, d\.user_id, u\.email, u\.username.*FROM daily_check_ins d.*JOIN users u.*ORDER BY d\.checked_in_at DESC, d\.id DESC.*LIMIT \$3 OFFSET \$4`).
+		WithArgs(likeQuery, filter.ServiceDate, filter.PageSize, 25).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"id", "user_id", "email", "username", "service_date", "reward_amount",
+			"balance_before", "balance_after", "checked_in_at", "created_at",
+		}).AddRow(41, 7, "alice@example.com", "Alice", "2026-07-21", 2.0, 10.0, 12.0, checkedAt, checkedAt))
+
+	repo := NewDailyCheckInRepository(db)
+	items, total, err := repo.ListForAdmin(context.Background(), filter)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), total)
+	require.Len(t, items, 1)
+	require.Equal(t, int64(41), items[0].ID)
+	require.Equal(t, "alice@example.com", items[0].Email)
+	require.Equal(t, float64(2), items[0].RewardAmount)
+	require.Equal(t, float64(12), items[0].BalanceAfter)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDailyCheckInRepositoryListForAdminAllDatesUsesStablePagination(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	mock.ExpectQuery(`SELECT COUNT\(\*\).*FROM daily_check_ins d.*JOIN users u`).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+	mock.ExpectQuery(`FROM daily_check_ins d.*JOIN users u.*ORDER BY d\.checked_in_at DESC, d\.id DESC.*LIMIT \$1 OFFSET \$2`).
+		WithArgs(20, 20).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"id", "user_id", "email", "username", "service_date", "reward_amount",
+			"balance_before", "balance_after", "checked_in_at", "created_at",
+		}))
+
+	repo := NewDailyCheckInRepository(db)
+	items, total, err := repo.ListForAdmin(context.Background(), service.DailyCheckInAdminFilter{
+		Page: 2, PageSize: 20, AllDates: true,
+	})
+	require.NoError(t, err)
+	require.Empty(t, items)
+	require.Zero(t, total)
+	require.NoError(t, mock.ExpectationsWereMet())
+}

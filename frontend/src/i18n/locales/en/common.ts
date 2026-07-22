@@ -201,6 +201,7 @@ export default {
     contentModeration: 'Content Moderation',
     promptAudit: 'Prompt Audit',
     auditLogs: 'Audit Logs',
+    dailyCheckIns: 'Check-in Records',
   },
 
   // Auth
@@ -426,7 +427,7 @@ export default {
 
   checkIn: {
     available: 'Check in',
-    availableTitle: 'Claim today\'s 1-3 quota reward',
+    availableTitle: 'Claim today\'s reward (1 quota 50% / 2 quota 30% / 3 quota 20%)',
     loading: 'Checking...',
     claiming: 'Claiming...',
     claimed: '+{amount} quota',

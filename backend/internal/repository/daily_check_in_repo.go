@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
@@ -119,6 +120,86 @@ func (r *dailyCheckInRepository) Claim(
 		return nil, false, fmt.Errorf("commit daily check-in transaction: %w", err)
 	}
 	return record, true, nil
+}
+
+func (r *dailyCheckInRepository) ListForAdmin(
+	ctx context.Context,
+	filter service.DailyCheckInAdminFilter,
+) ([]service.DailyCheckInAdminRecord, int64, error) {
+	if r == nil || r.db == nil {
+		return nil, 0, errors.New("nil daily check-in database")
+	}
+
+	where, args := dailyCheckInAdminWhere(filter)
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM daily_check_ins d
+		JOIN users u ON u.id = d.user_id
+		`+where, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count daily check-ins for admin: %w", err)
+	}
+
+	offset := (filter.Page - 1) * filter.PageSize
+	listArgs := append(append([]any{}, args...), filter.PageSize, offset)
+	query := `
+		SELECT d.id, d.user_id, u.email, u.username, d.service_date::text,
+			d.reward_amount::double precision, d.balance_before::double precision,
+			d.balance_after::double precision, d.checked_in_at, d.created_at
+		FROM daily_check_ins d
+		JOIN users u ON u.id = d.user_id
+		` + where + `
+		ORDER BY d.checked_in_at DESC, d.id DESC
+		LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
+
+	rows, err := r.db.QueryContext(ctx, query, listArgs...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list daily check-ins for admin: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	items := make([]service.DailyCheckInAdminRecord, 0)
+	for rows.Next() {
+		var item service.DailyCheckInAdminRecord
+		if err := rows.Scan(
+			&item.ID,
+			&item.UserID,
+			&item.Email,
+			&item.Username,
+			&item.ServiceDate,
+			&item.RewardAmount,
+			&item.BalanceBefore,
+			&item.BalanceAfter,
+			&item.CheckedInAt,
+			&item.CreatedAt,
+		); err != nil {
+			return nil, 0, fmt.Errorf("scan daily check-in admin row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterate daily check-in admin rows: %w", err)
+	}
+	return items, total, nil
+}
+
+func dailyCheckInAdminWhere(filter service.DailyCheckInAdminFilter) (string, []any) {
+	clauses := make([]string, 0, 2)
+	args := make([]any, 0, 2)
+	if filter.Query != "" {
+		args = append(args, "%"+filter.Query+"%")
+		placeholder := fmt.Sprintf("$%d", len(args))
+		clauses = append(clauses, "(d.user_id::text ILIKE "+placeholder+
+			" OR u.email ILIKE "+placeholder+" OR u.username ILIKE "+placeholder+")")
+	}
+	if filter.ServiceDate != "" {
+		args = append(args, filter.ServiceDate)
+		clauses = append(clauses, fmt.Sprintf("d.service_date = $%d", len(args)))
+	}
+	if len(clauses) == 0 {
+		return "", args
+	}
+	return "WHERE " + strings.Join(clauses, " AND "), args
 }
 
 type dailyCheckInQueryer interface {

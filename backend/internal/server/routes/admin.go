@@ -83,6 +83,7 @@ func RegisterAdminRoutes(
 
 		// 使用记录管理
 		registerUsageRoutes(admin, h)
+		registerDailyCheckInAdminRoutes(admin, h)
 
 		// 用户属性管理
 		registerUserAttributeRoutes(admin, h)
@@ -143,6 +144,10 @@ func registerAuditLogRoutes(admin *gin.RouterGroup, h *handler.Handlers, _ middl
 		// 清空需现场 TOTP 校验（在 handler 内强制），不复用 step-up sudo 窗口
 		auditLogs.POST("/clear", h.Admin.AuditLog.Clear)
 	}
+}
+
+func registerDailyCheckInAdminRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	admin.GET("/daily-check-ins", h.Admin.DailyCheckIn.List)
 }
 
 func registerAdminComplianceRoutes(admin *gin.RouterGroup, h *handler.Handlers) {

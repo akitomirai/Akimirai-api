@@ -201,6 +201,7 @@ export default {
     contentModeration: '内容审核',
     promptAudit: '提示词审计',
     auditLogs: '操作日志',
+    dailyCheckIns: '签到记录',
   },
 
   // Auth
@@ -425,7 +426,7 @@ export default {
 
   checkIn: {
     available: '签到',
-    availableTitle: '领取今日 1-3 配额奖励',
+    availableTitle: '领取今日签到奖励（1 配额 50% / 2 配额 30% / 3 配额 20%）',
     loading: '查询中...',
     claiming: '签到中...',
     claimed: '+{amount} 配额',

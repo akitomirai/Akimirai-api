@@ -29,6 +29,10 @@ func (r *dailyCheckInRouteRepo) Claim(context.Context, service.DailyCheckInClaim
 	return r.record, true, nil
 }
 
+func (r *dailyCheckInRouteRepo) ListForAdmin(context.Context, service.DailyCheckInAdminFilter) ([]service.DailyCheckInAdminRecord, int64, error) {
+	return nil, 0, nil
+}
+
 func TestUserRoutesRegisterDailyCheckInGetAndPost(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	repo := &dailyCheckInRouteRepo{record: &service.DailyCheckInRecord{

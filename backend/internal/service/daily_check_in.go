@@ -6,10 +6,16 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"strings"
 	"time"
+
+	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
 
-const dailyCheckInResetHour = 2
+const (
+	dailyCheckInResetHour       = 2
+	dailyCheckInRewardRollCount = int64(100)
+)
 
 var dailyCheckInLocation = time.FixedZone("Asia/Shanghai", 8*60*60)
 
@@ -33,10 +39,42 @@ type DailyCheckInClaim struct {
 	CheckedInAt  time.Time
 }
 
+// DailyCheckInAdminFilter is the normalized read-only administrator query.
+type DailyCheckInAdminFilter struct {
+	Page        int
+	PageSize    int
+	Query       string
+	ServiceDate string
+	AllDates    bool
+}
+
+// DailyCheckInAdminRecord combines the immutable ledger row with display identity.
+type DailyCheckInAdminRecord struct {
+	ID            int64     `json:"id"`
+	UserID        int64     `json:"user_id"`
+	Email         string    `json:"email"`
+	Username      string    `json:"username"`
+	ServiceDate   string    `json:"service_date"`
+	RewardAmount  float64   `json:"reward_amount"`
+	BalanceBefore float64   `json:"balance_before"`
+	BalanceAfter  float64   `json:"balance_after"`
+	CheckedInAt   time.Time `json:"checked_in_at"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+// DailyCheckInAdminList is the service result consumed by the admin handler.
+type DailyCheckInAdminList struct {
+	Items    []DailyCheckInAdminRecord
+	Total    int64
+	Page     int
+	PageSize int
+}
+
 // DailyCheckInRepository owns exact-once persistence and the balance mutation.
 type DailyCheckInRepository interface {
 	GetForServiceDate(ctx context.Context, userID int64, serviceDate string) (*DailyCheckInRecord, float64, error)
 	Claim(ctx context.Context, claim DailyCheckInClaim) (*DailyCheckInRecord, bool, error)
+	ListForAdmin(ctx context.Context, filter DailyCheckInAdminFilter) ([]DailyCheckInAdminRecord, int64, error)
 }
 
 // DailyCheckInStatus is the stable API contract used by both GET and POST.
@@ -87,11 +125,24 @@ func newDailyCheckInService(
 }
 
 func secureDailyCheckInReward() (int, error) {
-	value, err := rand.Int(rand.Reader, big.NewInt(3))
+	value, err := rand.Int(rand.Reader, big.NewInt(dailyCheckInRewardRollCount))
 	if err != nil {
 		return 0, fmt.Errorf("generate daily check-in reward: %w", err)
 	}
-	return int(value.Int64()) + 1, nil
+	return dailyCheckInRewardFromRoll(value.Int64())
+}
+
+func dailyCheckInRewardFromRoll(roll int64) (int, error) {
+	if roll < 0 || roll >= dailyCheckInRewardRollCount {
+		return 0, fmt.Errorf("daily check-in reward roll must be between 0 and 99")
+	}
+	if roll < 50 {
+		return 1, nil
+	}
+	if roll < 80 {
+		return 2, nil
+	}
+	return 3, nil
 }
 
 func dailyCheckInWindow(now time.Time) (string, time.Time) {
@@ -166,6 +217,52 @@ func (s *DailyCheckInService) Claim(ctx context.Context, userID int64) (*DailyCh
 		s.invalidateBalanceCaches(ctx, userID)
 	}
 	return dailyCheckInStatusFromRecord(record, !created, nextResetAt), nil
+}
+
+// ListForAdmin returns immutable ledger rows without participating in claims.
+func (s *DailyCheckInService) ListForAdmin(ctx context.Context, filter DailyCheckInAdminFilter) (*DailyCheckInAdminList, error) {
+	if s == nil || s.repo == nil {
+		return nil, fmt.Errorf("daily check-in repository is unavailable")
+	}
+
+	if filter.Page <= 0 {
+		filter.Page = 1
+	}
+	if filter.PageSize <= 0 {
+		filter.PageSize = 20
+	} else if filter.PageSize > 200 {
+		filter.PageSize = 200
+	}
+	filter.Query = strings.TrimSpace(filter.Query)
+	filter.ServiceDate = strings.TrimSpace(filter.ServiceDate)
+
+	if filter.AllDates && filter.ServiceDate != "" {
+		return nil, infraerrors.BadRequest(
+			"DAILY_CHECK_IN_DATE_MODE_CONFLICT",
+			"service_date cannot be combined with all dates",
+		)
+	}
+	if filter.ServiceDate != "" {
+		if parsed, err := time.Parse(time.DateOnly, filter.ServiceDate); err != nil || parsed.Format(time.DateOnly) != filter.ServiceDate {
+			return nil, infraerrors.BadRequest("DAILY_CHECK_IN_SERVICE_DATE_INVALID", "service_date must use YYYY-MM-DD")
+		}
+	} else if !filter.AllDates {
+		filter.ServiceDate, _ = dailyCheckInWindow(s.now())
+	}
+
+	items, total, err := s.repo.ListForAdmin(ctx, filter)
+	if err != nil {
+		return nil, fmt.Errorf("list daily check-ins for admin: %w", err)
+	}
+	if items == nil {
+		items = []DailyCheckInAdminRecord{}
+	}
+	return &DailyCheckInAdminList{
+		Items:    items,
+		Total:    total,
+		Page:     filter.Page,
+		PageSize: filter.PageSize,
+	}, nil
 }
 
 func dailyCheckInStatusFromRecord(record *DailyCheckInRecord, alreadyCheckedIn bool, nextResetAt time.Time) *DailyCheckInStatus {

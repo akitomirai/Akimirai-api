@@ -19,6 +19,9 @@ type dailyCheckInRepositoryStub struct {
 	getDate        string
 	claim          DailyCheckInClaim
 	claimCalls     int
+	adminFilter    DailyCheckInAdminFilter
+	adminItems     []DailyCheckInAdminRecord
+	adminTotal     int64
 }
 
 func (s *dailyCheckInRepositoryStub) GetForServiceDate(_ context.Context, _ int64, serviceDate string) (*DailyCheckInRecord, float64, error) {
@@ -34,6 +37,13 @@ func (s *dailyCheckInRepositoryStub) Claim(_ context.Context, claim DailyCheckIn
 	s.claim = claim
 	s.claimCalls++
 	return s.record, s.created, s.err
+}
+
+func (s *dailyCheckInRepositoryStub) ListForAdmin(_ context.Context, filter DailyCheckInAdminFilter) ([]DailyCheckInAdminRecord, int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.adminFilter = filter
+	return s.adminItems, s.adminTotal, s.err
 }
 
 type dailyCheckInAuthInvalidatorStub struct {
@@ -67,6 +77,42 @@ func mustParseCheckInTime(t *testing.T, value string) time.Time {
 	parsed, err := time.Parse(time.RFC3339, value)
 	require.NoError(t, err)
 	return parsed
+}
+
+func TestDailyCheckInRewardUsesWeightedDistribution(t *testing.T) {
+	tests := []struct {
+		name   string
+		roll   int64
+		reward int
+	}{
+		{name: "first bucket starts at zero", roll: 0, reward: 1},
+		{name: "one reward ends at forty nine", roll: 49, reward: 1},
+		{name: "two reward starts at fifty", roll: 50, reward: 2},
+		{name: "two reward ends at seventy nine", roll: 79, reward: 2},
+		{name: "three reward starts at eighty", roll: 80, reward: 3},
+		{name: "last bucket awards three", roll: 99, reward: 3},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			reward, err := dailyCheckInRewardFromRoll(tc.roll)
+			require.NoError(t, err)
+			require.Equal(t, tc.reward, reward)
+		})
+	}
+
+	counts := map[int]int{}
+	for roll := int64(0); roll < 100; roll++ {
+		reward, err := dailyCheckInRewardFromRoll(roll)
+		require.NoError(t, err)
+		counts[reward]++
+	}
+	require.Equal(t, map[int]int{1: 50, 2: 30, 3: 20}, counts)
+
+	for _, invalidRoll := range []int64{-1, 100} {
+		_, err := dailyCheckInRewardFromRoll(invalidRoll)
+		require.ErrorContains(t, err, "roll")
+	}
 }
 
 func TestDailyCheckInServiceUsesTwoAMShanghaiBoundary(t *testing.T) {
@@ -175,4 +221,47 @@ func TestDailyCheckInServiceRejectsInvalidRewardSource(t *testing.T) {
 	_, err := svc.Claim(context.Background(), 7)
 	require.ErrorContains(t, err, "reward")
 	require.Zero(t, repo.claimCalls)
+}
+
+func TestDailyCheckInServiceAdminListDefaultsToCurrentServiceDay(t *testing.T) {
+	repo := &dailyCheckInRepositoryStub{
+		adminItems: []DailyCheckInAdminRecord{{ID: 41, UserID: 7, ServiceDate: "2026-07-20"}},
+		adminTotal: 1,
+	}
+	svc := newDailyCheckInService(repo, nil, nil)
+	svc.now = func() time.Time { return mustParseCheckInTime(t, "2026-07-21T01:59:59+08:00") }
+
+	result, err := svc.ListForAdmin(context.Background(), DailyCheckInAdminFilter{
+		Page: 0, PageSize: 500, Query: "  user@example.com  ",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "2026-07-20", repo.adminFilter.ServiceDate)
+	require.False(t, repo.adminFilter.AllDates)
+	require.Equal(t, 1, repo.adminFilter.Page)
+	require.Equal(t, 200, repo.adminFilter.PageSize)
+	require.Equal(t, "user@example.com", repo.adminFilter.Query)
+	require.Equal(t, int64(1), result.Total)
+	require.Len(t, result.Items, 1)
+}
+
+func TestDailyCheckInServiceAdminListAllDatesDoesNotApplyDefaultDate(t *testing.T) {
+	repo := &dailyCheckInRepositoryStub{}
+	svc := newDailyCheckInService(repo, nil, nil)
+	svc.now = func() time.Time { return mustParseCheckInTime(t, "2026-07-21T03:00:00+08:00") }
+
+	_, err := svc.ListForAdmin(context.Background(), DailyCheckInAdminFilter{AllDates: true})
+	require.NoError(t, err)
+	require.True(t, repo.adminFilter.AllDates)
+	require.Empty(t, repo.adminFilter.ServiceDate)
+}
+
+func TestDailyCheckInServiceAdminListRejectsConflictingDateMode(t *testing.T) {
+	repo := &dailyCheckInRepositoryStub{}
+	svc := newDailyCheckInService(repo, nil, nil)
+
+	_, err := svc.ListForAdmin(context.Background(), DailyCheckInAdminFilter{
+		AllDates: true, ServiceDate: "2026-07-21",
+	})
+	require.ErrorContains(t, err, "all dates")
+	require.Empty(t, repo.adminFilter.ServiceDate)
 }
