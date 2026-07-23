@@ -427,6 +427,11 @@ func applyRequestDiagnosticsToUsageLog(usageLog *UsageLog, diagnostics *RequestD
 		usageLog.FinalUpstreamStatus = cloneInt(diagnostics.FinalUpstreamStatus)
 		usageLog.RetryCount = diagnostics.RetryCount
 		usageLog.AccountSwitchCount = diagnostics.AccountSwitchCount
+		usageLog.PromptCacheKeyHash = optionalTrimmedStringPtr(diagnostics.PromptCache.KeyHash)
+		usageLog.PromptCacheKeySource = optionalTrimmedStringPtr(string(diagnostics.PromptCache.Source))
+		usageLog.PromptCachePrefixHash = optionalTrimmedStringPtr(diagnostics.PromptCache.PrefixHash)
+		usageLog.PromptCacheToolsHash = optionalTrimmedStringPtr(diagnostics.PromptCache.ToolsHash)
+		usageLog.PromptCacheSystemHash = optionalTrimmedStringPtr(diagnostics.PromptCache.SystemHash)
 		if diagnostics.Route.Kind != "" {
 			route = cloneRequestRouteSnapshot(diagnostics.Route)
 		}

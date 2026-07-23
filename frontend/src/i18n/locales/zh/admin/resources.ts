@@ -570,6 +570,18 @@ export default {
         accountFallback: '账户 #{id}',
         proxy: '代理快照',
         fingerprint: '线路指纹',
+        promptCache: '提示缓存',
+        promptCacheKeySource: '缓存身份来源',
+        promptCacheKeyHash: '缓存身份哈希',
+        promptCachePrefixHash: '稳定前缀哈希',
+        promptCacheToolsHash: '工具定义哈希',
+        promptCacheSystemHash: '系统指令哈希',
+        promptCacheSource: {
+          none: '未提供',
+          client_header: '客户端会话请求头',
+          client_body: '客户端 prompt_cache_key',
+          compat_derived: '兼容层派生 key'
+        },
         retrySwitch: '重试 / 换号',
         timeline: '耗时检查点',
         timelineDetail: '按业务阶段列出关键指标；单项可能是阶段耗时或距请求开始的累计时间。',

@@ -279,6 +279,38 @@ func TestForwardAsChatCompletions_OAuthDoesNotInjectDefaultInstructions(t *testi
 	require.NotContains(t, string(upstream.lastBody), "Communicate with the user by streaming thinking")
 }
 
+func TestForwardAsChatCompletions_RecordsCompatDerivedPromptCacheDiagnostics(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	body := []byte(`{"model":"gpt-5.4","messages":[{"role":"system","content":"stable system"},{"role":"user","content":"hello"}],"tools":[{"type":"function","function":{"name":"lookup","parameters":{"type":"object"}}}],"stream":false}`)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusBadRequest,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(`{"error":{"message":"stop"}}`)),
+	}}
+	svc := &OpenAIGatewayService{cfg: &config.Config{}, httpUpstream: upstream}
+	account := &Account{
+		ID: 5, Platform: PlatformOpenAI, Type: AccountTypeOAuth, Concurrency: 1,
+		Credentials: map[string]any{"access_token": "oauth-token", "chatgpt_account_id": "chatgpt-acc"},
+	}
+	diagnostics := NewRequestDiagnostics(time.Now())
+	ctx := WithRequestDiagnostics(context.Background(), diagnostics)
+
+	result, err := svc.ForwardAsChatCompletions(ctx, c, account, body, "", "gpt-5.4")
+	require.Error(t, err)
+	require.Nil(t, result)
+	snapshot := diagnostics.SnapshotAt(time.Now(), account)
+	require.Equal(t, PromptCacheKeySourceCompatDerived, snapshot.PromptCache.Source)
+	require.Len(t, snapshot.PromptCache.KeyHash, 64)
+	require.Len(t, snapshot.PromptCache.PrefixHash, 64)
+	require.Len(t, snapshot.PromptCache.ToolsHash, 64)
+	require.Len(t, snapshot.PromptCache.SystemHash, 64)
+}
+
 func forwardOAuthChatCompletionsForUpstreamBody(t *testing.T, body []byte) []byte {
 	t.Helper()
 

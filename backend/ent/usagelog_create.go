@@ -141,6 +141,76 @@ func (_c *UsageLogCreate) SetNillableBillingMode(v *string) *UsageLogCreate {
 	return _c
 }
 
+// SetPromptCacheKeyHash sets the "prompt_cache_key_hash" field.
+func (_c *UsageLogCreate) SetPromptCacheKeyHash(v string) *UsageLogCreate {
+	_c.mutation.SetPromptCacheKeyHash(v)
+	return _c
+}
+
+// SetNillablePromptCacheKeyHash sets the "prompt_cache_key_hash" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillablePromptCacheKeyHash(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetPromptCacheKeyHash(*v)
+	}
+	return _c
+}
+
+// SetPromptCacheKeySource sets the "prompt_cache_key_source" field.
+func (_c *UsageLogCreate) SetPromptCacheKeySource(v string) *UsageLogCreate {
+	_c.mutation.SetPromptCacheKeySource(v)
+	return _c
+}
+
+// SetNillablePromptCacheKeySource sets the "prompt_cache_key_source" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillablePromptCacheKeySource(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetPromptCacheKeySource(*v)
+	}
+	return _c
+}
+
+// SetPromptCachePrefixHash sets the "prompt_cache_prefix_hash" field.
+func (_c *UsageLogCreate) SetPromptCachePrefixHash(v string) *UsageLogCreate {
+	_c.mutation.SetPromptCachePrefixHash(v)
+	return _c
+}
+
+// SetNillablePromptCachePrefixHash sets the "prompt_cache_prefix_hash" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillablePromptCachePrefixHash(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetPromptCachePrefixHash(*v)
+	}
+	return _c
+}
+
+// SetPromptCacheToolsHash sets the "prompt_cache_tools_hash" field.
+func (_c *UsageLogCreate) SetPromptCacheToolsHash(v string) *UsageLogCreate {
+	_c.mutation.SetPromptCacheToolsHash(v)
+	return _c
+}
+
+// SetNillablePromptCacheToolsHash sets the "prompt_cache_tools_hash" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillablePromptCacheToolsHash(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetPromptCacheToolsHash(*v)
+	}
+	return _c
+}
+
+// SetPromptCacheSystemHash sets the "prompt_cache_system_hash" field.
+func (_c *UsageLogCreate) SetPromptCacheSystemHash(v string) *UsageLogCreate {
+	_c.mutation.SetPromptCacheSystemHash(v)
+	return _c
+}
+
+// SetNillablePromptCacheSystemHash sets the "prompt_cache_system_hash" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillablePromptCacheSystemHash(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetPromptCacheSystemHash(*v)
+	}
+	return _c
+}
+
 // SetGroupID sets the "group_id" field.
 func (_c *UsageLogCreate) SetGroupID(v int64) *UsageLogCreate {
 	_c.mutation.SetGroupID(v)
@@ -1237,6 +1307,31 @@ func (_c *UsageLogCreate) check() error {
 			return &ValidationError{Name: "billing_mode", err: fmt.Errorf(`ent: validator failed for field "UsageLog.billing_mode": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.PromptCacheKeyHash(); ok {
+		if err := usagelog.PromptCacheKeyHashValidator(v); err != nil {
+			return &ValidationError{Name: "prompt_cache_key_hash", err: fmt.Errorf(`ent: validator failed for field "UsageLog.prompt_cache_key_hash": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.PromptCacheKeySource(); ok {
+		if err := usagelog.PromptCacheKeySourceValidator(v); err != nil {
+			return &ValidationError{Name: "prompt_cache_key_source", err: fmt.Errorf(`ent: validator failed for field "UsageLog.prompt_cache_key_source": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.PromptCachePrefixHash(); ok {
+		if err := usagelog.PromptCachePrefixHashValidator(v); err != nil {
+			return &ValidationError{Name: "prompt_cache_prefix_hash", err: fmt.Errorf(`ent: validator failed for field "UsageLog.prompt_cache_prefix_hash": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.PromptCacheToolsHash(); ok {
+		if err := usagelog.PromptCacheToolsHashValidator(v); err != nil {
+			return &ValidationError{Name: "prompt_cache_tools_hash", err: fmt.Errorf(`ent: validator failed for field "UsageLog.prompt_cache_tools_hash": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.PromptCacheSystemHash(); ok {
+		if err := usagelog.PromptCacheSystemHashValidator(v); err != nil {
+			return &ValidationError{Name: "prompt_cache_system_hash", err: fmt.Errorf(`ent: validator failed for field "UsageLog.prompt_cache_system_hash": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.InputTokens(); !ok {
 		return &ValidationError{Name: "input_tokens", err: errors.New(`ent: missing required field "UsageLog.input_tokens"`)}
 	}
@@ -1430,6 +1525,26 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.BillingMode(); ok {
 		_spec.SetField(usagelog.FieldBillingMode, field.TypeString, value)
 		_node.BillingMode = &value
+	}
+	if value, ok := _c.mutation.PromptCacheKeyHash(); ok {
+		_spec.SetField(usagelog.FieldPromptCacheKeyHash, field.TypeString, value)
+		_node.PromptCacheKeyHash = &value
+	}
+	if value, ok := _c.mutation.PromptCacheKeySource(); ok {
+		_spec.SetField(usagelog.FieldPromptCacheKeySource, field.TypeString, value)
+		_node.PromptCacheKeySource = &value
+	}
+	if value, ok := _c.mutation.PromptCachePrefixHash(); ok {
+		_spec.SetField(usagelog.FieldPromptCachePrefixHash, field.TypeString, value)
+		_node.PromptCachePrefixHash = &value
+	}
+	if value, ok := _c.mutation.PromptCacheToolsHash(); ok {
+		_spec.SetField(usagelog.FieldPromptCacheToolsHash, field.TypeString, value)
+		_node.PromptCacheToolsHash = &value
+	}
+	if value, ok := _c.mutation.PromptCacheSystemHash(); ok {
+		_spec.SetField(usagelog.FieldPromptCacheSystemHash, field.TypeString, value)
+		_node.PromptCacheSystemHash = &value
 	}
 	if value, ok := _c.mutation.InputTokens(); ok {
 		_spec.SetField(usagelog.FieldInputTokens, field.TypeInt, value)
@@ -1991,6 +2106,96 @@ func (u *UsageLogUpsert) UpdateBillingMode() *UsageLogUpsert {
 // ClearBillingMode clears the value of the "billing_mode" field.
 func (u *UsageLogUpsert) ClearBillingMode() *UsageLogUpsert {
 	u.SetNull(usagelog.FieldBillingMode)
+	return u
+}
+
+// SetPromptCacheKeyHash sets the "prompt_cache_key_hash" field.
+func (u *UsageLogUpsert) SetPromptCacheKeyHash(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldPromptCacheKeyHash, v)
+	return u
+}
+
+// UpdatePromptCacheKeyHash sets the "prompt_cache_key_hash" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdatePromptCacheKeyHash() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldPromptCacheKeyHash)
+	return u
+}
+
+// ClearPromptCacheKeyHash clears the value of the "prompt_cache_key_hash" field.
+func (u *UsageLogUpsert) ClearPromptCacheKeyHash() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldPromptCacheKeyHash)
+	return u
+}
+
+// SetPromptCacheKeySource sets the "prompt_cache_key_source" field.
+func (u *UsageLogUpsert) SetPromptCacheKeySource(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldPromptCacheKeySource, v)
+	return u
+}
+
+// UpdatePromptCacheKeySource sets the "prompt_cache_key_source" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdatePromptCacheKeySource() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldPromptCacheKeySource)
+	return u
+}
+
+// ClearPromptCacheKeySource clears the value of the "prompt_cache_key_source" field.
+func (u *UsageLogUpsert) ClearPromptCacheKeySource() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldPromptCacheKeySource)
+	return u
+}
+
+// SetPromptCachePrefixHash sets the "prompt_cache_prefix_hash" field.
+func (u *UsageLogUpsert) SetPromptCachePrefixHash(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldPromptCachePrefixHash, v)
+	return u
+}
+
+// UpdatePromptCachePrefixHash sets the "prompt_cache_prefix_hash" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdatePromptCachePrefixHash() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldPromptCachePrefixHash)
+	return u
+}
+
+// ClearPromptCachePrefixHash clears the value of the "prompt_cache_prefix_hash" field.
+func (u *UsageLogUpsert) ClearPromptCachePrefixHash() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldPromptCachePrefixHash)
+	return u
+}
+
+// SetPromptCacheToolsHash sets the "prompt_cache_tools_hash" field.
+func (u *UsageLogUpsert) SetPromptCacheToolsHash(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldPromptCacheToolsHash, v)
+	return u
+}
+
+// UpdatePromptCacheToolsHash sets the "prompt_cache_tools_hash" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdatePromptCacheToolsHash() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldPromptCacheToolsHash)
+	return u
+}
+
+// ClearPromptCacheToolsHash clears the value of the "prompt_cache_tools_hash" field.
+func (u *UsageLogUpsert) ClearPromptCacheToolsHash() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldPromptCacheToolsHash)
+	return u
+}
+
+// SetPromptCacheSystemHash sets the "prompt_cache_system_hash" field.
+func (u *UsageLogUpsert) SetPromptCacheSystemHash(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldPromptCacheSystemHash, v)
+	return u
+}
+
+// UpdatePromptCacheSystemHash sets the "prompt_cache_system_hash" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdatePromptCacheSystemHash() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldPromptCacheSystemHash)
+	return u
+}
+
+// ClearPromptCacheSystemHash clears the value of the "prompt_cache_system_hash" field.
+func (u *UsageLogUpsert) ClearPromptCacheSystemHash() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldPromptCacheSystemHash)
 	return u
 }
 
@@ -3523,6 +3728,111 @@ func (u *UsageLogUpsertOne) UpdateBillingMode() *UsageLogUpsertOne {
 func (u *UsageLogUpsertOne) ClearBillingMode() *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearBillingMode()
+	})
+}
+
+// SetPromptCacheKeyHash sets the "prompt_cache_key_hash" field.
+func (u *UsageLogUpsertOne) SetPromptCacheKeyHash(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetPromptCacheKeyHash(v)
+	})
+}
+
+// UpdatePromptCacheKeyHash sets the "prompt_cache_key_hash" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdatePromptCacheKeyHash() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdatePromptCacheKeyHash()
+	})
+}
+
+// ClearPromptCacheKeyHash clears the value of the "prompt_cache_key_hash" field.
+func (u *UsageLogUpsertOne) ClearPromptCacheKeyHash() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearPromptCacheKeyHash()
+	})
+}
+
+// SetPromptCacheKeySource sets the "prompt_cache_key_source" field.
+func (u *UsageLogUpsertOne) SetPromptCacheKeySource(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetPromptCacheKeySource(v)
+	})
+}
+
+// UpdatePromptCacheKeySource sets the "prompt_cache_key_source" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdatePromptCacheKeySource() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdatePromptCacheKeySource()
+	})
+}
+
+// ClearPromptCacheKeySource clears the value of the "prompt_cache_key_source" field.
+func (u *UsageLogUpsertOne) ClearPromptCacheKeySource() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearPromptCacheKeySource()
+	})
+}
+
+// SetPromptCachePrefixHash sets the "prompt_cache_prefix_hash" field.
+func (u *UsageLogUpsertOne) SetPromptCachePrefixHash(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetPromptCachePrefixHash(v)
+	})
+}
+
+// UpdatePromptCachePrefixHash sets the "prompt_cache_prefix_hash" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdatePromptCachePrefixHash() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdatePromptCachePrefixHash()
+	})
+}
+
+// ClearPromptCachePrefixHash clears the value of the "prompt_cache_prefix_hash" field.
+func (u *UsageLogUpsertOne) ClearPromptCachePrefixHash() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearPromptCachePrefixHash()
+	})
+}
+
+// SetPromptCacheToolsHash sets the "prompt_cache_tools_hash" field.
+func (u *UsageLogUpsertOne) SetPromptCacheToolsHash(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetPromptCacheToolsHash(v)
+	})
+}
+
+// UpdatePromptCacheToolsHash sets the "prompt_cache_tools_hash" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdatePromptCacheToolsHash() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdatePromptCacheToolsHash()
+	})
+}
+
+// ClearPromptCacheToolsHash clears the value of the "prompt_cache_tools_hash" field.
+func (u *UsageLogUpsertOne) ClearPromptCacheToolsHash() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearPromptCacheToolsHash()
+	})
+}
+
+// SetPromptCacheSystemHash sets the "prompt_cache_system_hash" field.
+func (u *UsageLogUpsertOne) SetPromptCacheSystemHash(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetPromptCacheSystemHash(v)
+	})
+}
+
+// UpdatePromptCacheSystemHash sets the "prompt_cache_system_hash" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdatePromptCacheSystemHash() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdatePromptCacheSystemHash()
+	})
+}
+
+// ClearPromptCacheSystemHash clears the value of the "prompt_cache_system_hash" field.
+func (u *UsageLogUpsertOne) ClearPromptCacheSystemHash() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearPromptCacheSystemHash()
 	})
 }
 
@@ -5435,6 +5745,111 @@ func (u *UsageLogUpsertBulk) UpdateBillingMode() *UsageLogUpsertBulk {
 func (u *UsageLogUpsertBulk) ClearBillingMode() *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearBillingMode()
+	})
+}
+
+// SetPromptCacheKeyHash sets the "prompt_cache_key_hash" field.
+func (u *UsageLogUpsertBulk) SetPromptCacheKeyHash(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetPromptCacheKeyHash(v)
+	})
+}
+
+// UpdatePromptCacheKeyHash sets the "prompt_cache_key_hash" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdatePromptCacheKeyHash() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdatePromptCacheKeyHash()
+	})
+}
+
+// ClearPromptCacheKeyHash clears the value of the "prompt_cache_key_hash" field.
+func (u *UsageLogUpsertBulk) ClearPromptCacheKeyHash() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearPromptCacheKeyHash()
+	})
+}
+
+// SetPromptCacheKeySource sets the "prompt_cache_key_source" field.
+func (u *UsageLogUpsertBulk) SetPromptCacheKeySource(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetPromptCacheKeySource(v)
+	})
+}
+
+// UpdatePromptCacheKeySource sets the "prompt_cache_key_source" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdatePromptCacheKeySource() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdatePromptCacheKeySource()
+	})
+}
+
+// ClearPromptCacheKeySource clears the value of the "prompt_cache_key_source" field.
+func (u *UsageLogUpsertBulk) ClearPromptCacheKeySource() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearPromptCacheKeySource()
+	})
+}
+
+// SetPromptCachePrefixHash sets the "prompt_cache_prefix_hash" field.
+func (u *UsageLogUpsertBulk) SetPromptCachePrefixHash(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetPromptCachePrefixHash(v)
+	})
+}
+
+// UpdatePromptCachePrefixHash sets the "prompt_cache_prefix_hash" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdatePromptCachePrefixHash() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdatePromptCachePrefixHash()
+	})
+}
+
+// ClearPromptCachePrefixHash clears the value of the "prompt_cache_prefix_hash" field.
+func (u *UsageLogUpsertBulk) ClearPromptCachePrefixHash() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearPromptCachePrefixHash()
+	})
+}
+
+// SetPromptCacheToolsHash sets the "prompt_cache_tools_hash" field.
+func (u *UsageLogUpsertBulk) SetPromptCacheToolsHash(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetPromptCacheToolsHash(v)
+	})
+}
+
+// UpdatePromptCacheToolsHash sets the "prompt_cache_tools_hash" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdatePromptCacheToolsHash() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdatePromptCacheToolsHash()
+	})
+}
+
+// ClearPromptCacheToolsHash clears the value of the "prompt_cache_tools_hash" field.
+func (u *UsageLogUpsertBulk) ClearPromptCacheToolsHash() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearPromptCacheToolsHash()
+	})
+}
+
+// SetPromptCacheSystemHash sets the "prompt_cache_system_hash" field.
+func (u *UsageLogUpsertBulk) SetPromptCacheSystemHash(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetPromptCacheSystemHash(v)
+	})
+}
+
+// UpdatePromptCacheSystemHash sets the "prompt_cache_system_hash" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdatePromptCacheSystemHash() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdatePromptCacheSystemHash()
+	})
+}
+
+// ClearPromptCacheSystemHash clears the value of the "prompt_cache_system_hash" field.
+func (u *UsageLogUpsertBulk) ClearPromptCacheSystemHash() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearPromptCacheSystemHash()
 	})
 }
 

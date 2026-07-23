@@ -194,6 +194,11 @@ type UsageLog struct {
 	RetryCount                        int
 	AccountSwitchCount                int
 	AttemptTimeline                   []RequestAttemptEvent
+	PromptCacheKeyHash                *string
+	PromptCacheKeySource              *string
+	PromptCachePrefixHash             *string
+	PromptCacheToolsHash              *string
+	PromptCacheSystemHash             *string
 	UserAgent                         *string
 	IPAddress                         *string
 

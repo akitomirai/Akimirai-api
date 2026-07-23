@@ -236,6 +236,9 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 			}
 		}
 	}
+	if diagnostics := RequestDiagnosticsFromContext(ctx); diagnostics != nil {
+		diagnostics.RecordPromptCacheDiagnostics(PromptCacheDiagnosticsForRequest(c, body, promptCacheKey, compatPromptCacheInjected))
+	}
 	requestPrepareLatencyMs := time.Since(requestPrepareStart).Milliseconds()
 
 	// 4b. Apply OpenAI fast policy (may filter service_tier or block the request).

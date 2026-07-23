@@ -1539,6 +1539,12 @@ export interface AdminUsageLog extends UsageLog {
   final_upstream_status?: number | null
   retry_count?: number
   account_switch_count?: number
+  // Admin-only, privacy-safe prompt cache diagnostics.
+  prompt_cache_key_hash?: string | null
+  prompt_cache_key_source?: 'none' | 'client_header' | 'client_body' | 'compat_derived' | null
+  prompt_cache_prefix_hash?: string | null
+  prompt_cache_tools_hash?: string | null
+  prompt_cache_system_hash?: string | null
 
   // Minimal account summary returned by admin APIs.
   account?: UsageLogAccountSummary

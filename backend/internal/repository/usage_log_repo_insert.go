@@ -110,6 +110,11 @@ var usageLogInsertArgTypes = [...]string{
 	"text",        // billing_tier
 	"text",        // billing_mode
 	"numeric",     // account_stats_cost
+	"text",        // prompt_cache_key_hash
+	"text",        // prompt_cache_key_source
+	"text",        // prompt_cache_prefix_hash
+	"text",        // prompt_cache_tools_hash
+	"text",        // prompt_cache_system_hash
 	"timestamptz", // created_at
 }
 
@@ -336,6 +341,11 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			billing_tier,
 			billing_mode,
 			account_stats_cost,
+			prompt_cache_key_hash,
+			prompt_cache_key_source,
+			prompt_cache_prefix_hash,
+			prompt_cache_tools_hash,
+			prompt_cache_system_hash,
 			created_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7,
@@ -343,7 +353,7 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
 			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74, $75, $76, $77, $78, $79, $80, $81, $82, $83, $84, $85, $86, $87
+			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74, $75, $76, $77, $78, $79, $80, $81, $82, $83, $84, $85, $86, $87, $88, $89, $90, $91, $92
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 		RETURNING id, created_at
@@ -821,6 +831,11 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 			billing_tier,
 			billing_mode,
 			account_stats_cost,
+			prompt_cache_key_hash,
+			prompt_cache_key_source,
+			prompt_cache_prefix_hash,
+			prompt_cache_tools_hash,
+			prompt_cache_system_hash,
 			created_at
 		) AS (VALUES `)
 
@@ -939,6 +954,11 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				billing_tier,
 				billing_mode,
 				account_stats_cost,
+				prompt_cache_key_hash,
+				prompt_cache_key_source,
+				prompt_cache_prefix_hash,
+				prompt_cache_tools_hash,
+				prompt_cache_system_hash,
 				created_at
 			)
 			SELECT
@@ -1028,6 +1048,11 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				billing_tier,
 				billing_mode,
 				account_stats_cost,
+				prompt_cache_key_hash,
+				prompt_cache_key_source,
+				prompt_cache_prefix_hash,
+				prompt_cache_tools_hash,
+				prompt_cache_system_hash,
 				created_at
 			FROM input
 			ON CONFLICT (request_id, api_key_id) DO NOTHING
@@ -1157,6 +1182,11 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			billing_tier,
 			billing_mode,
 			account_stats_cost,
+			prompt_cache_key_hash,
+			prompt_cache_key_source,
+			prompt_cache_prefix_hash,
+			prompt_cache_tools_hash,
+			prompt_cache_system_hash,
 			created_at
 		) AS (VALUES `)
 
@@ -1272,6 +1302,11 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			billing_tier,
 			billing_mode,
 			account_stats_cost,
+			prompt_cache_key_hash,
+			prompt_cache_key_source,
+			prompt_cache_prefix_hash,
+			prompt_cache_tools_hash,
+			prompt_cache_system_hash,
 			created_at
 		)
 		SELECT
@@ -1361,6 +1396,11 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			billing_tier,
 			billing_mode,
 			account_stats_cost,
+			prompt_cache_key_hash,
+			prompt_cache_key_source,
+			prompt_cache_prefix_hash,
+			prompt_cache_tools_hash,
+			prompt_cache_system_hash,
 			created_at
 		FROM input
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
@@ -1458,6 +1498,11 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			billing_tier,
 			billing_mode,
 			account_stats_cost,
+			prompt_cache_key_hash,
+			prompt_cache_key_source,
+			prompt_cache_prefix_hash,
+			prompt_cache_tools_hash,
+			prompt_cache_system_hash,
 			created_at
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7,
@@ -1465,7 +1510,7 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
 			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74, $75, $76, $77, $78, $79, $80, $81, $82, $83, $84, $85, $86, $87
+			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $62, $63, $64, $65, $66, $67, $68, $69, $70, $71, $72, $73, $74, $75, $76, $77, $78, $79, $80, $81, $82, $83, $84, $85, $86, $87, $88, $89, $90, $91, $92
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 	`, prepared.args...)
@@ -1534,6 +1579,11 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 	modelMappingChain := nullString(log.ModelMappingChain)
 	billingTier := nullString(log.BillingTier)
 	billingMode := nullString(log.BillingMode)
+	promptCacheKeyHash := nullString(log.PromptCacheKeyHash)
+	promptCacheKeySource := nullString(log.PromptCacheKeySource)
+	promptCachePrefixHash := nullString(log.PromptCachePrefixHash)
+	promptCacheToolsHash := nullString(log.PromptCacheToolsHash)
+	promptCacheSystemHash := nullString(log.PromptCacheSystemHash)
 	requestedModel := strings.TrimSpace(log.RequestedModel)
 	if requestedModel == "" {
 		requestedModel = strings.TrimSpace(log.Model)
@@ -1637,6 +1687,11 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 			billingTier,
 			billingMode,
 			log.AccountStatsCost, // account_stats_cost
+			promptCacheKeyHash,
+			promptCacheKeySource,
+			promptCachePrefixHash,
+			promptCacheToolsHash,
+			promptCacheSystemHash,
 			createdAt,
 		},
 	}

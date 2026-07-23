@@ -574,6 +574,11 @@ type AdminUsageLog struct {
 	FinalUpstreamStatus      *int       `json:"final_upstream_status,omitempty"`
 	RetryCount               int        `json:"retry_count"`
 	AccountSwitchCount       int        `json:"account_switch_count"`
+	PromptCacheKeyHash       *string    `json:"prompt_cache_key_hash,omitempty"`
+	PromptCacheKeySource     *string    `json:"prompt_cache_key_source,omitempty"`
+	PromptCachePrefixHash    *string    `json:"prompt_cache_prefix_hash,omitempty"`
+	PromptCacheToolsHash     *string    `json:"prompt_cache_tools_hash,omitempty"`
+	PromptCacheSystemHash    *string    `json:"prompt_cache_system_hash,omitempty"`
 
 	// IPAddress 用户请求 IP
 	IPAddress *string `json:"ip_address,omitempty"`

@@ -703,6 +703,11 @@ func UsageLogFromServiceAdmin(l *service.UsageLog) *AdminUsageLog {
 		FinalUpstreamStatus:      l.FinalUpstreamStatus,
 		RetryCount:               l.RetryCount,
 		AccountSwitchCount:       l.AccountSwitchCount,
+		PromptCacheKeyHash:       l.PromptCacheKeyHash,
+		PromptCacheKeySource:     l.PromptCacheKeySource,
+		PromptCachePrefixHash:    l.PromptCachePrefixHash,
+		PromptCacheToolsHash:     l.PromptCacheToolsHash,
+		PromptCacheSystemHash:    l.PromptCacheSystemHash,
 		IPAddress:                l.IPAddress,
 		Account:                  AccountSummaryFromService(l.Account),
 	}

@@ -19,7 +19,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
-const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, image_input_tokens, image_input_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, client_transport, auth_latency_ms, routing_latency_ms, upstream_latency_ms, response_latency_ms, request_started_at, request_total_ms, request_body_read_ms, request_body_bytes, upstream_connection_reused, upstream_connection_ready_ms, upstream_dns_lookup_ms, upstream_tcp_connect_ms, upstream_tls_handshake_ms, upstream_request_headers_written_ms, upstream_request_written_ms, upstream_first_byte_ms, upstream_response_headers_received_ms, upstream_response_body_first_byte_ms, upstream_first_event_ms, request_first_output_character_ms, request_first_token_ms, route_kind, proxy_id_snapshot, proxy_name_snapshot, proxy_protocol_snapshot, route_fingerprint, final_upstream_status, retry_count, account_switch_count, attempt_timeline, user_agent, ip_address, image_count, image_size, image_input_size, image_output_size, image_size_source, image_size_breakdown, video_count, video_resolution, video_duration_seconds, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, long_context_billing_applied, channel_id, model_mapping_chain, billing_tier, billing_mode, account_stats_cost, created_at"
+const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, image_input_tokens, image_input_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, client_transport, auth_latency_ms, routing_latency_ms, upstream_latency_ms, response_latency_ms, request_started_at, request_total_ms, request_body_read_ms, request_body_bytes, upstream_connection_reused, upstream_connection_ready_ms, upstream_dns_lookup_ms, upstream_tcp_connect_ms, upstream_tls_handshake_ms, upstream_request_headers_written_ms, upstream_request_written_ms, upstream_first_byte_ms, upstream_response_headers_received_ms, upstream_response_body_first_byte_ms, upstream_first_event_ms, request_first_output_character_ms, request_first_token_ms, route_kind, proxy_id_snapshot, proxy_name_snapshot, proxy_protocol_snapshot, route_fingerprint, final_upstream_status, retry_count, account_switch_count, attempt_timeline, user_agent, ip_address, image_count, image_size, image_input_size, image_output_size, image_size_source, image_size_breakdown, video_count, video_resolution, video_duration_seconds, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, long_context_billing_applied, channel_id, model_mapping_chain, billing_tier, billing_mode, account_stats_cost, prompt_cache_key_hash, prompt_cache_key_source, prompt_cache_prefix_hash, prompt_cache_tools_hash, prompt_cache_system_hash, created_at"
 
 func (r *usageLogRepository) GetByID(ctx context.Context, id int64) (log *service.UsageLog, err error) {
 	query := "SELECT " + usageLogSelectColumns + " FROM usage_logs WHERE id = $1"
@@ -555,6 +555,11 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		billingTier                       sql.NullString
 		billingMode                       sql.NullString
 		accountStatsCost                  sql.NullFloat64
+		promptCacheKeyHash                sql.NullString
+		promptCacheKeySource              sql.NullString
+		promptCachePrefixHash             sql.NullString
+		promptCacheToolsHash              sql.NullString
+		promptCacheSystemHash             sql.NullString
 		createdAt                         time.Time
 	)
 
@@ -646,6 +651,11 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		&billingTier,
 		&billingMode,
 		&accountStatsCost,
+		&promptCacheKeyHash,
+		&promptCacheKeySource,
+		&promptCachePrefixHash,
+		&promptCacheToolsHash,
+		&promptCacheSystemHash,
 		&createdAt,
 	); err != nil {
 		return nil, err
@@ -875,6 +885,21 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 	}
 	if accountStatsCost.Valid {
 		log.AccountStatsCost = &accountStatsCost.Float64
+	}
+	if promptCacheKeyHash.Valid {
+		log.PromptCacheKeyHash = &promptCacheKeyHash.String
+	}
+	if promptCacheKeySource.Valid {
+		log.PromptCacheKeySource = &promptCacheKeySource.String
+	}
+	if promptCachePrefixHash.Valid {
+		log.PromptCachePrefixHash = &promptCachePrefixHash.String
+	}
+	if promptCacheToolsHash.Valid {
+		log.PromptCacheToolsHash = &promptCacheToolsHash.String
+	}
+	if promptCacheSystemHash.Valid {
+		log.PromptCacheSystemHash = &promptCacheSystemHash.String
 	}
 
 	return log, nil

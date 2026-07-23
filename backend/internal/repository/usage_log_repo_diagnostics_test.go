@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"strings"
 	"testing"
 	"time"
 
@@ -34,6 +35,11 @@ func TestPrepareUsageLogInsertIncludesDiagnosticsInCanonicalOrder(t *testing.T) 
 	proxyProtocol := "socks5"
 	fingerprint := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 	status := 200
+	promptCacheKeyHash := strings.Repeat("a", 64)
+	promptCacheKeySource := string(service.PromptCacheKeySourceClientHeader)
+	promptCachePrefixHash := strings.Repeat("b", 64)
+	promptCacheToolsHash := strings.Repeat("c", 64)
+	promptCacheSystemHash := strings.Repeat("d", 64)
 	log := &service.UsageLog{
 		UserID:                            1,
 		APIKeyID:                          2,
@@ -65,6 +71,11 @@ func TestPrepareUsageLogInsertIncludesDiagnosticsInCanonicalOrder(t *testing.T) 
 		FinalUpstreamStatus:               &status,
 		RetryCount:                        2,
 		AccountSwitchCount:                1,
+		PromptCacheKeyHash:                &promptCacheKeyHash,
+		PromptCacheKeySource:              &promptCacheKeySource,
+		PromptCachePrefixHash:             &promptCachePrefixHash,
+		PromptCacheToolsHash:              &promptCacheToolsHash,
+		PromptCacheSystemHash:             &promptCacheSystemHash,
 		AttemptTimeline: []service.RequestAttemptEvent{{
 			Sequence:      1,
 			AccountID:     3,
@@ -109,6 +120,11 @@ func TestPrepareUsageLogInsertIncludesDiagnosticsInCanonicalOrder(t *testing.T) 
 	require.NotContains(t, timelineJSON, "user")
 	require.NotContains(t, timelineJSON, "pass")
 	require.NotContains(t, timelineJSON, "secret")
+	require.Equal(t, sql.NullString{String: promptCacheKeyHash, Valid: true}, prepared.args[86])
+	require.Equal(t, sql.NullString{String: promptCacheKeySource, Valid: true}, prepared.args[87])
+	require.Equal(t, sql.NullString{String: promptCachePrefixHash, Valid: true}, prepared.args[88])
+	require.Equal(t, sql.NullString{String: promptCacheToolsHash, Valid: true}, prepared.args[89])
+	require.Equal(t, sql.NullString{String: promptCacheSystemHash, Valid: true}, prepared.args[90])
 }
 
 func TestRequestAttemptTimelineJSONRoundTripAndCap(t *testing.T) {

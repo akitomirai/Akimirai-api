@@ -776,6 +776,11 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},
 			sql.NullString{},
 			sql.NullFloat64{},
+			sql.NullString{Valid: true, String: "key-hash"},
+			sql.NullString{Valid: true, String: string(service.PromptCacheKeySourceClientBody)},
+			sql.NullString{Valid: true, String: "prefix-hash"},
+			sql.NullString{Valid: true, String: "tools-hash"},
+			sql.NullString{Valid: true, String: "system-hash"},
 			now,
 		}})
 		require.NoError(t, err)
@@ -825,6 +830,11 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 		require.Equal(t, 1, log.RetryCount)
 		require.Equal(t, 1, log.AccountSwitchCount)
 		require.Len(t, log.AttemptTimeline, 1)
+		require.Equal(t, "key-hash", *log.PromptCacheKeyHash)
+		require.Equal(t, string(service.PromptCacheKeySourceClientBody), *log.PromptCacheKeySource)
+		require.Equal(t, "prefix-hash", *log.PromptCachePrefixHash)
+		require.Equal(t, "tools-hash", *log.PromptCacheToolsHash)
+		require.Equal(t, "system-hash", *log.PromptCacheSystemHash)
 	})
 
 	t.Run("request_type_ws_v2_overrides_legacy", func(t *testing.T) {
@@ -917,6 +927,11 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // billing_tier
 			sql.NullString{},  // billing_mode
 			sql.NullFloat64{}, // account_stats_cost
+			sql.NullString{},  // prompt_cache_key_hash
+			sql.NullString{},  // prompt_cache_key_source
+			sql.NullString{},  // prompt_cache_prefix_hash
+			sql.NullString{},  // prompt_cache_tools_hash
+			sql.NullString{},  // prompt_cache_system_hash
 			now,
 		}})
 		require.NoError(t, err)
@@ -1005,6 +1020,11 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // billing_tier
 			sql.NullString{},  // billing_mode
 			sql.NullFloat64{}, // account_stats_cost
+			sql.NullString{},  // prompt_cache_key_hash
+			sql.NullString{},  // prompt_cache_key_source
+			sql.NullString{},  // prompt_cache_prefix_hash
+			sql.NullString{},  // prompt_cache_tools_hash
+			sql.NullString{},  // prompt_cache_system_hash
 			now,
 		}})
 		require.NoError(t, err)
@@ -1093,6 +1113,11 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // billing_tier
 			sql.NullString{},  // billing_mode
 			sql.NullFloat64{}, // account_stats_cost
+			sql.NullString{},  // prompt_cache_key_hash
+			sql.NullString{},  // prompt_cache_key_source
+			sql.NullString{},  // prompt_cache_prefix_hash
+			sql.NullString{},  // prompt_cache_tools_hash
+			sql.NullString{},  // prompt_cache_system_hash
 			now,
 		}})
 		require.NoError(t, err)

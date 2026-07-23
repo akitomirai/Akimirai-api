@@ -45,6 +45,16 @@ type UsageLog struct {
 	BillingTier *string `json:"billing_tier,omitempty"`
 	// 计费模式：token/per_request/image
 	BillingMode *string `json:"billing_mode,omitempty"`
+	// PromptCacheKeyHash holds the value of the "prompt_cache_key_hash" field.
+	PromptCacheKeyHash *string `json:"prompt_cache_key_hash,omitempty"`
+	// PromptCacheKeySource holds the value of the "prompt_cache_key_source" field.
+	PromptCacheKeySource *string `json:"prompt_cache_key_source,omitempty"`
+	// PromptCachePrefixHash holds the value of the "prompt_cache_prefix_hash" field.
+	PromptCachePrefixHash *string `json:"prompt_cache_prefix_hash,omitempty"`
+	// PromptCacheToolsHash holds the value of the "prompt_cache_tools_hash" field.
+	PromptCacheToolsHash *string `json:"prompt_cache_tools_hash,omitempty"`
+	// PromptCacheSystemHash holds the value of the "prompt_cache_system_hash" field.
+	PromptCacheSystemHash *string `json:"prompt_cache_system_hash,omitempty"`
 	// GroupID holds the value of the "group_id" field.
 	GroupID *int64 `json:"group_id,omitempty"`
 	// SubscriptionID holds the value of the "subscription_id" field.
@@ -266,7 +276,7 @@ func (*UsageLog) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case usagelog.FieldID, usagelog.FieldUserID, usagelog.FieldAPIKeyID, usagelog.FieldAccountID, usagelog.FieldChannelID, usagelog.FieldGroupID, usagelog.FieldSubscriptionID, usagelog.FieldInputTokens, usagelog.FieldOutputTokens, usagelog.FieldCacheCreationTokens, usagelog.FieldCacheReadTokens, usagelog.FieldCacheCreation5mTokens, usagelog.FieldCacheCreation1hTokens, usagelog.FieldBillingType, usagelog.FieldDurationMs, usagelog.FieldFirstTokenMs, usagelog.FieldAuthLatencyMs, usagelog.FieldRoutingLatencyMs, usagelog.FieldUpstreamLatencyMs, usagelog.FieldResponseLatencyMs, usagelog.FieldRequestTotalMs, usagelog.FieldRequestBodyReadMs, usagelog.FieldRequestBodyBytes, usagelog.FieldUpstreamConnectionReadyMs, usagelog.FieldUpstreamDNSLookupMs, usagelog.FieldUpstreamTCPConnectMs, usagelog.FieldUpstreamTLSHandshakeMs, usagelog.FieldUpstreamRequestHeadersWrittenMs, usagelog.FieldUpstreamRequestWrittenMs, usagelog.FieldUpstreamFirstByteMs, usagelog.FieldUpstreamResponseHeadersReceivedMs, usagelog.FieldUpstreamResponseBodyFirstByteMs, usagelog.FieldUpstreamFirstEventMs, usagelog.FieldRequestFirstOutputCharacterMs, usagelog.FieldRequestFirstTokenMs, usagelog.FieldProxyIDSnapshot, usagelog.FieldFinalUpstreamStatus, usagelog.FieldRetryCount, usagelog.FieldAccountSwitchCount, usagelog.FieldImageCount, usagelog.FieldVideoCount, usagelog.FieldVideoDurationSeconds:
 			values[i] = new(sql.NullInt64)
-		case usagelog.FieldRequestID, usagelog.FieldModel, usagelog.FieldRequestedModel, usagelog.FieldUpstreamModel, usagelog.FieldModelMappingChain, usagelog.FieldBillingTier, usagelog.FieldBillingMode, usagelog.FieldClientTransport, usagelog.FieldRouteKind, usagelog.FieldProxyNameSnapshot, usagelog.FieldProxyProtocolSnapshot, usagelog.FieldRouteFingerprint, usagelog.FieldUserAgent, usagelog.FieldIPAddress, usagelog.FieldImageSize, usagelog.FieldImageInputSize, usagelog.FieldImageOutputSize, usagelog.FieldImageSizeSource, usagelog.FieldVideoResolution:
+		case usagelog.FieldRequestID, usagelog.FieldModel, usagelog.FieldRequestedModel, usagelog.FieldUpstreamModel, usagelog.FieldModelMappingChain, usagelog.FieldBillingTier, usagelog.FieldBillingMode, usagelog.FieldPromptCacheKeyHash, usagelog.FieldPromptCacheKeySource, usagelog.FieldPromptCachePrefixHash, usagelog.FieldPromptCacheToolsHash, usagelog.FieldPromptCacheSystemHash, usagelog.FieldClientTransport, usagelog.FieldRouteKind, usagelog.FieldProxyNameSnapshot, usagelog.FieldProxyProtocolSnapshot, usagelog.FieldRouteFingerprint, usagelog.FieldUserAgent, usagelog.FieldIPAddress, usagelog.FieldImageSize, usagelog.FieldImageInputSize, usagelog.FieldImageOutputSize, usagelog.FieldImageSizeSource, usagelog.FieldVideoResolution:
 			values[i] = new(sql.NullString)
 		case usagelog.FieldRequestStartedAt, usagelog.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -362,6 +372,41 @@ func (_m *UsageLog) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.BillingMode = new(string)
 				*_m.BillingMode = value.String
+			}
+		case usagelog.FieldPromptCacheKeyHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field prompt_cache_key_hash", values[i])
+			} else if value.Valid {
+				_m.PromptCacheKeyHash = new(string)
+				*_m.PromptCacheKeyHash = value.String
+			}
+		case usagelog.FieldPromptCacheKeySource:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field prompt_cache_key_source", values[i])
+			} else if value.Valid {
+				_m.PromptCacheKeySource = new(string)
+				*_m.PromptCacheKeySource = value.String
+			}
+		case usagelog.FieldPromptCachePrefixHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field prompt_cache_prefix_hash", values[i])
+			} else if value.Valid {
+				_m.PromptCachePrefixHash = new(string)
+				*_m.PromptCachePrefixHash = value.String
+			}
+		case usagelog.FieldPromptCacheToolsHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field prompt_cache_tools_hash", values[i])
+			} else if value.Valid {
+				_m.PromptCacheToolsHash = new(string)
+				*_m.PromptCacheToolsHash = value.String
+			}
+		case usagelog.FieldPromptCacheSystemHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field prompt_cache_system_hash", values[i])
+			} else if value.Valid {
+				_m.PromptCacheSystemHash = new(string)
+				*_m.PromptCacheSystemHash = value.String
 			}
 		case usagelog.FieldGroupID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -901,6 +946,31 @@ func (_m *UsageLog) String() string {
 	builder.WriteString(", ")
 	if v := _m.BillingMode; v != nil {
 		builder.WriteString("billing_mode=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.PromptCacheKeyHash; v != nil {
+		builder.WriteString("prompt_cache_key_hash=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.PromptCacheKeySource; v != nil {
+		builder.WriteString("prompt_cache_key_source=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.PromptCachePrefixHash; v != nil {
+		builder.WriteString("prompt_cache_prefix_hash=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.PromptCacheToolsHash; v != nil {
+		builder.WriteString("prompt_cache_tools_hash=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.PromptCacheSystemHash; v != nil {
+		builder.WriteString("prompt_cache_system_hash=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
