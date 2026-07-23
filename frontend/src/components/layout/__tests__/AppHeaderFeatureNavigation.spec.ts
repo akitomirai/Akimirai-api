@@ -10,6 +10,21 @@ const source = readFileSync(
 )
 
 describe('AppHeader feature navigation', () => {
+  it('projects one check-in owner before Model Plaza and into the mobile menu', () => {
+    const desktopCheckIn = source.indexOf('data-testid="daily-check-in-desktop"')
+    const modelPlazaButton = source.indexOf('@click="handleModelPlazaClick"')
+    const mobileBalance = source.indexOf('<!-- Balance (mobile only) -->')
+    const mobileCheckIn = source.indexOf('data-testid="daily-check-in-mobile"')
+
+    expect(desktopCheckIn).toBeGreaterThan(-1)
+    expect(desktopCheckIn).toBeLessThan(modelPlazaButton)
+    expect(mobileCheckIn).toBeGreaterThan(mobileBalance)
+    expect(source.match(/useDailyCheckIn\(/g)).toHaveLength(1)
+    expect(source).toContain('hidden xl:inline-flex')
+    expect(source).toContain('xl:hidden')
+    expect(source.match(/handleCheckInAction/g)?.length).toBeGreaterThanOrEqual(3)
+  })
+
   it('places the Model Plaza action before GPTImage and gates it with the catalog flag', () => {
     const modelPlazaButton = source.indexOf('@click="handleModelPlazaClick"')
     const gptImageButton = source.indexOf('@click="handleGptImageClick"')

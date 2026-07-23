@@ -209,3 +209,79 @@ mock.ExpectQuery("INSERT INTO usage_logs").WithArgs(anySliceToDriverValues(expec
 ```
 
 The production insert owner defines the ordered argument contract, while separate assertions verify the specific behavior under test.
+
+## Scenario: OpenAI Prompt Cache Diagnostics
+
+### 1. Scope / Trigger
+- Trigger: changing OpenAI cache identity promotion, compatibility-derived `prompt_cache_key` behavior, request diagnostics, `usage_logs` cache fields, or the admin cache diagnostics UI.
+- Applies to OpenAI-format Responses and Chat Completions compatibility requests recorded through `RequestDiagnostics`.
+- This contract does not change the cache-hit formula, billing math, account scheduler, or `/responses/compact` request shape.
+
+### 2. Signatures
+- Request identity inputs:
+  - body `prompt_cache_key: string`
+  - header `session_id: string`
+  - header `conversation_id: string`
+- Storage fields:
+  - `prompt_cache_key_hash varchar(64) null`
+  - `prompt_cache_key_source varchar(32) null`
+  - `prompt_cache_prefix_hash varchar(64) null`
+  - `prompt_cache_tools_hash varchar(64) null`
+  - `prompt_cache_system_hash varchar(64) null`
+- Source values: `none`, `client_header`, `client_body`, `compat_derived`.
+- Admin DTO fields use the same snake-case names. User usage DTOs have no corresponding fields.
+
+### 3. Contracts
+- Persist hashes only. Raw cache keys, prompts, messages, tool output, request bodies, and response bodies must never cross the request-diagnostics persistence boundary.
+- The effective direct Responses identity follows upstream body behavior:
+  1. Preserve a non-empty body `prompt_cache_key` and classify it as `client_body`.
+  2. Only when the body key is absent, promote explicit `session_id` or `conversation_id` to the OAuth Responses body and classify it as `client_header`.
+  3. When no explicit conversation identity exists, leave the key absent and classify it as `none`.
+- Chat Completions compatibility may retain its existing stable derived identity and classifies that generated key as `compat_derived`.
+- Never synthesize a direct cache key from only user ID, API key ID, account ID, model, or a global constant. Those scopes mix independent conversations on shared upstream accounts.
+- Stable-prefix diagnostics exclude later user and assistant turns. `tools`/`functions` and ordered `instructions`/system/developer content have separate hashes so the owning change is diagnosable.
+- Admin UI renders shortened hashes with the full hash available as non-secret diagnostic text. It never reconstructs or displays the raw key or prompt.
+- Alerting and analysis should group by the same cache identity and prefix. A single cold request is not sufficient evidence of a cache regression; repeated low-hit requests with unchanged diagnostic identity are the actionable case.
+
+### 4. Validation & Error Matrix
+- Empty or whitespace-only body/header identity -> no promotion, source `none`.
+- Body key plus header identity -> preserve and hash the body key, source `client_body`.
+- Header-only identity on supported OAuth Responses -> promote to body, source `client_header`.
+- Compatibility bridge generates a key -> source `compat_derived`.
+- JSON mutation failure while preparing the supported OAuth request -> fail the request before forwarding; release any acquired account slot.
+- Unsupported or compact path -> do not inject a cache key.
+- Historical row without fields -> successful admin response with nullable hashes; user response remains unchanged.
+
+### 5. Good/Base/Bad Cases
+- Good: two append-only turns keep the same key, prefix, tools, and system hashes while the second request adds conversation history at the end.
+- Good: a client-provided body key and a conflicting header keep the body key because that is what the upstream request preserves.
+- Base: a direct request without an explicit identity records `none` plus any available prefix component hashes and does not manufacture a tenant-wide key.
+- Bad: save `prompt_cache_key`, `instructions`, or the request body in `usage_logs` for easier debugging.
+- Bad: assign one key per user or model, causing concurrent conversations to evict or contaminate each other's upstream cache routing.
+
+### 6. Tests Required
+- Service tests must cover source classification, body-over-header precedence, explicit header promotion, empty identity, compatibility-derived identity, append-only stability, and tools/system owner changes.
+- Request diagnostics tests must prove immutable snapshot propagation and copy into `UsageLog`.
+- Repository tests must cover all handwritten insert paths, select/scan order, nullable values, and the five new fields as one atomic contract.
+- Migration tests must assert the five nullable columns exist and that no raw `prompt_cache_key` column is introduced.
+- DTO marshal tests must prove admin visibility and user omission.
+- Frontend tests must prove source labels, shortened hash rendering, and historical/unavailable behavior.
+
+### 7. Wrong vs Correct
+#### Wrong
+```go
+key := fmt.Sprintf("user:%d:model:%s", userID, model)
+usageLog.PromptCacheKey = &key
+```
+
+This creates an identity shared by unrelated conversations and persists a raw cache key.
+
+#### Correct
+```go
+diagnostics.RecordPromptCacheDiagnostics(
+    PromptCacheDiagnosticsForRequest(c, originalBody, explicitConversationID, false),
+)
+body, _, err := EnsureOpenAIPromptCacheKey(originalBody, explicitConversationID)
+```
+
+The gateway promotes only an explicit conversation identity, preserves an existing body key, and persists deterministic hashes through the request diagnostics owner.

@@ -507,6 +507,8 @@ type UsageLog struct {
 	ImageSize          *string        `json:"image_size"`
 	ImageInputSize     *string        `json:"image_input_size"`
 	ImageOutputSize    *string        `json:"image_output_size"`
+	ImageInputTokens   int            `json:"image_input_tokens"`
+	ImageInputCost     float64        `json:"image_input_cost"`
 	ImageOutputTokens  int            `json:"image_output_tokens"`
 	ImageOutputCost    float64        `json:"image_output_cost"`
 	ImageSizeSource    *string        `json:"image_size_source"`
@@ -572,6 +574,11 @@ type AdminUsageLog struct {
 	FinalUpstreamStatus      *int       `json:"final_upstream_status,omitempty"`
 	RetryCount               int        `json:"retry_count"`
 	AccountSwitchCount       int        `json:"account_switch_count"`
+	PromptCacheKeyHash       *string    `json:"prompt_cache_key_hash,omitempty"`
+	PromptCacheKeySource     *string    `json:"prompt_cache_key_source,omitempty"`
+	PromptCachePrefixHash    *string    `json:"prompt_cache_prefix_hash,omitempty"`
+	PromptCacheToolsHash     *string    `json:"prompt_cache_tools_hash,omitempty"`
+	PromptCacheSystemHash    *string    `json:"prompt_cache_system_hash,omitempty"`
 
 	// IPAddress 用户请求 IP
 	IPAddress *string `json:"ip_address,omitempty"`

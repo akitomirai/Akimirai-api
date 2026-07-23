@@ -70,6 +70,30 @@
               </div>
             </section>
 
+            <section v-if="hasPromptCacheDiagnostics" data-testid="prompt-cache-diagnostics" class="border-b border-gray-200 px-5 py-5 dark:border-dark-700">
+              <h3 class="diagnostic-heading mb-4">{{ t('admin.usage.diagnostics.promptCache') }}</h3>
+              <dl class="grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
+                <dt class="text-gray-500 dark:text-gray-400">{{ t('admin.usage.diagnostics.promptCacheKeySource') }}</dt>
+                <dd class="text-right font-medium text-gray-900 dark:text-white">{{ promptCacheSourceLabel }}</dd>
+                <dt class="text-gray-500 dark:text-gray-400">{{ t('admin.usage.diagnostics.promptCacheKeyHash') }}</dt>
+                <dd class="truncate text-right font-mono text-xs text-gray-700 dark:text-gray-300" :title="diagnostics.prompt_cache_key_hash || ''">
+                  {{ shortHash(diagnostics.prompt_cache_key_hash) }}
+                </dd>
+                <dt class="text-gray-500 dark:text-gray-400">{{ t('admin.usage.diagnostics.promptCachePrefixHash') }}</dt>
+                <dd class="truncate text-right font-mono text-xs text-gray-700 dark:text-gray-300" :title="diagnostics.prompt_cache_prefix_hash || ''">
+                  {{ shortHash(diagnostics.prompt_cache_prefix_hash) }}
+                </dd>
+                <dt class="text-gray-500 dark:text-gray-400">{{ t('admin.usage.diagnostics.promptCacheToolsHash') }}</dt>
+                <dd class="truncate text-right font-mono text-xs text-gray-700 dark:text-gray-300" :title="diagnostics.prompt_cache_tools_hash || ''">
+                  {{ shortHash(diagnostics.prompt_cache_tools_hash) }}
+                </dd>
+                <dt class="text-gray-500 dark:text-gray-400">{{ t('admin.usage.diagnostics.promptCacheSystemHash') }}</dt>
+                <dd class="truncate text-right font-mono text-xs text-gray-700 dark:text-gray-300" :title="diagnostics.prompt_cache_system_hash || ''">
+                  {{ shortHash(diagnostics.prompt_cache_system_hash) }}
+                </dd>
+              </dl>
+            </section>
+
             <section class="border-b border-gray-200 px-5 py-5 dark:border-dark-700">
               <div class="mb-4 flex items-center justify-between gap-3">
                 <h3 class="diagnostic-heading">{{ t('admin.usage.diagnostics.route') }}</h3>
@@ -258,6 +282,20 @@ const timingSteps = computed(() => {
 })
 
 const attempts = computed(() => diagnostics.value?.attempt_timeline ?? [])
+const hasPromptCacheDiagnostics = computed(() => {
+  const row = diagnostics.value
+  return Boolean(row && (
+    row.prompt_cache_key_source
+    || row.prompt_cache_key_hash
+    || row.prompt_cache_prefix_hash
+    || row.prompt_cache_tools_hash
+    || row.prompt_cache_system_hash
+  ))
+})
+const promptCacheSourceLabel = computed(() => {
+  const source = diagnostics.value?.prompt_cache_key_source || 'none'
+  return t(`admin.usage.diagnostics.promptCacheSource.${source}`)
+})
 const routeLabel = computed(() => diagnostics.value?.route_kind === 'proxy'
   ? t('admin.usage.diagnostics.proxyRoute')
   : diagnostics.value?.route_kind === 'direct'
@@ -291,6 +329,7 @@ const formatBytes = (value: number) => value < 1024
     ? `${(value / 1024).toFixed(1)} KiB`
     : `${(value / (1024 * 1024)).toFixed(1)} MiB`
 const shortFingerprint = (value: string | null | undefined) => value ? value.slice(0, 8) : t('admin.usage.diagnostics.unavailable')
+const shortHash = (value: string | null | undefined) => value ? value.slice(0, 12) : t('admin.usage.diagnostics.unavailable')
 const attemptRouteLabel = (attempt: AdminUsageAttemptEvent) => {
   if (attempt.route.kind !== 'proxy') return t('admin.usage.diagnostics.directRoute')
   const name = attempt.route.proxy_name || t('admin.usage.diagnostics.proxyFallback')

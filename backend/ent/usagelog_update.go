@@ -231,6 +231,106 @@ func (_u *UsageLogUpdate) ClearBillingMode() *UsageLogUpdate {
 	return _u
 }
 
+// SetPromptCacheKeyHash sets the "prompt_cache_key_hash" field.
+func (_u *UsageLogUpdate) SetPromptCacheKeyHash(v string) *UsageLogUpdate {
+	_u.mutation.SetPromptCacheKeyHash(v)
+	return _u
+}
+
+// SetNillablePromptCacheKeyHash sets the "prompt_cache_key_hash" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillablePromptCacheKeyHash(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetPromptCacheKeyHash(*v)
+	}
+	return _u
+}
+
+// ClearPromptCacheKeyHash clears the value of the "prompt_cache_key_hash" field.
+func (_u *UsageLogUpdate) ClearPromptCacheKeyHash() *UsageLogUpdate {
+	_u.mutation.ClearPromptCacheKeyHash()
+	return _u
+}
+
+// SetPromptCacheKeySource sets the "prompt_cache_key_source" field.
+func (_u *UsageLogUpdate) SetPromptCacheKeySource(v string) *UsageLogUpdate {
+	_u.mutation.SetPromptCacheKeySource(v)
+	return _u
+}
+
+// SetNillablePromptCacheKeySource sets the "prompt_cache_key_source" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillablePromptCacheKeySource(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetPromptCacheKeySource(*v)
+	}
+	return _u
+}
+
+// ClearPromptCacheKeySource clears the value of the "prompt_cache_key_source" field.
+func (_u *UsageLogUpdate) ClearPromptCacheKeySource() *UsageLogUpdate {
+	_u.mutation.ClearPromptCacheKeySource()
+	return _u
+}
+
+// SetPromptCachePrefixHash sets the "prompt_cache_prefix_hash" field.
+func (_u *UsageLogUpdate) SetPromptCachePrefixHash(v string) *UsageLogUpdate {
+	_u.mutation.SetPromptCachePrefixHash(v)
+	return _u
+}
+
+// SetNillablePromptCachePrefixHash sets the "prompt_cache_prefix_hash" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillablePromptCachePrefixHash(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetPromptCachePrefixHash(*v)
+	}
+	return _u
+}
+
+// ClearPromptCachePrefixHash clears the value of the "prompt_cache_prefix_hash" field.
+func (_u *UsageLogUpdate) ClearPromptCachePrefixHash() *UsageLogUpdate {
+	_u.mutation.ClearPromptCachePrefixHash()
+	return _u
+}
+
+// SetPromptCacheToolsHash sets the "prompt_cache_tools_hash" field.
+func (_u *UsageLogUpdate) SetPromptCacheToolsHash(v string) *UsageLogUpdate {
+	_u.mutation.SetPromptCacheToolsHash(v)
+	return _u
+}
+
+// SetNillablePromptCacheToolsHash sets the "prompt_cache_tools_hash" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillablePromptCacheToolsHash(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetPromptCacheToolsHash(*v)
+	}
+	return _u
+}
+
+// ClearPromptCacheToolsHash clears the value of the "prompt_cache_tools_hash" field.
+func (_u *UsageLogUpdate) ClearPromptCacheToolsHash() *UsageLogUpdate {
+	_u.mutation.ClearPromptCacheToolsHash()
+	return _u
+}
+
+// SetPromptCacheSystemHash sets the "prompt_cache_system_hash" field.
+func (_u *UsageLogUpdate) SetPromptCacheSystemHash(v string) *UsageLogUpdate {
+	_u.mutation.SetPromptCacheSystemHash(v)
+	return _u
+}
+
+// SetNillablePromptCacheSystemHash sets the "prompt_cache_system_hash" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillablePromptCacheSystemHash(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetPromptCacheSystemHash(*v)
+	}
+	return _u
+}
+
+// ClearPromptCacheSystemHash clears the value of the "prompt_cache_system_hash" field.
+func (_u *UsageLogUpdate) ClearPromptCacheSystemHash() *UsageLogUpdate {
+	_u.mutation.ClearPromptCacheSystemHash()
+	return _u
+}
+
 // SetGroupID sets the "group_id" field.
 func (_u *UsageLogUpdate) SetGroupID(v int64) *UsageLogUpdate {
 	_u.mutation.SetGroupID(v)
@@ -1800,6 +1900,31 @@ func (_u *UsageLogUpdate) check() error {
 			return &ValidationError{Name: "billing_mode", err: fmt.Errorf(`ent: validator failed for field "UsageLog.billing_mode": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.PromptCacheKeyHash(); ok {
+		if err := usagelog.PromptCacheKeyHashValidator(v); err != nil {
+			return &ValidationError{Name: "prompt_cache_key_hash", err: fmt.Errorf(`ent: validator failed for field "UsageLog.prompt_cache_key_hash": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.PromptCacheKeySource(); ok {
+		if err := usagelog.PromptCacheKeySourceValidator(v); err != nil {
+			return &ValidationError{Name: "prompt_cache_key_source", err: fmt.Errorf(`ent: validator failed for field "UsageLog.prompt_cache_key_source": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.PromptCachePrefixHash(); ok {
+		if err := usagelog.PromptCachePrefixHashValidator(v); err != nil {
+			return &ValidationError{Name: "prompt_cache_prefix_hash", err: fmt.Errorf(`ent: validator failed for field "UsageLog.prompt_cache_prefix_hash": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.PromptCacheToolsHash(); ok {
+		if err := usagelog.PromptCacheToolsHashValidator(v); err != nil {
+			return &ValidationError{Name: "prompt_cache_tools_hash", err: fmt.Errorf(`ent: validator failed for field "UsageLog.prompt_cache_tools_hash": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.PromptCacheSystemHash(); ok {
+		if err := usagelog.PromptCacheSystemHashValidator(v); err != nil {
+			return &ValidationError{Name: "prompt_cache_system_hash", err: fmt.Errorf(`ent: validator failed for field "UsageLog.prompt_cache_system_hash": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ClientTransport(); ok {
 		if err := usagelog.ClientTransportValidator(v); err != nil {
 			return &ValidationError{Name: "client_transport", err: fmt.Errorf(`ent: validator failed for field "UsageLog.client_transport": %w`, err)}
@@ -1928,6 +2053,36 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.BillingModeCleared() {
 		_spec.ClearField(usagelog.FieldBillingMode, field.TypeString)
+	}
+	if value, ok := _u.mutation.PromptCacheKeyHash(); ok {
+		_spec.SetField(usagelog.FieldPromptCacheKeyHash, field.TypeString, value)
+	}
+	if _u.mutation.PromptCacheKeyHashCleared() {
+		_spec.ClearField(usagelog.FieldPromptCacheKeyHash, field.TypeString)
+	}
+	if value, ok := _u.mutation.PromptCacheKeySource(); ok {
+		_spec.SetField(usagelog.FieldPromptCacheKeySource, field.TypeString, value)
+	}
+	if _u.mutation.PromptCacheKeySourceCleared() {
+		_spec.ClearField(usagelog.FieldPromptCacheKeySource, field.TypeString)
+	}
+	if value, ok := _u.mutation.PromptCachePrefixHash(); ok {
+		_spec.SetField(usagelog.FieldPromptCachePrefixHash, field.TypeString, value)
+	}
+	if _u.mutation.PromptCachePrefixHashCleared() {
+		_spec.ClearField(usagelog.FieldPromptCachePrefixHash, field.TypeString)
+	}
+	if value, ok := _u.mutation.PromptCacheToolsHash(); ok {
+		_spec.SetField(usagelog.FieldPromptCacheToolsHash, field.TypeString, value)
+	}
+	if _u.mutation.PromptCacheToolsHashCleared() {
+		_spec.ClearField(usagelog.FieldPromptCacheToolsHash, field.TypeString)
+	}
+	if value, ok := _u.mutation.PromptCacheSystemHash(); ok {
+		_spec.SetField(usagelog.FieldPromptCacheSystemHash, field.TypeString, value)
+	}
+	if _u.mutation.PromptCacheSystemHashCleared() {
+		_spec.ClearField(usagelog.FieldPromptCacheSystemHash, field.TypeString)
 	}
 	if value, ok := _u.mutation.InputTokens(); ok {
 		_spec.SetField(usagelog.FieldInputTokens, field.TypeInt, value)
@@ -2731,6 +2886,106 @@ func (_u *UsageLogUpdateOne) SetNillableBillingMode(v *string) *UsageLogUpdateOn
 // ClearBillingMode clears the value of the "billing_mode" field.
 func (_u *UsageLogUpdateOne) ClearBillingMode() *UsageLogUpdateOne {
 	_u.mutation.ClearBillingMode()
+	return _u
+}
+
+// SetPromptCacheKeyHash sets the "prompt_cache_key_hash" field.
+func (_u *UsageLogUpdateOne) SetPromptCacheKeyHash(v string) *UsageLogUpdateOne {
+	_u.mutation.SetPromptCacheKeyHash(v)
+	return _u
+}
+
+// SetNillablePromptCacheKeyHash sets the "prompt_cache_key_hash" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillablePromptCacheKeyHash(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetPromptCacheKeyHash(*v)
+	}
+	return _u
+}
+
+// ClearPromptCacheKeyHash clears the value of the "prompt_cache_key_hash" field.
+func (_u *UsageLogUpdateOne) ClearPromptCacheKeyHash() *UsageLogUpdateOne {
+	_u.mutation.ClearPromptCacheKeyHash()
+	return _u
+}
+
+// SetPromptCacheKeySource sets the "prompt_cache_key_source" field.
+func (_u *UsageLogUpdateOne) SetPromptCacheKeySource(v string) *UsageLogUpdateOne {
+	_u.mutation.SetPromptCacheKeySource(v)
+	return _u
+}
+
+// SetNillablePromptCacheKeySource sets the "prompt_cache_key_source" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillablePromptCacheKeySource(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetPromptCacheKeySource(*v)
+	}
+	return _u
+}
+
+// ClearPromptCacheKeySource clears the value of the "prompt_cache_key_source" field.
+func (_u *UsageLogUpdateOne) ClearPromptCacheKeySource() *UsageLogUpdateOne {
+	_u.mutation.ClearPromptCacheKeySource()
+	return _u
+}
+
+// SetPromptCachePrefixHash sets the "prompt_cache_prefix_hash" field.
+func (_u *UsageLogUpdateOne) SetPromptCachePrefixHash(v string) *UsageLogUpdateOne {
+	_u.mutation.SetPromptCachePrefixHash(v)
+	return _u
+}
+
+// SetNillablePromptCachePrefixHash sets the "prompt_cache_prefix_hash" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillablePromptCachePrefixHash(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetPromptCachePrefixHash(*v)
+	}
+	return _u
+}
+
+// ClearPromptCachePrefixHash clears the value of the "prompt_cache_prefix_hash" field.
+func (_u *UsageLogUpdateOne) ClearPromptCachePrefixHash() *UsageLogUpdateOne {
+	_u.mutation.ClearPromptCachePrefixHash()
+	return _u
+}
+
+// SetPromptCacheToolsHash sets the "prompt_cache_tools_hash" field.
+func (_u *UsageLogUpdateOne) SetPromptCacheToolsHash(v string) *UsageLogUpdateOne {
+	_u.mutation.SetPromptCacheToolsHash(v)
+	return _u
+}
+
+// SetNillablePromptCacheToolsHash sets the "prompt_cache_tools_hash" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillablePromptCacheToolsHash(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetPromptCacheToolsHash(*v)
+	}
+	return _u
+}
+
+// ClearPromptCacheToolsHash clears the value of the "prompt_cache_tools_hash" field.
+func (_u *UsageLogUpdateOne) ClearPromptCacheToolsHash() *UsageLogUpdateOne {
+	_u.mutation.ClearPromptCacheToolsHash()
+	return _u
+}
+
+// SetPromptCacheSystemHash sets the "prompt_cache_system_hash" field.
+func (_u *UsageLogUpdateOne) SetPromptCacheSystemHash(v string) *UsageLogUpdateOne {
+	_u.mutation.SetPromptCacheSystemHash(v)
+	return _u
+}
+
+// SetNillablePromptCacheSystemHash sets the "prompt_cache_system_hash" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillablePromptCacheSystemHash(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetPromptCacheSystemHash(*v)
+	}
+	return _u
+}
+
+// ClearPromptCacheSystemHash clears the value of the "prompt_cache_system_hash" field.
+func (_u *UsageLogUpdateOne) ClearPromptCacheSystemHash() *UsageLogUpdateOne {
+	_u.mutation.ClearPromptCacheSystemHash()
 	return _u
 }
 
@@ -4316,6 +4571,31 @@ func (_u *UsageLogUpdateOne) check() error {
 			return &ValidationError{Name: "billing_mode", err: fmt.Errorf(`ent: validator failed for field "UsageLog.billing_mode": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.PromptCacheKeyHash(); ok {
+		if err := usagelog.PromptCacheKeyHashValidator(v); err != nil {
+			return &ValidationError{Name: "prompt_cache_key_hash", err: fmt.Errorf(`ent: validator failed for field "UsageLog.prompt_cache_key_hash": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.PromptCacheKeySource(); ok {
+		if err := usagelog.PromptCacheKeySourceValidator(v); err != nil {
+			return &ValidationError{Name: "prompt_cache_key_source", err: fmt.Errorf(`ent: validator failed for field "UsageLog.prompt_cache_key_source": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.PromptCachePrefixHash(); ok {
+		if err := usagelog.PromptCachePrefixHashValidator(v); err != nil {
+			return &ValidationError{Name: "prompt_cache_prefix_hash", err: fmt.Errorf(`ent: validator failed for field "UsageLog.prompt_cache_prefix_hash": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.PromptCacheToolsHash(); ok {
+		if err := usagelog.PromptCacheToolsHashValidator(v); err != nil {
+			return &ValidationError{Name: "prompt_cache_tools_hash", err: fmt.Errorf(`ent: validator failed for field "UsageLog.prompt_cache_tools_hash": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.PromptCacheSystemHash(); ok {
+		if err := usagelog.PromptCacheSystemHashValidator(v); err != nil {
+			return &ValidationError{Name: "prompt_cache_system_hash", err: fmt.Errorf(`ent: validator failed for field "UsageLog.prompt_cache_system_hash": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ClientTransport(); ok {
 		if err := usagelog.ClientTransportValidator(v); err != nil {
 			return &ValidationError{Name: "client_transport", err: fmt.Errorf(`ent: validator failed for field "UsageLog.client_transport": %w`, err)}
@@ -4461,6 +4741,36 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if _u.mutation.BillingModeCleared() {
 		_spec.ClearField(usagelog.FieldBillingMode, field.TypeString)
+	}
+	if value, ok := _u.mutation.PromptCacheKeyHash(); ok {
+		_spec.SetField(usagelog.FieldPromptCacheKeyHash, field.TypeString, value)
+	}
+	if _u.mutation.PromptCacheKeyHashCleared() {
+		_spec.ClearField(usagelog.FieldPromptCacheKeyHash, field.TypeString)
+	}
+	if value, ok := _u.mutation.PromptCacheKeySource(); ok {
+		_spec.SetField(usagelog.FieldPromptCacheKeySource, field.TypeString, value)
+	}
+	if _u.mutation.PromptCacheKeySourceCleared() {
+		_spec.ClearField(usagelog.FieldPromptCacheKeySource, field.TypeString)
+	}
+	if value, ok := _u.mutation.PromptCachePrefixHash(); ok {
+		_spec.SetField(usagelog.FieldPromptCachePrefixHash, field.TypeString, value)
+	}
+	if _u.mutation.PromptCachePrefixHashCleared() {
+		_spec.ClearField(usagelog.FieldPromptCachePrefixHash, field.TypeString)
+	}
+	if value, ok := _u.mutation.PromptCacheToolsHash(); ok {
+		_spec.SetField(usagelog.FieldPromptCacheToolsHash, field.TypeString, value)
+	}
+	if _u.mutation.PromptCacheToolsHashCleared() {
+		_spec.ClearField(usagelog.FieldPromptCacheToolsHash, field.TypeString)
+	}
+	if value, ok := _u.mutation.PromptCacheSystemHash(); ok {
+		_spec.SetField(usagelog.FieldPromptCacheSystemHash, field.TypeString, value)
+	}
+	if _u.mutation.PromptCacheSystemHashCleared() {
+		_spec.ClearField(usagelog.FieldPromptCacheSystemHash, field.TypeString)
 	}
 	if value, ok := _u.mutation.InputTokens(); ok {
 		_spec.SetField(usagelog.FieldInputTokens, field.TypeInt, value)

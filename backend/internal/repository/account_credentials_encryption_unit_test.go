@@ -31,6 +31,20 @@ func newAccountRepoEncryptedSQLite(t *testing.T) (*accountRepository, *dbent.Cli
 	drv := entsql.OpenDB(dialect.SQLite, db)
 	client := enttest.NewClient(t, enttest.WithOptions(dbent.Driver(drv)))
 	t.Cleanup(func() { _ = client.Close() })
+	_, err = db.Exec(`
+		CREATE TABLE scheduler_outbox (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			event_type TEXT NOT NULL,
+			account_id INTEGER,
+			group_id INTEGER,
+			payload TEXT,
+			dedup_key TEXT,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+		);
+		CREATE UNIQUE INDEX idx_scheduler_outbox_pending_dedup_key
+			ON scheduler_outbox (dedup_key) WHERE dedup_key IS NOT NULL;
+	`)
+	require.NoError(t, err)
 
 	return newAccountRepositoryWithSQL(client, db, nil, newTestAccountEncryptor(t)), client
 }
@@ -184,6 +198,33 @@ func TestAccountRepository_UpdateCredentialsEncryptsAndPreservesPlaintextCompati
 	require.Equal(t, "new-access-token", got.Credentials["access_token"])
 	require.Equal(t, "new-refresh-token", got.Credentials["refresh_token"])
 	require.Equal(t, "us", got.Credentials["region"])
+}
+
+func TestAccountRepository_UpdateCredentialsClearsProbeOnlyWhenPlaintextIdentityChanges(t *testing.T) {
+	repo, _ := newAccountRepoEncryptedSQLite(t)
+	ctx := context.Background()
+	account := &service.Account{
+		Name:        "encrypted-openai-apikey",
+		Platform:    service.PlatformOpenAI,
+		Type:        service.AccountTypeAPIKey,
+		Status:      service.StatusActive,
+		Schedulable: true,
+		Credentials: map[string]any{"api_key": "sk-same"},
+		Extra: map[string]any{
+			service.UpstreamBillingProbeExtraKey: map[string]any{"status": "ok"},
+		},
+	}
+	require.NoError(t, repo.Create(ctx, account))
+
+	require.NoError(t, repo.UpdateCredentials(ctx, account.ID, map[string]any{"api_key": "sk-same"}))
+	unchanged, err := repo.GetByID(ctx, account.ID)
+	require.NoError(t, err)
+	require.Contains(t, unchanged.Extra, service.UpstreamBillingProbeExtraKey)
+
+	require.NoError(t, repo.UpdateCredentials(ctx, account.ID, map[string]any{"api_key": "sk-changed"}))
+	changed, err := repo.GetByID(ctx, account.ID)
+	require.NoError(t, err)
+	require.NotContains(t, changed.Extra, service.UpstreamBillingProbeExtraKey)
 }
 
 func TestAccountCredentialStorageRoundTripKeepsJSONShape(t *testing.T) {

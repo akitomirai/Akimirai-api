@@ -21,6 +21,13 @@ func (h *OpenAIGatewayHandler) readOpenAIRequestBodyWithDiagnostics(c *gin.Conte
 	body, err := readLenientJSONRequestBodyWithPrealloc(c.Request, h.cfg)
 	if diagnostics != nil {
 		diagnostics.RecordBodyRead(time.Since(startedAt), int64(len(body)))
+		if len(body) > 0 {
+			effectiveKey := ""
+			if h != nil && h.gatewayService != nil {
+				effectiveKey = h.gatewayService.ExtractSessionID(c, body)
+			}
+			diagnostics.RecordPromptCacheDiagnostics(service.PromptCacheDiagnosticsForRequest(c, body, effectiveKey, false))
+		}
 	}
 	return body, err
 }

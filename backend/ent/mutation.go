@@ -24328,6 +24328,7 @@ type GroupMutation struct {
 	addpeak_rate_multiplier                 *float64
 	is_exclusive                            *bool
 	status                                  *string
+	duplicate_operation_id                  *string
 	platform                                *string
 	subscription_type                       *string
 	daily_limit_usd                         *float64
@@ -25002,6 +25003,55 @@ func (m *GroupMutation) OldStatus(ctx context.Context) (v string, err error) {
 // ResetStatus resets all changes to the "status" field.
 func (m *GroupMutation) ResetStatus() {
 	m.status = nil
+}
+
+// SetDuplicateOperationID sets the "duplicate_operation_id" field.
+func (m *GroupMutation) SetDuplicateOperationID(s string) {
+	m.duplicate_operation_id = &s
+}
+
+// DuplicateOperationID returns the value of the "duplicate_operation_id" field in the mutation.
+func (m *GroupMutation) DuplicateOperationID() (r string, exists bool) {
+	v := m.duplicate_operation_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDuplicateOperationID returns the old "duplicate_operation_id" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldDuplicateOperationID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDuplicateOperationID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDuplicateOperationID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDuplicateOperationID: %w", err)
+	}
+	return oldValue.DuplicateOperationID, nil
+}
+
+// ClearDuplicateOperationID clears the value of the "duplicate_operation_id" field.
+func (m *GroupMutation) ClearDuplicateOperationID() {
+	m.duplicate_operation_id = nil
+	m.clearedFields[group.FieldDuplicateOperationID] = struct{}{}
+}
+
+// DuplicateOperationIDCleared returns if the "duplicate_operation_id" field was cleared in this mutation.
+func (m *GroupMutation) DuplicateOperationIDCleared() bool {
+	_, ok := m.clearedFields[group.FieldDuplicateOperationID]
+	return ok
+}
+
+// ResetDuplicateOperationID resets all changes to the "duplicate_operation_id" field.
+func (m *GroupMutation) ResetDuplicateOperationID() {
+	m.duplicate_operation_id = nil
+	delete(m.clearedFields, group.FieldDuplicateOperationID)
 }
 
 // SetPlatform sets the "platform" field.
@@ -27234,7 +27284,7 @@ func (m *GroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroupMutation) Fields() []string {
-	fields := make([]string, 0, 48)
+	fields := make([]string, 0, 49)
 	if m.created_at != nil {
 		fields = append(fields, group.FieldCreatedAt)
 	}
@@ -27270,6 +27320,9 @@ func (m *GroupMutation) Fields() []string {
 	}
 	if m.status != nil {
 		fields = append(fields, group.FieldStatus)
+	}
+	if m.duplicate_operation_id != nil {
+		fields = append(fields, group.FieldDuplicateOperationID)
 	}
 	if m.platform != nil {
 		fields = append(fields, group.FieldPlatform)
@@ -27411,6 +27464,8 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.IsExclusive()
 	case group.FieldStatus:
 		return m.Status()
+	case group.FieldDuplicateOperationID:
+		return m.DuplicateOperationID()
 	case group.FieldPlatform:
 		return m.Platform()
 	case group.FieldSubscriptionType:
@@ -27516,6 +27571,8 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldIsExclusive(ctx)
 	case group.FieldStatus:
 		return m.OldStatus(ctx)
+	case group.FieldDuplicateOperationID:
+		return m.OldDuplicateOperationID(ctx)
 	case group.FieldPlatform:
 		return m.OldPlatform(ctx)
 	case group.FieldSubscriptionType:
@@ -27680,6 +27737,13 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatus(v)
+		return nil
+	case group.FieldDuplicateOperationID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDuplicateOperationID(v)
 		return nil
 	case group.FieldPlatform:
 		v, ok := value.(string)
@@ -28224,6 +28288,9 @@ func (m *GroupMutation) ClearedFields() []string {
 	if m.FieldCleared(group.FieldDescription) {
 		fields = append(fields, group.FieldDescription)
 	}
+	if m.FieldCleared(group.FieldDuplicateOperationID) {
+		fields = append(fields, group.FieldDuplicateOperationID)
+	}
 	if m.FieldCleared(group.FieldDailyLimitUsd) {
 		fields = append(fields, group.FieldDailyLimitUsd)
 	}
@@ -28282,6 +28349,9 @@ func (m *GroupMutation) ClearField(name string) error {
 		return nil
 	case group.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case group.FieldDuplicateOperationID:
+		m.ClearDuplicateOperationID()
 		return nil
 	case group.FieldDailyLimitUsd:
 		m.ClearDailyLimitUsd()
@@ -28365,6 +28435,9 @@ func (m *GroupMutation) ResetField(name string) error {
 		return nil
 	case group.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case group.FieldDuplicateOperationID:
+		m.ResetDuplicateOperationID()
 		return nil
 	case group.FieldPlatform:
 		m.ResetPlatform()
@@ -42006,6 +42079,7 @@ type SubscriptionPlanMutation struct {
 	addprice          *float64
 	original_price    *float64
 	addoriginal_price *float64
+	currency          *string
 	validity_days     *int
 	addvalidity_days  *int
 	validity_unit     *string
@@ -42374,6 +42448,42 @@ func (m *SubscriptionPlanMutation) ResetOriginalPrice() {
 	delete(m.clearedFields, subscriptionplan.FieldOriginalPrice)
 }
 
+// SetCurrency sets the "currency" field.
+func (m *SubscriptionPlanMutation) SetCurrency(s string) {
+	m.currency = &s
+}
+
+// Currency returns the value of the "currency" field in the mutation.
+func (m *SubscriptionPlanMutation) Currency() (r string, exists bool) {
+	v := m.currency
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCurrency returns the old "currency" field's value of the SubscriptionPlan entity.
+// If the SubscriptionPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionPlanMutation) OldCurrency(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCurrency is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCurrency requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCurrency: %w", err)
+	}
+	return oldValue.Currency, nil
+}
+
+// ResetCurrency resets all changes to the "currency" field.
+func (m *SubscriptionPlanMutation) ResetCurrency() {
+	m.currency = nil
+}
+
 // SetValidityDays sets the "validity_days" field.
 func (m *SubscriptionPlanMutation) SetValidityDays(i int) {
 	m.validity_days = &i
@@ -42736,7 +42846,7 @@ func (m *SubscriptionPlanMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SubscriptionPlanMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.group_id != nil {
 		fields = append(fields, subscriptionplan.FieldGroupID)
 	}
@@ -42751,6 +42861,9 @@ func (m *SubscriptionPlanMutation) Fields() []string {
 	}
 	if m.original_price != nil {
 		fields = append(fields, subscriptionplan.FieldOriginalPrice)
+	}
+	if m.currency != nil {
+		fields = append(fields, subscriptionplan.FieldCurrency)
 	}
 	if m.validity_days != nil {
 		fields = append(fields, subscriptionplan.FieldValidityDays)
@@ -42794,6 +42907,8 @@ func (m *SubscriptionPlanMutation) Field(name string) (ent.Value, bool) {
 		return m.Price()
 	case subscriptionplan.FieldOriginalPrice:
 		return m.OriginalPrice()
+	case subscriptionplan.FieldCurrency:
+		return m.Currency()
 	case subscriptionplan.FieldValidityDays:
 		return m.ValidityDays()
 	case subscriptionplan.FieldValidityUnit:
@@ -42829,6 +42944,8 @@ func (m *SubscriptionPlanMutation) OldField(ctx context.Context, name string) (e
 		return m.OldPrice(ctx)
 	case subscriptionplan.FieldOriginalPrice:
 		return m.OldOriginalPrice(ctx)
+	case subscriptionplan.FieldCurrency:
+		return m.OldCurrency(ctx)
 	case subscriptionplan.FieldValidityDays:
 		return m.OldValidityDays(ctx)
 	case subscriptionplan.FieldValidityUnit:
@@ -42888,6 +43005,13 @@ func (m *SubscriptionPlanMutation) SetField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetOriginalPrice(v)
+		return nil
+	case subscriptionplan.FieldCurrency:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCurrency(v)
 		return nil
 	case subscriptionplan.FieldValidityDays:
 		v, ok := value.(int)
@@ -43080,6 +43204,9 @@ func (m *SubscriptionPlanMutation) ResetField(name string) error {
 		return nil
 	case subscriptionplan.FieldOriginalPrice:
 		m.ResetOriginalPrice()
+		return nil
+	case subscriptionplan.FieldCurrency:
+		m.ResetCurrency()
 		return nil
 	case subscriptionplan.FieldValidityDays:
 		m.ResetValidityDays()
@@ -45629,6 +45756,11 @@ type UsageLogMutation struct {
 	model_mapping_chain                      *string
 	billing_tier                             *string
 	billing_mode                             *string
+	prompt_cache_key_hash                    *string
+	prompt_cache_key_source                  *string
+	prompt_cache_prefix_hash                 *string
+	prompt_cache_tools_hash                  *string
+	prompt_cache_system_hash                 *string
 	input_tokens                             *int
 	addinput_tokens                          *int
 	output_tokens                            *int
@@ -46343,6 +46475,251 @@ func (m *UsageLogMutation) BillingModeCleared() bool {
 func (m *UsageLogMutation) ResetBillingMode() {
 	m.billing_mode = nil
 	delete(m.clearedFields, usagelog.FieldBillingMode)
+}
+
+// SetPromptCacheKeyHash sets the "prompt_cache_key_hash" field.
+func (m *UsageLogMutation) SetPromptCacheKeyHash(s string) {
+	m.prompt_cache_key_hash = &s
+}
+
+// PromptCacheKeyHash returns the value of the "prompt_cache_key_hash" field in the mutation.
+func (m *UsageLogMutation) PromptCacheKeyHash() (r string, exists bool) {
+	v := m.prompt_cache_key_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPromptCacheKeyHash returns the old "prompt_cache_key_hash" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldPromptCacheKeyHash(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPromptCacheKeyHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPromptCacheKeyHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPromptCacheKeyHash: %w", err)
+	}
+	return oldValue.PromptCacheKeyHash, nil
+}
+
+// ClearPromptCacheKeyHash clears the value of the "prompt_cache_key_hash" field.
+func (m *UsageLogMutation) ClearPromptCacheKeyHash() {
+	m.prompt_cache_key_hash = nil
+	m.clearedFields[usagelog.FieldPromptCacheKeyHash] = struct{}{}
+}
+
+// PromptCacheKeyHashCleared returns if the "prompt_cache_key_hash" field was cleared in this mutation.
+func (m *UsageLogMutation) PromptCacheKeyHashCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldPromptCacheKeyHash]
+	return ok
+}
+
+// ResetPromptCacheKeyHash resets all changes to the "prompt_cache_key_hash" field.
+func (m *UsageLogMutation) ResetPromptCacheKeyHash() {
+	m.prompt_cache_key_hash = nil
+	delete(m.clearedFields, usagelog.FieldPromptCacheKeyHash)
+}
+
+// SetPromptCacheKeySource sets the "prompt_cache_key_source" field.
+func (m *UsageLogMutation) SetPromptCacheKeySource(s string) {
+	m.prompt_cache_key_source = &s
+}
+
+// PromptCacheKeySource returns the value of the "prompt_cache_key_source" field in the mutation.
+func (m *UsageLogMutation) PromptCacheKeySource() (r string, exists bool) {
+	v := m.prompt_cache_key_source
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPromptCacheKeySource returns the old "prompt_cache_key_source" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldPromptCacheKeySource(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPromptCacheKeySource is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPromptCacheKeySource requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPromptCacheKeySource: %w", err)
+	}
+	return oldValue.PromptCacheKeySource, nil
+}
+
+// ClearPromptCacheKeySource clears the value of the "prompt_cache_key_source" field.
+func (m *UsageLogMutation) ClearPromptCacheKeySource() {
+	m.prompt_cache_key_source = nil
+	m.clearedFields[usagelog.FieldPromptCacheKeySource] = struct{}{}
+}
+
+// PromptCacheKeySourceCleared returns if the "prompt_cache_key_source" field was cleared in this mutation.
+func (m *UsageLogMutation) PromptCacheKeySourceCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldPromptCacheKeySource]
+	return ok
+}
+
+// ResetPromptCacheKeySource resets all changes to the "prompt_cache_key_source" field.
+func (m *UsageLogMutation) ResetPromptCacheKeySource() {
+	m.prompt_cache_key_source = nil
+	delete(m.clearedFields, usagelog.FieldPromptCacheKeySource)
+}
+
+// SetPromptCachePrefixHash sets the "prompt_cache_prefix_hash" field.
+func (m *UsageLogMutation) SetPromptCachePrefixHash(s string) {
+	m.prompt_cache_prefix_hash = &s
+}
+
+// PromptCachePrefixHash returns the value of the "prompt_cache_prefix_hash" field in the mutation.
+func (m *UsageLogMutation) PromptCachePrefixHash() (r string, exists bool) {
+	v := m.prompt_cache_prefix_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPromptCachePrefixHash returns the old "prompt_cache_prefix_hash" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldPromptCachePrefixHash(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPromptCachePrefixHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPromptCachePrefixHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPromptCachePrefixHash: %w", err)
+	}
+	return oldValue.PromptCachePrefixHash, nil
+}
+
+// ClearPromptCachePrefixHash clears the value of the "prompt_cache_prefix_hash" field.
+func (m *UsageLogMutation) ClearPromptCachePrefixHash() {
+	m.prompt_cache_prefix_hash = nil
+	m.clearedFields[usagelog.FieldPromptCachePrefixHash] = struct{}{}
+}
+
+// PromptCachePrefixHashCleared returns if the "prompt_cache_prefix_hash" field was cleared in this mutation.
+func (m *UsageLogMutation) PromptCachePrefixHashCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldPromptCachePrefixHash]
+	return ok
+}
+
+// ResetPromptCachePrefixHash resets all changes to the "prompt_cache_prefix_hash" field.
+func (m *UsageLogMutation) ResetPromptCachePrefixHash() {
+	m.prompt_cache_prefix_hash = nil
+	delete(m.clearedFields, usagelog.FieldPromptCachePrefixHash)
+}
+
+// SetPromptCacheToolsHash sets the "prompt_cache_tools_hash" field.
+func (m *UsageLogMutation) SetPromptCacheToolsHash(s string) {
+	m.prompt_cache_tools_hash = &s
+}
+
+// PromptCacheToolsHash returns the value of the "prompt_cache_tools_hash" field in the mutation.
+func (m *UsageLogMutation) PromptCacheToolsHash() (r string, exists bool) {
+	v := m.prompt_cache_tools_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPromptCacheToolsHash returns the old "prompt_cache_tools_hash" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldPromptCacheToolsHash(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPromptCacheToolsHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPromptCacheToolsHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPromptCacheToolsHash: %w", err)
+	}
+	return oldValue.PromptCacheToolsHash, nil
+}
+
+// ClearPromptCacheToolsHash clears the value of the "prompt_cache_tools_hash" field.
+func (m *UsageLogMutation) ClearPromptCacheToolsHash() {
+	m.prompt_cache_tools_hash = nil
+	m.clearedFields[usagelog.FieldPromptCacheToolsHash] = struct{}{}
+}
+
+// PromptCacheToolsHashCleared returns if the "prompt_cache_tools_hash" field was cleared in this mutation.
+func (m *UsageLogMutation) PromptCacheToolsHashCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldPromptCacheToolsHash]
+	return ok
+}
+
+// ResetPromptCacheToolsHash resets all changes to the "prompt_cache_tools_hash" field.
+func (m *UsageLogMutation) ResetPromptCacheToolsHash() {
+	m.prompt_cache_tools_hash = nil
+	delete(m.clearedFields, usagelog.FieldPromptCacheToolsHash)
+}
+
+// SetPromptCacheSystemHash sets the "prompt_cache_system_hash" field.
+func (m *UsageLogMutation) SetPromptCacheSystemHash(s string) {
+	m.prompt_cache_system_hash = &s
+}
+
+// PromptCacheSystemHash returns the value of the "prompt_cache_system_hash" field in the mutation.
+func (m *UsageLogMutation) PromptCacheSystemHash() (r string, exists bool) {
+	v := m.prompt_cache_system_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPromptCacheSystemHash returns the old "prompt_cache_system_hash" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldPromptCacheSystemHash(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPromptCacheSystemHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPromptCacheSystemHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPromptCacheSystemHash: %w", err)
+	}
+	return oldValue.PromptCacheSystemHash, nil
+}
+
+// ClearPromptCacheSystemHash clears the value of the "prompt_cache_system_hash" field.
+func (m *UsageLogMutation) ClearPromptCacheSystemHash() {
+	m.prompt_cache_system_hash = nil
+	m.clearedFields[usagelog.FieldPromptCacheSystemHash] = struct{}{}
+}
+
+// PromptCacheSystemHashCleared returns if the "prompt_cache_system_hash" field was cleared in this mutation.
+func (m *UsageLogMutation) PromptCacheSystemHashCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldPromptCacheSystemHash]
+	return ok
+}
+
+// ResetPromptCacheSystemHash resets all changes to the "prompt_cache_system_hash" field.
+func (m *UsageLogMutation) ResetPromptCacheSystemHash() {
+	m.prompt_cache_system_hash = nil
+	delete(m.clearedFields, usagelog.FieldPromptCacheSystemHash)
 }
 
 // SetGroupID sets the "group_id" field.
@@ -50314,7 +50691,7 @@ func (m *UsageLogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UsageLogMutation) Fields() []string {
-	fields := make([]string, 0, 76)
+	fields := make([]string, 0, 81)
 	if m.user != nil {
 		fields = append(fields, usagelog.FieldUserID)
 	}
@@ -50347,6 +50724,21 @@ func (m *UsageLogMutation) Fields() []string {
 	}
 	if m.billing_mode != nil {
 		fields = append(fields, usagelog.FieldBillingMode)
+	}
+	if m.prompt_cache_key_hash != nil {
+		fields = append(fields, usagelog.FieldPromptCacheKeyHash)
+	}
+	if m.prompt_cache_key_source != nil {
+		fields = append(fields, usagelog.FieldPromptCacheKeySource)
+	}
+	if m.prompt_cache_prefix_hash != nil {
+		fields = append(fields, usagelog.FieldPromptCachePrefixHash)
+	}
+	if m.prompt_cache_tools_hash != nil {
+		fields = append(fields, usagelog.FieldPromptCacheToolsHash)
+	}
+	if m.prompt_cache_system_hash != nil {
+		fields = append(fields, usagelog.FieldPromptCacheSystemHash)
 	}
 	if m.group != nil {
 		fields = append(fields, usagelog.FieldGroupID)
@@ -50573,6 +50965,16 @@ func (m *UsageLogMutation) Field(name string) (ent.Value, bool) {
 		return m.BillingTier()
 	case usagelog.FieldBillingMode:
 		return m.BillingMode()
+	case usagelog.FieldPromptCacheKeyHash:
+		return m.PromptCacheKeyHash()
+	case usagelog.FieldPromptCacheKeySource:
+		return m.PromptCacheKeySource()
+	case usagelog.FieldPromptCachePrefixHash:
+		return m.PromptCachePrefixHash()
+	case usagelog.FieldPromptCacheToolsHash:
+		return m.PromptCacheToolsHash()
+	case usagelog.FieldPromptCacheSystemHash:
+		return m.PromptCacheSystemHash()
 	case usagelog.FieldGroupID:
 		return m.GroupID()
 	case usagelog.FieldSubscriptionID:
@@ -50734,6 +51136,16 @@ func (m *UsageLogMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldBillingTier(ctx)
 	case usagelog.FieldBillingMode:
 		return m.OldBillingMode(ctx)
+	case usagelog.FieldPromptCacheKeyHash:
+		return m.OldPromptCacheKeyHash(ctx)
+	case usagelog.FieldPromptCacheKeySource:
+		return m.OldPromptCacheKeySource(ctx)
+	case usagelog.FieldPromptCachePrefixHash:
+		return m.OldPromptCachePrefixHash(ctx)
+	case usagelog.FieldPromptCacheToolsHash:
+		return m.OldPromptCacheToolsHash(ctx)
+	case usagelog.FieldPromptCacheSystemHash:
+		return m.OldPromptCacheSystemHash(ctx)
 	case usagelog.FieldGroupID:
 		return m.OldGroupID(ctx)
 	case usagelog.FieldSubscriptionID:
@@ -50949,6 +51361,41 @@ func (m *UsageLogMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetBillingMode(v)
+		return nil
+	case usagelog.FieldPromptCacheKeyHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPromptCacheKeyHash(v)
+		return nil
+	case usagelog.FieldPromptCacheKeySource:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPromptCacheKeySource(v)
+		return nil
+	case usagelog.FieldPromptCachePrefixHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPromptCachePrefixHash(v)
+		return nil
+	case usagelog.FieldPromptCacheToolsHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPromptCacheToolsHash(v)
+		return nil
+	case usagelog.FieldPromptCacheSystemHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPromptCacheSystemHash(v)
 		return nil
 	case usagelog.FieldGroupID:
 		v, ok := value.(int64)
@@ -51984,6 +52431,21 @@ func (m *UsageLogMutation) ClearedFields() []string {
 	if m.FieldCleared(usagelog.FieldBillingMode) {
 		fields = append(fields, usagelog.FieldBillingMode)
 	}
+	if m.FieldCleared(usagelog.FieldPromptCacheKeyHash) {
+		fields = append(fields, usagelog.FieldPromptCacheKeyHash)
+	}
+	if m.FieldCleared(usagelog.FieldPromptCacheKeySource) {
+		fields = append(fields, usagelog.FieldPromptCacheKeySource)
+	}
+	if m.FieldCleared(usagelog.FieldPromptCachePrefixHash) {
+		fields = append(fields, usagelog.FieldPromptCachePrefixHash)
+	}
+	if m.FieldCleared(usagelog.FieldPromptCacheToolsHash) {
+		fields = append(fields, usagelog.FieldPromptCacheToolsHash)
+	}
+	if m.FieldCleared(usagelog.FieldPromptCacheSystemHash) {
+		fields = append(fields, usagelog.FieldPromptCacheSystemHash)
+	}
 	if m.FieldCleared(usagelog.FieldGroupID) {
 		fields = append(fields, usagelog.FieldGroupID)
 	}
@@ -52144,6 +52606,21 @@ func (m *UsageLogMutation) ClearField(name string) error {
 		return nil
 	case usagelog.FieldBillingMode:
 		m.ClearBillingMode()
+		return nil
+	case usagelog.FieldPromptCacheKeyHash:
+		m.ClearPromptCacheKeyHash()
+		return nil
+	case usagelog.FieldPromptCacheKeySource:
+		m.ClearPromptCacheKeySource()
+		return nil
+	case usagelog.FieldPromptCachePrefixHash:
+		m.ClearPromptCachePrefixHash()
+		return nil
+	case usagelog.FieldPromptCacheToolsHash:
+		m.ClearPromptCacheToolsHash()
+		return nil
+	case usagelog.FieldPromptCacheSystemHash:
+		m.ClearPromptCacheSystemHash()
 		return nil
 	case usagelog.FieldGroupID:
 		m.ClearGroupID()
@@ -52314,6 +52791,21 @@ func (m *UsageLogMutation) ResetField(name string) error {
 		return nil
 	case usagelog.FieldBillingMode:
 		m.ResetBillingMode()
+		return nil
+	case usagelog.FieldPromptCacheKeyHash:
+		m.ResetPromptCacheKeyHash()
+		return nil
+	case usagelog.FieldPromptCacheKeySource:
+		m.ResetPromptCacheKeySource()
+		return nil
+	case usagelog.FieldPromptCachePrefixHash:
+		m.ResetPromptCachePrefixHash()
+		return nil
+	case usagelog.FieldPromptCacheToolsHash:
+		m.ResetPromptCacheToolsHash()
+		return nil
+	case usagelog.FieldPromptCacheSystemHash:
+		m.ResetPromptCacheSystemHash()
 		return nil
 	case usagelog.FieldGroupID:
 		m.ResetGroupID()

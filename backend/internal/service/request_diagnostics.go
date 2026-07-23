@@ -86,6 +86,7 @@ type RequestDiagnosticsSnapshot struct {
 	RetryCount                        int
 	AccountSwitchCount                int
 	AttemptTimeline                   []RequestAttemptEvent
+	PromptCache                       PromptCacheDiagnostics
 }
 
 type requestDiagnosticsSelectedAccount struct {
@@ -102,6 +103,7 @@ type RequestDiagnostics struct {
 	requestBodyReadMs   *int
 	requestBodyBytes    *int64
 	requestFirstTokenMs *int
+	promptCache         PromptCacheDiagnostics
 
 	selectedAccounts map[int64]requestDiagnosticsSelectedAccount
 	lastAccountID    int64
@@ -181,6 +183,30 @@ func (d *RequestDiagnostics) RecordBodyRead(duration time.Duration, bytes int64)
 	d.mu.Lock()
 	d.requestBodyReadMs = &durationMs
 	d.requestBodyBytes = &bytes
+	d.mu.Unlock()
+}
+
+func (d *RequestDiagnostics) RecordPromptCacheDiagnostics(value PromptCacheDiagnostics) {
+	if d == nil {
+		return
+	}
+	value.Source = normalizePromptCacheKeySource(value.Source)
+	d.mu.Lock()
+	if value.KeyHash != "" || value.Source != PromptCacheKeySourceNone {
+		d.promptCache.KeyHash = value.KeyHash
+		d.promptCache.Source = value.Source
+	} else if d.promptCache.Source == "" {
+		d.promptCache.Source = PromptCacheKeySourceNone
+	}
+	if value.PrefixHash != "" {
+		d.promptCache.PrefixHash = value.PrefixHash
+	}
+	if value.ToolsHash != "" {
+		d.promptCache.ToolsHash = value.ToolsHash
+	}
+	if value.SystemHash != "" {
+		d.promptCache.SystemHash = value.SystemHash
+	}
 	d.mu.Unlock()
 }
 
@@ -484,6 +510,7 @@ func (d *RequestDiagnostics) SnapshotAt(completedAt time.Time, fallbackAccount *
 		RequestFirstTokenMs: cloneInt(d.requestFirstTokenMs),
 		RetryCount:          d.retryCount,
 		AccountSwitchCount:  d.accountSwitches,
+		PromptCache:         d.promptCache,
 	}
 	if d.finalAttempt != nil {
 		snapshot.Route = cloneRequestRouteSnapshot(d.finalAttempt.Route)

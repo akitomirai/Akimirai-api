@@ -40,7 +40,7 @@ const item: ModelCatalogItem = {
       }],
       pricing: {
         billing_mode: 'token', input_price: 0.000005, output_price: 0.00003,
-        cache_write_price: null, cache_read_price: 0.0000005, image_output_price: null,
+        cache_write_price: null, cache_read_price: 0.0000005, image_input_price: null, image_output_price: null,
         per_request_price: null, intervals: [],
       },
     },
@@ -62,7 +62,7 @@ const item: ModelCatalogItem = {
       }],
       pricing: {
         billing_mode: 'token', input_price: 0.000004, output_price: 0.000025,
-        cache_write_price: null, cache_read_price: 0.0000004, image_output_price: null,
+        cache_write_price: null, cache_read_price: 0.0000004, image_input_price: null, image_output_price: null,
         per_request_price: null, intervals: [],
       },
     },

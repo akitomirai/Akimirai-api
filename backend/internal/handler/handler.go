@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/Wei-Shaw/sub2api/internal/handler/admin"
+	"github.com/Wei-Shaw/sub2api/internal/securityaudit"
 )
 
 // AdminHandlers contains all admin-related HTTP handlers
@@ -35,15 +36,19 @@ type AdminHandlers struct {
 	ChannelMonitor         *admin.ChannelMonitorHandler
 	ChannelMonitorTemplate *admin.ChannelMonitorRequestTemplateHandler
 	ContentModeration      *admin.ContentModerationHandler
+	PromptAudit            *securityaudit.PromptAdminHandler
 	Payment                *admin.PaymentHandler
 	Affiliate              *admin.AffiliateHandler
 	Compliance             *admin.ComplianceHandler
+	AuditLog               *admin.AuditLogHandler
+	DailyCheckIn           *admin.DailyCheckInHandler
 }
 
 // Handlers contains all HTTP handlers
 type Handlers struct {
 	Auth             *AuthHandler
 	User             *UserHandler
+	DailyCheckIn     *DailyCheckInHandler
 	APIKey           *APIKeyHandler
 	Usage            *UsageHandler
 	Redeem           *RedeemHandler
@@ -58,6 +63,7 @@ type Handlers struct {
 	Payment          *PaymentHandler
 	PaymentWebhook   *PaymentWebhookHandler
 	AvailableChannel *AvailableChannelHandler
+	AsyncImage       *AsyncImageHandler
 	BatchImage       *BatchImageHandler
 }
 

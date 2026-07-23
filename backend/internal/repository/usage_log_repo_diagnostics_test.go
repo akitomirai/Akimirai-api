@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"strings"
 	"testing"
 	"time"
 
@@ -34,6 +35,11 @@ func TestPrepareUsageLogInsertIncludesDiagnosticsInCanonicalOrder(t *testing.T) 
 	proxyProtocol := "socks5"
 	fingerprint := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 	status := 200
+	promptCacheKeyHash := strings.Repeat("a", 64)
+	promptCacheKeySource := string(service.PromptCacheKeySourceClientHeader)
+	promptCachePrefixHash := strings.Repeat("b", 64)
+	promptCacheToolsHash := strings.Repeat("c", 64)
+	promptCacheSystemHash := strings.Repeat("d", 64)
 	log := &service.UsageLog{
 		UserID:                            1,
 		APIKeyID:                          2,
@@ -65,6 +71,11 @@ func TestPrepareUsageLogInsertIncludesDiagnosticsInCanonicalOrder(t *testing.T) 
 		FinalUpstreamStatus:               &status,
 		RetryCount:                        2,
 		AccountSwitchCount:                1,
+		PromptCacheKeyHash:                &promptCacheKeyHash,
+		PromptCacheKeySource:              &promptCacheKeySource,
+		PromptCachePrefixHash:             &promptCachePrefixHash,
+		PromptCacheToolsHash:              &promptCacheToolsHash,
+		PromptCacheSystemHash:             &promptCacheSystemHash,
 		AttemptTimeline: []service.RequestAttemptEvent{{
 			Sequence:      1,
 			AccountID:     3,
@@ -78,37 +89,42 @@ func TestPrepareUsageLogInsertIncludesDiagnosticsInCanonicalOrder(t *testing.T) 
 	prepared := prepareUsageLogInsert(log)
 
 	require.Len(t, prepared.args, len(usageLogInsertArgTypes))
-	require.Equal(t, &startedAt, prepared.args[36])
-	require.Equal(t, sql.NullInt64{Int64: int64(requestTotalMs), Valid: true}, prepared.args[37])
-	require.Equal(t, sql.NullInt64{Int64: int64(bodyReadMs), Valid: true}, prepared.args[38])
-	require.Equal(t, sql.NullInt64{Int64: bodyBytes, Valid: true}, prepared.args[39])
-	require.Equal(t, sql.NullBool{Bool: connectionReused, Valid: true}, prepared.args[40])
-	require.Equal(t, sql.NullInt64{Int64: int64(connectionReadyMs), Valid: true}, prepared.args[41])
-	require.Equal(t, sql.NullInt64{Int64: int64(dnsLookupMs), Valid: true}, prepared.args[42])
-	require.Equal(t, sql.NullInt64{Int64: int64(tcpConnectMs), Valid: true}, prepared.args[43])
-	require.Equal(t, sql.NullInt64{Int64: int64(tlsHandshakeMs), Valid: true}, prepared.args[44])
-	require.Equal(t, sql.NullInt64{Int64: int64(requestHeadersWrittenMs), Valid: true}, prepared.args[45])
-	require.Equal(t, sql.NullInt64{Int64: int64(requestWrittenMs), Valid: true}, prepared.args[46])
-	require.Equal(t, sql.NullInt64{Int64: int64(firstByteMs), Valid: true}, prepared.args[47])
-	require.Equal(t, sql.NullInt64{Int64: int64(responseHeadersReceivedMs), Valid: true}, prepared.args[48])
-	require.Equal(t, sql.NullInt64{Int64: int64(responseBodyFirstByteMs), Valid: true}, prepared.args[49])
-	require.Equal(t, sql.NullInt64{Int64: int64(firstEventMs), Valid: true}, prepared.args[50])
-	require.Equal(t, sql.NullInt64{Int64: int64(firstOutputCharacterMs), Valid: true}, prepared.args[51])
-	require.Equal(t, sql.NullInt64{Int64: int64(requestFirstTokenMs), Valid: true}, prepared.args[52])
-	require.Equal(t, sql.NullString{String: routeKind, Valid: true}, prepared.args[53])
-	require.Equal(t, sql.NullInt64{Int64: proxyID, Valid: true}, prepared.args[54])
-	require.Equal(t, sql.NullString{String: proxyName, Valid: true}, prepared.args[55])
-	require.Equal(t, sql.NullString{String: proxyProtocol, Valid: true}, prepared.args[56])
-	require.Equal(t, sql.NullString{String: fingerprint, Valid: true}, prepared.args[57])
-	require.Equal(t, sql.NullInt64{Int64: int64(status), Valid: true}, prepared.args[58])
-	require.Equal(t, 2, prepared.args[59])
-	require.Equal(t, 1, prepared.args[60])
-	timelineJSON, ok := prepared.args[61].(string)
+	require.Equal(t, &startedAt, prepared.args[38])
+	require.Equal(t, sql.NullInt64{Int64: int64(requestTotalMs), Valid: true}, prepared.args[39])
+	require.Equal(t, sql.NullInt64{Int64: int64(bodyReadMs), Valid: true}, prepared.args[40])
+	require.Equal(t, sql.NullInt64{Int64: bodyBytes, Valid: true}, prepared.args[41])
+	require.Equal(t, sql.NullBool{Bool: connectionReused, Valid: true}, prepared.args[42])
+	require.Equal(t, sql.NullInt64{Int64: int64(connectionReadyMs), Valid: true}, prepared.args[43])
+	require.Equal(t, sql.NullInt64{Int64: int64(dnsLookupMs), Valid: true}, prepared.args[44])
+	require.Equal(t, sql.NullInt64{Int64: int64(tcpConnectMs), Valid: true}, prepared.args[45])
+	require.Equal(t, sql.NullInt64{Int64: int64(tlsHandshakeMs), Valid: true}, prepared.args[46])
+	require.Equal(t, sql.NullInt64{Int64: int64(requestHeadersWrittenMs), Valid: true}, prepared.args[47])
+	require.Equal(t, sql.NullInt64{Int64: int64(requestWrittenMs), Valid: true}, prepared.args[48])
+	require.Equal(t, sql.NullInt64{Int64: int64(firstByteMs), Valid: true}, prepared.args[49])
+	require.Equal(t, sql.NullInt64{Int64: int64(responseHeadersReceivedMs), Valid: true}, prepared.args[50])
+	require.Equal(t, sql.NullInt64{Int64: int64(responseBodyFirstByteMs), Valid: true}, prepared.args[51])
+	require.Equal(t, sql.NullInt64{Int64: int64(firstEventMs), Valid: true}, prepared.args[52])
+	require.Equal(t, sql.NullInt64{Int64: int64(firstOutputCharacterMs), Valid: true}, prepared.args[53])
+	require.Equal(t, sql.NullInt64{Int64: int64(requestFirstTokenMs), Valid: true}, prepared.args[54])
+	require.Equal(t, sql.NullString{String: routeKind, Valid: true}, prepared.args[55])
+	require.Equal(t, sql.NullInt64{Int64: proxyID, Valid: true}, prepared.args[56])
+	require.Equal(t, sql.NullString{String: proxyName, Valid: true}, prepared.args[57])
+	require.Equal(t, sql.NullString{String: proxyProtocol, Valid: true}, prepared.args[58])
+	require.Equal(t, sql.NullString{String: fingerprint, Valid: true}, prepared.args[59])
+	require.Equal(t, sql.NullInt64{Int64: int64(status), Valid: true}, prepared.args[60])
+	require.Equal(t, 2, prepared.args[61])
+	require.Equal(t, 1, prepared.args[62])
+	timelineJSON, ok := prepared.args[63].(string)
 	require.True(t, ok)
 	require.NotContains(t, timelineJSON, "proxy.example.test")
 	require.NotContains(t, timelineJSON, "user")
 	require.NotContains(t, timelineJSON, "pass")
 	require.NotContains(t, timelineJSON, "secret")
+	require.Equal(t, sql.NullString{String: promptCacheKeyHash, Valid: true}, prepared.args[86])
+	require.Equal(t, sql.NullString{String: promptCacheKeySource, Valid: true}, prepared.args[87])
+	require.Equal(t, sql.NullString{String: promptCachePrefixHash, Valid: true}, prepared.args[88])
+	require.Equal(t, sql.NullString{String: promptCacheToolsHash, Valid: true}, prepared.args[89])
+	require.Equal(t, sql.NullString{String: promptCacheSystemHash, Valid: true}, prepared.args[90])
 }
 
 func TestRequestAttemptTimelineJSONRoundTripAndCap(t *testing.T) {

@@ -60,6 +60,11 @@ describe('UsageDiagnosticsDrawer', () => {
       route_fingerprint: '1234567890abcdef',
       retry_count: 1,
       account_switch_count: 0,
+      prompt_cache_key_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      prompt_cache_key_source: 'client_header',
+      prompt_cache_prefix_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      prompt_cache_tools_hash: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+      prompt_cache_system_hash: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
       account_id: 3,
       attempt_timeline: [],
     })
@@ -74,6 +79,9 @@ describe('UsageDiagnosticsDrawer', () => {
     expect(wrapper.text()).toContain('req-diagnostics')
     expect(wrapper.text()).toContain('jp-egress #8 (socks5)')
     expect(wrapper.text()).toContain('12345678')
+    expect(wrapper.get('[data-testid="prompt-cache-diagnostics"]').text()).toContain('admin.usage.diagnostics.promptCacheSource.client_header')
+    expect(wrapper.get('[data-testid="prompt-cache-diagnostics"]').text()).toContain('aaaaaaaaaaaa')
+    expect(wrapper.get('[data-testid="prompt-cache-diagnostics"]').text()).toContain('bbbbbbbbbbbb')
     for (const checkpoint of [
       'bodyRead',
       'routing',

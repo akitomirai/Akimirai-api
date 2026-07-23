@@ -2,6 +2,7 @@ package dto
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -256,6 +257,9 @@ func TestUsageDiagnosticsFromServiceAdminKeepsDiagnosticsOutOfUserDTO(t *testing
 	firstOutputCharacterMs := 800
 	routeKind := service.RequestRouteKindProxy
 	proxyName := "jp-egress"
+	promptCacheKeyHash := strings.Repeat("a", 64)
+	promptCacheKeySource := string(service.PromptCacheKeySourceClientHeader)
+	promptCachePrefixHash := strings.Repeat("b", 64)
 	log := &service.UsageLog{
 		RequestID:                     "req-admin-diagnostics",
 		Model:                         "gpt-5.6-sol",
@@ -267,6 +271,9 @@ func TestUsageDiagnosticsFromServiceAdminKeepsDiagnosticsOutOfUserDTO(t *testing
 		RequestFirstTokenMs:           &requestFirstTokenMs,
 		RouteKind:                     &routeKind,
 		ProxyNameSnapshot:             &proxyName,
+		PromptCacheKeyHash:            &promptCacheKeyHash,
+		PromptCacheKeySource:          &promptCacheKeySource,
+		PromptCachePrefixHash:         &promptCachePrefixHash,
 		RetryCount:                    1,
 		AttemptTimeline: []service.RequestAttemptEvent{{
 			Sequence:               1,
@@ -289,6 +296,9 @@ func TestUsageDiagnosticsFromServiceAdminKeepsDiagnosticsOutOfUserDTO(t *testing
 		"route_kind",
 		"proxy_name_snapshot",
 		"attempt_timeline",
+		"prompt_cache_key_hash",
+		"prompt_cache_key_source",
+		"prompt_cache_prefix_hash",
 	} {
 		require.NotContains(t, string(userJSON), field)
 	}
@@ -303,6 +313,9 @@ func TestUsageDiagnosticsFromServiceAdminKeepsDiagnosticsOutOfUserDTO(t *testing
 	require.Contains(t, string(adminJSON), `"request_first_output_character_ms":800`)
 	require.Contains(t, string(adminJSON), `"proxy_name_snapshot":"jp-egress"`)
 	require.Contains(t, string(adminJSON), `"attempt_timeline"`)
+	require.Contains(t, string(adminJSON), `"prompt_cache_key_hash":"`+promptCacheKeyHash+`"`)
+	require.Contains(t, string(adminJSON), `"prompt_cache_key_source":"client_header"`)
+	require.Contains(t, string(adminJSON), `"prompt_cache_prefix_hash":"`+promptCachePrefixHash+`"`)
 	require.NotContains(t, string(adminJSON), "proxy.example.test")
 	require.NotContains(t, string(adminJSON), "secret")
 }

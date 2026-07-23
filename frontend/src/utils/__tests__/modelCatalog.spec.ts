@@ -53,6 +53,7 @@ const catalogPayload: UserModelCatalogItem[] = [
       output_price: 0.000002,
       cache_write_price: null,
       cache_read_price: null,
+      image_input_price: 0.000004,
       image_output_price: null,
       per_request_price: null,
       intervals: [],
@@ -81,6 +82,7 @@ const catalogPayload: UserModelCatalogItem[] = [
           output_price: 0.000002,
           cache_write_price: null,
           cache_read_price: null,
+          image_input_price: 0.000004,
           image_output_price: null,
           per_request_price: null,
           intervals: [],
@@ -137,8 +139,7 @@ describe('modelCatalog', () => {
           }],
           pricing: {
             ...firstOffer.pricing!,
-            input_price: 0.000003,
-            output_price: 0.000006,
+            image_input_price: 0.000006,
           },
         },
       ],
@@ -149,9 +150,10 @@ describe('modelCatalog', () => {
       channel: offer.channel,
       group: offer.groups[0].name,
       input: offer.pricing?.input_price,
+      imageInput: offer.pricing?.image_input_price,
     }))).toEqual([
-      { channel: 'channel-a', group: 'Pro', input: 0.000001 },
-      { channel: 'channel-b', group: 'Basic', input: 0.000003 },
+      { channel: 'channel-a', group: 'Pro', input: 0.000001, imageInput: 0.000004 },
+      { channel: 'channel-b', group: 'Basic', input: 0.000001, imageInput: 0.000006 },
     ])
     expect(getModelPricingSummary(catalog[0])).toMatchObject({ kind: 'multiple', pricedOfferCount: 2 })
     expect(filterModelCatalogItems(catalog, { group: 'Basic' })).toHaveLength(1)

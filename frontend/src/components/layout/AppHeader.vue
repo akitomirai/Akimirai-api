@@ -6,7 +6,7 @@
         <button
           @click="toggleMobileSidebar"
           class="btn-ghost btn-icon lg:hidden"
-          aria-label="Toggle Menu"
+          :aria-label="t('common.toggleMenu')"
         >
           <Icon name="menu" size="md" />
         </button>
@@ -32,6 +32,26 @@
 
       <!-- Right: Announcements + Docs + Language + Subscriptions + Balance + User Dropdown -->
       <div class="flex shrink-0 items-center gap-3">
+        <button
+          v-if="user"
+          data-testid="daily-check-in-desktop"
+          type="button"
+          class="hidden xl:inline-flex h-9 min-w-[7.25rem] items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-default dark:focus-visible:ring-offset-dark-900"
+          :class="checkInButtonClass"
+          :disabled="checkInDisabled"
+          :aria-busy="checkInBusy"
+          :title="checkInTitle"
+          aria-live="polite"
+          @click="handleCheckInAction"
+        >
+          <Icon
+            :name="checkInIcon"
+            size="sm"
+            :class="{ 'animate-spin': checkInBusy }"
+          />
+          <span class="whitespace-nowrap">{{ checkInLabel }}</span>
+        </button>
+
         <button
           v-if="user && modelPlazaEnabled"
           type="button"
@@ -126,7 +146,7 @@ class="group relative hidden items-center gap-2 rounded-xl bg-primary-50 px-3 py
           <button
             @click="toggleDropdown"
             class="flex items-center gap-2 rounded-xl p-1.5 transition-colors hover:bg-gray-100 dark:hover:bg-dark-800"
-            aria-label="User Menu"
+            :aria-label="t('common.userMenu')"
           >
             <div class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-sm font-medium text-white shadow-sm">
               <img
@@ -170,6 +190,27 @@ class="group relative hidden items-center gap-2 rounded-xl bg-primary-50 px-3 py
                 <div v-if="frozenBalance > 0" class="mt-1 text-xs text-amber-600 dark:text-amber-300">
                   {{ balanceFrozenText }} {{ formatHeaderMoney(frozenBalance) }}
                 </div>
+              </div>
+
+              <div class="border-b border-gray-100 py-1 dark:border-dark-700 xl:hidden">
+                <button
+                  data-testid="daily-check-in-mobile"
+                  type="button"
+                  class="flex h-10 w-full items-center gap-2 px-4 text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 disabled:cursor-default"
+                  :class="checkInMobileButtonClass"
+                  :disabled="checkInDisabled"
+                  :aria-busy="checkInBusy"
+                  :title="checkInTitle"
+                  aria-live="polite"
+                  @click.stop="handleCheckInAction"
+                >
+                  <Icon
+                    :name="checkInIcon"
+                    size="sm"
+                    :class="{ 'animate-spin': checkInBusy }"
+                  />
+                  <span class="min-w-0 flex-1 truncate">{{ checkInLabel }}</span>
+                </button>
               </div>
 
               <div class="py-1">
@@ -283,6 +324,7 @@ import Icon from '@/components/icons/Icon.vue'
 import { sanitizeUrl } from '@/utils/url'
 import { FeatureFlags, isFeatureFlagEnabled } from '@/utils/featureFlags'
 import { createFeatureReturnNavigation } from '@/utils/featureReturnNavigation'
+import { useDailyCheckIn } from '@/composables/useDailyCheckIn'
 
 interface HeaderQuote {
   text: string
@@ -316,6 +358,11 @@ const appStore = useAppStore()
 const authStore = useAuthStore()
 const adminSettingsStore = useAdminSettingsStore()
 const onboardingStore = useOnboardingStore()
+const {
+  phase: checkInPhase,
+  status: checkInStatus,
+  handleAction: handleCheckInAction,
+} = useDailyCheckIn({ authStore, appStore })
 
 const user = computed(() => authStore.user)
 const dropdownOpen = ref(false)
@@ -335,6 +382,80 @@ const balanceAvailableText = computed(() => t('common.availableBalance') === 'co
 const balanceFrozenText = computed(() => t('common.frozenBalance') === 'common.frozenBalance' ? '冻结金额' : t('common.frozenBalance'))
 const balanceTotalText = computed(() => t('common.totalBalance') === 'common.totalBalance' ? '总余额' : t('common.totalBalance'))
 const balanceFrozenLabel = computed(() => `${balanceFrozenText.value} ${formatHeaderMoney(frozenBalance.value)}`)
+const checkInBusy = computed(() => checkInPhase.value === 'loading' || checkInPhase.value === 'claiming')
+const checkInDisabled = computed(() => checkInBusy.value || checkInPhase.value === 'claimed')
+const checkInIcon = computed(() => {
+  switch (checkInPhase.value) {
+    case 'loading':
+    case 'claiming':
+      return 'refresh'
+    case 'claimed':
+      return 'checkCircle'
+    case 'error':
+      return 'exclamationCircle'
+    case 'available':
+      return 'gift'
+  }
+  return 'gift'
+})
+const checkInLabel = computed(() => {
+  switch (checkInPhase.value) {
+    case 'loading':
+      return t('checkIn.loading')
+    case 'claiming':
+      return t('checkIn.claiming')
+    case 'claimed':
+      return t('checkIn.claimed', { amount: formatCheckInReward(checkInStatus.value?.reward_amount ?? 0) })
+    case 'error':
+      return t('checkIn.error')
+    case 'available':
+      return t('checkIn.available')
+  }
+  return t('checkIn.available')
+})
+const checkInTitle = computed(() => {
+  switch (checkInPhase.value) {
+    case 'claimed':
+      return t('checkIn.claimedTitle', { amount: formatCheckInReward(checkInStatus.value?.reward_amount ?? 0) })
+    case 'error':
+      return t('checkIn.errorTitle')
+    case 'available':
+      return t('checkIn.availableTitle')
+    case 'loading':
+      return t('checkIn.loading')
+    case 'claiming':
+      return t('checkIn.claiming')
+  }
+  return t('checkIn.availableTitle')
+})
+const checkInButtonClass = computed(() => {
+  switch (checkInPhase.value) {
+    case 'available':
+      return 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/25 dark:text-emerald-300 dark:hover:bg-emerald-900/40'
+    case 'claimed':
+      return 'bg-gray-100 text-gray-600 dark:bg-dark-800 dark:text-dark-300'
+    case 'error':
+      return 'bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/25 dark:text-red-300 dark:hover:bg-red-900/40'
+    case 'loading':
+    case 'claiming':
+      return 'bg-gray-50 text-gray-500 dark:bg-dark-800 dark:text-dark-400'
+  }
+  return 'bg-gray-50 text-gray-500 dark:bg-dark-800 dark:text-dark-400'
+})
+const checkInMobileButtonClass = computed(() => {
+  switch (checkInPhase.value) {
+    case 'available':
+      return 'text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-900/20'
+    case 'claimed':
+      return 'text-gray-600 dark:text-dark-300'
+    case 'error':
+      return 'text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20'
+    case 'loading':
+    case 'claiming':
+      return 'text-gray-500 dark:text-dark-400'
+  }
+  return 'text-gray-500 dark:text-dark-400'
+})
 
 // 只在标准模式的管理员下显示新手引导按钮
 
@@ -461,6 +582,10 @@ function handleReplayGuide() {
 function formatHeaderMoney(value: number) {
   if (!Number.isFinite(value)) return '$0.00'
   return `$${value.toFixed(2)}`
+}
+
+function formatCheckInReward(value: number) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2)
 }
 
 function handleClickOutside(event: MouseEvent) {

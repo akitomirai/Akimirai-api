@@ -110,6 +110,31 @@ func BillingMode(v string) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldBillingMode, v))
 }
 
+// PromptCacheKeyHash applies equality check predicate on the "prompt_cache_key_hash" field. It's identical to PromptCacheKeyHashEQ.
+func PromptCacheKeyHash(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldPromptCacheKeyHash, v))
+}
+
+// PromptCacheKeySource applies equality check predicate on the "prompt_cache_key_source" field. It's identical to PromptCacheKeySourceEQ.
+func PromptCacheKeySource(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldPromptCacheKeySource, v))
+}
+
+// PromptCachePrefixHash applies equality check predicate on the "prompt_cache_prefix_hash" field. It's identical to PromptCachePrefixHashEQ.
+func PromptCachePrefixHash(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldPromptCachePrefixHash, v))
+}
+
+// PromptCacheToolsHash applies equality check predicate on the "prompt_cache_tools_hash" field. It's identical to PromptCacheToolsHashEQ.
+func PromptCacheToolsHash(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldPromptCacheToolsHash, v))
+}
+
+// PromptCacheSystemHash applies equality check predicate on the "prompt_cache_system_hash" field. It's identical to PromptCacheSystemHashEQ.
+func PromptCacheSystemHash(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldPromptCacheSystemHash, v))
+}
+
 // GroupID applies equality check predicate on the "group_id" field. It's identical to GroupIDEQ.
 func GroupID(v int64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldGroupID, v))
@@ -1038,6 +1063,381 @@ func BillingModeEqualFold(v string) predicate.UsageLog {
 // BillingModeContainsFold applies the ContainsFold predicate on the "billing_mode" field.
 func BillingModeContainsFold(v string) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldContainsFold(FieldBillingMode, v))
+}
+
+// PromptCacheKeyHashEQ applies the EQ predicate on the "prompt_cache_key_hash" field.
+func PromptCacheKeyHashEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldPromptCacheKeyHash, v))
+}
+
+// PromptCacheKeyHashNEQ applies the NEQ predicate on the "prompt_cache_key_hash" field.
+func PromptCacheKeyHashNEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldPromptCacheKeyHash, v))
+}
+
+// PromptCacheKeyHashIn applies the In predicate on the "prompt_cache_key_hash" field.
+func PromptCacheKeyHashIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldPromptCacheKeyHash, vs...))
+}
+
+// PromptCacheKeyHashNotIn applies the NotIn predicate on the "prompt_cache_key_hash" field.
+func PromptCacheKeyHashNotIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldPromptCacheKeyHash, vs...))
+}
+
+// PromptCacheKeyHashGT applies the GT predicate on the "prompt_cache_key_hash" field.
+func PromptCacheKeyHashGT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldPromptCacheKeyHash, v))
+}
+
+// PromptCacheKeyHashGTE applies the GTE predicate on the "prompt_cache_key_hash" field.
+func PromptCacheKeyHashGTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldPromptCacheKeyHash, v))
+}
+
+// PromptCacheKeyHashLT applies the LT predicate on the "prompt_cache_key_hash" field.
+func PromptCacheKeyHashLT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldPromptCacheKeyHash, v))
+}
+
+// PromptCacheKeyHashLTE applies the LTE predicate on the "prompt_cache_key_hash" field.
+func PromptCacheKeyHashLTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldPromptCacheKeyHash, v))
+}
+
+// PromptCacheKeyHashContains applies the Contains predicate on the "prompt_cache_key_hash" field.
+func PromptCacheKeyHashContains(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContains(FieldPromptCacheKeyHash, v))
+}
+
+// PromptCacheKeyHashHasPrefix applies the HasPrefix predicate on the "prompt_cache_key_hash" field.
+func PromptCacheKeyHashHasPrefix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasPrefix(FieldPromptCacheKeyHash, v))
+}
+
+// PromptCacheKeyHashHasSuffix applies the HasSuffix predicate on the "prompt_cache_key_hash" field.
+func PromptCacheKeyHashHasSuffix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasSuffix(FieldPromptCacheKeyHash, v))
+}
+
+// PromptCacheKeyHashIsNil applies the IsNil predicate on the "prompt_cache_key_hash" field.
+func PromptCacheKeyHashIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldPromptCacheKeyHash))
+}
+
+// PromptCacheKeyHashNotNil applies the NotNil predicate on the "prompt_cache_key_hash" field.
+func PromptCacheKeyHashNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldPromptCacheKeyHash))
+}
+
+// PromptCacheKeyHashEqualFold applies the EqualFold predicate on the "prompt_cache_key_hash" field.
+func PromptCacheKeyHashEqualFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEqualFold(FieldPromptCacheKeyHash, v))
+}
+
+// PromptCacheKeyHashContainsFold applies the ContainsFold predicate on the "prompt_cache_key_hash" field.
+func PromptCacheKeyHashContainsFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContainsFold(FieldPromptCacheKeyHash, v))
+}
+
+// PromptCacheKeySourceEQ applies the EQ predicate on the "prompt_cache_key_source" field.
+func PromptCacheKeySourceEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldPromptCacheKeySource, v))
+}
+
+// PromptCacheKeySourceNEQ applies the NEQ predicate on the "prompt_cache_key_source" field.
+func PromptCacheKeySourceNEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldPromptCacheKeySource, v))
+}
+
+// PromptCacheKeySourceIn applies the In predicate on the "prompt_cache_key_source" field.
+func PromptCacheKeySourceIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldPromptCacheKeySource, vs...))
+}
+
+// PromptCacheKeySourceNotIn applies the NotIn predicate on the "prompt_cache_key_source" field.
+func PromptCacheKeySourceNotIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldPromptCacheKeySource, vs...))
+}
+
+// PromptCacheKeySourceGT applies the GT predicate on the "prompt_cache_key_source" field.
+func PromptCacheKeySourceGT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldPromptCacheKeySource, v))
+}
+
+// PromptCacheKeySourceGTE applies the GTE predicate on the "prompt_cache_key_source" field.
+func PromptCacheKeySourceGTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldPromptCacheKeySource, v))
+}
+
+// PromptCacheKeySourceLT applies the LT predicate on the "prompt_cache_key_source" field.
+func PromptCacheKeySourceLT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldPromptCacheKeySource, v))
+}
+
+// PromptCacheKeySourceLTE applies the LTE predicate on the "prompt_cache_key_source" field.
+func PromptCacheKeySourceLTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldPromptCacheKeySource, v))
+}
+
+// PromptCacheKeySourceContains applies the Contains predicate on the "prompt_cache_key_source" field.
+func PromptCacheKeySourceContains(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContains(FieldPromptCacheKeySource, v))
+}
+
+// PromptCacheKeySourceHasPrefix applies the HasPrefix predicate on the "prompt_cache_key_source" field.
+func PromptCacheKeySourceHasPrefix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasPrefix(FieldPromptCacheKeySource, v))
+}
+
+// PromptCacheKeySourceHasSuffix applies the HasSuffix predicate on the "prompt_cache_key_source" field.
+func PromptCacheKeySourceHasSuffix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasSuffix(FieldPromptCacheKeySource, v))
+}
+
+// PromptCacheKeySourceIsNil applies the IsNil predicate on the "prompt_cache_key_source" field.
+func PromptCacheKeySourceIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldPromptCacheKeySource))
+}
+
+// PromptCacheKeySourceNotNil applies the NotNil predicate on the "prompt_cache_key_source" field.
+func PromptCacheKeySourceNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldPromptCacheKeySource))
+}
+
+// PromptCacheKeySourceEqualFold applies the EqualFold predicate on the "prompt_cache_key_source" field.
+func PromptCacheKeySourceEqualFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEqualFold(FieldPromptCacheKeySource, v))
+}
+
+// PromptCacheKeySourceContainsFold applies the ContainsFold predicate on the "prompt_cache_key_source" field.
+func PromptCacheKeySourceContainsFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContainsFold(FieldPromptCacheKeySource, v))
+}
+
+// PromptCachePrefixHashEQ applies the EQ predicate on the "prompt_cache_prefix_hash" field.
+func PromptCachePrefixHashEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldPromptCachePrefixHash, v))
+}
+
+// PromptCachePrefixHashNEQ applies the NEQ predicate on the "prompt_cache_prefix_hash" field.
+func PromptCachePrefixHashNEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldPromptCachePrefixHash, v))
+}
+
+// PromptCachePrefixHashIn applies the In predicate on the "prompt_cache_prefix_hash" field.
+func PromptCachePrefixHashIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldPromptCachePrefixHash, vs...))
+}
+
+// PromptCachePrefixHashNotIn applies the NotIn predicate on the "prompt_cache_prefix_hash" field.
+func PromptCachePrefixHashNotIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldPromptCachePrefixHash, vs...))
+}
+
+// PromptCachePrefixHashGT applies the GT predicate on the "prompt_cache_prefix_hash" field.
+func PromptCachePrefixHashGT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldPromptCachePrefixHash, v))
+}
+
+// PromptCachePrefixHashGTE applies the GTE predicate on the "prompt_cache_prefix_hash" field.
+func PromptCachePrefixHashGTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldPromptCachePrefixHash, v))
+}
+
+// PromptCachePrefixHashLT applies the LT predicate on the "prompt_cache_prefix_hash" field.
+func PromptCachePrefixHashLT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldPromptCachePrefixHash, v))
+}
+
+// PromptCachePrefixHashLTE applies the LTE predicate on the "prompt_cache_prefix_hash" field.
+func PromptCachePrefixHashLTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldPromptCachePrefixHash, v))
+}
+
+// PromptCachePrefixHashContains applies the Contains predicate on the "prompt_cache_prefix_hash" field.
+func PromptCachePrefixHashContains(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContains(FieldPromptCachePrefixHash, v))
+}
+
+// PromptCachePrefixHashHasPrefix applies the HasPrefix predicate on the "prompt_cache_prefix_hash" field.
+func PromptCachePrefixHashHasPrefix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasPrefix(FieldPromptCachePrefixHash, v))
+}
+
+// PromptCachePrefixHashHasSuffix applies the HasSuffix predicate on the "prompt_cache_prefix_hash" field.
+func PromptCachePrefixHashHasSuffix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasSuffix(FieldPromptCachePrefixHash, v))
+}
+
+// PromptCachePrefixHashIsNil applies the IsNil predicate on the "prompt_cache_prefix_hash" field.
+func PromptCachePrefixHashIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldPromptCachePrefixHash))
+}
+
+// PromptCachePrefixHashNotNil applies the NotNil predicate on the "prompt_cache_prefix_hash" field.
+func PromptCachePrefixHashNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldPromptCachePrefixHash))
+}
+
+// PromptCachePrefixHashEqualFold applies the EqualFold predicate on the "prompt_cache_prefix_hash" field.
+func PromptCachePrefixHashEqualFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEqualFold(FieldPromptCachePrefixHash, v))
+}
+
+// PromptCachePrefixHashContainsFold applies the ContainsFold predicate on the "prompt_cache_prefix_hash" field.
+func PromptCachePrefixHashContainsFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContainsFold(FieldPromptCachePrefixHash, v))
+}
+
+// PromptCacheToolsHashEQ applies the EQ predicate on the "prompt_cache_tools_hash" field.
+func PromptCacheToolsHashEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldPromptCacheToolsHash, v))
+}
+
+// PromptCacheToolsHashNEQ applies the NEQ predicate on the "prompt_cache_tools_hash" field.
+func PromptCacheToolsHashNEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldPromptCacheToolsHash, v))
+}
+
+// PromptCacheToolsHashIn applies the In predicate on the "prompt_cache_tools_hash" field.
+func PromptCacheToolsHashIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldPromptCacheToolsHash, vs...))
+}
+
+// PromptCacheToolsHashNotIn applies the NotIn predicate on the "prompt_cache_tools_hash" field.
+func PromptCacheToolsHashNotIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldPromptCacheToolsHash, vs...))
+}
+
+// PromptCacheToolsHashGT applies the GT predicate on the "prompt_cache_tools_hash" field.
+func PromptCacheToolsHashGT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldPromptCacheToolsHash, v))
+}
+
+// PromptCacheToolsHashGTE applies the GTE predicate on the "prompt_cache_tools_hash" field.
+func PromptCacheToolsHashGTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldPromptCacheToolsHash, v))
+}
+
+// PromptCacheToolsHashLT applies the LT predicate on the "prompt_cache_tools_hash" field.
+func PromptCacheToolsHashLT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldPromptCacheToolsHash, v))
+}
+
+// PromptCacheToolsHashLTE applies the LTE predicate on the "prompt_cache_tools_hash" field.
+func PromptCacheToolsHashLTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldPromptCacheToolsHash, v))
+}
+
+// PromptCacheToolsHashContains applies the Contains predicate on the "prompt_cache_tools_hash" field.
+func PromptCacheToolsHashContains(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContains(FieldPromptCacheToolsHash, v))
+}
+
+// PromptCacheToolsHashHasPrefix applies the HasPrefix predicate on the "prompt_cache_tools_hash" field.
+func PromptCacheToolsHashHasPrefix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasPrefix(FieldPromptCacheToolsHash, v))
+}
+
+// PromptCacheToolsHashHasSuffix applies the HasSuffix predicate on the "prompt_cache_tools_hash" field.
+func PromptCacheToolsHashHasSuffix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasSuffix(FieldPromptCacheToolsHash, v))
+}
+
+// PromptCacheToolsHashIsNil applies the IsNil predicate on the "prompt_cache_tools_hash" field.
+func PromptCacheToolsHashIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldPromptCacheToolsHash))
+}
+
+// PromptCacheToolsHashNotNil applies the NotNil predicate on the "prompt_cache_tools_hash" field.
+func PromptCacheToolsHashNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldPromptCacheToolsHash))
+}
+
+// PromptCacheToolsHashEqualFold applies the EqualFold predicate on the "prompt_cache_tools_hash" field.
+func PromptCacheToolsHashEqualFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEqualFold(FieldPromptCacheToolsHash, v))
+}
+
+// PromptCacheToolsHashContainsFold applies the ContainsFold predicate on the "prompt_cache_tools_hash" field.
+func PromptCacheToolsHashContainsFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContainsFold(FieldPromptCacheToolsHash, v))
+}
+
+// PromptCacheSystemHashEQ applies the EQ predicate on the "prompt_cache_system_hash" field.
+func PromptCacheSystemHashEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldPromptCacheSystemHash, v))
+}
+
+// PromptCacheSystemHashNEQ applies the NEQ predicate on the "prompt_cache_system_hash" field.
+func PromptCacheSystemHashNEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldPromptCacheSystemHash, v))
+}
+
+// PromptCacheSystemHashIn applies the In predicate on the "prompt_cache_system_hash" field.
+func PromptCacheSystemHashIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldPromptCacheSystemHash, vs...))
+}
+
+// PromptCacheSystemHashNotIn applies the NotIn predicate on the "prompt_cache_system_hash" field.
+func PromptCacheSystemHashNotIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldPromptCacheSystemHash, vs...))
+}
+
+// PromptCacheSystemHashGT applies the GT predicate on the "prompt_cache_system_hash" field.
+func PromptCacheSystemHashGT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldPromptCacheSystemHash, v))
+}
+
+// PromptCacheSystemHashGTE applies the GTE predicate on the "prompt_cache_system_hash" field.
+func PromptCacheSystemHashGTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldPromptCacheSystemHash, v))
+}
+
+// PromptCacheSystemHashLT applies the LT predicate on the "prompt_cache_system_hash" field.
+func PromptCacheSystemHashLT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldPromptCacheSystemHash, v))
+}
+
+// PromptCacheSystemHashLTE applies the LTE predicate on the "prompt_cache_system_hash" field.
+func PromptCacheSystemHashLTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldPromptCacheSystemHash, v))
+}
+
+// PromptCacheSystemHashContains applies the Contains predicate on the "prompt_cache_system_hash" field.
+func PromptCacheSystemHashContains(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContains(FieldPromptCacheSystemHash, v))
+}
+
+// PromptCacheSystemHashHasPrefix applies the HasPrefix predicate on the "prompt_cache_system_hash" field.
+func PromptCacheSystemHashHasPrefix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasPrefix(FieldPromptCacheSystemHash, v))
+}
+
+// PromptCacheSystemHashHasSuffix applies the HasSuffix predicate on the "prompt_cache_system_hash" field.
+func PromptCacheSystemHashHasSuffix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasSuffix(FieldPromptCacheSystemHash, v))
+}
+
+// PromptCacheSystemHashIsNil applies the IsNil predicate on the "prompt_cache_system_hash" field.
+func PromptCacheSystemHashIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldPromptCacheSystemHash))
+}
+
+// PromptCacheSystemHashNotNil applies the NotNil predicate on the "prompt_cache_system_hash" field.
+func PromptCacheSystemHashNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldPromptCacheSystemHash))
+}
+
+// PromptCacheSystemHashEqualFold applies the EqualFold predicate on the "prompt_cache_system_hash" field.
+func PromptCacheSystemHashEqualFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEqualFold(FieldPromptCacheSystemHash, v))
+}
+
+// PromptCacheSystemHashContainsFold applies the ContainsFold predicate on the "prompt_cache_system_hash" field.
+func PromptCacheSystemHashContainsFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContainsFold(FieldPromptCacheSystemHash, v))
 }
 
 // GroupIDEQ applies the EQ predicate on the "group_id" field.

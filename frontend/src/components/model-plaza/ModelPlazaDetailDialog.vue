@@ -288,6 +288,8 @@ function priceRows(pricing: UserSupportedModelPricing): Array<{ label: string; v
       { label: text('output'), value: `${formatScaled(pricing.output_price, 1_000_000)} ${text('perMillion')}` },
       { label: text('cacheWrite'), value: `${formatScaled(pricing.cache_write_price, 1_000_000)} ${text('perMillion')}` },
       { label: text('cacheRead'), value: `${formatScaled(pricing.cache_read_price, 1_000_000)} ${text('perMillion')}` },
+      { label: text('imageInput'), value: `${formatScaled(pricing.image_input_price, 1_000_000)} ${text('perMillion')}` },
+      { label: text('imageOutput'), value: `${formatScaled(pricing.image_output_price, 1_000_000)} ${text('perMillion')}` },
     ].filter((row) => !row.value.startsWith('- '))
   }
   const amount = pricing.billing_mode === 'image' ? pricing.image_output_price : pricing.per_request_price

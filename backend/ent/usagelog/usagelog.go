@@ -36,6 +36,16 @@ const (
 	FieldBillingTier = "billing_tier"
 	// FieldBillingMode holds the string denoting the billing_mode field in the database.
 	FieldBillingMode = "billing_mode"
+	// FieldPromptCacheKeyHash holds the string denoting the prompt_cache_key_hash field in the database.
+	FieldPromptCacheKeyHash = "prompt_cache_key_hash"
+	// FieldPromptCacheKeySource holds the string denoting the prompt_cache_key_source field in the database.
+	FieldPromptCacheKeySource = "prompt_cache_key_source"
+	// FieldPromptCachePrefixHash holds the string denoting the prompt_cache_prefix_hash field in the database.
+	FieldPromptCachePrefixHash = "prompt_cache_prefix_hash"
+	// FieldPromptCacheToolsHash holds the string denoting the prompt_cache_tools_hash field in the database.
+	FieldPromptCacheToolsHash = "prompt_cache_tools_hash"
+	// FieldPromptCacheSystemHash holds the string denoting the prompt_cache_system_hash field in the database.
+	FieldPromptCacheSystemHash = "prompt_cache_system_hash"
 	// FieldGroupID holds the string denoting the group_id field in the database.
 	FieldGroupID = "group_id"
 	// FieldSubscriptionID holds the string denoting the subscription_id field in the database.
@@ -229,6 +239,11 @@ var Columns = []string{
 	FieldModelMappingChain,
 	FieldBillingTier,
 	FieldBillingMode,
+	FieldPromptCacheKeyHash,
+	FieldPromptCacheKeySource,
+	FieldPromptCachePrefixHash,
+	FieldPromptCacheToolsHash,
+	FieldPromptCacheSystemHash,
 	FieldGroupID,
 	FieldSubscriptionID,
 	FieldInputTokens,
@@ -321,6 +336,16 @@ var (
 	BillingTierValidator func(string) error
 	// BillingModeValidator is a validator for the "billing_mode" field. It is called by the builders before save.
 	BillingModeValidator func(string) error
+	// PromptCacheKeyHashValidator is a validator for the "prompt_cache_key_hash" field. It is called by the builders before save.
+	PromptCacheKeyHashValidator func(string) error
+	// PromptCacheKeySourceValidator is a validator for the "prompt_cache_key_source" field. It is called by the builders before save.
+	PromptCacheKeySourceValidator func(string) error
+	// PromptCachePrefixHashValidator is a validator for the "prompt_cache_prefix_hash" field. It is called by the builders before save.
+	PromptCachePrefixHashValidator func(string) error
+	// PromptCacheToolsHashValidator is a validator for the "prompt_cache_tools_hash" field. It is called by the builders before save.
+	PromptCacheToolsHashValidator func(string) error
+	// PromptCacheSystemHashValidator is a validator for the "prompt_cache_system_hash" field. It is called by the builders before save.
+	PromptCacheSystemHashValidator func(string) error
 	// DefaultInputTokens holds the default value on creation for the "input_tokens" field.
 	DefaultInputTokens int
 	// DefaultOutputTokens holds the default value on creation for the "output_tokens" field.
@@ -452,6 +477,31 @@ func ByBillingTier(opts ...sql.OrderTermOption) OrderOption {
 // ByBillingMode orders the results by the billing_mode field.
 func ByBillingMode(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldBillingMode, opts...).ToFunc()
+}
+
+// ByPromptCacheKeyHash orders the results by the prompt_cache_key_hash field.
+func ByPromptCacheKeyHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPromptCacheKeyHash, opts...).ToFunc()
+}
+
+// ByPromptCacheKeySource orders the results by the prompt_cache_key_source field.
+func ByPromptCacheKeySource(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPromptCacheKeySource, opts...).ToFunc()
+}
+
+// ByPromptCachePrefixHash orders the results by the prompt_cache_prefix_hash field.
+func ByPromptCachePrefixHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPromptCachePrefixHash, opts...).ToFunc()
+}
+
+// ByPromptCacheToolsHash orders the results by the prompt_cache_tools_hash field.
+func ByPromptCacheToolsHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPromptCacheToolsHash, opts...).ToFunc()
+}
+
+// ByPromptCacheSystemHash orders the results by the prompt_cache_system_hash field.
+func ByPromptCacheSystemHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPromptCacheSystemHash, opts...).ToFunc()
 }
 
 // ByGroupID orders the results by the group_id field.

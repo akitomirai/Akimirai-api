@@ -15,12 +15,12 @@ const (
 	grokImportProbeTimeout     = 25 * time.Second
 )
 
-type grokUsageProber interface {
-	ProbeUsage(ctx context.Context, accountID int64) (*service.GrokQuotaProbeResult, error)
+type grokImportProber interface {
+	QueryQuota(ctx context.Context, accountID int64) (*service.GrokQuotaProbeResult, error)
 }
 
 type grokImportProbeTask struct {
-	prober    grokUsageProber
+	prober    grokImportProber
 	accountID int64
 }
 
@@ -57,7 +57,7 @@ func newGrokImportProbeScheduler(concurrency int, timeout time.Duration) *grokIm
 	}
 }
 
-func (s *grokImportProbeScheduler) schedule(prober grokUsageProber, account *service.Account) {
+func (s *grokImportProbeScheduler) schedule(prober grokImportProber, account *service.Account) {
 	if s == nil || prober == nil || account == nil || account.ID <= 0 {
 		return
 	}
@@ -116,7 +116,7 @@ func (s *grokImportProbeScheduler) snapshot() grokImportProbeSchedulerSnapshot {
 	}
 }
 
-func (s *grokImportProbeScheduler) run(prober grokUsageProber, accountID int64) {
+func (s *grokImportProbeScheduler) run(prober grokImportProber, accountID int64) {
 	defer func() {
 		if recovered := recover(); recovered != nil {
 			slog.Error(
@@ -131,7 +131,7 @@ func (s *grokImportProbeScheduler) run(prober grokUsageProber, accountID int64) 
 	// while this timeout only bounds the actual upstream probe execution.
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
-	result, err := prober.ProbeUsage(ctx, accountID)
+	result, err := prober.QueryQuota(ctx, accountID)
 	if err != nil {
 		slog.Warn(
 			"grok_import_active_probe_failed",
@@ -192,6 +192,7 @@ func ProvideAccountHandler(
 	openaiOAuthService *service.OpenAIOAuthService,
 	geminiOAuthService *service.GeminiOAuthService,
 	antigravityOAuthService *service.AntigravityOAuthService,
+	grokOAuthService service.GrokOAuthTokenService,
 	rateLimitService *service.RateLimitService,
 	accountUsageService *service.AccountUsageService,
 	accountTestService *service.AccountTestService,
@@ -208,6 +209,7 @@ func ProvideAccountHandler(
 		openaiOAuthService,
 		geminiOAuthService,
 		antigravityOAuthService,
+		grokOAuthService,
 		rateLimitService,
 		accountUsageService,
 		accountTestService,

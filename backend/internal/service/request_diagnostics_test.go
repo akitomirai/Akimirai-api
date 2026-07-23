@@ -164,6 +164,41 @@ func TestRequestDiagnosticsContextRoundTrip(t *testing.T) {
 	require.Nil(t, RequestDiagnosticsAttemptFromContext(nil))
 }
 
+func TestRequestDiagnosticsSnapshotIncludesPromptCacheHashes(t *testing.T) {
+	diagnostics := NewRequestDiagnostics(time.Now())
+	want := PromptCacheDiagnostics{
+		KeyHash:    strings.Repeat("a", 64),
+		Source:     PromptCacheKeySourceClientHeader,
+		PrefixHash: strings.Repeat("b", 64),
+		ToolsHash:  strings.Repeat("c", 64),
+		SystemHash: strings.Repeat("d", 64),
+	}
+
+	diagnostics.RecordPromptCacheDiagnostics(want)
+	got := diagnostics.SnapshotAt(time.Now(), nil)
+
+	require.Equal(t, want, got.PromptCache)
+}
+
+func TestApplyRequestDiagnosticsCopiesPromptCacheHashesToUsageLog(t *testing.T) {
+	diagnostics := &RequestDiagnosticsSnapshot{PromptCache: PromptCacheDiagnostics{
+		KeyHash:    strings.Repeat("a", 64),
+		Source:     PromptCacheKeySourceCompatDerived,
+		PrefixHash: strings.Repeat("b", 64),
+		ToolsHash:  strings.Repeat("c", 64),
+		SystemHash: strings.Repeat("d", 64),
+	}}
+	usageLog := &UsageLog{}
+
+	applyRequestDiagnosticsToUsageLog(usageLog, diagnostics, nil)
+
+	require.Equal(t, diagnostics.PromptCache.KeyHash, *usageLog.PromptCacheKeyHash)
+	require.Equal(t, string(PromptCacheKeySourceCompatDerived), *usageLog.PromptCacheKeySource)
+	require.Equal(t, diagnostics.PromptCache.PrefixHash, *usageLog.PromptCachePrefixHash)
+	require.Equal(t, diagnostics.PromptCache.ToolsHash, *usageLog.PromptCacheToolsHash)
+	require.Equal(t, diagnostics.PromptCache.SystemHash, *usageLog.PromptCacheSystemHash)
+}
+
 func TestSanitizeRequestDiagnosticReasonBoundsAndRedacts(t *testing.T) {
 	raw := "request failed via socks5://user:pass@proxy.example.test:1080/path?access_token=secret " + strings.Repeat("x", 400)
 	safe := sanitizeRequestDiagnosticReason(raw)
