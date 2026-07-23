@@ -101,9 +101,10 @@ const UsageFiltersStub = { template: '<div><slot name="before-refresh" /></div>'
 const UsageTableStub = {
   props: {
     tokenBreakdown: Boolean,
+    columns: Array,
   },
   emits: ['userClick'],
-  template: '<div data-test="usage-table" :data-token-breakdown="String(tokenBreakdown)"><button class="user-click" @click="$emit(\'userClick\', 2)">user</button></div>',
+  template: '<div data-test="usage-table" :data-token-breakdown="String(tokenBreakdown)" :data-columns="columns.map((column) => column.key).join(\'|\')"><button class="user-click" @click="$emit(\'userClick\', 2)">user</button></div>',
 }
 const UserTokenRankingStub = {
   emits: ['select-user'],
@@ -308,6 +309,8 @@ describe('admin UsageView distribution metric toggles', () => {
 describe('admin UsageView handleUserClick', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    vi.mocked(localStorage.getItem).mockReset().mockReturnValue(null)
+    vi.mocked(localStorage.setItem).mockClear()
     list.mockReset()
     getStats.mockReset()
     getSnapshotV2.mockReset()
@@ -327,42 +330,60 @@ describe('admin UsageView handleUserClick', () => {
     vi.useRealTimers()
   })
 
+  const mountUsageTableView = () => mount(UsageView, {
+    global: {
+      stubs: {
+        AppLayout: AppLayoutStub,
+        UsageStatsCards: true,
+        UsageFilters: UsageFiltersStub,
+        UsageTable: UsageTableStub,
+        UsageExportProgress: true,
+        UsageCleanupDialog: true,
+        UserBalanceHistoryModal: true,
+        AuditLogModal: true,
+        Pagination: true,
+        Select: true,
+        DateRangePicker: true,
+        Icon: true,
+        TokenUsageTrend: true,
+        ModelDistributionChart: true,
+        GroupDistributionChart: true,
+        EndpointDistributionChart: true,
+        UserTokenRanking: true,
+      },
+    },
+  })
+
   it('opens user via include_deleted when clicking a usage row user', async () => {
     getById.mockResolvedValue({ id: 2, email: 'd@test.com', deleted_at: '2026-05-28T00:00:00Z' })
 
-    const wrapper = mount(UsageView, {
-      global: {
-        stubs: {
-          AppLayout: AppLayoutStub,
-          UsageStatsCards: true,
-          UsageFilters: UsageFiltersStub,
-          UsageTable: UsageTableStub,
-          UsageExportProgress: true,
-          UsageCleanupDialog: true,
-          UserBalanceHistoryModal: true,
-          AuditLogModal: true,
-          Pagination: true,
-          Select: true,
-          DateRangePicker: true,
-          Icon: true,
-          TokenUsageTrend: true,
-          ModelDistributionChart: true,
-          GroupDistributionChart: true,
-          EndpointDistributionChart: true,
-          UserTokenRanking: true,
-        },
-      },
-    })
+    const wrapper = mountUsageTableView()
 
     vi.advanceTimersByTime(120)
     await flushPromises()
 
-    expect(wrapper.get('[data-test="usage-table"]').attributes('data-token-breakdown')).toBe('true')
+    const usageTable = wrapper.get('[data-test="usage-table"]')
+    expect(usageTable.attributes('data-token-breakdown')).toBe('true')
+    expect(usageTable.attributes('data-columns')).toContain('tokens|cache_hit_rate|cost')
 
     await wrapper.find('[data-test="usage-table"] .user-click').trigger('click')
     await flushPromises()
 
     expect(getById).toHaveBeenCalledWith(2, true)
+  })
+
+  it('keeps the cache-hit column visible with existing hidden-column preferences', async () => {
+    vi.mocked(localStorage.getItem).mockImplementation((key) =>
+      key === 'usage-hidden-columns' ? JSON.stringify(['api_key']) : null
+    )
+
+    const wrapper = mountUsageTableView()
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+
+    const columns = wrapper.get('[data-test="usage-table"]').attributes('data-columns')
+    expect(columns).not.toContain('api_key')
+    expect(columns).toContain('tokens|cache_hit_rate|cost')
   })
 })
 
