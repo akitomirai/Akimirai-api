@@ -331,7 +331,7 @@ export default {
     firstToken: 'First Token',
     duration: 'Duration',
     latency: 'Latency',
-    latencyFirstToken: 'First',
+    latencyFirstToken: 'First Token',
     latencyDuration: 'Total',
     time: 'Time',
     ws: 'WS',

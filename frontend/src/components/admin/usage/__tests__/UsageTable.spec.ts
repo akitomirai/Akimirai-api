@@ -31,6 +31,8 @@ const messages: Record<string, string> = {
   'usage.tokenCost': 'Cost',
   'usage.totalTokens': 'Total Tokens',
   'usage.cacheHitRate': 'Cache hit rate',
+  'usage.latencyFirstToken': 'First Token',
+  'usage.latencyDuration': 'Total',
   'usage.perMillionTokens': '/ 1M tokens',
   'usage.serviceTier': 'Service tier',
   'usage.serviceTierPriority': 'Fast',
@@ -85,6 +87,7 @@ const DataTableStub = {
         <slot name="cell-tokens" :row="row" />
         <slot name="cell-cache_hit_rate" :row="row" />
         <slot name="cell-cost" :row="row" />
+        <slot name="cell-latency" :row="row" />
         <slot name="cell-diagnostics" :row="row" />
       </div>
     </div>
@@ -635,6 +638,46 @@ describe('admin UsageTable tooltip', () => {
     expect(text).toContain('Per-image price')
     expect(text).toContain('not recorded')
     expect(text).not.toContain('(2K)')
+  })
+})
+
+describe('admin UsageTable latency semantics', () => {
+  it('uses and labels the first-token metric when first-byte data is also present', () => {
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [{
+          request_id: 'req-first-byte',
+          model: 'gpt-5.6-sol',
+          upstream_first_byte_ms: 1200,
+          request_first_token_ms: 2300,
+          request_total_ms: 4500,
+        }],
+        columns: [{ key: 'latency', label: 'Latency' }],
+      },
+      global: { stubs: { DataTable: DataTableStub, Teleport: true } },
+    })
+
+    expect(wrapper.text()).toContain('First Token')
+    expect(wrapper.text()).toContain('2.30s')
+    expect(wrapper.text()).not.toContain('1.20s')
+  })
+
+  it('uses the legacy first-token field when request diagnostics are unavailable', () => {
+    const wrapper = mount(UsageTable, {
+      props: {
+        data: [{
+          request_id: 'req-first-token-fallback',
+          model: 'gpt-5.6-sol',
+          first_token_ms: 2300,
+          duration_ms: 4500,
+        }],
+        columns: [{ key: 'latency', label: 'Latency' }],
+      },
+      global: { stubs: { DataTable: DataTableStub, Teleport: true } },
+    })
+
+    expect(wrapper.text()).toContain('First Token')
+    expect(wrapper.text()).toContain('2.30s')
   })
 })
 
