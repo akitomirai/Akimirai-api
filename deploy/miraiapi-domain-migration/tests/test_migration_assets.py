@@ -132,6 +132,29 @@ class StaticContractTests(unittest.TestCase):
         self.assertIn("https://miraiapi.cloud/redeem", xianyu_doc)
         self.assertIn("https://miraiapi.cloud/rent-ledger/latest.json", rent_doc)
 
+    def test_cutover_updates_every_persisted_domain_owner(self):
+        runbook = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn(
+            "the PostgreSQL rows `frontend_url`, `api_base_url` and\n"
+            "  `balance_low_notify_recharge_url`",
+            runbook,
+        )
+        self.assertIn(
+            "`settings.frontend_url` overrides `server.frontend_url` when non-empty.",
+            runbook,
+        )
+        self.assertIn(
+            "Update PostgreSQL `frontend_url`, `api_base_url` and\n"
+            "  `balance_low_notify_recharge_url` in one transaction.",
+            runbook,
+        )
+        self.assertIn(
+            "Update YAML `frontend_url`/CORS and PostgreSQL `frontend_url`/\n"
+            "   `api_base_url`/`balance_low_notify_recharge_url` in one transaction",
+            runbook,
+        )
+        self.assertIn("Restore YAML and the three PostgreSQL settings.", runbook)
+
     def test_retired_cn_domain_is_absent_from_maintained_assets(self):
         maintained = [
             *ROOT.rglob("*.py"),

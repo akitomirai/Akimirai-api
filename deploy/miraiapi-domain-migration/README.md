@@ -41,7 +41,7 @@ Before changing the host, capture timestamped copies of:
 - `/etc/nginx/sites-enabled/akimirai.xyz`
 - `/etc/nginx/sites-available/akimirai.xyz`
 - `/opt/akimirai/data/config.yaml`
-- the PostgreSQL rows `api_base_url` and
+- the PostgreSQL rows `frontend_url`, `api_base_url` and
   `balance_low_notify_recharge_url`
 - `systemctl status akimirai.service nginx`
 - existing migration-specific systemd units/timers
@@ -73,10 +73,13 @@ Store the backup path and hashes in the task evidence before continuing.
 
 - Set `server.frontend_url` to `https://miraiapi.cloud`.
 - Keep both old and new HTTPS origins in CORS during the compatibility period.
-- Update PostgreSQL `api_base_url` to `https://miraiapi.cloud/` and
-  `balance_low_notify_recharge_url` to `https://miraiapi.cloud` in one
-  transaction.
-- Restart `akimirai.service` once, then validate public settings.
+- `settings.frontend_url` overrides `server.frontend_url` when non-empty.
+- Update PostgreSQL `frontend_url`, `api_base_url` and
+  `balance_low_notify_recharge_url` in one transaction. Set them to
+  `https://miraiapi.cloud`, `https://miraiapi.cloud/` and
+  `https://miraiapi.cloud`, respectively.
+- Restart `akimirai.service` once, validate public settings, then request a
+  real password-reset email and confirm its link uses the new origin.
 
 ## Emergency Primary Re-cutover
 
@@ -88,8 +91,9 @@ new promotion without extending the existing legacy compatibility period.
 2. Install the HTTP bootstrap, prove the ACME challenge path, issue the
    replacement certificate and pass `/health`, `/admin/usage` and `/images/`
    before changing application settings.
-3. Update YAML `frontend_url`/CORS and PostgreSQL `api_base_url`/
-   `balance_low_notify_recharge_url`, then restart the application once.
+3. Update YAML `frontend_url`/CORS and PostgreSQL `frontend_url`/
+   `api_base_url`/`balance_low_notify_recharge_url` in one transaction, then
+   restart the application once and verify a real password-reset email.
 4. Change the existing legacy compatibility `Link`, new-origin header and UI
    redirect directly to the replacement hostname. Keep the original `Sunset`
    and retirement timer unchanged.
@@ -145,7 +149,7 @@ heartbeats. WebSocket clients must reconnect after edge connection resets.
 
 1. Switch Cloudflare records to DNS-only if the edge is implicated.
 2. Restore the timestamped old Nginx enabled file and disable the new vhost.
-3. Restore YAML and the two PostgreSQL settings.
+3. Restore YAML and the three PostgreSQL settings.
 4. Disable the migration timer and remove only migration-specific units.
 5. Run `nginx -t`, restart `akimirai.service`, and re-run `/health`,
    `/admin/usage` and `/images/` on the old domain.
