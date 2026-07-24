@@ -40,6 +40,15 @@ const stats: UserDashboardStats = {
   average_duration_ms: 120,
   rpm: 2,
   tpm: 400_000_000,
+  by_platform: [{
+    platform: 'openai',
+    total_requests: 2,
+    total_tokens: 200,
+    total_actual_cost: 0.2,
+    today_requests: 1,
+    today_tokens: 100,
+    today_actual_cost: 0.1,
+  }],
 }
 
 const mountStats = (isSimple = true) => mount(UserDashboardStats, {
@@ -47,7 +56,6 @@ const mountStats = (isSimple = true) => mount(UserDashboardStats, {
     stats,
     balance: 0,
     isSimple,
-    platformQuotas: [],
   },
   global: {
     stubs: {
@@ -95,5 +103,12 @@ describe('UserDashboardStats', () => {
     expect(grid.element.children).toHaveLength(8)
     expect(wrapper.get('[data-testid="dashboard-total-tokens"]').classes()).not.toContain('col-span-2')
     expect(wrapper.text()).toContain('dashboard.balance')
+  })
+
+  it('does not render the retired platform breakdown even when stats contain platform data', () => {
+    const wrapper = mountStats(false)
+
+    expect(wrapper.text()).not.toContain('dashboard.platformBreakdown')
+    expect(wrapper.text()).not.toContain('OpenAI')
   })
 })

@@ -18,7 +18,6 @@
           :stats="stats"
           :balance="balance ?? 0"
           :is-simple="authStore.isSimpleMode"
-          :platform-quotas="platformQuotas"
         />
         <div v-else class="card p-6 text-center text-sm text-gray-500 dark:text-dark-400">
           {{ t('dashboard.noDataAvailable') }}
@@ -40,7 +39,17 @@
           data-testid="dashboard-content-grid"
           class="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(14rem,1fr)]"
         >
-          <div class="min-w-0">
+          <div class="min-w-0 space-y-6">
+            <EntityDistributionChart
+              data-testid="api-key-distribution"
+              v-model:metric="apiKeyDistributionMetric"
+              :title="t('usage.apiKeyDistribution')"
+              :entity-label="t('usage.apiKeyFilter')"
+              :items="apiKeyDistributionItems"
+              :loading="loadingApiKeyStats"
+              :show-account-cost="false"
+              :show-standard-cost="true"
+            />
             <UserDashboardModelTrends
               :trend-data="modelTrendData"
               :loading="loadingTrends"
@@ -68,15 +77,16 @@ import UserDashboardStats from '@/components/user/dashboard/UserDashboardStats.v
 import UserDashboardFilters from '@/components/user/dashboard/UserDashboardFilters.vue'
 import UserDashboardModelTrends from '@/components/user/dashboard/UserDashboardModelTrends.vue'
 import UserDashboardAnnouncements from '@/components/user/dashboard/UserDashboardAnnouncements.vue'
+import EntityDistributionChart from '@/components/charts/EntityDistributionChart.vue'
 import { useAuthStore } from '@/stores'
 import {
   usageAPI,
+  type UsageDashboardSnapshotV2Response,
   type ModelUsageTrendPoint,
   type ModelUsageTrendGranularity,
   type UserDashboardStats as UserStatsType,
 } from '@/api/usage'
-import { getMyPlatformQuotas } from '@/api/user'
-import type { PlatformQuotaItem } from '@/types'
+import type { ApiKeyStat } from '@/types'
 import {
   type DateRangeChange,
   getDashboardPresetGranularity,
@@ -97,7 +107,9 @@ const dashboardError = ref(false)
 const modelTrendData = ref<ModelUsageTrendPoint[]>([])
 const trendRangeStart = ref<string | null>(null)
 const trendRangeEnd = ref<string | null>(null)
-const platformQuotas = ref<PlatformQuotaItem[] | null>(null)
+const apiKeyStats = ref<ApiKeyStat[]>([])
+const loadingApiKeyStats = ref(false)
+const apiKeyDistributionMetric = ref<'tokens' | 'actual_cost'>('actual_cost')
 const dashboardTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
 const startDate = ref(formatDateLocalInput(new Date(Date.now() - 86400000)))
@@ -111,6 +123,26 @@ const balance = computed(() => {
   const value = user.value?.balance
   return typeof value === 'number' && Number.isFinite(value) ? value : null
 })
+
+const getDashboardRangeParams = () => {
+  const period = getDashboardPresetPeriod(activePreset.value)
+  return period
+    ? { period, timezone: dashboardTimezone }
+    : {
+        start_time: toLocalDateTimeParam(startDate.value, startTime.value),
+        end_time: toLocalDateTimeParam(endDate.value, endTime.value),
+        timezone: dashboardTimezone,
+      }
+}
+
+const apiKeyDistributionItems = computed(() => apiKeyStats.value.map((item) => ({
+  id: item.api_key_id,
+  label: item.api_key_name?.trim() || t('usage.apiKeyFallback', { id: item.api_key_id }),
+  requests: item.requests,
+  total_tokens: item.total_tokens,
+  cost: item.cost,
+  actual_cost: item.actual_cost,
+})))
 
 const loadStats = async () => {
   loading.value = true
@@ -130,17 +162,10 @@ const loadStats = async () => {
 const loadModelTrends = async () => {
   loadingTrends.value = true
   try {
-    const period = getDashboardPresetPeriod(activePreset.value)
     const response = await usageAPI.getDashboardModelTrend({
-      ...(period
-        ? { period }
-        : {
-            start_time: toLocalDateTimeParam(startDate.value, startTime.value),
-            end_time: toLocalDateTimeParam(endDate.value, endTime.value),
-          }),
+      ...getDashboardRangeParams(),
       granularity: granularity.value,
       model_source: 'requested',
-      timezone: dashboardTimezone,
     })
     modelTrendData.value = response.trend || []
     trendRangeStart.value = response.start_time
@@ -155,27 +180,37 @@ const loadModelTrends = async () => {
   }
 }
 
+const loadApiKeyDistribution = async () => {
+  loadingApiKeyStats.value = true
+  try {
+    const response: UsageDashboardSnapshotV2Response = await usageAPI.getDashboardSnapshotV2({
+      ...getDashboardRangeParams(),
+      include_trend: false,
+      include_model_stats: false,
+      include_group_stats: false,
+      include_api_key_stats: true,
+    })
+    apiKeyStats.value = response.api_keys ?? []
+  } catch (error) {
+    console.error('Failed to load API key distribution:', error instanceof Error ? error.message : error)
+    apiKeyStats.value = []
+  } finally {
+    loadingApiKeyStats.value = false
+  }
+}
+
 const handleDateRangeChange = (range: DateRangeChange) => {
   activePreset.value = range.preset
   const defaultGranularity = getDashboardPresetGranularity(range.preset)
   if (defaultGranularity) granularity.value = defaultGranularity
   void loadModelTrends()
-}
-
-const loadPlatformQuotas = async () => {
-  try {
-    const data = await getMyPlatformQuotas()
-    platformQuotas.value = data.platform_quotas ?? []
-  } catch (error) {
-    console.warn('Failed to load platform quotas:', error instanceof Error ? error.message : error)
-    platformQuotas.value = []
-  }
+  void loadApiKeyDistribution()
 }
 
 const refreshAll = () => {
   loadStats()
   loadModelTrends()
-  loadPlatformQuotas()
+  loadApiKeyDistribution()
 }
 
 onMounted(refreshAll)
