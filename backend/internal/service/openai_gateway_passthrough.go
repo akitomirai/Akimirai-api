@@ -403,6 +403,8 @@ func (s *OpenAIGatewayService) buildUpstreamRequestOpenAIPassthrough(
 		}
 	}
 
+	applyOpenAIAPIKeyPassthroughPromptCacheAffinity(c, account, body, req)
+
 	// OAuth 透传到 ChatGPT internal API 时补齐必要头。
 	if account.Type == AccountTypeOAuth {
 		promptCacheKey := strings.TrimSpace(gjson.GetBytes(body, "prompt_cache_key").String())
@@ -475,6 +477,35 @@ func (s *OpenAIGatewayService) buildUpstreamRequestOpenAIPassthrough(
 	account.ApplyHeaderOverrides(req.Header)
 
 	return req, nil
+}
+
+// applyOpenAIAPIKeyPassthroughPromptCacheAffinity mirrors prompt_cache_key into
+// isolated session headers for custom OpenAI-compatible gateways. Those
+// gateways may perform another scheduling hop keyed by headers, so forwarding
+// only the body key can still scatter one conversation across cache shards.
+// Official OpenAI already routes prompt_cache_key directly and is left alone.
+func applyOpenAIAPIKeyPassthroughPromptCacheAffinity(c *gin.Context, account *Account, body []byte, req *http.Request) {
+	if account == nil || account.Type != AccountTypeAPIKey || req == nil || req.URL == nil {
+		return
+	}
+	if strings.EqualFold(strings.TrimSpace(req.URL.Hostname()), "api.openai.com") {
+		return
+	}
+	if strings.TrimSpace(req.Header.Get("session_id")) != "" || strings.TrimSpace(req.Header.Get("conversation_id")) != "" {
+		return
+	}
+
+	promptCacheKey := strings.TrimSpace(gjson.GetBytes(body, "prompt_cache_key").String())
+	if promptCacheKey == "" {
+		return
+	}
+	apiKeyID := getAPIKeyIDFromContext(c)
+	if apiKeyID <= 0 {
+		return
+	}
+	affinityID := isolateOpenAISessionID(apiKeyID, promptCacheKey)
+	req.Header.Set("session_id", affinityID)
+	req.Header.Set("conversation_id", affinityID)
 }
 
 func shouldFailoverOpenAIPassthroughResponse(account *Account, statusCode int, responseBody []byte) bool {

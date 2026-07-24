@@ -2632,6 +2632,123 @@ func TestOpenAIBuildUpstreamRequestOpenAIPassthroughPreservesCompactPath(t *test
 	require.Equal(t, HTTPUpstreamProfileOpenAI, HTTPUpstreamProfileFromContext(req.Context()))
 }
 
+func TestOpenAIBuildUpstreamRequestAPIKeyPassthroughPromptCacheAffinity(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	svc := &OpenAIGatewayService{cfg: &config.Config{Security: config.SecurityConfig{
+		URLAllowlist: config.URLAllowlistConfig{Enabled: false},
+	}}}
+	account := &Account{
+		Platform:    PlatformOpenAI,
+		Type:        AccountTypeAPIKey,
+		Credentials: map[string]any{"base_url": "https://xcpcai.com"},
+	}
+
+	t.Run("synthesizes isolated affinity headers from prompt cache key", func(t *testing.T) {
+		body := []byte(`{"model":"gpt-5.6-sol","prompt_cache_key":"stable-cache-key","input":"hello"}`)
+		rec := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(rec)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+		c.Set("api_key", &APIKey{ID: 314})
+
+		req, err := svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
+		require.NoError(t, err)
+		wantAffinity := isolateOpenAISessionID(314, "stable-cache-key")
+		require.Equal(t, wantAffinity, req.Header.Get("session_id"))
+		require.Equal(t, wantAffinity, req.Header.Get("conversation_id"))
+
+		forwardedBody, err := io.ReadAll(req.Body)
+		require.NoError(t, err)
+		require.Equal(t, body, forwardedBody)
+	})
+
+	t.Run("preserves explicit client affinity headers", func(t *testing.T) {
+		body := []byte(`{"model":"gpt-5.6-sol","prompt_cache_key":"stable-cache-key","input":"hello"}`)
+		rec := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(rec)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+		c.Request.Header.Set("session_id", "client-session")
+		c.Request.Header.Set("conversation_id", "client-conversation")
+		c.Set("api_key", &APIKey{ID: 314})
+
+		req, err := svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
+		require.NoError(t, err)
+		require.Equal(t, "client-session", req.Header.Get("session_id"))
+		require.Equal(t, "client-conversation", req.Header.Get("conversation_id"))
+	})
+
+	t.Run("does not mix a synthesized signal with one explicit client header", func(t *testing.T) {
+		body := []byte(`{"model":"gpt-5.6-sol","prompt_cache_key":"stable-cache-key","input":"hello"}`)
+		rec := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(rec)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+		c.Request.Header.Set("session_id", "client-session")
+		c.Set("api_key", &APIKey{ID: 314})
+
+		req, err := svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
+		require.NoError(t, err)
+		require.Equal(t, "client-session", req.Header.Get("session_id"))
+		require.Empty(t, req.Header.Get("conversation_id"))
+	})
+
+	t.Run("does not invent affinity without prompt cache key", func(t *testing.T) {
+		body := []byte(`{"model":"gpt-5.6-sol","input":"hello"}`)
+		rec := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(rec)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+		c.Set("api_key", &APIKey{ID: 314})
+
+		req, err := svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
+		require.NoError(t, err)
+		require.Empty(t, req.Header.Get("session_id"))
+		require.Empty(t, req.Header.Get("conversation_id"))
+	})
+
+	t.Run("does not synthesize without authenticated api key context", func(t *testing.T) {
+		body := []byte(`{"model":"gpt-5.6-sol","prompt_cache_key":"stable-cache-key","input":"hello"}`)
+		rec := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(rec)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+
+		req, err := svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
+		require.NoError(t, err)
+		require.Empty(t, req.Header.Get("session_id"))
+		require.Empty(t, req.Header.Get("conversation_id"))
+	})
+
+	t.Run("isolates the same prompt cache key across api keys", func(t *testing.T) {
+		body := []byte(`{"model":"gpt-5.6-sol","prompt_cache_key":"shared-client-key","input":"hello"}`)
+		build := func(apiKeyID int64) *http.Request {
+			t.Helper()
+			rec := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(rec)
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+			c.Set("api_key", &APIKey{ID: apiKeyID})
+			req, err := svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
+			require.NoError(t, err)
+			return req
+		}
+
+		first := build(314)
+		second := build(315)
+		require.NotEqual(t, first.Header.Get("session_id"), second.Header.Get("session_id"))
+		require.NotEqual(t, first.Header.Get("conversation_id"), second.Header.Get("conversation_id"))
+	})
+
+	t.Run("leaves official OpenAI prompt cache routing header-free", func(t *testing.T) {
+		body := []byte(`{"model":"gpt-5.6-sol","prompt_cache_key":"official-cache-key","input":"hello"}`)
+		rec := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(rec)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+		c.Set("api_key", &APIKey{ID: 314})
+		officialAccount := &Account{Platform: PlatformOpenAI, Type: AccountTypeAPIKey}
+
+		req, err := svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, officialAccount, body, "token")
+		require.NoError(t, err)
+		require.Empty(t, req.Header.Get("session_id"))
+		require.Empty(t, req.Header.Get("conversation_id"))
+	})
+}
+
 func TestOpenAIBuildUpstreamRequestsApplyHostScopedGzipWithoutChangingBody(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	body := []byte(`{"model":"gpt-5.5","input":"` + strings.Repeat("payload-", 1024) + `"}`)
