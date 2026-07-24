@@ -2676,7 +2676,7 @@ func TestOpenAIBuildUpstreamRequestAPIKeyPassthroughPromptCacheAffinity(t *testi
 		require.NoError(t, err)
 		require.Equal(t, "client-session", req.Header.Get("session_id"))
 		require.Equal(t, "client-conversation", req.Header.Get("conversation_id"))
-		wantAffinity := isolateOpenAISessionID(314, "client-session")
+		wantAffinity := isolateOpenAISessionID(314, "stable-cache-key")
 		require.Equal(t, wantAffinity, req.Header.Get(openCodeSessionAffinityHeader))
 		require.Equal(t, wantAffinity, req.Header.Get(openCodeSessionIDHeader))
 	})
@@ -2693,12 +2693,12 @@ func TestOpenAIBuildUpstreamRequestAPIKeyPassthroughPromptCacheAffinity(t *testi
 		require.NoError(t, err)
 		require.Equal(t, "client-session", req.Header.Get("session_id"))
 		require.Empty(t, req.Header.Get("conversation_id"))
-		wantAffinity := isolateOpenAISessionID(314, "client-session")
+		wantAffinity := isolateOpenAISessionID(314, "stable-cache-key")
 		require.Equal(t, wantAffinity, req.Header.Get(openCodeSessionAffinityHeader))
 		require.Equal(t, wantAffinity, req.Header.Get(openCodeSessionIDHeader))
 	})
 
-	t.Run("isolates proxy safe client affinity before forwarding", func(t *testing.T) {
+	t.Run("body cache key wins for proxy safe affinity", func(t *testing.T) {
 		body := []byte(`{"model":"gpt-5.6-sol","prompt_cache_key":"body-cache-key","input":"hello"}`)
 		rec := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(rec)
@@ -2708,11 +2708,31 @@ func TestOpenAIBuildUpstreamRequestAPIKeyPassthroughPromptCacheAffinity(t *testi
 
 		req, err := svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
 		require.NoError(t, err)
-		wantAffinity := isolateOpenAISessionID(314, "client-affinity")
+		wantAffinity := isolateOpenAISessionID(314, "body-cache-key")
 		require.Equal(t, wantAffinity, req.Header.Get(openCodeSessionAffinityHeader))
 		require.Equal(t, wantAffinity, req.Header.Get(openCodeSessionIDHeader))
 		require.Empty(t, req.Header.Get("session_id"))
 		require.Empty(t, req.Header.Get("conversation_id"))
+	})
+
+	t.Run("rotating client sessions keep one cache affinity", func(t *testing.T) {
+		body := []byte(`{"model":"gpt-5.6-sol","prompt_cache_key":"stable-cache-key","input":"hello"}`)
+		build := func(clientSession string) *http.Request {
+			rec := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(rec)
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+			c.Request.Header.Set("session_id", clientSession)
+			c.Set("api_key", &APIKey{ID: 314})
+			req, err := svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
+			require.NoError(t, err)
+			return req
+		}
+
+		first := build("rotating-session-a")
+		second := build("rotating-session-b")
+		require.NotEqual(t, first.Header.Get("session_id"), second.Header.Get("session_id"))
+		require.Equal(t, first.Header.Get(openCodeSessionAffinityHeader), second.Header.Get(openCodeSessionAffinityHeader))
+		require.Equal(t, first.Header.Get(openCodeSessionIDHeader), second.Header.Get(openCodeSessionIDHeader))
 	})
 
 	t.Run("does not invent affinity without prompt cache key", func(t *testing.T) {

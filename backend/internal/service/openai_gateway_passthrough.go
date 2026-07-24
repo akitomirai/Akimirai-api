@@ -479,10 +479,12 @@ func (s *OpenAIGatewayService) buildUpstreamRequestOpenAIPassthrough(
 	return req, nil
 }
 
-// applyOpenAIAPIKeyPassthroughPromptCacheAffinity mirrors a stable session
-// signal into isolated headers for custom OpenAI-compatible gateways. Those
-// gateways may perform another scheduling hop keyed by headers, so forwarding
-// only the body key can still scatter one conversation across cache shards.
+// applyOpenAIAPIKeyPassthroughPromptCacheAffinity mirrors prompt_cache_key into
+// isolated headers for custom OpenAI-compatible gateways. The body key is the
+// canonical cache identity even when a client also sends rotating session
+// headers. Custom gateways may perform another scheduling hop keyed by headers,
+// so forwarding only the body key can still scatter one conversation across
+// cache shards.
 // The X-* aliases survive reverse proxies that drop underscore headers.
 // Official OpenAI already routes prompt_cache_key directly and is left alone.
 func applyOpenAIAPIKeyPassthroughPromptCacheAffinity(c *gin.Context, account *Account, body []byte, req *http.Request) {
@@ -492,20 +494,16 @@ func applyOpenAIAPIKeyPassthroughPromptCacheAffinity(c *gin.Context, account *Ac
 	if strings.EqualFold(strings.TrimSpace(req.URL.Hostname()), "api.openai.com") {
 		return
 	}
-	clientAffinity := explicitOpenAIHeaderSessionID(c)
 	promptCacheKey := strings.TrimSpace(gjson.GetBytes(body, "prompt_cache_key").String())
-	rawAffinity := clientAffinity
-	if rawAffinity == "" {
-		rawAffinity = promptCacheKey
-	}
-	if rawAffinity == "" {
+	if promptCacheKey == "" {
 		return
 	}
 	apiKeyID := getAPIKeyIDFromContext(c)
 	if apiKeyID <= 0 {
 		return
 	}
-	affinityID := isolateOpenAISessionID(apiKeyID, rawAffinity)
+	clientAffinity := explicitOpenAIHeaderSessionID(c)
+	affinityID := isolateOpenAISessionID(apiKeyID, promptCacheKey)
 	if clientAffinity == "" && strings.TrimSpace(req.Header.Get("session_id")) == "" && strings.TrimSpace(req.Header.Get("conversation_id")) == "" {
 		req.Header.Set("session_id", affinityID)
 		req.Header.Set("conversation_id", affinityID)
