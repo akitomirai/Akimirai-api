@@ -626,11 +626,11 @@ func TestFrontendServer_Middleware(t *testing.T) {
 
 		// Request for existing static file
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/logo.png", nil)
+		req := httptest.NewRequest(http.MethodGet, "/logo.svg", nil)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Contains(t, w.Header().Get("Content-Type"), "image/png")
+		assert.Contains(t, w.Header().Get("Content-Type"), "image/svg+xml")
 		assert.Empty(t, w.Header().Get("Cache-Control"))
 
 		entries, err := fs.ReadDir(server.distFS, "assets")
@@ -761,11 +761,11 @@ func TestServeEmbeddedFrontend(t *testing.T) {
 		router.Use(middleware)
 
 		w := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/logo.png", nil)
+		req := httptest.NewRequest(http.MethodGet, "/logo.svg", nil)
 		router.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Contains(t, w.Header().Get("Content-Type"), "image/png")
+		assert.Contains(t, w.Header().Get("Content-Type"), "image/svg+xml")
 	})
 
 	t.Run("serves_index_html_for_root", func(t *testing.T) {
@@ -883,7 +883,7 @@ func TestSetStaticCacheHeadersForFingerprintedAssets(t *testing.T) {
 		{path: "images/assets/index-a1B2c3D4.css", want: staticAssetsCacheControl},
 		{path: "assets/index.js"},
 		{path: "images/assets/index.js"},
-		{path: "logo.png"},
+		{path: "logo.svg"},
 	}
 
 	for _, tt := range tests {
