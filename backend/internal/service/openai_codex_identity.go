@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
+	"github.com/google/uuid"
 )
 
 const codexUpstreamMinVersion = "0.144.0"
@@ -26,6 +27,16 @@ func ensureCodexIdentityHeaders(headers http.Header) {
 		headers.Set("version", codexCLIVersion)
 	}
 	headers.Set("OpenAI-Beta", "responses=experimental")
+}
+
+// applyOpenAICodexProbeHeaders fills synthetic probe identity and gives every
+// probe a distinct engine fingerprint.
+func applyOpenAICodexProbeHeaders(headers http.Header) {
+	if headers == nil {
+		return
+	}
+	ensureCodexIdentityHeaders(headers)
+	headers.Set("X-Codex-Window-ID", uuid.NewString())
 }
 
 // enforceCodexIdentityHeaders pairs originator with the final outbound

@@ -17,7 +17,7 @@ const openAIResponsesNamespaceNamesContextKey = "openai_responses_namespace_name
 // ?????????????????????? WSv2 ??????? namespace
 // ????????? WSv2 ??? HTTP ??????????
 func shouldFlattenOpenAIResponsesNamespaces(account *Account, transport OpenAIUpstreamTransport, passthroughEnabled bool) bool {
-	if account == nil || account.Type != AccountTypeOAuth {
+	if account == nil || !account.IsOpenAIOAuth() {
 		return false
 	}
 	if transport == OpenAIUpstreamTransportResponsesWebsocketV2 && !passthroughEnabled {

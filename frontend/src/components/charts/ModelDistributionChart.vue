@@ -73,7 +73,7 @@
     </div>
     <div
       v-else-if="displayModelStats.length > 0 && chartData"
-      class="flex flex-col items-center gap-6 sm:flex-row"
+      class="flex flex-col items-center gap-4 sm:flex-row sm:gap-6"
     >
       <div class="h-48 w-48 shrink-0">
         <Doughnut :data="chartData" :options="doughnutOptions" />

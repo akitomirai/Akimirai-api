@@ -1,8 +1,8 @@
 <template>
-  <header class="sticky top-0 z-30 border-b border-gray-200 bg-white/95 dark:border-dark-800 dark:bg-dark-900/95">
-    <div class="flex h-14 items-center justify-between gap-4 px-4 md:px-5">
+  <header class="glass sticky top-0 z-30 border-b border-gray-200/50 dark:border-dark-700/50">
+    <div class="flex h-16 items-center justify-between gap-2 px-2 sm:px-4 md:px-6">
       <!-- Left: Mobile Menu Toggle + Page Title -->
-      <div class="flex min-w-0 flex-1 items-center gap-4">
+      <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-4">
         <button
           @click="toggleMobileSidebar"
           class="btn-ghost btn-icon lg:hidden"
@@ -31,7 +31,7 @@
       </div>
 
       <!-- Right: Announcements + Docs + Language + Subscriptions + Balance + User Dropdown -->
-      <div class="flex shrink-0 items-center gap-3">
+      <div class="flex min-w-0 shrink-0 items-center gap-1 sm:gap-3">
         <button
           v-if="user"
           data-testid="daily-check-in-desktop"
@@ -81,7 +81,6 @@
           <Icon :name="isGptImageActive ? 'x' : 'sparkles'" size="sm" />
           <span class="hidden sm:inline">GPTImage</span>
         </button>
-
         <!-- Announcement Bell -->
         <AnnouncementBell v-if="user" />
 
@@ -91,7 +90,7 @@
           :href="docUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white"
+          class="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white sm:flex"
         >
           <Icon name="book" size="sm" />
           <span class="hidden sm:inline">{{ t('nav.docs') }}</span>

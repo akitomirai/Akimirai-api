@@ -126,6 +126,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import {
+  GROK_CC_SWITCH_MODEL,
   OPENAI_CC_SWITCH_CODEX_MODEL,
   type CcSwitchApp,
   type CcSwitchImportFormData
@@ -166,7 +167,8 @@ const form = reactive<Required<CcSwitchImportFormData>>({
 const appOptions = computed<Array<{ value: CcSwitchApp; label: string }>>(() => [
   { value: 'claude', label: 'Claude' },
   { value: 'codex', label: 'Codex' },
-  { value: 'gemini', label: 'Gemini' }
+  { value: 'gemini', label: 'Gemini' },
+  { value: 'grokbuild', label: 'Grok Build' }
 ])
 
 const claudeModelFields = computed<Array<{
@@ -179,7 +181,8 @@ const claudeModelFields = computed<Array<{
 ])
 
 const inferApp = (): CcSwitchApp => {
-  if (props.platform === 'openai' || props.platform === 'grok') return 'codex'
+  if (props.platform === 'openai') return 'codex'
+  if (props.platform === 'grok') return 'grokbuild'
   if (props.platform === 'gemini') return 'gemini'
   return 'claude'
 }
@@ -188,6 +191,11 @@ const preferredModel = (app: CcSwitchApp): string => {
   if (app === 'codex') {
     return props.modelOptions.find((model) => model === OPENAI_CC_SWITCH_CODEX_MODEL)
       || props.modelOptions.find((model) => model.startsWith('gpt-'))
+      || ''
+  }
+  if (app === 'grokbuild') {
+    return props.modelOptions.find((model) => model === GROK_CC_SWITCH_MODEL)
+      || props.modelOptions.find((model) => model.toLowerCase().startsWith('grok-'))
       || ''
   }
   const prefix = app === 'gemini' ? 'gemini' : 'claude'

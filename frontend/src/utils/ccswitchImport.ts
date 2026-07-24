@@ -1,8 +1,9 @@
 import type { GroupPlatform } from '@/types'
 
 export const OPENAI_CC_SWITCH_CODEX_MODEL = 'gpt-5.6-sol'
+export const GROK_CC_SWITCH_MODEL = 'grok-4.5'
 
-export type CcSwitchApp = 'claude' | 'codex' | 'gemini'
+export type CcSwitchApp = 'claude' | 'codex' | 'gemini' | 'grokbuild'
 
 export interface CcSwitchImportFormData {
   app: CcSwitchApp
@@ -33,11 +34,23 @@ export interface CcSwitchImportDeeplinkInput {
   opusModel?: string
 }
 
+function withV1Endpoint(baseUrl: string): string {
+  const normalizedBaseUrl = baseUrl.replace(/\/+$/, '')
+  return normalizedBaseUrl.endsWith('/v1') ? normalizedBaseUrl : `${normalizedBaseUrl}/v1`
+}
+
 export function resolveCcSwitchImportConfig(
   platform: GroupPlatform | undefined | null,
   app: CcSwitchApp,
   baseUrl: string
 ): CcSwitchImportConfig {
+  if (app === 'grokbuild') {
+    return {
+      app,
+      endpoint: withV1Endpoint(baseUrl)
+    }
+  }
+
   return {
     app,
     endpoint: platform === 'antigravity' ? `${baseUrl}/antigravity` : baseUrl
