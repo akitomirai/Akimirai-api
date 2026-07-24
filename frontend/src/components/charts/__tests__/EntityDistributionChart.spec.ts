@@ -27,6 +27,7 @@ vi.mock('vue-chartjs', () => ({
     template: '<div class="chart-data doughnut-data">{{ JSON.stringify(data) }}</div>',
   },
   Bar: {
+    name: 'BarChartStub',
     props: ['data', 'options'],
     template: '<div class="chart-data bar-data" :data-index-axis="options.indexAxis">{{ JSON.stringify(data) }}</div>',
   },
@@ -103,15 +104,29 @@ describe('EntityDistributionChart', () => {
     ])
     expect(chartData.datasets[0].data).toEqual([1200, 600, 300, 200, 100, 0, 0])
     expect(wrapper.get('.bar-data').attributes('data-index-axis')).toBe('y')
+    expect(wrapper.findComponent({ name: 'BarChartStub' }).props('options').scales.y.ticks.display).toBe(false)
     expect(wrapper.find('.doughnut-data').exists()).toBe(false)
 
     const scrollArea = wrapper.get('[data-testid="horizontal-bar-scroll"]')
+    const tableScrollArea = wrapper.get('[data-testid="distribution-table-scroll"]')
     const chartCanvas = wrapper.get('[data-testid="horizontal-bar-canvas"]')
     expect(scrollArea.classes()).toContain('overflow-y-auto')
     expect(scrollArea.classes()).toContain('max-h-52')
+    expect(scrollArea.classes()).toContain('sm:w-72')
     expect(scrollArea.attributes('role')).toBe('region')
     expect(scrollArea.attributes('tabindex')).toBe('0')
-    expect(chartCanvas.attributes('style')).toContain('height: 252px')
+    expect(wrapper.get('[data-testid="horizontal-bar-header-spacer"]').classes()).toContain('h-6')
+    expect(chartCanvas.attributes('style')).toContain('height: 210px')
+    expect(wrapper.findAll('tbody tr').every((row) => row.classes().includes('h-[30px]'))).toBe(true)
+
+    const barScrollElement = scrollArea.element as HTMLElement
+    const tableScrollElement = tableScrollArea.element as HTMLElement
+    barScrollElement.scrollTop = 60
+    await scrollArea.trigger('scroll')
+    expect(tableScrollElement.scrollTop).toBe(60)
+    tableScrollElement.scrollTop = 30
+    await tableScrollArea.trigger('scroll')
+    expect(barScrollElement.scrollTop).toBe(30)
 
     await wrapper.setProps({ metric: 'actual_cost' })
 

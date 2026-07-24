@@ -32,15 +32,18 @@
     <div v-if="loading" class="flex h-48 items-center justify-center">
       <LoadingSpinner />
     </div>
-    <div v-else-if="displayItems.length > 0 && chartData" class="flex flex-col gap-5 sm:flex-row sm:items-center">
+    <div v-else-if="displayItems.length > 0 && chartData" class="flex flex-col gap-5 sm:flex-row sm:items-start">
       <div
         v-if="visualization === 'horizontal-bar' && barChartData"
+        ref="barScrollRef"
         data-testid="horizontal-bar-scroll"
-        class="entity-distribution-bar-scroll max-h-52 w-full shrink-0 overflow-x-hidden overflow-y-auto pr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 sm:w-60"
+        class="entity-distribution-bar-scroll max-h-52 w-full shrink-0 overflow-x-hidden overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 sm:w-72"
         :aria-label="title"
         role="region"
         tabindex="0"
+        @scroll="syncVerticalScroll($event, tableScrollRef)"
       >
+        <div aria-hidden="true" class="h-6" data-testid="horizontal-bar-header-spacer" />
         <div
           data-testid="horizontal-bar-canvas"
           class="relative w-full"
@@ -58,34 +61,39 @@
       <div v-else class="mx-auto h-44 w-44 shrink-0 sm:mx-0 sm:h-48 sm:w-48">
         <Doughnut :data="chartData" :options="doughnutOptions" />
       </div>
-      <div class="max-h-52 min-w-0 flex-1 overflow-auto">
+      <div
+        ref="tableScrollRef"
+        data-testid="distribution-table-scroll"
+        class="max-h-52 min-w-0 flex-1 overflow-auto"
+        @scroll="syncVerticalScroll($event, barScrollRef)"
+      >
         <table class="w-full min-w-[480px] text-xs">
           <thead>
-            <tr class="text-gray-500 dark:text-gray-400">
-              <th class="pb-2 text-left">{{ entityLabel }}</th>
-              <th class="pb-2 text-right">{{ t('admin.dashboard.requests') }}</th>
-              <th class="pb-2 text-right">{{ t('admin.dashboard.tokens') }}</th>
-              <th class="pb-2 text-right">{{ t('admin.dashboard.actual') }}</th>
-              <th v-if="showAccountCost" class="pb-2 text-right">{{ t('admin.dashboard.accountCost') }}</th>
-              <th v-if="showStandardCost" class="pb-2 text-right">{{ t('admin.dashboard.standard') }}</th>
+            <tr class="h-6 text-gray-500 dark:text-gray-400">
+              <th class="p-0 text-left">{{ entityLabel }}</th>
+              <th class="p-0 text-right">{{ t('admin.dashboard.requests') }}</th>
+              <th class="p-0 text-right">{{ t('admin.dashboard.tokens') }}</th>
+              <th class="p-0 text-right">{{ t('admin.dashboard.actual') }}</th>
+              <th v-if="showAccountCost" class="p-0 text-right">{{ t('admin.dashboard.accountCost') }}</th>
+              <th v-if="showStandardCost" class="p-0 text-right">{{ t('admin.dashboard.standard') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr
               v-for="item in displayItems"
               :key="item.id"
-              class="border-t border-gray-100 dark:border-gray-700"
+              class="h-[30px] border-t border-gray-100 dark:border-gray-700"
             >
-              <td class="max-w-[180px] truncate py-1.5 font-medium text-gray-900 dark:text-white" :title="item.label">
+              <td class="max-w-[180px] truncate p-0 font-medium text-gray-900 dark:text-white" :title="item.label">
                 {{ item.label }}
               </td>
-              <td class="py-1.5 text-right text-gray-600 dark:text-gray-400">{{ formatNumber(item.requests) }}</td>
-              <td class="py-1.5 text-right text-gray-600 dark:text-gray-400">{{ formatTokenCount(item.total_tokens) }}</td>
-              <td class="py-1.5 text-right text-green-600 dark:text-green-400">${{ formatCost(item.actual_cost) }}</td>
-              <td v-if="showAccountCost" class="py-1.5 text-right text-orange-500 dark:text-orange-400">
+              <td class="p-0 text-right text-gray-600 dark:text-gray-400">{{ formatNumber(item.requests) }}</td>
+              <td class="p-0 text-right text-gray-600 dark:text-gray-400">{{ formatTokenCount(item.total_tokens) }}</td>
+              <td class="p-0 text-right text-green-600 dark:text-green-400">${{ formatCost(item.actual_cost) }}</td>
+              <td v-if="showAccountCost" class="p-0 text-right text-orange-500 dark:text-orange-400">
                 ${{ formatCost(item.account_cost) }}
               </td>
-              <td v-if="showStandardCost" class="py-1.5 text-right text-gray-400 dark:text-gray-500">
+              <td v-if="showStandardCost" class="p-0 text-right text-gray-400 dark:text-gray-500">
                 ${{ formatCost(item.cost) }}
               </td>
             </tr>
@@ -100,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   ArcElement,
@@ -156,9 +164,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const chartColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16']
-const BAR_ROW_HEIGHT = 36
-const BAR_MIN_HEIGHT = 192
-const BAR_LABEL_MAX_LENGTH = 18
+const BAR_ROW_HEIGHT = 30
+const barScrollRef = ref<HTMLElement | null>(null)
+const tableScrollRef = ref<HTMLElement | null>(null)
 const toFiniteNumber = (value: unknown): number => {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : 0
@@ -195,7 +203,7 @@ const barChartData = computed(() => {
   }
 })
 
-const barChartHeight = computed(() => Math.max(BAR_MIN_HEIGHT, displayItems.value.length * BAR_ROW_HEIGHT))
+const barChartHeight = computed(() => displayItems.value.length * BAR_ROW_HEIGHT)
 
 const formatNumber = (value: number): string => toFiniteNumber(value).toLocaleString()
 const formatCost = (value: number | null | undefined): string => {
@@ -218,11 +226,6 @@ const formatTooltipLabel = (label: string, value: unknown, values: readonly unkn
   return `${label}: ${formatMetricValue(amount)} (${percentage}%)`
 }
 
-const truncateChartLabel = (label: string): string => {
-  if (label.length <= BAR_LABEL_MAX_LENGTH) return label
-  return `${label.slice(0, BAR_LABEL_MAX_LENGTH - 3)}...`
-}
-
 const isDarkMode = (): boolean => {
   return typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
 }
@@ -231,6 +234,12 @@ const getChartTextColor = (): string => isDarkMode() ? '#9ca3af' : '#6b7280'
 const getChartGridColor = (): string => isDarkMode()
   ? 'rgba(148, 163, 184, 0.16)'
   : 'rgba(148, 163, 184, 0.22)'
+
+const syncVerticalScroll = (event: Event, target: HTMLElement | null): void => {
+  if (!target) return
+  const source = event.currentTarget as HTMLElement
+  if (target.scrollTop !== source.scrollTop) target.scrollTop = source.scrollTop
+}
 
 const doughnutOptions = computed(() => ({
   responsive: true,
@@ -280,10 +289,8 @@ const barChartOptions = computed<ChartOptions<'bar'>>(() => ({
       border: { display: false },
       grid: { display: false },
       ticks: {
+        display: false,
         autoSkip: false,
-        color: () => getChartTextColor(),
-        font: { size: 10 },
-        callback: (_value, index) => truncateChartLabel(displayItems.value[index]?.label || ''),
       },
     },
   },
@@ -320,29 +327,13 @@ const barValueLabelsPlugin: Plugin<'bar'> = {
 
 <style scoped>
 .entity-distribution-bar-scroll {
-  scrollbar-gutter: stable;
-  scrollbar-width: thin !important;
-  scrollbar-color: rgba(156, 163, 175, 0.65) transparent !important;
+  -ms-overflow-style: none;
+  scrollbar-width: none !important;
 }
 
 .entity-distribution-bar-scroll::-webkit-scrollbar {
-  width: 6px !important;
-}
-
-.entity-distribution-bar-scroll::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.65) !important;
-  border-radius: 9999px !important;
-}
-
-.entity-distribution-bar-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(107, 114, 128, 0.9) !important;
-}
-
-:global(.dark) .entity-distribution-bar-scroll {
-  scrollbar-color: rgba(107, 114, 128, 0.75) transparent !important;
-}
-
-:global(.dark) .entity-distribution-bar-scroll::-webkit-scrollbar-thumb {
-  background-color: rgba(107, 114, 128, 0.75) !important;
+  display: none;
+  width: 0 !important;
+  height: 0 !important;
 }
 </style>
