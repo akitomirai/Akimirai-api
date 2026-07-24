@@ -98,8 +98,8 @@ const mountDashboard = () => mount(DashboardView, {
         template: '<section :data-testid="`model-usage-trend-${metric}`" :data-granularity="granularity" :data-range-start="rangeStart" :data-range-end="rangeEnd">{{ trendData.length }}</section>',
       },
       EntityDistributionChart: {
-        props: ['title', 'entityLabel', 'items', 'loading', 'metric'],
-        template: '<section data-testid="api-key-distribution" :data-metric="metric" :data-loading="loading" :data-item-label="items?.[0]?.label">{{ title }}{{ items?.length || 0 }}</section>',
+        props: ['title', 'entityLabel', 'items', 'loading', 'metric', 'visualization'],
+        template: '<section data-testid="api-key-distribution" :data-metric="metric" :data-loading="loading" :data-item-label="items?.[0]?.label" :data-visualization="visualization || \'default\'">{{ title }}{{ items?.length || 0 }}</section>',
       },
       UserDashboardAnnouncements: { template: '<aside data-testid="announcements" />' },
     },
@@ -139,6 +139,7 @@ describe('user DashboardView', () => {
     expect(wrapper.find('[data-testid="api-key-distribution"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="api-key-distribution"]').attributes('data-metric')).toBe('actual_cost')
     expect(wrapper.find('[data-testid="api-key-distribution"]').attributes('data-item-label')).toBe('usage.apiKeyFallback')
+    expect(wrapper.find('[data-testid="api-key-distribution"]').attributes('data-visualization')).toBe('default')
     expect(wrapper.html().indexOf('api-key-distribution')).toBeLessThan(wrapper.html().indexOf('model-usage-trend-actual_cost'))
     expect(wrapper.find('[data-testid="model-usage-trend-actual_cost"]').text()).toBe('1')
     expect(wrapper.find('[data-testid="model-usage-trend-total_tokens"]').text()).toBe('1')

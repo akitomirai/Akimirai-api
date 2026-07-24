@@ -33,7 +33,29 @@
       <LoadingSpinner />
     </div>
     <div v-else-if="displayItems.length > 0 && chartData" class="flex flex-col gap-5 sm:flex-row sm:items-center">
-      <div class="mx-auto h-44 w-44 shrink-0 sm:mx-0 sm:h-48 sm:w-48">
+      <div
+        v-if="visualization === 'horizontal-bar' && barChartData"
+        data-testid="horizontal-bar-scroll"
+        class="entity-distribution-bar-scroll max-h-52 w-full shrink-0 overflow-x-hidden overflow-y-auto pr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 sm:w-60"
+        :aria-label="title"
+        role="region"
+        tabindex="0"
+      >
+        <div
+          data-testid="horizontal-bar-canvas"
+          class="relative w-full"
+          :style="{ height: `${barChartHeight}px` }"
+        >
+          <Bar
+            :data="barChartData"
+            :options="barChartOptions"
+            :plugins="[barValueLabelsPlugin]"
+            role="img"
+            :aria-label="`${title}: ${entityLabel}`"
+          />
+        </div>
+      </div>
+      <div v-else class="mx-auto h-44 w-44 shrink-0 sm:mx-0 sm:h-48 sm:w-48">
         <Doughnut :data="chartData" :options="doughnutOptions" />
       </div>
       <div class="max-h-52 min-w-0 flex-1 overflow-auto">
@@ -80,13 +102,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ArcElement, Chart as ChartJS, Legend, Tooltip } from 'chart.js'
-import type { TooltipItem } from 'chart.js'
-import { Doughnut } from 'vue-chartjs'
+import {
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Legend,
+  LinearScale,
+  Tooltip,
+} from 'chart.js'
+import type { ChartOptions, Plugin, TooltipItem } from 'chart.js'
+import { Bar, Doughnut } from 'vue-chartjs'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { formatTokenCount } from '@/utils/format'
 
-ChartJS.register(ArcElement, Tooltip, Legend)
+ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 
 interface EntityDistributionItem {
   id: string | number
@@ -99,6 +129,7 @@ interface EntityDistributionItem {
 }
 
 type DistributionMetric = 'tokens' | 'actual_cost'
+type DistributionVisualization = 'doughnut' | 'horizontal-bar'
 
 const props = withDefaults(defineProps<{
   title: string
@@ -109,12 +140,14 @@ const props = withDefaults(defineProps<{
   showMetricToggle?: boolean
   showStandardCost?: boolean
   showAccountCost?: boolean
+  visualization?: DistributionVisualization
 }>(), {
   loading: false,
   metric: 'tokens',
   showMetricToggle: true,
   showStandardCost: true,
   showAccountCost: false,
+  visualization: 'doughnut',
 })
 
 const emit = defineEmits<{
@@ -123,6 +156,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const chartColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16']
+const BAR_ROW_HEIGHT = 36
+const BAR_MIN_HEIGHT = 192
+const BAR_LABEL_MAX_LENGTH = 18
 const toFiniteNumber = (value: unknown): number => {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : 0
@@ -145,24 +181,21 @@ const chartData = computed(() => {
   }
 })
 
-const doughnutOptions = computed(() => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      callbacks: {
-        label: (context: TooltipItem<'doughnut'>) => {
-          const value = toFiniteNumber(context.raw)
-          const total = context.dataset.data.reduce<number>((sum, item) => sum + toFiniteNumber(item), 0)
-          const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0'
-          const formatted = props.metric === 'actual_cost' ? `$${formatCost(value)}` : formatTokenCount(value)
-          return `${context.label || ''}: ${formatted} (${percentage}%)`
-        },
-      },
-    },
-  },
-}))
+const barChartData = computed(() => {
+  if (!chartData.value) return null
+  return {
+    ...chartData.value,
+    datasets: chartData.value.datasets.map((dataset) => ({
+      ...dataset,
+      borderRadius: 4,
+      borderSkipped: false as const,
+      barThickness: 14,
+      maxBarThickness: 14,
+    })),
+  }
+})
+
+const barChartHeight = computed(() => Math.max(BAR_MIN_HEIGHT, displayItems.value.length * BAR_ROW_HEIGHT))
 
 const formatNumber = (value: number): string => toFiniteNumber(value).toLocaleString()
 const formatCost = (value: number | null | undefined): string => {
@@ -172,4 +205,144 @@ const formatCost = (value: number | null | undefined): string => {
   if (amount >= 0.01) return amount.toFixed(3)
   return amount.toFixed(4)
 }
+
+const formatMetricValue = (value: unknown): string => {
+  const amount = toFiniteNumber(value)
+  return props.metric === 'actual_cost' ? `$${formatCost(amount)}` : formatTokenCount(amount)
+}
+
+const formatTooltipLabel = (label: string, value: unknown, values: readonly unknown[]): string => {
+  const amount = toFiniteNumber(value)
+  const total = values.reduce<number>((sum, item) => sum + toFiniteNumber(item), 0)
+  const percentage = total > 0 ? ((amount / total) * 100).toFixed(1) : '0.0'
+  return `${label}: ${formatMetricValue(amount)} (${percentage}%)`
+}
+
+const truncateChartLabel = (label: string): string => {
+  if (label.length <= BAR_LABEL_MAX_LENGTH) return label
+  return `${label.slice(0, BAR_LABEL_MAX_LENGTH - 3)}...`
+}
+
+const isDarkMode = (): boolean => {
+  return typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+}
+
+const getChartTextColor = (): string => isDarkMode() ? '#9ca3af' : '#6b7280'
+const getChartGridColor = (): string => isDarkMode()
+  ? 'rgba(148, 163, 184, 0.16)'
+  : 'rgba(148, 163, 184, 0.22)'
+
+const doughnutOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: (context: TooltipItem<'doughnut'>) => {
+          return formatTooltipLabel(context.label || '', context.raw, context.dataset.data)
+        },
+      },
+    },
+  },
+}))
+
+const barChartOptions = computed<ChartOptions<'bar'>>(() => ({
+  indexAxis: 'y',
+  responsive: true,
+  maintainAspectRatio: false,
+  animation: {
+    duration: 250,
+  },
+  layout: {
+    padding: {
+      right: 4,
+    },
+  },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      callbacks: {
+        label: (context: TooltipItem<'bar'>) => {
+          return formatTooltipLabel(context.label || '', context.raw, context.dataset.data)
+        },
+      },
+    },
+  },
+  scales: {
+    x: {
+      beginAtZero: true,
+      border: { display: false },
+      grid: { color: () => getChartGridColor() },
+      ticks: { display: false },
+    },
+    y: {
+      border: { display: false },
+      grid: { display: false },
+      ticks: {
+        autoSkip: false,
+        color: () => getChartTextColor(),
+        font: { size: 10 },
+        callback: (_value, index) => truncateChartLabel(displayItems.value[index]?.label || ''),
+      },
+    },
+  },
+}))
+
+const barValueLabelsPlugin: Plugin<'bar'> = {
+  id: 'entityDistributionValueLabels',
+  afterDatasetsDraw(chart) {
+    const dataset = chart.data.datasets[0]
+    if (!dataset) return
+
+    const meta = chart.getDatasetMeta(0)
+    const { ctx, chartArea } = chart
+    ctx.save()
+    ctx.font = '500 10px ui-sans-serif, system-ui, sans-serif'
+    ctx.textBaseline = 'middle'
+
+    meta.data.forEach((element, index) => {
+      const value = dataset.data[index]
+      const label = formatMetricValue(value)
+      const { x, y } = element.getProps(['x', 'y'], true) as { x: number; y: number }
+      const labelWidth = ctx.measureText(label).width
+      const renderInside = x + labelWidth + 6 > chartArea.right
+
+      ctx.textAlign = renderInside ? 'right' : 'left'
+      ctx.fillStyle = renderInside ? '#ffffff' : getChartTextColor()
+      ctx.fillText(label, renderInside ? x - 4 : x + 4, y)
+    })
+
+    ctx.restore()
+  },
+}
 </script>
+
+<style scoped>
+.entity-distribution-bar-scroll {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(156, 163, 175, 0.65) transparent !important;
+}
+
+.entity-distribution-bar-scroll::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.entity-distribution-bar-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.65) !important;
+  border-radius: 9999px !important;
+}
+
+.entity-distribution-bar-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(107, 114, 128, 0.9) !important;
+}
+
+:global(.dark) .entity-distribution-bar-scroll {
+  scrollbar-color: rgba(107, 114, 128, 0.75) transparent !important;
+}
+
+:global(.dark) .entity-distribution-bar-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(107, 114, 128, 0.75) !important;
+}
+</style>

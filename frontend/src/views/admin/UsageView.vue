@@ -25,6 +25,7 @@
             :items="userDistributionItems"
             :loading="userStatsLoading"
             :show-account-cost="true"
+            visualization="horizontal-bar"
           />
           <ModelDistributionChart
             v-model:source="modelDistributionSource"

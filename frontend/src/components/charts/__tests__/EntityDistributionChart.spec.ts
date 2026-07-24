@@ -23,8 +23,12 @@ vi.mock('vue-i18n', async () => {
 
 vi.mock('vue-chartjs', () => ({
   Doughnut: {
-    props: ['data'],
-    template: '<div class="chart-data">{{ JSON.stringify(data) }}</div>',
+    props: ['data', 'options'],
+    template: '<div class="chart-data doughnut-data">{{ JSON.stringify(data) }}</div>',
+  },
+  Bar: {
+    props: ['data', 'options'],
+    template: '<div class="chart-data bar-data" :data-index-axis="options.indexAxis">{{ JSON.stringify(data) }}</div>',
   },
 }))
 
@@ -43,6 +47,8 @@ describe('EntityDistributionChart', () => {
     const chartData = JSON.parse(wrapper.get('.chart-data').text())
     expect(chartData.labels).toEqual(['key-a', 'key-b'])
     expect(chartData.datasets[0].data).toEqual([1200, 600])
+    expect(wrapper.find('.doughnut-data').exists()).toBe(true)
+    expect(wrapper.find('.bar-data').exists()).toBe(false)
     expect(wrapper.findAll('tbody tr')[0].text()).toContain('key-a')
     expect(wrapper.findAll('tbody tr')[0].text()).toContain('1,200')
     expect(wrapper.text()).not.toContain('Account Cost')
@@ -64,5 +70,62 @@ describe('EntityDistributionChart', () => {
     expect(chartData.labels).toEqual(['key-b', 'key-a'])
     expect(chartData.datasets[0].data).toEqual([0.9, 0.1])
     expect(wrapper.text()).toContain('Account Cost')
+  })
+
+  it('renders a vertically scrollable horizontal bar chart and updates it with the metric', async () => {
+    const barItems = [
+      ...items,
+      { id: 3, label: 'key-c-with-a-very-long-label', requests: 1, total_tokens: 300, cost: 0.4, actual_cost: 0.3 },
+      { id: 4, label: 'key-d', requests: 1, total_tokens: 200, cost: 0.3, actual_cost: 0.2 },
+      { id: 5, label: 'key-e', requests: 1, total_tokens: 100, cost: 0.2, actual_cost: 0.1 },
+      { id: 6, label: 'key-f', requests: 1, total_tokens: Number.NaN, cost: 0.1, actual_cost: 0.05 },
+      { id: 7, label: 'key-g', requests: 1, total_tokens: Number.POSITIVE_INFINITY, cost: 0.1, actual_cost: 0.01 },
+    ]
+    const wrapper = mount(EntityDistributionChart, {
+      props: {
+        title: 'User Distribution',
+        entityLabel: 'User',
+        items: barItems,
+        visualization: 'horizontal-bar',
+      },
+      global: { stubs: { LoadingSpinner: true } },
+    })
+
+    const chartData = JSON.parse(wrapper.get('.bar-data').text())
+    expect(chartData.labels).toEqual([
+      'key-a',
+      'key-b',
+      'key-c-with-a-very-long-label',
+      'key-d',
+      'key-e',
+      'key-f',
+      'key-g',
+    ])
+    expect(chartData.datasets[0].data).toEqual([1200, 600, 300, 200, 100, 0, 0])
+    expect(wrapper.get('.bar-data').attributes('data-index-axis')).toBe('y')
+    expect(wrapper.find('.doughnut-data').exists()).toBe(false)
+
+    const scrollArea = wrapper.get('[data-testid="horizontal-bar-scroll"]')
+    const chartCanvas = wrapper.get('[data-testid="horizontal-bar-canvas"]')
+    expect(scrollArea.classes()).toContain('overflow-y-auto')
+    expect(scrollArea.classes()).toContain('max-h-52')
+    expect(scrollArea.attributes('role')).toBe('region')
+    expect(scrollArea.attributes('tabindex')).toBe('0')
+    expect(chartCanvas.attributes('style')).toContain('height: 252px')
+
+    await wrapper.setProps({ metric: 'actual_cost' })
+
+    const actualCostData = JSON.parse(wrapper.get('.bar-data').text())
+    expect(actualCostData.labels).toEqual([
+      'key-b',
+      'key-c-with-a-very-long-label',
+      'key-d',
+      'key-a',
+      'key-e',
+      'key-f',
+      'key-g',
+    ])
+    expect(actualCostData.datasets[0].data).toEqual([0.9, 0.3, 0.2, 0.1, 0.1, 0.05, 0.01])
+    expect(wrapper.findAll('tbody tr')[0].text()).toContain('key-b')
   })
 })

@@ -125,12 +125,13 @@ const ModelDistributionChartStub = {
   `,
 }
 const EntityDistributionChartStub = {
-  props: ['metric', 'items'],
+  props: ['metric', 'items', 'visualization'],
   emits: ['update:metric'],
   template: `
     <div data-test="user-chart">
       <span class="metric">{{ metric }}</span>
       <span class="items">{{ items.length }}</span>
+      <span class="visualization">{{ visualization }}</span>
       <button class="switch-metric" @click="$emit('update:metric', 'actual_cost')">switch</button>
     </div>
   `,
@@ -258,6 +259,7 @@ describe('admin UsageView distribution metric toggles', () => {
     expect(modelChart.find('.metric').text()).toBe('tokens')
     expect(userChart.find('.metric').text()).toBe('tokens')
     expect(userChart.find('.items').text()).toBe('1')
+    expect(userChart.find('.visualization').text()).toBe('horizontal-bar')
 
     await modelChart.find('.switch-metric').trigger('click')
     await flushPromises()
