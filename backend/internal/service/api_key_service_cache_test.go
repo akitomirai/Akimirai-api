@@ -779,11 +779,11 @@ func TestAPIKeyService_InvalidateAuthCacheByKey(t *testing.T) {
 }
 
 func TestAPIKeyService_GetByKey_CachesNegativeOnRepoMiss(t *testing.T) {
-	var repoCalls atomic.Int32
+	var repoKeys []string
 	cache := &authCacheStub{}
 	repo := &authRepoStub{
 		getByKeyForAuth: func(ctx context.Context, key string) (*APIKey, error) {
-			repoCalls.Add(1)
+			repoKeys = append(repoKeys, key)
 			return nil, ErrAPIKeyNotFound
 		},
 	}
@@ -806,7 +806,8 @@ func TestAPIKeyService_GetByKey_CachesNegativeOnRepoMiss(t *testing.T) {
 	svc.authNegativeCacheL1.Wait()
 	_, err = svc.GetByKey(context.Background(), "missing")
 	require.ErrorIs(t, err, ErrAPIKeyNotFound)
-	require.Equal(t, int32(1), repoCalls.Load())
+	require.Equal(t, []string{svc.hashAPIKey("missing"), "missing"}, repoKeys,
+		"the first miss must try the hashed key and the legacy plaintext fallback; the negative cache must suppress both on the second request")
 }
 
 func TestAPIKeyService_GetByKeyRejectsInvalidLengthBeforeCaches(t *testing.T) {
@@ -830,23 +831,23 @@ func TestAPIKeyService_GetByKeyRejectsInvalidLengthBeforeCaches(t *testing.T) {
 
 func TestAPIKeyService_GetByKeyAllowsMaximumLength(t *testing.T) {
 	key := strings.Repeat("x", MaxAPIKeyCredentialBytes)
-	var repoCalls atomic.Int32
+	var repoKeys []string
 	repo := &authRepoStub{getByKeyForAuth: func(_ context.Context, got string) (*APIKey, error) {
-		repoCalls.Add(1)
-		require.Equal(t, key, got)
+		repoKeys = append(repoKeys, got)
 		return nil, ErrAPIKeyNotFound
 	}}
 	svc := NewAPIKeyService(repo, nil, nil, nil, nil, nil, &config.Config{})
 	_, err := svc.GetByKey(context.Background(), key)
 	require.ErrorIs(t, err, ErrAPIKeyNotFound)
-	require.Equal(t, int32(1), repoCalls.Load())
+	require.Equal(t, []string{svc.hashAPIKey(key), key}, repoKeys)
 }
 
 func TestAPIKeyService_AuthLookupBulkheadRejectsExcessMisses(t *testing.T) {
 	entered := make(chan struct{})
 	release := make(chan struct{})
+	var enteredOnce sync.Once
 	repo := &authRepoStub{getByKeyForAuth: func(context.Context, string) (*APIKey, error) {
-		close(entered)
+		enteredOnce.Do(func() { close(entered) })
 		<-release
 		return nil, ErrAPIKeyNotFound
 	}}

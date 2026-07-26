@@ -214,19 +214,29 @@ type OllamaCloudUsageService struct {
 	encryptor               SecretEncryptor
 	encryptionKeyConfigured bool
 
-	parentCtx    context.Context
-	parentCancel context.CancelFunc
-	wg           sync.WaitGroup
-	mu           sync.Mutex
-	started      bool
-	stopped      bool
-	cycleMu      sync.Mutex
-	refreshGroup singleflight.Group
-	refreshSlots chan struct{}
-	now          func() time.Time
-	lockCache    LeaderLockCache
-	db           *sql.DB
-	instanceID   string
+	parentCtx       context.Context
+	parentCancel    context.CancelFunc
+	wg              sync.WaitGroup
+	mu              sync.Mutex
+	started         bool
+	stopped         bool
+	cycleMu         sync.Mutex
+	refreshGroup    singleflight.Group
+	refreshSequence uint64
+	refreshDoneMu   sync.Mutex
+	refreshActive   map[uint64]int64
+	refreshDone     map[string][]ollamaCloudUsageRefreshResult
+	refreshSlots    chan struct{}
+	now             func() time.Time
+	lockCache       LeaderLockCache
+	db              *sql.DB
+	instanceID      string
+}
+
+type ollamaCloudUsageRefreshResult struct {
+	snapshot *OllamaCloudUsageSnapshot
+	err      error
+	eligible map[uint64]struct{}
 }
 
 func NewOllamaCloudUsageService(
@@ -245,6 +255,8 @@ func NewOllamaCloudUsageService(
 		encryptionKeyConfigured: encryptionKeyConfigured,
 		parentCtx:               ctx,
 		parentCancel:            cancel,
+		refreshActive:           make(map[uint64]int64),
+		refreshDone:             make(map[string][]ollamaCloudUsageRefreshResult),
 		refreshSlots:            make(chan struct{}, ollamaCloudUsageConcurrency),
 		now:                     time.Now,
 		instanceID:              uuid.NewString(),
@@ -349,31 +361,48 @@ func (s *OllamaCloudUsageService) GetState(ctx context.Context, accountID int64)
 // objects. The repository resolves all matching siblings in one bounded query,
 // so account-list responses do not issue one query per row.
 func (s *OllamaCloudUsageService) ResolveAccounts(ctx context.Context, accounts []*Account) error {
+	_, err := s.resolveAccounts(ctx, accounts)
+	return err
+}
+
+func (s *OllamaCloudUsageService) resolveAccounts(ctx context.Context, accounts []*Account) (map[string]map[int64]struct{}, error) {
+	members := make(map[string]map[int64]struct{})
 	if s == nil || s.accountRepo == nil || len(accounts) == 0 {
-		return nil
-	}
-	writer, ok := s.accountRepo.(ollamaCloudUsageRepository)
-	if !ok {
-		return nil
+		return members, nil
 	}
 	eligible := make([]*Account, 0, len(accounts))
 	for _, account := range accounts {
-		if _, ok := ollamaCloudUsageGroupFingerprint(account); ok {
+		if fingerprint, ok := ollamaCloudUsageGroupFingerprint(account); ok {
 			eligible = append(eligible, account)
+			if members[fingerprint] == nil {
+				members[fingerprint] = make(map[int64]struct{})
+			}
+			members[fingerprint][account.ID] = struct{}{}
 		}
 	}
 	if len(eligible) == 0 {
-		return nil
+		return members, nil
+	}
+	writer, ok := s.accountRepo.(ollamaCloudUsageRepository)
+	if !ok {
+		return members, nil
 	}
 	siblings, err := writer.ListOllamaCloudUsageGroupAccounts(ctx, eligible)
 	if err != nil {
-		return fmt.Errorf("resolve Ollama Cloud usage groups: %w", err)
+		return members, fmt.Errorf("resolve Ollama Cloud usage groups: %w", err)
 	}
 	sources := make(map[string]*Account)
 	for index := range siblings {
 		candidate := &siblings[index]
 		fingerprint, valid := ollamaCloudUsageGroupFingerprint(candidate)
-		if !valid || !ollamaCloudUsageConfigured(candidate) {
+		if !valid {
+			continue
+		}
+		if members[fingerprint] == nil {
+			members[fingerprint] = make(map[int64]struct{})
+		}
+		members[fingerprint][candidate.ID] = struct{}{}
+		if !ollamaCloudUsageConfigured(candidate) {
 			continue
 		}
 		current := sources[fingerprint]
@@ -406,7 +435,7 @@ func (s *OllamaCloudUsageService) ResolveAccounts(ctx context.Context, accounts 
 		fingerprint, _ := ollamaCloudUsageGroupFingerprint(account)
 		applyOllamaCloudUsageManagedExtra(account, resolvedSources[fingerprint])
 	}
-	return nil
+	return members, nil
 }
 
 func sameOllamaCloudUsageSession(left, right *Account) bool {
@@ -602,6 +631,8 @@ func (s *OllamaCloudUsageService) refreshAccount(ctx context.Context, accountID 
 	if s == nil || s.accountRepo == nil {
 		return nil, ErrOllamaCloudUsageUnavailable
 	}
+	requestSequence := s.beginRefreshRequest(accountID)
+	defer s.endRefreshRequest(requestSequence)
 	anchor, err := s.accountRepo.GetByID(ctx, accountID)
 	if err != nil {
 		return nil, err
@@ -610,29 +641,56 @@ func (s *OllamaCloudUsageService) refreshAccount(ctx context.Context, accountID 
 	if !valid {
 		return nil, ErrOllamaCloudUsageAccountInvalid
 	}
+	if result, ok := s.completedRefreshSince(key, requestSequence); ok {
+		return result.snapshot, result.err
+	}
 	value, err, _ := s.refreshGroup.Do(key, func() (any, error) {
+		// A request may have started while the previous group refresh was still
+		// running, then reach singleflight just after that refresh was removed.
+		// Reuse that completed result so genuinely overlapping callers are still
+		// coalesced, while later sequential manual refreshes keep their cooldown.
+		if result, ok := s.completedRefreshSince(key, requestSequence); ok {
+			return result.snapshot, result.err
+		}
+		memberIDs := map[int64]struct{}{accountID: {}}
+		var completedSnapshot *OllamaCloudUsageSnapshot
+		var completedErr error
+		defer func() {
+			s.recordCompletedRefresh(key, memberIDs, completedSnapshot, completedErr)
+		}()
 		select {
 		case s.refreshSlots <- struct{}{}:
 			defer func() { <-s.refreshSlots }()
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			completedErr = ctx.Err()
+			return nil, completedErr
+		}
+		membersByKey, resolveErr := s.resolveAccounts(ctx, []*Account{anchor})
+		if resolvedMembers := membersByKey[key]; len(resolvedMembers) > 0 {
+			memberIDs = resolvedMembers
+		}
+		if resolveErr != nil {
+			completedErr = resolveErr
+			return nil, completedErr
 		}
 		account, loadErr := s.accountRepo.GetByID(ctx, accountID)
 		if loadErr != nil {
-			return nil, loadErr
+			completedErr = loadErr
+			return nil, completedErr
 		}
 		currentKey, currentValid := ollamaCloudUsageGroupFingerprint(account)
 		if !currentValid {
-			return nil, ErrOllamaCloudUsageAccountInvalid
+			completedErr = ErrOllamaCloudUsageAccountInvalid
+			return nil, completedErr
 		}
 		if currentKey != key {
-			return nil, ErrOllamaCloudUsageIdentityChanged
+			completedErr = ErrOllamaCloudUsageIdentityChanged
+			return nil, completedErr
 		}
-		if err := s.ResolveAccounts(ctx, []*Account{account}); err != nil {
-			return nil, err
-		}
+		applyOllamaCloudUsageManagedExtra(account, anchor)
 		if !ollamaCloudUsageConfigured(account) {
-			return nil, ErrOllamaCloudUsageSessionRequired
+			completedErr = ErrOllamaCloudUsageSessionRequired
+			return nil, completedErr
 		}
 		if !requireEnabled {
 			if snapshot := decodeOllamaCloudUsageSnapshot(account.Extra); snapshot != nil && !snapshot.LastAttemptAt.IsZero() {
@@ -640,9 +698,10 @@ func (s *OllamaCloudUsageService) refreshAccount(ctx context.Context, accountID 
 				if now := s.currentTime(); now.Before(retryAt) {
 					remaining := retryAt.Sub(now)
 					seconds := int((remaining + time.Second - 1) / time.Second)
-					return nil, ErrOllamaCloudUsageRefreshRateLimited.WithMetadata(map[string]string{
+					completedErr = ErrOllamaCloudUsageRefreshRateLimited.WithMetadata(map[string]string{
 						"retry_after_seconds": strconv.Itoa(seconds),
 					})
+					return nil, completedErr
 				}
 			}
 		}
@@ -654,7 +713,8 @@ func (s *OllamaCloudUsageService) refreshAccount(ctx context.Context, accountID 
 				return nil, nil
 			}
 		}
-		return s.refreshLoadedAccount(ctx, account, intervalMinutes)
+		completedSnapshot, completedErr = s.refreshLoadedAccount(ctx, account, intervalMinutes)
+		return completedSnapshot, completedErr
 	})
 	if err != nil || value == nil {
 		return nil, err
@@ -664,6 +724,75 @@ func (s *OllamaCloudUsageService) refreshAccount(ctx context.Context, accountID 
 		return nil, fmt.Errorf("invalid Ollama Cloud usage refresh result")
 	}
 	return snapshot, nil
+}
+
+func (s *OllamaCloudUsageService) completedRefreshSince(key string, requestSequence uint64) (ollamaCloudUsageRefreshResult, bool) {
+	s.refreshDoneMu.Lock()
+	defer s.refreshDoneMu.Unlock()
+	for _, result := range s.refreshDone[key] {
+		if _, ok := result.eligible[requestSequence]; ok {
+			return result, true
+		}
+	}
+	return ollamaCloudUsageRefreshResult{}, false
+}
+
+func (s *OllamaCloudUsageService) beginRefreshRequest(accountID int64) uint64 {
+	s.refreshDoneMu.Lock()
+	s.refreshSequence++
+	sequence := s.refreshSequence
+	s.refreshActive[sequence] = accountID
+	s.refreshDoneMu.Unlock()
+	return sequence
+}
+
+func (s *OllamaCloudUsageService) endRefreshRequest(sequence uint64) {
+	s.refreshDoneMu.Lock()
+	delete(s.refreshActive, sequence)
+	for key, results := range s.refreshDone {
+		retained := results[:0]
+		for _, result := range results {
+			delete(result.eligible, sequence)
+			if len(result.eligible) > 0 {
+				retained = append(retained, result)
+			}
+		}
+		if len(retained) == 0 {
+			delete(s.refreshDone, key)
+			continue
+		}
+		s.refreshDone[key] = retained
+	}
+	s.refreshDoneMu.Unlock()
+}
+
+func (s *OllamaCloudUsageService) recordCompletedRefresh(key string, memberIDs map[int64]struct{}, snapshot *OllamaCloudUsageSnapshot, err error) {
+	s.refreshDoneMu.Lock()
+	defer s.refreshDoneMu.Unlock()
+	eligible := make(map[uint64]struct{})
+	for sequence, accountID := range s.refreshActive {
+		if _, sameGroup := memberIDs[accountID]; !sameGroup || refreshSequenceAlreadyAssigned(s.refreshDone[key], sequence) {
+			continue
+		}
+		eligible[sequence] = struct{}{}
+	}
+	if len(eligible) == 0 {
+		return
+	}
+	s.refreshDone[key] = append(s.refreshDone[key], ollamaCloudUsageRefreshResult{
+		snapshot: snapshot,
+		err:      err,
+		eligible: eligible,
+	})
+}
+
+func refreshSequenceAlreadyAssigned(results []ollamaCloudUsageRefreshResult, sequence uint64) bool {
+	for _, result := range results {
+		if _, ok := result.eligible[sequence]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *OllamaCloudUsageService) refreshLoadedAccount(ctx context.Context, account *Account, intervalMinutes int) (*OllamaCloudUsageSnapshot, error) {

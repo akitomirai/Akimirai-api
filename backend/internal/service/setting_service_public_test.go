@@ -4,6 +4,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"sync/atomic"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
@@ -12,6 +14,34 @@ import (
 
 type settingPublicRepoStub struct {
 	values map[string]string
+}
+
+type settingPublicAccountRepoStub struct {
+	AccountRepository
+	accounts []Account
+	err      error
+}
+
+type settingPublicPlatformProjectionRepoStub struct {
+	AccountRepository
+	sources         []ConfiguredAIPlatformSource
+	err             error
+	projectionCalls atomic.Int64
+	fallbackCalls   atomic.Int64
+}
+
+func (s *settingPublicPlatformProjectionRepoStub) ListSchedulableAIPlatformSources(context.Context) ([]ConfiguredAIPlatformSource, error) {
+	s.projectionCalls.Add(1)
+	return s.sources, s.err
+}
+
+func (s *settingPublicPlatformProjectionRepoStub) ListSchedulable(context.Context) ([]Account, error) {
+	s.fallbackCalls.Add(1)
+	return nil, errors.New("full schedulable account hydration must not be used")
+}
+
+func (s *settingPublicAccountRepoStub) ListSchedulable(context.Context) ([]Account, error) {
+	return s.accounts, s.err
 }
 
 func (s *settingPublicRepoStub) Get(ctx context.Context, key string) (*Setting, error) {
@@ -181,4 +211,54 @@ func TestConfiguredAIPlatformLabelsFromAccounts_DerivesFamiliesFromPlatformAndMa
 	})
 
 	require.Equal(t, []string{"GPT", "Claude", "GLM", "DeepSeek", "Grok"}, labels)
+}
+
+func TestSettingService_GetPublicSettings_ExposesConfiguredAIPlatforms(t *testing.T) {
+	svc := NewSettingService(&settingPublicRepoStub{values: map[string]string{}}, &config.Config{})
+	svc.SetAccountRepository(&settingPublicAccountRepoStub{accounts: []Account{
+		{Platform: PlatformGemini},
+		{
+			Platform: PlatformOpenAI,
+			Credentials: map[string]any{
+				"model_mapping": map[string]any{"claude": "claude-sonnet-4-5"},
+			},
+		},
+	}})
+
+	settings, err := svc.GetPublicSettings(context.Background())
+
+	require.NoError(t, err)
+	require.Equal(t, []string{"GPT", "Claude", "Gemini"}, settings.ConfiguredAIPlatforms)
+}
+
+func TestSettingService_GetPublicSettings_FailsClosedWhenConfiguredPlatformsUnavailable(t *testing.T) {
+	svc := NewSettingService(&settingPublicRepoStub{values: map[string]string{}}, &config.Config{})
+	svc.SetAccountRepository(&settingPublicAccountRepoStub{err: errors.New("database unavailable")})
+
+	settings, err := svc.GetPublicSettings(context.Background())
+
+	require.NoError(t, err)
+	require.Empty(t, settings.ConfiguredAIPlatforms)
+}
+
+func TestSettingService_GetPublicSettings_UsesCachedPlatformProjection(t *testing.T) {
+	repo := &settingPublicPlatformProjectionRepoStub{sources: []ConfiguredAIPlatformSource{
+		{Platform: PlatformGemini},
+		{
+			Platform:     PlatformOpenAI,
+			ModelMapping: map[string]string{"claude": "claude-sonnet-4-5"},
+		},
+	}}
+	svc := NewSettingService(&settingPublicRepoStub{values: map[string]string{}}, &config.Config{})
+	svc.SetAccountRepository(repo)
+
+	first, err := svc.GetPublicSettings(context.Background())
+	require.NoError(t, err)
+	second, err := svc.GetPublicSettings(context.Background())
+	require.NoError(t, err)
+
+	require.Equal(t, []string{"GPT", "Claude", "Gemini"}, first.ConfiguredAIPlatforms)
+	require.Equal(t, first.ConfiguredAIPlatforms, second.ConfiguredAIPlatforms)
+	require.Equal(t, int64(1), repo.projectionCalls.Load(), "the short-lived cache must collapse repeated public requests")
+	require.Zero(t, repo.fallbackCalls.Load(), "the lightweight projection must own this public capability lookup")
 }

@@ -5,6 +5,7 @@ package service
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/stretchr/testify/require"
@@ -32,6 +33,9 @@ type groupRepoStubForAdmin struct {
 	deleteAccountGroupsByGroupIDFn func(groupID int64) (int64, error)
 	bindAccountsToGroupFn          func(groupID int64, accountIDs []int64) error
 	getAccountIDsByGroupIDsFn      func(groupIDs []int64) ([]int64, error)
+
+	bindAccountsGroupID int64   // 记录 BindAccountsToGroup 的 groupID 参数
+	bindAccountsIDs     []int64 // 记录 BindAccountsToGroup 的 accountIDs 参数
 
 	listWithFiltersCalls       int
 	listWithFiltersParams      pagination.PaginationParams
@@ -143,6 +147,8 @@ func (s *groupRepoStubForAdmin) DeleteAccountGroupsByGroupID(_ context.Context, 
 }
 
 func (s *groupRepoStubForAdmin) BindAccountsToGroup(_ context.Context, groupID int64, accountIDs []int64) error {
+	s.bindAccountsGroupID = groupID
+	s.bindAccountsIDs = append([]int64{}, accountIDs...)
 	if s.bindAccountsToGroupFn != nil {
 		return s.bindAccountsToGroupFn(groupID, accountIDs)
 	}
@@ -1093,8 +1099,17 @@ func (s *accountRepoStubForAdminGroupCopy) Delete(context.Context, int64) error 
 func (s *accountRepoStubForAdminGroupCopy) List(context.Context, pagination.PaginationParams) ([]Account, *pagination.PaginationResult, error) {
 	panic("unexpected List call")
 }
-func (s *accountRepoStubForAdminGroupCopy) ListWithFilters(context.Context, pagination.PaginationParams, string, string, string, int64, string) ([]Account, *pagination.PaginationResult, error) {
+func (s *accountRepoStubForAdminGroupCopy) ListWithFilters(context.Context, pagination.PaginationParams, string, string, string, string, int64, string) ([]Account, *pagination.PaginationResult, error) {
 	panic("unexpected ListWithFilters call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListAllWithFilters(context.Context, string, string, string, string, int64, string) ([]Account, error) {
+	panic("unexpected ListAllWithFilters call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListModelAvailabilityCandidates(context.Context, *int64, []string, bool) ([]Account, error) {
+	panic("unexpected ListModelAvailabilityCandidates call")
+}
+func (s *accountRepoStubForAdminGroupCopy) ListShadowsByParent(context.Context, int64) ([]*Account, error) {
+	panic("unexpected ListShadowsByParent call")
 }
 func (s *accountRepoStubForAdminGroupCopy) ListByGroup(context.Context, int64) ([]Account, error) {
 	panic("unexpected ListByGroup call")
@@ -1197,7 +1212,18 @@ func (s *accountRepoStubForAdminGroupCopy) RevertProxyFallback(context.Context, 
 }
 
 func TestAdminService_CreateGroup_FiltersAPIKeyCopiesForGrokWhenRequireOAuthOnly(t *testing.T) {
-	groupRepo := &groupRepoStubForAdmin{}
+	var copiedFromGroupIDs []int64
+	groupRepo := &groupRepoStubForAdmin{
+		createID: 99,
+		getByIDByID: map[int64]*Group{
+			1: {ID: 1, Name: "grok-source", Platform: PlatformGrok, Status: StatusActive},
+		},
+		getAccountIDsByGroupIDsFn: func(groupIDs []int64) ([]int64, error) {
+			copiedFromGroupIDs = append([]int64{}, groupIDs...)
+			return []int64{10, 11}, nil
+		},
+		bindAccountsToGroupFn: func(int64, []int64) error { return nil },
+	}
 	accountRepo := &accountRepoStubForAdminGroupCopy{
 		accounts: []*Account{
 			{ID: 10, Platform: PlatformGrok, Type: AccountTypeAPIKey},
@@ -1215,10 +1241,10 @@ func TestAdminService_CreateGroup_FiltersAPIKeyCopiesForGrokWhenRequireOAuthOnly
 		CopyAccountsFromGroupIDs: []int64{1},
 	})
 	require.NoError(t, err)
+	require.Equal(t, []int64{1}, copiedFromGroupIDs)
 	require.True(t, accountRepo.called)
-	require.Equal(t, []int64{1}, accountRepo.ids)
+	require.Equal(t, []int64{10, 11}, accountRepo.ids)
 	require.NotNil(t, groupRepo.created)
-	groupRepo.created.ID = 99
 	require.True(t, groupRepo.created.RequireOAuthOnly)
 	require.Equal(t, int64(99), groupRepo.bindAccountsGroupID)
 	require.Equal(t, []int64{11}, groupRepo.bindAccountsIDs)

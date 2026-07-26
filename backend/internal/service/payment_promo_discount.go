@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -174,30 +175,40 @@ func (s *PaymentService) applyPaymentPromoUsage(ctx context.Context, order *dben
 	if s == nil || order == nil || strings.TrimSpace(psStringValue(order.PromoCode)) == "" || order.DiscountPercent <= 0 {
 		return nil
 	}
-	if s.hasAuditLog(ctx, order.ID, paymentPromoAppliedAuditAction) {
-		return nil
+	if s.entClient == nil {
+		return errors.New("payment client is unavailable")
 	}
-	promo, err := s.entClient.PromoCode.Query().
-		Where(promocode.CodeEqualFold(psStringValue(order.PromoCode))).
-		Only(ctx)
+
+	tx, err := s.entClient.Tx(ctx)
 	if err != nil {
-		s.writeAuditLog(ctx, order.ID, "PROMO_CODE_PAYMENT_USAGE_FAILED", "system", map[string]any{
-			"promoCode": psStringValue(order.PromoCode),
-			"error":     err.Error(),
-		})
-		return nil
+		return fmt.Errorf("begin payment promo usage tx: %w", err)
 	}
-	if _, err := s.entClient.PromoCode.UpdateOneID(promo.ID).AddUsedCount(1).Save(ctx); err != nil {
-		s.writeAuditLog(ctx, order.ID, "PROMO_CODE_PAYMENT_USAGE_FAILED", "system", map[string]any{
-			"promoCode": promo.Code,
-			"error":     err.Error(),
-		})
-		return nil
+	defer func() { _ = tx.Rollback() }()
+	txCtx := dbent.NewTxContext(ctx, tx)
+	txClient := tx.Client()
+
+	promo, err := txClient.PromoCode.Query().
+		Where(promocode.CodeEqualFold(psStringValue(order.PromoCode))).
+		Only(txCtx)
+	if err != nil {
+		return fmt.Errorf("load payment promo code: %w", err)
 	}
-	s.writeAuditLog(ctx, order.ID, paymentPromoAppliedAuditAction, "system", map[string]any{
+	claimed, err := tryClaimPaymentAudit(txCtx, txClient, order.ID, paymentPromoAppliedAuditAction, "system", map[string]any{
 		"promoCode":       promo.Code,
 		"discountPercent": order.DiscountPercent,
 		"discountAmount":  order.DiscountAmount,
 	})
+	if err != nil {
+		return fmt.Errorf("claim payment promo usage audit: %w", err)
+	}
+	if !claimed {
+		return nil
+	}
+	if _, err := txClient.PromoCode.UpdateOneID(promo.ID).AddUsedCount(1).Save(txCtx); err != nil {
+		return fmt.Errorf("increment payment promo usage: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit payment promo usage: %w", err)
+	}
 	return nil
 }

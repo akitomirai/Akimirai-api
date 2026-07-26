@@ -26,7 +26,7 @@ func TestGatewayChatCredentialStopDoesNotSelectAnotherAccountAndReturnsSafe503(t
 		ClientMessage:     "invalid_client client_secret=must-not-leak",
 	}
 	state := NewFailoverState(3, false)
-	action := state.HandleFailoverError(context.Background(), &mockTempUnscheduler{}, 71, service.PlatformGrok, 0, stopErr)
+	action := state.HandleFailoverError(context.Background(), &mockTempUnscheduler{}, 71, service.PlatformGrok, stopErr, 0)
 
 	require.Equal(t, FailoverExhausted, action)
 	require.Zero(t, state.SwitchCount)

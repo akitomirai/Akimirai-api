@@ -48,6 +48,7 @@ type WebSearchManagerBuilder func(cfg *WebSearchEmulationConfig, proxyURLs map[i
 type SettingService struct {
 	settingRepo                 SettingRepository
 	defaultSubGroupReader       DefaultSubscriptionGroupReader
+	accountRepo                 AccountRepository
 	proxyRepo                   ProxyRepository // for resolving websearch provider proxy URLs
 	cfg                         *config.Config
 	onUpdate                    func() // Callback when settings are updated (for cache invalidation)
@@ -61,6 +62,8 @@ type SettingService struct {
 	privacyFilterConfigSF       singleflight.Group
 	codexRestrictionPolicyCache atomic.Value // *cachedCodexRestrictionPolicy
 	codexRestrictionPolicySF    singleflight.Group
+	configuredAIPlatformsCache  atomic.Pointer[cachedConfiguredAIPlatformLabels]
+	configuredAIPlatformsSF     singleflight.Group
 
 	cyberSessionBlockRuntimeCache atomic.Value // *cachedCyberSessionBlockRuntime
 	cyberSessionBlockRuntimeSF    singleflight.Group
@@ -212,6 +215,12 @@ func NewSettingService(settingRepo SettingRepository, cfg *config.Config) *Setti
 // SetDefaultSubscriptionGroupReader injects an optional group reader for default subscription validation.
 func (s *SettingService) SetDefaultSubscriptionGroupReader(reader DefaultSubscriptionGroupReader) {
 	s.defaultSubGroupReader = reader
+}
+
+// SetAccountRepository injects account access for public model-platform summaries.
+func (s *SettingService) SetAccountRepository(repo AccountRepository) {
+	s.accountRepo = repo
+	s.configuredAIPlatformsCache.Store(nil)
 }
 
 // SetProxyRepository injects a proxy repo for resolving websearch provider proxy URLs.

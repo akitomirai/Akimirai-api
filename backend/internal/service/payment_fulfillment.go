@@ -186,12 +186,12 @@ func (s *PaymentService) alreadyProcessed(ctx context.Context, o *dbent.PaymentO
 		return nil
 	}
 	switch cur.Status {
-	case OrderStatusCompleted, OrderStatusRefunded:
+	case OrderStatusCompleted:
+		return s.ensureCompletedPaymentFulfillment(ctx, cur, paymentCompletionAuditAction(cur))
+	case OrderStatusRefunded:
 		return nil
-	case OrderStatusFailed:
+	case OrderStatusFailed, OrderStatusPaid, OrderStatusRecharging:
 		return s.executeFulfillment(ctx, o.ID)
-	case OrderStatusPaid, OrderStatusRecharging:
-		return fmt.Errorf("order %d is being processed", o.ID)
 	case OrderStatusExpired:
 		slog.Warn("webhook payment success for expired order beyond grace period",
 			"orderID", o.ID,
@@ -226,23 +226,27 @@ func (s *PaymentService) ExecuteBalanceFulfillment(ctx context.Context, oid int6
 		return infraerrors.NotFound("NOT_FOUND", "order not found")
 	}
 	if o.Status == OrderStatusCompleted {
-		return nil
+		return s.ensureCompletedPaymentFulfillment(ctx, o, "RECHARGE_SUCCESS")
 	}
 	if psIsRefundStatus(o.Status) {
 		return infraerrors.BadRequest("INVALID_STATUS", "refund-related order cannot fulfill")
 	}
-	if o.Status != OrderStatusPaid && o.Status != OrderStatusFailed {
+	if o.Status != OrderStatusPaid && o.Status != OrderStatusFailed && o.Status != OrderStatusRecharging {
 		return infraerrors.BadRequest("INVALID_STATUS", "order cannot fulfill in status "+o.Status)
 	}
-	c, err := s.entClient.PaymentOrder.Update().Where(paymentorder.IDEQ(oid), paymentorder.StatusIn(OrderStatusPaid, OrderStatusFailed)).SetStatus(OrderStatusRecharging).Save(ctx)
+	lease, err := s.acquirePaymentFulfillmentLease(ctx, o)
 	if err != nil {
-		return fmt.Errorf("lock: %w", err)
+		return err
 	}
-	if c == 0 {
-		return nil
+	if lease == nil {
+		current, getErr := s.entClient.PaymentOrder.Get(ctx, oid)
+		if getErr == nil && current.Status == OrderStatusCompleted {
+			return s.ensureCompletedPaymentFulfillment(ctx, current, "RECHARGE_SUCCESS")
+		}
+		return getErr
 	}
-	if err := s.doBalance(ctx, o); err != nil {
-		s.markFailed(ctx, oid, err)
+	if err := s.doBalance(ctx, o, lease); err != nil {
+		s.markFailed(ctx, oid, lease, err)
 		return err
 	}
 	return nil
@@ -272,7 +276,7 @@ func resolveRedeemAction(existing *RedeemCode, lookupErr error) redeemAction {
 	return redeemActionRedeem
 }
 
-func (s *PaymentService) doBalance(ctx context.Context, o *dbent.PaymentOrder) error {
+func (s *PaymentService) doBalance(ctx context.Context, o *dbent.PaymentOrder, lease *paymentFulfillmentLease) error {
 	// Idempotency: check if redeem code already exists (from a previous partial run)
 	existing, lookupErr := s.redeemService.GetByCode(ctx, o.RechargeCode)
 	action := resolveRedeemAction(existing, lookupErr)
@@ -283,7 +287,7 @@ func (s *PaymentService) doBalance(ctx context.Context, o *dbent.PaymentOrder) e
 			return err
 		}
 		// Code already created and redeemed — just mark completed
-		return s.markCompleted(ctx, o, "RECHARGE_SUCCESS")
+		return s.markCompleted(ctx, o, lease, "RECHARGE_SUCCESS")
 	case redeemActionCreate:
 		rc := &RedeemCode{Code: o.RechargeCode, Type: RedeemTypeBalance, Value: o.Amount, Status: StatusUnused}
 		if err := s.redeemService.CreateCode(ctx, rc); err != nil {
@@ -298,25 +302,84 @@ func (s *PaymentService) doBalance(ctx context.Context, o *dbent.PaymentOrder) e
 	if err := s.applyAffiliateRebateForOrder(ctx, o); err != nil {
 		return err
 	}
-	return s.markCompleted(ctx, o, "RECHARGE_SUCCESS")
+	return s.markCompleted(ctx, o, lease, "RECHARGE_SUCCESS")
 }
 
-func (s *PaymentService) markCompleted(ctx context.Context, o *dbent.PaymentOrder, auditAction string) error {
+func (s *PaymentService) markCompleted(ctx context.Context, o *dbent.PaymentOrder, lease *paymentFulfillmentLease, auditAction string) error {
+	if lease == nil {
+		return errors.New("missing payment fulfillment lease")
+	}
 	now := time.Now()
 	if err := s.applyPaymentPromoUsage(ctx, o); err != nil {
 		return err
 	}
-	_, err := s.entClient.PaymentOrder.Update().Where(paymentorder.IDEQ(o.ID), paymentorder.StatusEQ(OrderStatusRecharging)).SetStatus(OrderStatusCompleted).SetCompletedAt(now).Save(ctx)
+	tx, err := s.entClient.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("begin payment completion tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	txCtx := dbent.NewTxContext(ctx, tx)
+	txClient := tx.Client()
+
+	updated, err := txClient.PaymentOrder.Update().Where(
+		paymentorder.IDEQ(o.ID),
+		paymentorder.StatusEQ(OrderStatusRecharging),
+		paymentorder.UpdatedAtEQ(lease.version),
+	).SetStatus(OrderStatusCompleted).SetCompletedAt(now).Save(txCtx)
 	if err != nil {
 		return fmt.Errorf("mark completed: %w", err)
 	}
-	s.writeAuditLog(ctx, o.ID, auditAction, "system", map[string]any{
+	if updated == 0 {
+		_ = tx.Rollback()
+		current, getErr := s.entClient.PaymentOrder.Get(ctx, o.ID)
+		if getErr == nil && current.Status == OrderStatusCompleted {
+			return s.ensureCompletedPaymentFulfillment(ctx, current, auditAction)
+		}
+		return infraerrors.Conflict("CONFLICT", "fulfillment lease was lost before completion")
+	}
+	if _, err := tryClaimPaymentAudit(txCtx, txClient, o.ID, auditAction, "system", paymentCompletionAuditDetail(o)); err != nil {
+		return fmt.Errorf("record payment completion audit: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit payment completion: %w", err)
+	}
+	s.dispatchPaymentFulfillmentNotification(o, auditAction)
+	return nil
+}
+
+func (s *PaymentService) ensureCompletedPaymentFulfillment(ctx context.Context, o *dbent.PaymentOrder, auditAction string) error {
+	if s == nil || s.entClient == nil || o == nil {
+		return errors.New("payment completion recovery is unavailable")
+	}
+	if auditAction == "" {
+		return errors.New("unknown payment completion audit action")
+	}
+	if _, err := tryClaimPaymentAudit(ctx, s.entClient, o.ID, auditAction, "system", paymentCompletionAuditDetail(o)); err != nil {
+		return fmt.Errorf("repair payment completion audit: %w", err)
+	}
+	s.dispatchPaymentFulfillmentNotification(o, auditAction)
+	return nil
+}
+
+func paymentCompletionAuditAction(o *dbent.PaymentOrder) string {
+	if o != nil && o.OrderType == payment.OrderTypeSubscription {
+		return "SUBSCRIPTION_SUCCESS"
+	}
+	if o != nil && o.OrderType == payment.OrderTypeBalance {
+		return "RECHARGE_SUCCESS"
+	}
+	return ""
+}
+
+func paymentCompletionAuditDetail(o *dbent.PaymentOrder) map[string]any {
+	if o == nil {
+		return map[string]any{}
+	}
+	return map[string]any{
 		"rechargeCode":   o.RechargeCode,
 		"creditedAmount": o.Amount,
 		"payAmount":      o.PayAmount,
-	})
-	s.dispatchPaymentFulfillmentNotification(o, auditAction)
-	return nil
+	}
 }
 
 func (s *PaymentService) dispatchPaymentFulfillmentNotification(o *dbent.PaymentOrder, auditAction string) {
@@ -402,56 +465,49 @@ func (s *PaymentService) ExecuteSubscriptionFulfillment(ctx context.Context, oid
 		return infraerrors.NotFound("NOT_FOUND", "order not found")
 	}
 	if o.Status == OrderStatusCompleted {
-		return nil
+		return s.ensureCompletedPaymentFulfillment(ctx, o, "SUBSCRIPTION_SUCCESS")
 	}
 	if psIsRefundStatus(o.Status) {
 		return infraerrors.BadRequest("INVALID_STATUS", "refund-related order cannot fulfill")
 	}
-	if o.Status != OrderStatusPaid && o.Status != OrderStatusFailed {
+	if o.Status != OrderStatusPaid && o.Status != OrderStatusFailed && o.Status != OrderStatusRecharging {
 		return infraerrors.BadRequest("INVALID_STATUS", "order cannot fulfill in status "+o.Status)
 	}
 	if o.SubscriptionGroupID == nil || o.SubscriptionDays == nil {
 		return infraerrors.BadRequest("INVALID_STATUS", "missing subscription info")
 	}
-	c, err := s.entClient.PaymentOrder.Update().Where(paymentorder.IDEQ(oid), paymentorder.StatusIn(OrderStatusPaid, OrderStatusFailed)).SetStatus(OrderStatusRecharging).Save(ctx)
+	lease, err := s.acquirePaymentFulfillmentLease(ctx, o)
 	if err != nil {
-		return fmt.Errorf("lock: %w", err)
+		return err
 	}
-	if c == 0 {
-		return nil
+	if lease == nil {
+		current, getErr := s.entClient.PaymentOrder.Get(ctx, oid)
+		if getErr == nil && current.Status == OrderStatusCompleted {
+			return s.ensureCompletedPaymentFulfillment(ctx, current, "SUBSCRIPTION_SUCCESS")
+		}
+		return getErr
 	}
-	if err := s.doSub(ctx, o); err != nil {
-		s.markFailed(ctx, oid, err)
+	if err := s.doSub(ctx, o, lease); err != nil {
+		s.markFailed(ctx, oid, lease, err)
 		return err
 	}
 	return nil
 }
 
-func (s *PaymentService) doSub(ctx context.Context, o *dbent.PaymentOrder) error {
+func (s *PaymentService) doSub(ctx context.Context, o *dbent.PaymentOrder, lease *paymentFulfillmentLease) error {
 	gid := *o.SubscriptionGroupID
 	days := *o.SubscriptionDays
 	g, err := s.groupRepo.GetByID(ctx, gid)
 	if err != nil || g.Status != payment.EntityStatusActive {
 		return fmt.Errorf("group %d no longer exists or inactive", gid)
 	}
-	assigned := s.hasAuditLog(ctx, o.ID, "SUBSCRIPTION_ASSIGNED") || s.hasAuditLog(ctx, o.ID, "SUBSCRIPTION_SUCCESS")
-	if !assigned {
-		orderNote := fmt.Sprintf("payment order %d", o.ID)
-		_, _, err = s.subscriptionSvc.AssignOrExtendSubscription(ctx, &AssignSubscriptionInput{UserID: o.UserID, GroupID: gid, ValidityDays: days, AssignedBy: 0, Notes: orderNote})
-		if err != nil {
-			return fmt.Errorf("assign subscription: %w", err)
-		}
-		s.writeAuditLog(ctx, o.ID, "SUBSCRIPTION_ASSIGNED", "system", map[string]any{
-			"groupID":      gid,
-			"validityDays": days,
-		})
-	} else {
-		slog.Info("subscription already assigned for order, skipping", "orderID", o.ID, "groupID", gid)
+	if err := s.ensurePaymentSubscriptionAssigned(ctx, o, gid, days); err != nil {
+		return err
 	}
 	if err := s.applyAffiliateRebateForOrder(ctx, o); err != nil {
 		return err
 	}
-	return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
+	return s.markCompleted(ctx, o, lease, "SUBSCRIPTION_SUCCESS")
 }
 
 func (s *PaymentService) hasAuditLog(ctx context.Context, orderID int64, action string) bool {
@@ -579,6 +635,49 @@ func (s *PaymentService) tryClaimAffiliateRebateAudit(ctx context.Context, clien
 	return true, nil
 }
 
+func tryClaimPaymentAudit(ctx context.Context, client *dbent.Client, orderID int64, action, operator string, detail map[string]any) (bool, error) {
+	if client == nil {
+		return false, errors.New("nil payment client")
+	}
+	detailJSON, err := json.Marshal(detail)
+	if err != nil {
+		return false, fmt.Errorf("marshal payment audit detail: %w", err)
+	}
+	query, args := buildPaymentAuditClaimQuery(client, strconv.FormatInt(orderID, 10), action, string(detailJSON), operator)
+	rows, err := client.QueryContext(ctx, query, args...)
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = rows.Close() }()
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return false, err
+		}
+		return false, nil
+	}
+	var claimID int64
+	if err := rows.Scan(&claimID); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func buildPaymentAuditClaimQuery(client *dbent.Client, orderID, action, detail, operator string) (string, []any) {
+	nowExpr := paymentAuditCurrentTimestampExpr(client)
+	if paymentAuditDialect(client) == dialect.Postgres {
+		return fmt.Sprintf(`
+INSERT INTO payment_audit_logs (order_id, action, detail, operator, created_at)
+VALUES ($1::text, $2::text, $3::text, $4::text, %s)
+ON CONFLICT DO NOTHING
+RETURNING id`, nowExpr), []any{orderID, action, detail, operator}
+	}
+	return fmt.Sprintf(`
+INSERT INTO payment_audit_logs (order_id, action, detail, operator, created_at)
+VALUES (?, ?, ?, ?, %s)
+ON CONFLICT DO NOTHING
+RETURNING id`, nowExpr), []any{orderID, action, detail, operator}
+}
+
 func buildAffiliateRebateAuditClaimQuery(client *dbent.Client, orderID, detail string) (string, []any) {
 	nowExpr := paymentAuditCurrentTimestampExpr(client)
 	if paymentAuditDialect(client) == dialect.Postgres {
@@ -645,13 +744,20 @@ func (s *PaymentService) updateClaimedAffiliateRebateAudit(ctx context.Context, 
 	return nil
 }
 
-func (s *PaymentService) markFailed(ctx context.Context, oid int64, cause error) {
+func (s *PaymentService) markFailed(ctx context.Context, oid int64, lease *paymentFulfillmentLease, cause error) {
+	if lease == nil {
+		slog.Error("mark FAILED without fulfillment lease", "orderID", oid)
+		return
+	}
 	now := time.Now()
 	r := psErrMsg(cause)
-	// Only mark FAILED if still in RECHARGING state — prevents overwriting
-	// a COMPLETED order when markCompleted failed but fulfillment succeeded.
+	// The lease version prevents a stale worker from overwriting a newer owner.
 	c, e := s.entClient.PaymentOrder.Update().
-		Where(paymentorder.IDEQ(oid), paymentorder.StatusEQ(OrderStatusRecharging)).
+		Where(
+			paymentorder.IDEQ(oid),
+			paymentorder.StatusEQ(OrderStatusRecharging),
+			paymentorder.UpdatedAtEQ(lease.version),
+		).
 		SetStatus(OrderStatusFailed).SetFailedAt(now).SetFailedReason(r).Save(ctx)
 	if e != nil {
 		slog.Error("mark FAILED", "orderID", oid, "error", e)
@@ -672,18 +778,11 @@ func (s *PaymentService) RetryFulfillment(ctx context.Context, oid int64) error 
 	if psIsRefundStatus(o.Status) {
 		return infraerrors.BadRequest("INVALID_STATUS", "refund-related order cannot retry")
 	}
-	if o.Status == OrderStatusRecharging {
-		return infraerrors.Conflict("CONFLICT", "order is being processed")
-	}
 	if o.Status == OrderStatusCompleted {
-		return infraerrors.BadRequest("INVALID_STATUS", "order already completed")
+		return s.ensureCompletedPaymentFulfillment(ctx, o, paymentCompletionAuditAction(o))
 	}
-	if o.Status != OrderStatusFailed && o.Status != OrderStatusPaid {
-		return infraerrors.BadRequest("INVALID_STATUS", "only paid and failed orders can retry")
-	}
-	_, err = s.entClient.PaymentOrder.Update().Where(paymentorder.IDEQ(oid), paymentorder.StatusIn(OrderStatusFailed, OrderStatusPaid)).SetStatus(OrderStatusPaid).ClearFailedAt().ClearFailedReason().Save(ctx)
-	if err != nil {
-		return fmt.Errorf("reset for retry: %w", err)
+	if o.Status != OrderStatusFailed && o.Status != OrderStatusPaid && o.Status != OrderStatusRecharging {
+		return infraerrors.BadRequest("INVALID_STATUS", "only paid, failed, and recoverable recharging orders can retry")
 	}
 	s.writeAuditLog(ctx, oid, "RECHARGE_RETRY", "admin", map[string]any{"detail": "admin manual retry"})
 	return s.executeFulfillment(ctx, oid)

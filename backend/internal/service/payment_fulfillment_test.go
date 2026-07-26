@@ -636,6 +636,85 @@ func TestAlreadyProcessedRecoversStaleRechargingLease(t *testing.T) {
 	require.Equal(t, OrderStatusCompleted, reloaded.Status)
 }
 
+func TestApplyPaymentPromoUsageRollsBackWhenAuditClaimFails(t *testing.T) {
+	ctx := context.Background()
+	client := newPaymentConfigServiceTestClient(t)
+	ensurePaymentAuditOrderActionUniqueIndex(t, ctx, client)
+
+	promo, err := client.PromoCode.Create().
+		SetCode("PAYMENT-PROMO-ATOMIC").
+		SetDiscountPercent(20).
+		SetMaxUses(10).
+		SetUsedCount(0).
+		SetStatus(PromoCodeStatusActive).
+		Save(ctx)
+	require.NoError(t, err)
+
+	order := createPaymentFulfillmentSubscriptionOrder(t, ctx, client, OrderStatusRecharging, time.Now())
+	order, err = client.PaymentOrder.UpdateOneID(order.ID).
+		SetPromoCode(promo.Code).
+		SetDiscountPercent(promo.DiscountPercent).
+		SetDiscountAmount(16).
+		Save(ctx)
+	require.NoError(t, err)
+
+	_, err = client.ExecContext(ctx, "DROP TABLE payment_audit_logs")
+	require.NoError(t, err)
+
+	svc := &PaymentService{entClient: client}
+	err = svc.applyPaymentPromoUsage(ctx, order)
+	require.Error(t, err)
+
+	reloadedPromo, getErr := client.PromoCode.Get(ctx, promo.ID)
+	require.NoError(t, getErr)
+	require.Zero(t, reloadedPromo.UsedCount, "promo usage must roll back when the durable audit claim cannot be written")
+}
+
+func TestMarkCompletedRollsBackOrderWhenSuccessAuditFails(t *testing.T) {
+	ctx := context.Background()
+	client := newPaymentConfigServiceTestClient(t)
+	ensurePaymentAuditOrderActionUniqueIndex(t, ctx, client)
+	order := createPaymentFulfillmentSubscriptionOrder(t, ctx, client, OrderStatusRecharging, time.Now())
+
+	_, err := client.ExecContext(ctx, "DROP TABLE payment_audit_logs")
+	require.NoError(t, err)
+
+	svc := &PaymentService{entClient: client}
+	err = svc.markCompleted(ctx, order, &paymentFulfillmentLease{version: order.UpdatedAt}, "SUBSCRIPTION_SUCCESS")
+	require.Error(t, err)
+
+	reloaded, getErr := client.PaymentOrder.Get(ctx, order.ID)
+	require.NoError(t, getErr)
+	require.Equal(t, OrderStatusRecharging, reloaded.Status, "completion state must roll back with its success audit")
+	require.Nil(t, reloaded.CompletedAt)
+}
+
+func TestAlreadyProcessedRepairsMissingCompletionAudit(t *testing.T) {
+	ctx := context.Background()
+	client := newPaymentConfigServiceTestClient(t)
+	ensurePaymentAuditOrderActionUniqueIndex(t, ctx, client)
+	order := createPaymentFulfillmentSubscriptionOrder(t, ctx, client, OrderStatusCompleted, time.Now())
+	order, err := client.PaymentOrder.UpdateOneID(order.ID).
+		SetOrderType(payment.OrderTypeBalance).
+		ClearPlanID().
+		ClearSubscriptionGroupID().
+		ClearSubscriptionDays().
+		Save(ctx)
+	require.NoError(t, err)
+
+	svc := &PaymentService{entClient: client}
+	require.NoError(t, svc.alreadyProcessed(ctx, order))
+
+	auditCount, err := client.PaymentAuditLog.Query().
+		Where(
+			paymentauditlog.OrderIDEQ(strconv.FormatInt(order.ID, 10)),
+			paymentauditlog.ActionEQ("RECHARGE_SUCCESS"),
+		).
+		Count(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 1, auditCount, "completed-order recovery must restore the durable success audit")
+}
+
 func TestFulfillmentLeaseVersionRejectsStaleWorker(t *testing.T) {
 	ctx := context.Background()
 	client := newPaymentConfigServiceTestClient(t)

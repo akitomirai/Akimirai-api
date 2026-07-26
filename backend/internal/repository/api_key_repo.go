@@ -521,10 +521,22 @@ func (r *apiKeyRepository) ListByUserID(ctx context.Context, userID int64, param
 	return outKeys, paginationResultFromTotal(int64(total), params), nil
 }
 
-func (r *apiKeyRepository) ListAllByUserID(ctx context.Context, userID int64, filters service.APIKeyListFilters) ([]service.APIKey, error) {
-	keys, err := r.apiKeyListByUserIDQuery(userID, filters).
+func (r *apiKeyRepository) ListIDsByUserID(ctx context.Context, userID int64, filters service.APIKeyListFilters, limit int) ([]int64, error) {
+	query := r.apiKeyListByUserIDQuery(userID, filters).
+		Order(dbent.Asc(apikey.FieldID))
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	return query.IDs(ctx)
+}
+
+func (r *apiKeyRepository) ListByIDsForUser(ctx context.Context, userID int64, ids []int64) ([]service.APIKey, error) {
+	if len(ids) == 0 {
+		return []service.APIKey{}, nil
+	}
+	keys, err := r.activeQuery().
+		Where(apikey.UserIDEQ(userID), apikey.IDIn(ids...)).
 		WithGroup().
-		Order(dbent.Asc(apikey.FieldID)).
 		All(ctx)
 	if err != nil {
 		return nil, err

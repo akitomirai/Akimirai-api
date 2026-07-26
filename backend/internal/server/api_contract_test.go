@@ -68,6 +68,10 @@ func TestAPIContracts(t *testing.T) {
 					"total_recharged": 0,
 					"linuxdo_bound": false,
 					"oidc_bound": false,
+					"privacy_filter_config": {
+						"enabled": false,
+						"types": ["ip_address", "email", "phone", "id_card", "bank_card", "api_key", "token", "private_key", "random_string"]
+					},
 					"wechat_bound": false,
 					"dingtalk_bound": false,
 					"identities": {
@@ -228,11 +232,14 @@ func TestAPIContracts(t *testing.T) {
 					"id": 100,
 					"user_id": 1,
 					"key": "sk_custom_1234567890",
+					"key_prefix": "sk_custo",
+					"key_visible_once": false,
 					"name": "Key One",
 					"group_id": null,
 					"status": "active",
 					"ip_whitelist": null,
 					"ip_blacklist": null,
+					"allowed_models": [],
 					"last_used_at": null,
 					"last_used_ip": null,
 					"current_concurrency": 0,
@@ -279,11 +286,14 @@ func TestAPIContracts(t *testing.T) {
 							"id": 100,
 							"user_id": 1,
 							"key": "sk_custom_1234567890",
+							"key_prefix": "",
+							"key_visible_once": false,
 							"name": "Key One",
 							"group_id": null,
 							"status": "active",
 							"ip_whitelist": null,
 							"ip_blacklist": null,
+							"allowed_models": null,
 							"last_used_at": null,
 							"last_used_ip": null,
 							"current_concurrency": 0,
@@ -888,6 +898,7 @@ func TestAPIContracts(t *testing.T) {
 					"payment_visible_method_wxpay_source": "official_wxpay",
 					"payment_visible_method_alipay_enabled": true,
 					"payment_visible_method_wxpay_enabled": false,
+					"privacy_filter_config": {"enabled": false, "types": null},
 					"openai_low_upstream_rate_priority_enabled": true,
 					"openai_oauth_scheduling_rate_multiplier": 0.05,
 					"openai_advanced_scheduler_enabled": true,
@@ -915,6 +926,7 @@ func TestAPIContracts(t *testing.T) {
 					"openai_advanced_scheduler_effective_weight_upstream_cost": "0",
 					"openai_advanced_scheduler_effective_weight_previous_response": "5",
 					"openai_advanced_scheduler_effective_weight_session_sticky": "3",
+					"openai_allow_claude_code_codex_plugin": false,
 					"openai_codex_user_agent":           "",
 					"openai_fast_policy_settings": {
 						"rules": []
@@ -1170,6 +1182,7 @@ func TestAPIContracts(t *testing.T) {
 					"payment_visible_method_wxpay_source": "",
 					"payment_visible_method_alipay_enabled": false,
 					"payment_visible_method_wxpay_enabled": false,
+					"privacy_filter_config": {"enabled": false, "types": null},
 					"openai_low_upstream_rate_priority_enabled": false,
 					"openai_oauth_scheduling_rate_multiplier": 1,
 					"openai_advanced_scheduler_enabled": false,
@@ -1197,6 +1210,7 @@ func TestAPIContracts(t *testing.T) {
 					"openai_advanced_scheduler_effective_weight_upstream_cost": "0",
 					"openai_advanced_scheduler_effective_weight_previous_response": "5",
 					"openai_advanced_scheduler_effective_weight_session_sticky": "3",
+					"openai_allow_claude_code_codex_plugin": false,
 					"openai_codex_user_agent":           "",
 					"openai_fast_policy_settings": {
 						"rules": []
@@ -2623,6 +2637,10 @@ func (r *stubUsageLogRepo) GetAPIKeyDashboardStats(ctx context.Context, apiKeyID
 }
 
 func (r *stubUsageLogRepo) GetUserUsageTrendByUserID(ctx context.Context, userID int64, startTime, endTime time.Time, granularity string) ([]usagestats.TrendDataPoint, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (r *stubUsageLogRepo) GetModelUsageTrendWithUsageFilters(ctx context.Context, startTime, endTime time.Time, granularity string, filters usagestats.UsageLogFilters, limit int) ([]usagestats.ModelUsageTrendPoint, error) {
 	return nil, errors.New("not implemented")
 }
 

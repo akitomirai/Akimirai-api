@@ -52,7 +52,7 @@ func (s *accountTestOpenAITokenCacheStub) ReleaseRefreshLock(_ context.Context, 
 	return nil
 }
 
-func TestAccountTestService_OpenAIAPIKeyResponsesUsesAuthorizationAndDefaultUserAgent(t *testing.T) {
+func TestAccountTestService_OpenAIAPIKeyResponsesUsesAuthorizationAndCodexProbeHeaders(t *testing.T) {
 	ctx, recorder := newOpenAIAccountHeaderTestContext()
 
 	upstreamBody := strings.Join([]string{
@@ -89,7 +89,7 @@ func TestAccountTestService_OpenAIAPIKeyResponsesUsesAuthorizationAndDefaultUser
 	require.Equal(t, "Bearer sk-test", upstream.lastReq.Header.Get("Authorization"))
 	require.Empty(t, upstream.lastReq.Header.Get("Cookie"))
 	require.Equal(t, "text/event-stream", upstream.lastReq.Header.Get("Accept"))
-	require.Equal(t, defaultOpenAICompatibleUserAgent, upstream.lastReq.Header.Get("User-Agent"))
+	requireOpenAICodexProbeHeaders(t, upstream.lastReq.Header)
 	require.Contains(t, recorder.Body.String(), "pong")
 	require.Contains(t, recorder.Body.String(), `"success":true`)
 }

@@ -9,6 +9,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -25,26 +26,31 @@ import (
 //   - deleteErr: 模拟 Delete 返回的错误
 //   - deletedIDs: 记录被调用删除的 API Key ID，用于断言验证
 type apiKeyRepoStub struct {
-	apiKey                 *APIKey // GetKeyAndOwnerID 的返回值
-	getByIDErr             error   // GetKeyAndOwnerID 的错误返回值
-	deleteErr              error   // Delete 的错误返回值
-	updateErr              error   // Update 的错误返回值
-	deletedIDs             []int64 // 记录已删除的 API Key ID 列表
-	updatedKeys            []APIKey
-	allowListByUserID      bool
-	listByUserIDKeys       []APIKey
-	listByUserIDErr        error
-	listByUserIDCalls      []int64
-	listByUserIDParams     []pagination.PaginationParams
-	listByUserIDFilters    []APIKeyListFilters
-	allowListAllByUserID   bool
-	listAllByUserIDKeys    []APIKey
-	listAllByUserIDErr     error
-	listAllByUserIDCalls   []int64
-	listAllByUserIDFilters []APIKeyListFilters
-	updateLastUsed         func(ctx context.Context, id int64, usedAt time.Time) error
-	touchedIDs             []int64
-	touchedUsedAts         []time.Time
+	apiKey                    *APIKey // GetKeyAndOwnerID 的返回值
+	getByIDErr                error   // GetKeyAndOwnerID 的错误返回值
+	deleteErr                 error   // Delete 的错误返回值
+	updateErr                 error   // Update 的错误返回值
+	deletedIDs                []int64 // 记录已删除的 API Key ID 列表
+	updatedKeys               []APIKey
+	allowListByUserID         bool
+	listByUserIDKeys          []APIKey
+	listByUserIDErr           error
+	listByUserIDCalls         []int64
+	listByUserIDParams        []pagination.PaginationParams
+	listByUserIDFilters       []APIKeyListFilters
+	allowListIDsByUserID      bool
+	allowListByIDsForUser     bool
+	currentConcurrencyKeys    []APIKey
+	listIDsByUserIDErr        error
+	listByIDsForUserErr       error
+	listIDsByUserIDCalls      []int64
+	listIDsByUserIDFilters    []APIKeyListFilters
+	listIDsByUserIDLimits     []int
+	listByIDsForUserCalls     [][]int64
+	listByIDsForUserUserCalls []int64
+	updateLastUsed            func(ctx context.Context, id int64, usedAt time.Time) error
+	touchedIDs                []int64
+	touchedUsedAts            []time.Time
 }
 
 // 以下方法在本测试中不应被调用，使用 panic 确保测试失败时能快速定位问题
@@ -123,20 +129,50 @@ func (s *apiKeyRepoStub) ListByUserID(ctx context.Context, userID int64, params 
 	}, nil
 }
 
-func (s *apiKeyRepoStub) ListAllByUserID(ctx context.Context, userID int64, filters APIKeyListFilters) ([]APIKey, error) {
-	if !s.allowListAllByUserID {
-		panic("unexpected ListAllByUserID call")
+func (s *apiKeyRepoStub) ListIDsByUserID(ctx context.Context, userID int64, filters APIKeyListFilters, limit int) ([]int64, error) {
+	if !s.allowListIDsByUserID {
+		panic("unexpected ListIDsByUserID call")
 	}
-	s.listAllByUserIDCalls = append(s.listAllByUserIDCalls, userID)
-	s.listAllByUserIDFilters = append(s.listAllByUserIDFilters, filters)
-	if s.listAllByUserIDErr != nil {
-		return nil, s.listAllByUserIDErr
+	s.listIDsByUserIDCalls = append(s.listIDsByUserIDCalls, userID)
+	s.listIDsByUserIDFilters = append(s.listIDsByUserIDFilters, filters)
+	s.listIDsByUserIDLimits = append(s.listIDsByUserIDLimits, limit)
+	if s.listIDsByUserIDErr != nil {
+		return nil, s.listIDsByUserIDErr
 	}
-	source := s.listByUserIDKeys
-	if s.listAllByUserIDKeys != nil {
-		source = s.listAllByUserIDKeys
+	keys := filterAPIKeyStubKeys(userID, s.currentConcurrencyKeys, filters)
+	if limit > 0 && len(keys) > limit {
+		keys = keys[:limit]
 	}
-	return filterAPIKeyStubKeys(userID, source, filters), nil
+	ids := make([]int64, 0, len(keys))
+	for i := range keys {
+		ids = append(ids, keys[i].ID)
+	}
+	return ids, nil
+}
+
+func (s *apiKeyRepoStub) ListByIDsForUser(ctx context.Context, userID int64, ids []int64) ([]APIKey, error) {
+	if !s.allowListByIDsForUser {
+		panic("unexpected ListByIDsForUser call")
+	}
+	s.listByIDsForUserUserCalls = append(s.listByIDsForUserUserCalls, userID)
+	s.listByIDsForUserCalls = append(s.listByIDsForUserCalls, append([]int64(nil), ids...))
+	if s.listByIDsForUserErr != nil {
+		return nil, s.listByIDsForUserErr
+	}
+	wanted := make(map[int64]struct{}, len(ids))
+	for _, id := range ids {
+		wanted[id] = struct{}{}
+	}
+	keys := make([]APIKey, 0, len(ids))
+	for _, key := range s.currentConcurrencyKeys {
+		if key.UserID != userID {
+			continue
+		}
+		if _, ok := wanted[key.ID]; ok {
+			keys = append(keys, key)
+		}
+	}
+	return keys, nil
 }
 
 func filterAPIKeyStubKeys(userID int64, keys []APIKey, filters APIKeyListFilters) []APIKey {
@@ -391,8 +427,9 @@ func TestAPIKeyService_List_SortByCurrentConcurrency(t *testing.T) {
 		GroupID: &groupID,
 	}
 	repo := &apiKeyRepoStub{
-		allowListAllByUserID: true,
-		listAllByUserIDKeys:  keys,
+		allowListIDsByUserID:   true,
+		allowListByIDsForUser:  true,
+		currentConcurrencyKeys: keys,
 	}
 	concurrency := NewConcurrencyService(&stubConcurrencyCacheForTest{
 		apiKeyConcurrency: map[int64]int{
@@ -421,18 +458,21 @@ func TestAPIKeyService_List_SortByCurrentConcurrency(t *testing.T) {
 	require.Equal(t, 2, page.PageSize)
 	require.Equal(t, 2, page.Pages)
 	require.Empty(t, repo.listByUserIDCalls)
-	require.Equal(t, []int64{7}, repo.listAllByUserIDCalls)
-	require.Len(t, repo.listAllByUserIDFilters, 1)
-	require.Equal(t, filters.Search, repo.listAllByUserIDFilters[0].Search)
-	require.Equal(t, filters.Status, repo.listAllByUserIDFilters[0].Status)
-	require.NotNil(t, repo.listAllByUserIDFilters[0].GroupID)
-	require.Equal(t, groupID, *repo.listAllByUserIDFilters[0].GroupID)
+	require.Equal(t, []int64{7}, repo.listIDsByUserIDCalls)
+	require.Equal(t, []int{apiKeyCurrentConcurrencySortMaxKeys + 1}, repo.listIDsByUserIDLimits)
+	require.Len(t, repo.listIDsByUserIDFilters, 1)
+	require.Equal(t, filters.Search, repo.listIDsByUserIDFilters[0].Search)
+	require.Equal(t, filters.Status, repo.listIDsByUserIDFilters[0].Status)
+	require.NotNil(t, repo.listIDsByUserIDFilters[0].GroupID)
+	require.Equal(t, groupID, *repo.listIDsByUserIDFilters[0].GroupID)
+	require.Equal(t, [][]int64{{1, 3}}, repo.listByIDsForUserCalls, "only the selected page may be fully hydrated")
 }
 
 func TestAPIKeyService_List_SortByCurrentConcurrencyAscTiesByID(t *testing.T) {
 	repo := &apiKeyRepoStub{
-		allowListAllByUserID: true,
-		listAllByUserIDKeys: []APIKey{
+		allowListIDsByUserID:  true,
+		allowListByIDsForUser: true,
+		currentConcurrencyKeys: []APIKey{
 			{ID: 1, UserID: 7, Key: "sk-1", Name: "one", Status: StatusActive},
 			{ID: 2, UserID: 7, Key: "sk-2", Name: "two", Status: StatusActive},
 			{ID: 3, UserID: 7, Key: "sk-3", Name: "three", Status: StatusActive},
@@ -453,6 +493,41 @@ func TestAPIKeyService_List_SortByCurrentConcurrencyAscTiesByID(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []int64{3, 1, 2, 4}, apiKeyTestIDs(got))
 	require.Equal(t, 4, page.PageSize)
+}
+
+func TestAPIKeyService_List_SortByCurrentConcurrencyRejectsUnboundedCandidateSet(t *testing.T) {
+	keys := make([]APIKey, 1001)
+	for index := range keys {
+		keys[index] = APIKey{
+			ID:     int64(index + 1),
+			UserID: 7,
+			Key:    fmt.Sprintf("sk-bounded-%d", index+1),
+			Name:   fmt.Sprintf("bounded-%d", index+1),
+			Status: StatusActive,
+		}
+	}
+	repo := &apiKeyRepoStub{
+		allowListIDsByUserID:   true,
+		allowListByIDsForUser:  true,
+		currentConcurrencyKeys: keys,
+	}
+	svc := &APIKeyService{
+		apiKeyRepo:         repo,
+		concurrencyService: NewConcurrencyService(&stubConcurrencyCacheForTest{}),
+	}
+
+	got, page, err := svc.List(context.Background(), 7, pagination.PaginationParams{
+		Page:      1,
+		PageSize:  20,
+		SortBy:    apiKeySortCurrentConcurrency,
+		SortOrder: pagination.SortOrderDesc,
+	}, APIKeyListFilters{})
+
+	require.Error(t, err)
+	require.Nil(t, got)
+	require.Nil(t, page)
+	require.Equal(t, []int{apiKeyCurrentConcurrencySortMaxKeys + 1}, repo.listIDsByUserIDLimits)
+	require.Empty(t, repo.listByIDsForUserCalls, "an oversized candidate set must be rejected before full row hydration")
 }
 
 func apiKeyTestIDs(keys []APIKey) []int64 {

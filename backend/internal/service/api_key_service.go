@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,16 +24,20 @@ import (
 )
 
 var (
-	ErrAPIKeyNotFound             = infraerrors.NotFound("API_KEY_NOT_FOUND", "api key not found")
-	ErrGroupNotAllowed            = infraerrors.Forbidden("GROUP_NOT_ALLOWED", "user is not allowed to bind this group")
-	ErrAPIKeyExists               = infraerrors.Conflict("API_KEY_EXISTS", "api key already exists")
-	ErrAPIKeyTooShort             = infraerrors.BadRequest("API_KEY_TOO_SHORT", "api key must be at least 16 characters")
-	ErrAPIKeyInvalidChars         = infraerrors.BadRequest("API_KEY_INVALID_CHARS", "api key can only contain letters, numbers, underscores, and hyphens")
-	ErrAPIKeyRateLimited          = infraerrors.TooManyRequests("API_KEY_RATE_LIMITED", "too many failed attempts, please try again later")
-	ErrInvalidIPPattern           = infraerrors.BadRequest("INVALID_IP_PATTERN", "invalid IP or CIDR pattern")
-	ErrAPIKeyAllowedModelsTooMany = infraerrors.BadRequest("API_KEY_ALLOWED_MODELS_TOO_MANY", "api key model limit contains too many models")
-	ErrAPIKeyAllowedModelTooLong  = infraerrors.BadRequest("API_KEY_ALLOWED_MODEL_TOO_LONG", "api key model name is too long")
-	ErrAPIKeyAuthOverloaded       = infraerrors.ServiceUnavailable("API_KEY_AUTH_OVERLOADED", "api key authentication is temporarily overloaded")
+	ErrAPIKeyNotFound                       = infraerrors.NotFound("API_KEY_NOT_FOUND", "api key not found")
+	ErrGroupNotAllowed                      = infraerrors.Forbidden("GROUP_NOT_ALLOWED", "user is not allowed to bind this group")
+	ErrAPIKeyExists                         = infraerrors.Conflict("API_KEY_EXISTS", "api key already exists")
+	ErrAPIKeyTooShort                       = infraerrors.BadRequest("API_KEY_TOO_SHORT", "api key must be at least 16 characters")
+	ErrAPIKeyInvalidChars                   = infraerrors.BadRequest("API_KEY_INVALID_CHARS", "api key can only contain letters, numbers, underscores, and hyphens")
+	ErrAPIKeyRateLimited                    = infraerrors.TooManyRequests("API_KEY_RATE_LIMITED", "too many failed attempts, please try again later")
+	ErrInvalidIPPattern                     = infraerrors.BadRequest("INVALID_IP_PATTERN", "invalid IP or CIDR pattern")
+	ErrAPIKeyAllowedModelsTooMany           = infraerrors.BadRequest("API_KEY_ALLOWED_MODELS_TOO_MANY", "api key model limit contains too many models")
+	ErrAPIKeyAllowedModelTooLong            = infraerrors.BadRequest("API_KEY_ALLOWED_MODEL_TOO_LONG", "api key model name is too long")
+	ErrAPIKeyAuthOverloaded                 = infraerrors.ServiceUnavailable("API_KEY_AUTH_OVERLOADED", "api key authentication is temporarily overloaded")
+	ErrAPIKeyCurrentConcurrencySortTooLarge = infraerrors.BadRequest(
+		"API_KEY_CURRENT_CONCURRENCY_SORT_TOO_LARGE",
+		"current concurrency sorting supports at most 1000 matching api keys; narrow the filters and retry",
+	)
 	// ErrAPIKeyExpired        = infraerrors.Forbidden("API_KEY_EXPIRED", "api key has expired")
 	ErrAPIKeyExpired = infraerrors.Forbidden("API_KEY_EXPIRED", "api key 已过期")
 	// ErrAPIKeyQuotaExhausted = infraerrors.TooManyRequests("API_KEY_QUOTA_EXHAUSTED", "api key quota exhausted")
@@ -46,14 +51,15 @@ var (
 )
 
 const (
-	MaxAPIKeyCredentialBytes     = 128
-	defaultAuthLookupConcurrency = 64
-	defaultNegativeAuthCacheSize = 16384
-	apiKeyMaxErrorsPerHour       = 20
-	apiKeyMaxAllowedModels       = 200
-	apiKeyMaxModelNameLen        = 200
-	apiKeyLastUsedMinTouch       = 30 * time.Second
-	apiKeySortCurrentConcurrency = "current_concurrency"
+	MaxAPIKeyCredentialBytes            = 128
+	defaultAuthLookupConcurrency        = 64
+	defaultNegativeAuthCacheSize        = 16384
+	apiKeyMaxErrorsPerHour              = 20
+	apiKeyMaxAllowedModels              = 200
+	apiKeyMaxModelNameLen               = 200
+	apiKeyLastUsedMinTouch              = 30 * time.Second
+	apiKeySortCurrentConcurrency        = "current_concurrency"
+	apiKeyCurrentConcurrencySortMaxKeys = 1000
 	// DB 写失败后的短退避，避免请求路径持续同步重试造成写风暴与高延迟。
 	apiKeyLastUsedFailBackoff = 5 * time.Second
 )
@@ -98,6 +104,11 @@ type APIKeyRepository interface {
 
 type APIKeyHashBackfillRepository interface {
 	SetKeyHashAndPrefix(ctx context.Context, id int64, keyHash, keyPrefix string) error
+}
+
+type apiKeyCurrentConcurrencyLister interface {
+	ListIDsByUserID(ctx context.Context, userID int64, filters APIKeyListFilters, limit int) ([]int64, error)
+	ListByIDsForUser(ctx context.Context, userID int64, ids []int64) ([]APIKey, error)
 }
 
 // APIKeyRateLimitData holds rate limit usage and window state for an API key.
@@ -551,12 +562,108 @@ func (s *APIKeyService) Create(ctx context.Context, userID int64, req CreateAPIK
 
 // List 获取用户的API Key列表
 func (s *APIKeyService) List(ctx context.Context, userID int64, params pagination.PaginationParams, filters APIKeyListFilters) ([]APIKey, *pagination.PaginationResult, error) {
+	if normalizedAPIKeySortBy(params.SortBy) == apiKeySortCurrentConcurrency {
+		return s.listByCurrentConcurrency(ctx, userID, params, filters)
+	}
+
 	keys, pagination, err := s.apiKeyRepo.ListByUserID(ctx, userID, params, filters)
 	if err != nil {
 		return nil, nil, fmt.Errorf("list api keys: %w", err)
 	}
 	s.fillCurrentConcurrency(ctx, keys)
 	return keys, pagination, nil
+}
+
+func (s *APIKeyService) listByCurrentConcurrency(ctx context.Context, userID int64, params pagination.PaginationParams, filters APIKeyListFilters) ([]APIKey, *pagination.PaginationResult, error) {
+	repo, ok := s.apiKeyRepo.(apiKeyCurrentConcurrencyLister)
+	if !ok {
+		return nil, nil, fmt.Errorf("list api keys by current concurrency: repository does not support bounded API key listing")
+	}
+
+	ids, err := repo.ListIDsByUserID(ctx, userID, filters, apiKeyCurrentConcurrencySortMaxKeys+1)
+	if err != nil {
+		return nil, nil, fmt.Errorf("list api key ids: %w", err)
+	}
+	if len(ids) > apiKeyCurrentConcurrencySortMaxKeys {
+		return nil, nil, ErrAPIKeyCurrentConcurrencySortTooLarge
+	}
+
+	counts := s.currentConcurrencyCounts(ctx, ids)
+	sortAPIKeyIDsByCurrentConcurrency(ids, counts, params.NormalizedSortOrder(pagination.SortOrderDesc))
+	pageIDs := paginateAPIKeyIDs(ids, params)
+	if len(pageIDs) == 0 {
+		return []APIKey{}, apiKeyPaginationResult(int64(len(ids)), params), nil
+	}
+	keys, err := repo.ListByIDsForUser(ctx, userID, pageIDs)
+	if err != nil {
+		return nil, nil, fmt.Errorf("load paginated api keys: %w", err)
+	}
+	keysByID := make(map[int64]APIKey, len(keys))
+	for i := range keys {
+		keys[i].CurrentConcurrency = counts[keys[i].ID]
+		keysByID[keys[i].ID] = keys[i]
+	}
+	ordered := make([]APIKey, 0, len(pageIDs))
+	for _, id := range pageIDs {
+		if key, exists := keysByID[id]; exists {
+			ordered = append(ordered, key)
+		}
+	}
+	return ordered, apiKeyPaginationResult(int64(len(ids)), params), nil
+}
+
+func normalizedAPIKeySortBy(sortBy string) string {
+	return strings.ToLower(strings.TrimSpace(sortBy))
+}
+
+func sortAPIKeyIDsByCurrentConcurrency(ids []int64, counts map[int64]int, sortOrder string) {
+	desc := sortOrder != pagination.SortOrderAsc
+	sort.SliceStable(ids, func(i, j int) bool {
+		if counts[ids[i]] == counts[ids[j]] {
+			if desc {
+				return ids[i] > ids[j]
+			}
+			return ids[i] < ids[j]
+		}
+		if desc {
+			return counts[ids[i]] > counts[ids[j]]
+		}
+		return counts[ids[i]] < counts[ids[j]]
+	})
+}
+
+func paginateAPIKeyIDs(ids []int64, params pagination.PaginationParams) []int64 {
+	if len(ids) == 0 {
+		return []int64{}
+	}
+	limit := params.Limit()
+	page := params.Page
+	if page < 1 {
+		page = 1
+	}
+	offset := (page - 1) * limit
+	if offset >= len(ids) {
+		return []int64{}
+	}
+	end := offset + limit
+	if end > len(ids) {
+		end = len(ids)
+	}
+	return ids[offset:end]
+}
+
+func apiKeyPaginationResult(total int64, params pagination.PaginationParams) *pagination.PaginationResult {
+	limit := params.Limit()
+	pages := int(total) / limit
+	if int(total)%limit > 0 {
+		pages++
+	}
+	return &pagination.PaginationResult{
+		Total:    total,
+		Page:     params.Page,
+		PageSize: limit,
+		Pages:    pages,
+	}
 }
 
 func (s *APIKeyService) fillCurrentConcurrency(ctx context.Context, keys []APIKey) {
@@ -576,6 +683,17 @@ func (s *APIKeyService) fillCurrentConcurrency(ctx context.Context, keys []APIKe
 	for i := range keys {
 		keys[i].CurrentConcurrency = counts[keys[i].ID]
 	}
+}
+
+func (s *APIKeyService) currentConcurrencyCounts(ctx context.Context, ids []int64) map[int64]int {
+	if s == nil || s.concurrencyService == nil || len(ids) == 0 {
+		return map[int64]int{}
+	}
+	counts, err := s.concurrencyService.GetAPIKeyConcurrencyBatch(ctx, ids)
+	if err != nil || counts == nil {
+		return map[int64]int{}
+	}
+	return counts
 }
 
 func (s *APIKeyService) currentConcurrencyForAPIKey(ctx context.Context, apiKeyID int64) int {

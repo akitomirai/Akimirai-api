@@ -32,10 +32,18 @@ func (ollamaUsageTestEncryptor) Decrypt(value string) (string, error) {
 type ollamaUsageTestRepo struct {
 	*upstreamBillingProbeAccountRepo
 	due                 []Account
+	beforeGetByID       func(int64)
 	beforeSnapshot      func()
 	disableAutoAttempts atomic.Int64
 	disableAutoCalls    atomic.Int64
 	groupResolveCalls   atomic.Int64
+}
+
+func (r *ollamaUsageTestRepo) GetByID(ctx context.Context, id int64) (*Account, error) {
+	if r.beforeGetByID != nil {
+		r.beforeGetByID(id)
+	}
+	return r.upstreamBillingProbeAccountRepo.GetByID(ctx, id)
 }
 
 func (r *ollamaUsageTestRepo) ListOllamaCloudUsageGroupAccounts(_ context.Context, anchors []*Account) ([]Account, error) {
@@ -664,6 +672,18 @@ func TestOllamaCloudUsageRefreshSingleflightAndRunnerDeduplicateSharedGroup(t *t
 		upstreamBillingProbeAccountRepo: &upstreamBillingProbeAccountRepo{accounts: map[int64]*Account{first.ID: first, second.ID: second}},
 		due:                             []Account{*first, *second},
 	}
+	secondLookupStarted := make(chan struct{})
+	releaseSecondLookup := make(chan struct{})
+	var secondLookupOnce sync.Once
+	repo.beforeGetByID = func(id int64) {
+		if id != second.ID {
+			return
+		}
+		secondLookupOnce.Do(func() {
+			close(secondLookupStarted)
+			<-releaseSecondLookup
+		})
+	}
 	settingsRepo := &upstreamBillingProbeSettingRepo{values: map[string]string{
 		SettingKeyOllamaCloudUsageSettings: `{"enabled":true,"interval_minutes":60}`,
 	}}
@@ -676,14 +696,23 @@ func TestOllamaCloudUsageRefreshSingleflightAndRunnerDeduplicateSharedGroup(t *t
 	}}
 	svc := newOllamaUsageTestService(t, repo, upstream, settingsRepo, true)
 
-	errs := make(chan error, 2)
-	go func() { _, err := svc.Refresh(context.Background(), first.ID); errs <- err }()
+	firstErr := make(chan error, 1)
+	secondErr := make(chan error, 1)
+	go func() { _, err := svc.Refresh(context.Background(), first.ID); firstErr <- err }()
 	<-started
-	go func() { _, err := svc.Refresh(context.Background(), second.ID); errs <- err }()
+	go func() { _, err := svc.Refresh(context.Background(), second.ID); secondErr <- err }()
+	<-secondLookupStarted
 	close(release)
-	require.NoError(t, <-errs)
-	require.NoError(t, <-errs)
+	require.NoError(t, <-firstErr)
+	close(releaseSecondLookup)
+	require.NoError(t, <-secondErr)
 	require.Equal(t, int64(1), upstream.calls.Load())
+	svc.refreshDoneMu.Lock()
+	activeRefreshes := len(svc.refreshActive)
+	retainedRefreshResults := len(svc.refreshDone)
+	svc.refreshDoneMu.Unlock()
+	require.Zero(t, activeRefreshes)
+	require.Zero(t, retainedRefreshResults, "completed overlap results must be released after all registered callers finish")
 	require.NotNil(t, decodeOllamaCloudUsageSnapshot(first.Extra))
 	require.Equal(t, decodeOllamaCloudUsageSnapshot(first.Extra), decodeOllamaCloudUsageSnapshot(second.Extra))
 
@@ -692,6 +721,97 @@ func TestOllamaCloudUsageRefreshSingleflightAndRunnerDeduplicateSharedGroup(t *t
 	upstream.beforeResponse = nil
 	require.NoError(t, svc.RunDue(context.Background()))
 	require.Equal(t, int64(2), upstream.calls.Load(), "RunDue must issue one request for the shared group")
+}
+
+func TestOllamaCloudUsageRefreshReusesOverlappingEarlyErrorForSharedGroup(t *testing.T) {
+	first := ollamaUsageAccount(921)
+	first.Credentials["api_key"] = "shared-early-error-key"
+	second := ollamaUsageAccount(922)
+	second.Platform = PlatformAnthropic
+	second.Credentials = map[string]any{"base_url": "https://www.ollama.com/v1", "api_key": "shared-early-error-key"}
+	repo := &ollamaUsageTestRepo{upstreamBillingProbeAccountRepo: &upstreamBillingProbeAccountRepo{accounts: map[int64]*Account{
+		first.ID:  first,
+		second.ID: second,
+	}}}
+
+	firstSecondLookupStarted := make(chan struct{})
+	releaseFirstSecondLookup := make(chan struct{})
+	secondFirstLookupStarted := make(chan struct{})
+	releaseSecondFirstLookup := make(chan struct{})
+	var lookupMu sync.Mutex
+	lookupCounts := map[int64]int{}
+	repo.beforeGetByID = func(id int64) {
+		lookupMu.Lock()
+		lookupCounts[id]++
+		count := lookupCounts[id]
+		lookupMu.Unlock()
+		switch {
+		case id == first.ID && count == 2:
+			close(firstSecondLookupStarted)
+			<-releaseFirstSecondLookup
+		case id == second.ID && count == 1:
+			close(secondFirstLookupStarted)
+			<-releaseSecondFirstLookup
+		}
+	}
+	svc := newOllamaUsageTestService(t, repo, &ollamaUsageHTTPStub{}, &upstreamBillingProbeSettingRepo{}, true)
+
+	firstErr := make(chan error, 1)
+	secondErr := make(chan error, 1)
+	go func() { _, err := svc.Refresh(context.Background(), first.ID); firstErr <- err }()
+	<-firstSecondLookupStarted
+	go func() { _, err := svc.Refresh(context.Background(), second.ID); secondErr <- err }()
+	<-secondFirstLookupStarted
+	close(releaseFirstSecondLookup)
+	require.ErrorIs(t, <-firstErr, ErrOllamaCloudUsageSessionRequired)
+	close(releaseSecondFirstLookup)
+	require.ErrorIs(t, <-secondErr, ErrOllamaCloudUsageSessionRequired)
+
+	lookupMu.Lock()
+	secondLookups := lookupCounts[second.ID]
+	lookupMu.Unlock()
+	require.Equal(t, 1, secondLookups, "the delayed overlapping caller must reuse the completed early error")
+	require.Equal(t, int64(1), repo.groupResolveCalls.Load(), "the shared group must be resolved only by the actual refresh owner")
+}
+
+func TestOllamaCloudUsageRefreshDoesNotRetainResultForUnrelatedActiveRequest(t *testing.T) {
+	slow := ollamaUsageAccount(931)
+	fast := ollamaUsageAccount(932)
+	fast.Extra[OllamaCloudUsageSessionExtraKey] = "cipher:wos-session=fast"
+	repo := &ollamaUsageTestRepo{upstreamBillingProbeAccountRepo: &upstreamBillingProbeAccountRepo{accounts: map[int64]*Account{
+		slow.ID: slow,
+		fast.ID: fast,
+	}}}
+	slowLookupStarted := make(chan struct{})
+	releaseSlowLookup := make(chan struct{})
+	var releaseSlowOnce sync.Once
+	releaseSlow := func() { releaseSlowOnce.Do(func() { close(releaseSlowLookup) }) }
+	t.Cleanup(releaseSlow)
+	var slowLookupOnce sync.Once
+	repo.beforeGetByID = func(id int64) {
+		if id != slow.ID {
+			return
+		}
+		slowLookupOnce.Do(func() {
+			close(slowLookupStarted)
+			<-releaseSlowLookup
+		})
+	}
+	svc := newOllamaUsageTestService(t, repo, &ollamaUsageHTTPStub{body: ollamaUsageFixture(t)}, &upstreamBillingProbeSettingRepo{}, true)
+
+	slowErr := make(chan error, 1)
+	go func() { _, err := svc.Refresh(context.Background(), slow.ID); slowErr <- err }()
+	<-slowLookupStarted
+	_, err := svc.Refresh(context.Background(), fast.ID)
+	require.NoError(t, err)
+
+	svc.refreshDoneMu.Lock()
+	retainedRefreshResults := len(svc.refreshDone)
+	svc.refreshDoneMu.Unlock()
+	require.Zero(t, retainedRefreshResults, "an unrelated active request must not pin another group's completed result")
+
+	releaseSlow()
+	require.ErrorIs(t, <-slowErr, ErrOllamaCloudUsageSessionRequired)
 }
 
 func TestOllamaCloudUsageRefreshRejectsGroupChangeBeforeUpstreamRequest(t *testing.T) {

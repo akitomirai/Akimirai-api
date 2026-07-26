@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql/driver"
+	"fmt"
 	"io"
 	"regexp"
 	"strconv"
@@ -154,36 +155,60 @@ func TestServerTimingConnectorRecordsDriverCallsWithoutRowLifetime(t *testing.T)
 	collector := servertiming.New(startedAt)
 	ctx := servertiming.WithCollector(context.Background(), collector)
 
-	wrapped := newServerTimingConnector(timingFakeConnector{conn: newTimingFakeConn()})
-	rawConn, err := wrapped.Connect(ctx)
-	if err != nil {
-		t.Fatal(err)
+	// Measure every wrapped driver call from the outside. The connector's own
+	// db intervals are recorded strictly inside these windows, so their union
+	// can never exceed the summed window durations. The row-processing gap
+	// below lies outside every window; if the connector wrongly attributed it
+	// to DB time, the db metric would blow past this bound. Comparing against
+	// measured windows (instead of app vs db) keeps the assertion valid even
+	// when time.Sleep overshoots on slow or Windows machines.
+	var driverWindows time.Duration
+	timedCall := func(fn func() error) {
+		t.Helper()
+		callStart := time.Now()
+		err := fn()
+		driverWindows += time.Since(callStart)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
+
+	wrapped := newServerTimingConnector(timingFakeConnector{conn: newTimingFakeConn()})
+	var rawConn driver.Conn
+	timedCall(func() error {
+		var err error
+		rawConn, err = wrapped.Connect(ctx)
+		return err
+	})
 	conn, ok := rawConn.(*serverTimingConn)
 	if !ok {
 		t.Fatalf("Connect() returned %T, want *serverTimingConn", rawConn)
 	}
 
-	if _, err := conn.ExecContext(ctx, "sensitive update", nil); err != nil {
-		t.Fatal(err)
-	}
-	rows, err := conn.QueryContext(ctx, "sensitive select", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	timedCall(func() error {
+		_, err := conn.ExecContext(ctx, "sensitive update", nil)
+		return err
+	})
+	var rows driver.Rows
+	timedCall(func() error {
+		var err error
+		rows, err = conn.QueryContext(ctx, "sensitive select", nil)
+		return err
+	})
 	values := make([]driver.Value, 1)
-	if err := rows.Next(values); err != nil {
-		t.Fatal(err)
-	}
+	timedCall(func() error { return rows.Next(values) })
 
 	// Application work between row reads must remain app time.
+	gapStart := time.Now()
 	time.Sleep(30 * time.Millisecond)
-	if err := rows.Next(values); err != io.EOF {
-		t.Fatalf("rows.Next() = %v, want EOF", err)
-	}
-	if err := rows.Close(); err != nil {
-		t.Fatal(err)
-	}
+	rowGap := time.Since(gapStart)
+	timedCall(func() error {
+		if err := rows.Next(values); err != io.EOF {
+			return fmt.Errorf("rows.Next() = %v, want EOF", err)
+		}
+		return nil
+	})
+	timedCall(func() error { return rows.Close() })
 
 	header := collector.HeaderValue(time.Now(), "bypass")
 	if !strings.Contains(header, `queries=2`) {
@@ -192,8 +217,16 @@ func TestServerTimingConnectorRecordsDriverCallsWithoutRowLifetime(t *testing.T)
 	if strings.Contains(header, "sensitive") {
 		t.Fatalf("SQL text leaked into header: %q", header)
 	}
-	if app, db := metricDuration(t, header, "app"), metricDuration(t, header, "db"); app <= db {
-		t.Fatalf("row processing gap was counted as DB time: app=%.1fms db=%.1fms header=%q", app, db, header)
+
+	app, db := metricDuration(t, header, "app"), metricDuration(t, header, "db")
+	windowsMS := float64(driverWindows) / float64(time.Millisecond)
+	gapMS := float64(rowGap) / float64(time.Millisecond)
+	// 1ms of slack covers the header's one-decimal rounding.
+	if db > windowsMS+1 {
+		t.Fatalf("row processing gap was counted as DB time: db=%.1fms driver windows=%.1fms header=%q", db, windowsMS, header)
+	}
+	if app < gapMS-1 {
+		t.Fatalf("row processing gap missing from app time: app=%.1fms gap=%.1fms header=%q", app, gapMS, header)
 	}
 }
 

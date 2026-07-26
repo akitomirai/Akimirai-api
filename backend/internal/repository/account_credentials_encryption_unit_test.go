@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
@@ -17,6 +18,16 @@ import (
 	entsql "entgo.io/ent/dialect/sql"
 	_ "modernc.org/sqlite"
 )
+
+type rejectAccountCredentialDecryptor struct{}
+
+func (rejectAccountCredentialDecryptor) Encrypt(string) (string, error) {
+	return "", errors.New("unexpected credential encryption")
+}
+
+func (rejectAccountCredentialDecryptor) Decrypt(string) (string, error) {
+	return "", errors.New("credential decryption must not run for platform projection")
+}
 
 func newAccountRepoEncryptedSQLite(t *testing.T) (*accountRepository, *dbent.Client) {
 	t.Helper()
@@ -56,6 +67,46 @@ func newTestAccountEncryptor(t *testing.T) service.SecretEncryptor {
 	})
 	require.NoError(t, err)
 	return enc
+}
+
+func TestListSchedulableAIPlatformSourcesDoesNotDecryptSensitiveCredentials(t *testing.T) {
+	ctx := context.Background()
+	repo, client := newAccountRepoEncryptedSQLite(t)
+	repo.credentialEncryptor = rejectAccountCredentialDecryptor{}
+
+	mustCreatePlainAccountUnit(t, ctx, client, &service.Account{
+		Name:        "public-platform-projection",
+		Platform:    service.PlatformOpenAI,
+		Type:        service.AccountTypeAPIKey,
+		Status:      service.StatusActive,
+		Schedulable: true,
+		Credentials: map[string]any{
+			"api_key": accountCredentialCipherPrefix + "must-not-decrypt",
+			"model_mapping": map[string]any{
+				"claude": "claude-sonnet-4-5",
+			},
+			"compact_model_mapping": map[string]any{
+				"gpt-5.4": "gpt-5.4-openai-compact",
+			},
+		},
+	})
+	mustCreatePlainAccountUnit(t, ctx, client, &service.Account{
+		Name:        "unschedulable-platform-projection",
+		Platform:    service.PlatformGemini,
+		Type:        service.AccountTypeAPIKey,
+		Status:      service.StatusDisabled,
+		Schedulable: false,
+	})
+
+	sources, err := repo.ListSchedulableAIPlatformSources(ctx)
+	require.NoError(t, err)
+	require.Equal(t, []service.ConfiguredAIPlatformSource{
+		{
+			Platform:            service.PlatformOpenAI,
+			ModelMapping:        map[string]string{"claude": "claude-sonnet-4-5"},
+			CompactModelMapping: map[string]string{"gpt-5.4": "gpt-5.4-openai-compact"},
+		},
+	}, sources)
 }
 
 func mustCreatePlainAccountUnit(t *testing.T, ctx context.Context, client *dbent.Client, account *service.Account) *service.Account {

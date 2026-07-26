@@ -801,7 +801,7 @@ func grokMediaUsageFromResponse(endpoint GrokMediaEndpoint, requestInfo GrokMedi
 		meta.ImageSize = requestInfo.SizeTier
 		meta.ImageInputSize = requestInfo.Size
 		meta.ImageOutputSizes = collectOpenAIResponseImageOutputSizesFromJSONBytes(responseBody)
-	case GrokMediaEndpointVideosGenerations:
+	case GrokMediaEndpointVideosGenerations, GrokMediaEndpointVideosEdits, GrokMediaEndpointVideosExtensions:
 		meta.ResponseID = extractGrokMediaVideoRequestID(responseBody)
 		meta.VideoCount = 1
 		meta.VideoResolution = requestInfo.Resolution

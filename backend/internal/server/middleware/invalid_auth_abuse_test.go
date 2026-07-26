@@ -56,7 +56,7 @@ func TestAPIKeyAuthInvalidAbuseReturns429BeforeRepository(t *testing.T) {
 	require.Equal(t, "60", w.Header().Get("Retry-After"))
 	require.Contains(t, w.Body.String(), "INVALID_AUTH_RATE_LIMITED")
 	require.Equal(t, IngressRejectInvalidAuthRateLimited, reason)
-	require.Equal(t, 1, repoCalls, "rate-limited request must not reach the repository")
+	require.Equal(t, 2, repoCalls, "one admitted credential performs hash-first and legacy raw-key lookup; the rate-limited request must not reach the repository")
 }
 
 func TestGoogleAPIKeyAuthInvalidAbuseReturnsProtocol429(t *testing.T) {
@@ -90,7 +90,7 @@ func TestGoogleAPIKeyAuthInvalidAbuseReturnsProtocol429(t *testing.T) {
 	require.Equal(t, "60", w.Header().Get("Retry-After"))
 	require.Contains(t, w.Body.String(), "RESOURCE_EXHAUSTED")
 	require.Equal(t, IngressRejectInvalidAuthRateLimited, reason)
-	require.Equal(t, 2, repoCalls)
+	require.Equal(t, 4, repoCalls, "two admitted credentials each perform hash-first and legacy raw-key lookup")
 }
 
 func TestInvalidAuthAbuseDoesNotCountValidOrOperationalFailures(t *testing.T) {
