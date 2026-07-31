@@ -42,6 +42,7 @@ func TestUserRoutesRegisterUnifiedRequestLogs(t *testing.T) {
 		}),
 		servermiddleware.AuditLogMiddleware(func(c *gin.Context) { c.Next() }),
 		nil,
+		nil,
 	)
 
 	recorder := httptest.NewRecorder()

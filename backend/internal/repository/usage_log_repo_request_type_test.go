@@ -781,6 +781,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{Valid: true, String: "prefix-hash"},
 			sql.NullString{Valid: true, String: "tools-hash"},
 			sql.NullString{Valid: true, String: "system-hash"},
+			sql.NullString{Valid: true, String: "session-explicit"},
 			now,
 		}})
 		require.NoError(t, err)
@@ -835,6 +836,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 		require.Equal(t, "prefix-hash", *log.PromptCachePrefixHash)
 		require.Equal(t, "tools-hash", *log.PromptCacheToolsHash)
 		require.Equal(t, "system-hash", *log.PromptCacheSystemHash)
+		require.Equal(t, "session-explicit", *log.SessionID)
 	})
 
 	t.Run("request_type_ws_v2_overrides_legacy", func(t *testing.T) {
@@ -932,6 +934,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // prompt_cache_prefix_hash
 			sql.NullString{},  // prompt_cache_tools_hash
 			sql.NullString{},  // prompt_cache_system_hash
+			sql.NullString{},  // session_id
 			now,
 		}})
 		require.NoError(t, err)
@@ -1025,6 +1028,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // prompt_cache_prefix_hash
 			sql.NullString{},  // prompt_cache_tools_hash
 			sql.NullString{},  // prompt_cache_system_hash
+			sql.NullString{},  // session_id
 			now,
 		}})
 		require.NoError(t, err)
@@ -1118,6 +1122,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // prompt_cache_prefix_hash
 			sql.NullString{},  // prompt_cache_tools_hash
 			sql.NullString{},  // prompt_cache_system_hash
+			sql.NullString{},  // session_id
 			now,
 		}})
 		require.NoError(t, err)

@@ -480,7 +480,7 @@ const gptImageNavigation = createFeatureReturnNavigation({
 const modelPlazaNavigation = createFeatureReturnNavigation({
   storageKey: 'sub2api:model-plaza-return-path',
   isFeaturePath: isModelPlazaPath,
-  entryPath: '/model-plaza',
+  entryPath: '/model-plaza?embedded=1',
   fallbackPath: fallbackFeaturePath,
 })
 const isGptImageActive = computed(() => gptImageNavigation.isActive(route.path))

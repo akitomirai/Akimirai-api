@@ -366,6 +366,7 @@ const modelOptions = computed<SelectOption[]>(() => [
   ...(props.modelOptions ?? []).map((m) => ({ value: m, label: m })),
 ])
 const groupOptions = ref<SelectOption[]>([{ value: null, label: t('admin.usage.allGroups') }])
+
 // 错误类型对应后端 phase 参数(与错误表"类型"徽章同语义)
 const errorPhaseOptions = computed<SelectOption[]>(() => [
   { value: null, label: t('admin.usage.allTypes') },
@@ -610,5 +611,7 @@ const setUserKeyword = (email: string) => {
   showUserDropdown.value = false
 }
 
-defineExpose({ setUserKeyword })
+const getUserSearchRevision = () => userSearchSequence
+
+defineExpose({ getUserSearchRevision, setUserKeyword })
 </script>

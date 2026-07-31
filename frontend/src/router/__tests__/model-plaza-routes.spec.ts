@@ -10,11 +10,15 @@ const routerSource = readFileSync(
 )
 
 describe('Model Plaza and model pricing routes', () => {
-  it('uses Model Plaza as the canonical user route and redirects the legacy path', () => {
-    expect(routerSource).toContain("path: '/model-plaza'")
-    expect(routerSource).toContain("import('@/views/user/ModelPlazaView.vue')")
-    expect(routerSource).toMatch(/path: '\/available-channels',[\s\S]*?redirect: '\/model-plaza'/)
-    expect(routerSource).not.toContain("import('@/views/user/AvailableChannelsView.vue')")
+  it('keeps the public plaza separate from authenticated available channels', () => {
+    expect(routerSource.match(/path: '\/model-plaza'/g)).toHaveLength(1)
+    expect(routerSource).toMatch(
+      /path: '\/model-plaza',[\s\S]*?import\('@\/views\/ModelPlazaView\.vue'\)[\s\S]*?requiresAuth: false/,
+    )
+    expect(routerSource).toMatch(
+      /path: '\/available-channels',[\s\S]*?import\('@\/views\/user\/ModelPlazaView\.vue'\)[\s\S]*?requiresAuth: true/,
+    )
+    expect(routerSource).not.toMatch(/path: '\/available-channels',[\s\S]*?redirect: '\/model-plaza'/)
   })
 
   it('separates the model pricing projection from channel configuration', () => {

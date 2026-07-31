@@ -97,8 +97,13 @@ export const FeatureFlags = {
     mode: 'opt-out',
     label: 'Channel Monitor',
   }),
-  modelPlaza: defineFlag({
+  availableChannels: defineFlag({
     key: 'available_channels_enabled',
+    mode: 'opt-in',
+    label: 'Available Channels',
+  }),
+  modelPlaza: defineFlag({
+    key: 'model_plaza_enabled',
     mode: 'opt-in',
     label: 'Model Plaza',
   }),

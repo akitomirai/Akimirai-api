@@ -353,6 +353,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		upstreamLatencyMsPtr := getContextIntPtr(c, service.OpsUpstreamLatencyMsKey)
 		responseLatencyMsPtr := getContextIntPtr(c, service.OpsResponseLatencyMsKey)
 		diagnosticsSnapshot := snapshotOpenAIRequestDiagnostics(requestDiagnostics, forwardStart, result, account)
+		sessionID := service.ExtractClientSessionID(c)
 
 		cyberBlocked := service.GetOpsCyberPolicy(c) != nil
 		h.submitOpenAIUsageRecordTask(c.Request.Context(), result, func(ctx context.Context) {
@@ -368,6 +369,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 				IPAddress:          clientIP,
 				APIKeyService:      h.apiKeyService,
 				QuotaPlatform:      quotaPlatform,
+				SessionID:          sessionID,
 				ChannelUsageFields: clientRequestedUsageFields(c, channelMapping, reqModel, result.UpstreamModel),
 				CyberBlocked:       cyberBlocked,
 				ClientTransport:    clientTransportPtr,

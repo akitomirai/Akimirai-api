@@ -52,6 +52,7 @@ func TestUserRoutesRegisterDailyCheckInGetAndPost(t *testing.T) {
 		}),
 		servermiddleware.AuditLogMiddleware(func(c *gin.Context) { c.Next() }),
 		nil,
+		nil,
 	)
 
 	for _, method := range []string{http.MethodGet, http.MethodPost} {
