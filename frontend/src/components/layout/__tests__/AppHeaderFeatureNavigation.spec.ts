@@ -25,19 +25,20 @@ describe('AppHeader feature navigation', () => {
     expect(source.match(/handleCheckInAction/g)?.length).toBeGreaterThanOrEqual(3)
   })
 
-  it('places the Model Plaza action before GPTImage and gates it with the catalog flag', () => {
+  it('places the authenticated Model Plaza action before GPTImage and gates it with the user catalog flag', () => {
     const modelPlazaButton = source.indexOf('@click="handleModelPlazaClick"')
     const gptImageButton = source.indexOf('@click="handleGptImageClick"')
 
     expect(modelPlazaButton).toBeGreaterThan(-1)
     expect(gptImageButton).toBeGreaterThan(modelPlazaButton)
-    expect(source).toContain('FeatureFlags.modelPlaza')
+    expect(source).toContain('FeatureFlags.availableChannels')
     expect(source).toContain('v-if="user && modelPlazaEnabled"')
   })
 
   it('uses the shared return-navigation owner for both feature actions', () => {
     expect(source.match(/createFeatureReturnNavigation\(/g)).toHaveLength(2)
     expect(source).toContain("storageKey: 'sub2api:model-plaza-return-path'")
+    expect(source).toContain("entryPath: '/available-channels'")
     expect(source).toContain("storageKey: 'sub2api:gpt-image-return-path'")
     expect(source).not.toContain('getStoredGptImageReturnPath')
   })

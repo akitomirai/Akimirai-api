@@ -466,8 +466,9 @@ function isGptImagePath(path: string): boolean {
   return path === '/images' || path.startsWith('/images/') || path.startsWith('/image-management')
 }
 
+// This authenticated model-first catalog is distinct from the public /model-plaza feature.
 function isModelPlazaPath(path: string): boolean {
-  return path === '/model-plaza' || path.startsWith('/model-plaza/')
+  return path === '/available-channels' || path.startsWith('/available-channels/')
 }
 
 const fallbackFeaturePath = () => authStore.isAdmin ? '/admin/dashboard' : '/dashboard'
@@ -480,12 +481,12 @@ const gptImageNavigation = createFeatureReturnNavigation({
 const modelPlazaNavigation = createFeatureReturnNavigation({
   storageKey: 'sub2api:model-plaza-return-path',
   isFeaturePath: isModelPlazaPath,
-  entryPath: '/model-plaza?embedded=1',
+  entryPath: '/available-channels',
   fallbackPath: fallbackFeaturePath,
 })
 const isGptImageActive = computed(() => gptImageNavigation.isActive(route.path))
 const isModelPlazaActive = computed(() => modelPlazaNavigation.isActive(route.path))
-const modelPlazaEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.modelPlaza))
+const modelPlazaEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.availableChannels))
 
 const quoteTitle = computed(() => {
   const author = randomQuote.value.author ? ` - ${randomQuote.value.author}` : ''
