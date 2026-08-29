@@ -19,6 +19,7 @@ func TestRetypedResponsesToolCallItemID(t *testing.T) {
 		{"custom id lowered to function", "ctc_abc", "function_call", "fc_abc"},
 		{"unknown prefix is left alone", "item_abc", "custom_tool_call", "item_abc"},
 		{"unprefixed id is left alone", "abc", "custom_tool_call", "abc"},
+		{"near miss function prefix is left alone", "fcXYZ", "custom_tool_call", "fcXYZ"},
 		{"empty id stays empty", "", "custom_tool_call", ""},
 		{"unconstrained item type is left alone", "fc_abc", "message", "fc_abc"},
 	} {

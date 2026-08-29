@@ -196,7 +196,7 @@ func rewriteClientToolHistory(value any, adapter *ResponsesClientToolMapping) bo
 // pairing key for function_call_output items.
 func normalizeLoweredFunctionItemID(item map[string]any) {
 	id := strings.TrimSpace(stringValue(item["id"]))
-	if id == "" || strings.HasPrefix(id, "fc") {
+	if id == "" || strings.HasPrefix(id, "fc_") {
 		return
 	}
 	if recovered := retypedResponsesToolCallItemID(id, "function_call"); recovered != id {
