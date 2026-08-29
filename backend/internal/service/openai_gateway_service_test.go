@@ -3046,31 +3046,57 @@ func TestOpenAIBuildUpstreamRequestsForwardSessionIDHeaderVariants(t *testing.T)
 		name       string
 		build      func(*gin.Context, []byte) (*http.Request, error)
 		headerName string
+		value      string
+		setHeader  bool
 	}{
 		{
-			name:       "managed standard path/session-id",
+			name:       "managed standard path session-id",
 			headerName: "session-id",
+			value:      "codex-session-id",
+			setHeader:  true,
 			build: func(c *gin.Context, body []byte) (*http.Request, error) {
 				return svc.buildUpstreamRequest(c.Request.Context(), c, account, body, "token", false, "", false)
 			},
 		},
 		{
-			name:       "managed standard path/session_id",
+			name:       "managed standard path session_id",
 			headerName: "session_id",
+			value:      "legacy-session-id",
+			setHeader:  true,
 			build: func(c *gin.Context, body []byte) (*http.Request, error) {
 				return svc.buildUpstreamRequest(c.Request.Context(), c, account, body, "token", false, "", false)
 			},
 		},
 		{
-			name:       "passthrough path/session-id",
+			name:       "passthrough path session-id",
 			headerName: "session-id",
+			value:      "codex-session-id",
+			setHeader:  true,
 			build: func(c *gin.Context, body []byte) (*http.Request, error) {
 				return svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
 			},
 		},
 		{
-			name:       "passthrough path/session_id",
+			name:       "passthrough path session_id",
 			headerName: "session_id",
+			value:      "legacy-session-id",
+			setHeader:  true,
+			build: func(c *gin.Context, body []byte) (*http.Request, error) {
+				return svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
+			},
+		},
+		{
+			name:       "managed standard path without session-id",
+			headerName: "session-id",
+			value:      "",
+			build: func(c *gin.Context, body []byte) (*http.Request, error) {
+				return svc.buildUpstreamRequest(c.Request.Context(), c, account, body, "token", false, "", false)
+			},
+		},
+		{
+			name:       "passthrough path without session_id",
+			headerName: "session_id",
+			value:      "",
 			build: func(c *gin.Context, body []byte) (*http.Request, error) {
 				return svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
 			},
@@ -3080,12 +3106,18 @@ func TestOpenAIBuildUpstreamRequestsForwardSessionIDHeaderVariants(t *testing.T)
 			rec := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(rec)
 			c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
-			c.Request.Header.Set(tt.headerName, "codex-session-id")
+			if tt.setHeader {
+				c.Request.Header.Set(tt.headerName, tt.value)
+			}
 			c.Request.Header.Set("X-Unapproved-Header", "must-not-forward")
 
 			req, err := tt.build(c, body)
 			require.NoError(t, err)
-			require.Equal(t, "codex-session-id", req.Header.Get(tt.headerName))
+			if tt.setHeader {
+				require.Equal(t, tt.value, req.Header.Get(tt.headerName))
+			} else {
+				require.Empty(t, req.Header.Get(tt.headerName))
+			}
 			require.Empty(t, req.Header.Get("X-Unapproved-Header"))
 		})
 	}
