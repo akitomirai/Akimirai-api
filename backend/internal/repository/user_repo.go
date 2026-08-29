@@ -1122,26 +1122,26 @@ func emailAliasOwnerIDWithClient(ctx context.Context, client *dbent.Client, emai
 	return selfID, selfExists, nil
 }
 
-// UpdateEmailWithAliasGuard 在调用方事务内更新主邮箱与密码哈希。
+// UpdateEmailWithAliasGuard 在调用方事务内更新主邮箱与密码哈希，并返回更新前的邮箱。
 //
 // 邮箱换绑不能只依赖服务层前置查重：两个并发请求可能同时看到同一收件箱未被占用。
-// 这里先按“字面邮箱 + 收件箱身份”加锁，复查是否已被其他用户占用，再执行写入；
+// 这里按“用户 + 字面邮箱 + 收件箱身份”加锁，复查是否已被其他用户占用，再执行写入；
 // PostgreSQL 使用事务级 advisory lock 跨实例互斥，测试内存库则由进程内锁兜底。
 func (r *userRepository) UpdateEmailWithAliasGuard(
 	ctx context.Context,
 	userID int64,
 	email string,
 	passwordHash string,
-) error {
+) (string, error) {
 	if userID <= 0 {
-		return service.ErrUserNotFound
+		return "", service.ErrUserNotFound
 	}
 	if strings.TrimSpace(email) == "" || passwordHash == "" {
-		return fmt.Errorf("email identity update requires email and password hash")
+		return "", fmt.Errorf("email identity update requires email and password hash")
 	}
 	tx := dbent.TxFromContext(ctx)
 	if tx == nil {
-		return fmt.Errorf("email identity update requires a transaction")
+		return "", fmt.Errorf("email identity update requires a transaction")
 	}
 	client := tx.Client()
 
@@ -1149,29 +1149,36 @@ func (r *userRepository) UpdateEmailWithAliasGuard(
 		ctx,
 		client,
 		txAwareSQLExecutor(ctx, r.sql, r.client),
+		userEmailBindingLockKey(userID),
 		normalizedEmailUniquenessLockKey(email),
 		emailAliasUniquenessLockKey(email),
 	)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer releaseEmailLock()
 
+	currentUser, err := client.User.Get(ctx, userID)
+	if err != nil {
+		return "", translatePersistenceError(err, service.ErrUserNotFound, nil)
+	}
+	oldEmail := currentUser.Email
+
 	ownerID, exists, err := emailAliasOwnerIDWithClient(ctx, client, email, userID)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if exists && ownerID != userID {
-		return service.ErrEmailExists
+		return "", service.ErrEmailExists
 	}
 
 	if _, err := client.User.UpdateOneID(userID).
 		SetEmail(email).
 		SetPasswordHash(passwordHash).
 		Save(ctx); err != nil {
-		return translatePersistenceError(err, service.ErrUserNotFound, service.ErrEmailExists)
+		return "", translatePersistenceError(err, service.ErrUserNotFound, service.ErrEmailExists)
 	}
-	return nil
+	return oldEmail, nil
 }
 
 // dotStrippedEmailExpr 渲染下面的表达式：去掉存量邮箱的大小写、首尾空白（与
@@ -1265,6 +1272,13 @@ func emailAliasUniquenessLockKey(email string) string {
 		return ""
 	}
 	return "users:email-alias-identity:" + identity
+}
+
+func userEmailBindingLockKey(userID int64) string {
+	if userID <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("users:email-binding:%d", userID)
 }
 
 func (r *userRepository) AddGroupToAllowedGroups(ctx context.Context, userID int64, groupID int64) error {

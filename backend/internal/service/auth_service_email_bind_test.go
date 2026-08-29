@@ -323,6 +323,66 @@ func TestAuthServiceBindEmailIdentity_AllowsOnlyOneConcurrentAliasVariant(t *tes
 	require.Equal(t, 1, boundCount)
 }
 
+func TestAuthServiceBindEmailIdentity_SameUserConcurrentRebindKeepsIdentityConsistent(t *testing.T) {
+	cache := &emailBindCacheStub{
+		data: &service.VerificationCodeData{
+			Code:      "123456",
+			CreatedAt: time.Now().UTC(),
+			ExpiresAt: time.Now().UTC().Add(10 * time.Minute),
+		},
+	}
+	svc, _, client := newAuthServiceForEmailBind(t, nil, cache, nil)
+
+	ctx := context.Background()
+	unique := fmt.Sprintf("%d", time.Now().UnixNano())
+	oldEmail := "rebind-" + unique + "@example.com"
+	passwordHash, err := svc.HashPassword("current-password")
+	require.NoError(t, err)
+	user := createEmailBindTestUser(t, client, oldEmail, "rebind-"+unique, passwordHash)
+	_, err = client.AuthIdentity.Create().
+		SetUserID(user.ID).
+		SetProviderType("email").
+		SetProviderKey("email").
+		SetProviderSubject(oldEmail).
+		SetVerifiedAt(time.Now().UTC()).
+		Save(ctx)
+	require.NoError(t, err)
+
+	targets := []string{
+		"rebind-" + unique + "+one@gmail.com",
+		"rebind-" + unique + "+two@gmail.com",
+	}
+	start := make(chan struct{})
+	results := make(chan error, len(targets))
+	for _, target := range targets {
+		go func(email string) {
+			<-start
+			_, bindErr := svc.BindEmailIdentity(ctx, user.ID, email, "123456", "current-password")
+			results <- bindErr
+		}(target)
+	}
+	close(start)
+
+	for range targets {
+		require.NoError(t, <-results)
+	}
+
+	storedUser, err := client.User.Get(ctx, user.ID)
+	require.NoError(t, err)
+	require.Contains(t, targets, storedUser.Email)
+
+	identities, err := client.AuthIdentity.Query().
+		Where(
+			authidentity.UserIDEQ(user.ID),
+			authidentity.ProviderTypeEQ("email"),
+			authidentity.ProviderKeyEQ("email"),
+		).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, identities, 1)
+	require.Equal(t, storedUser.Email, identities[0].ProviderSubject)
+}
+
 func TestAuthServiceBindEmailIdentity_RejectsNewAliasWhenAnotherUserSharesCurrentUserInbox(t *testing.T) {
 	cache := &emailBindCacheStub{
 		data: &service.VerificationCodeData{

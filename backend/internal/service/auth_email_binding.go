@@ -188,7 +188,7 @@ func hasBindableEmailIdentitySubject(email string) bool {
 // emailIdentityAliasGuardRepository 是主邮箱替换所需的事务内原子仓储能力，
 // 用于关闭服务层前置查重与实际写入之间的并发窗口。
 type emailIdentityAliasGuardRepository interface {
-	UpdateEmailWithAliasGuard(ctx context.Context, userID int64, email string, passwordHash string) error
+	UpdateEmailWithAliasGuard(ctx context.Context, userID int64, email string, passwordHash string) (string, error)
 }
 
 func (s *AuthService) updateBoundEmailIdentityTx(
@@ -234,11 +234,10 @@ func (s *AuthService) updateBoundEmailIdentityWithClient(
 	if !ok {
 		return ErrServiceUnavailable
 	}
-	if err := guard.UpdateEmailWithAliasGuard(ctx, currentUser.ID, email, hashedPassword); err != nil {
+	oldEmail, err := guard.UpdateEmailWithAliasGuard(ctx, currentUser.ID, email, hashedPassword)
+	if err != nil {
 		return err
 	}
-
-	oldEmail := currentUser.Email
 
 	if err := replaceBoundEmailAuthIdentityWithClient(ctx, client, currentUser.ID, oldEmail, email, "auth_service_email_bind"); err != nil {
 		if errors.Is(err, ErrEmailExists) {
