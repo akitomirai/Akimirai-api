@@ -22,6 +22,8 @@ type dailyCheckInRepositoryStub struct {
 	adminFilter    DailyCheckInAdminFilter
 	adminItems     []DailyCheckInAdminRecord
 	adminTotal     int64
+	userItems      []DailyCheckInRecord
+	userTotal      int64
 }
 
 func (s *dailyCheckInRepositoryStub) GetForServiceDate(_ context.Context, _ int64, serviceDate string) (*DailyCheckInRecord, float64, error) {
@@ -44,6 +46,12 @@ func (s *dailyCheckInRepositoryStub) ListForAdmin(_ context.Context, filter Dail
 	defer s.mu.Unlock()
 	s.adminFilter = filter
 	return s.adminItems, s.adminTotal, s.err
+}
+
+func (s *dailyCheckInRepositoryStub) ListForUser(_ context.Context, _ int64, _, _ int) ([]DailyCheckInRecord, int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.userItems, s.userTotal, s.err
 }
 
 type dailyCheckInAuthInvalidatorStub struct {
@@ -83,14 +91,14 @@ func TestDailyCheckInRewardUsesWeightedDistribution(t *testing.T) {
 	tests := []struct {
 		name   string
 		roll   int64
-		reward int
+		reward float64
 	}{
-		{name: "first bucket starts at zero", roll: 0, reward: 1},
-		{name: "one reward ends at forty nine", roll: 49, reward: 1},
-		{name: "two reward starts at fifty", roll: 50, reward: 2},
-		{name: "two reward ends at seventy nine", roll: 79, reward: 2},
-		{name: "three reward starts at eighty", roll: 80, reward: 3},
-		{name: "last bucket awards three", roll: 99, reward: 3},
+		{name: "quarter bucket starts at zero", roll: 0, reward: 0.25},
+		{name: "quarter bucket ends at forty nine", roll: 49, reward: 0.25},
+		{name: "half bucket starts at fifty", roll: 50, reward: 0.5},
+		{name: "half bucket ends at seventy nine", roll: 79, reward: 0.5},
+		{name: "one bucket starts at eighty", roll: 80, reward: 1},
+		{name: "last bucket awards one", roll: 99, reward: 1},
 	}
 
 	for _, tc := range tests {
@@ -101,13 +109,13 @@ func TestDailyCheckInRewardUsesWeightedDistribution(t *testing.T) {
 		})
 	}
 
-	counts := map[int]int{}
+	counts := map[float64]int{}
 	for roll := int64(0); roll < 100; roll++ {
 		reward, err := dailyCheckInRewardFromRoll(roll)
 		require.NoError(t, err)
 		counts[reward]++
 	}
-	require.Equal(t, map[int]int{1: 50, 2: 30, 3: 20}, counts)
+	require.Equal(t, map[float64]int{0.25: 50, 0.5: 30, 1: 20}, counts)
 
 	for _, invalidRoll := range []int64{-1, 100} {
 		_, err := dailyCheckInRewardFromRoll(invalidRoll)
@@ -162,7 +170,7 @@ func TestDailyCheckInServiceClaimReturnsPersistedRewardAndInvalidatesCaches(t *t
 		ID:            41,
 		UserID:        7,
 		ServiceDate:   "2026-07-21",
-		RewardAmount:  2,
+		RewardAmount:  0.5,
 		BalanceBefore: 10,
 		BalanceAfter:  12,
 		CheckedInAt:   checkedAt,
@@ -172,17 +180,17 @@ func TestDailyCheckInServiceClaimReturnsPersistedRewardAndInvalidatesCaches(t *t
 	balanceInvalidator := &dailyCheckInBalanceInvalidatorStub{err: errors.New("redis unavailable")}
 	svc := newDailyCheckInService(repo, authInvalidator, balanceInvalidator)
 	svc.now = func() time.Time { return checkedAt }
-	svc.reward = func() (int, error) { return 2, nil }
+	svc.reward = func() (float64, error) { return 0.5, nil }
 
 	status, err := svc.Claim(context.Background(), 7)
 	require.NoError(t, err, "cache invalidation is best effort")
 	require.True(t, status.CheckedIn)
 	require.False(t, status.AlreadyCheckedIn)
-	require.Equal(t, float64(2), status.RewardAmount)
+	require.Equal(t, float64(0.5), status.RewardAmount)
 	require.Equal(t, float64(10), status.BalanceBefore)
 	require.Equal(t, float64(12), status.BalanceAfter)
 	require.Equal(t, checkedAt, *status.CheckedInAt)
-	require.Equal(t, float64(2), repo.claim.RewardAmount)
+	require.Equal(t, float64(0.5), repo.claim.RewardAmount)
 	require.Equal(t, "2026-07-21", repo.claim.ServiceDate)
 	require.Equal(t, checkedAt, repo.claim.CheckedInAt)
 	require.Equal(t, []int64{7}, authInvalidator.userIDs)
@@ -202,7 +210,7 @@ func TestDailyCheckInServiceReplayDoesNotInvalidateCachesAgain(t *testing.T) {
 	balanceInvalidator := &dailyCheckInBalanceInvalidatorStub{}
 	svc := newDailyCheckInService(repo, authInvalidator, balanceInvalidator)
 	svc.now = func() time.Time { return checkedAt }
-	svc.reward = func() (int, error) { return 3, nil }
+	svc.reward = func() (float64, error) { return 1, nil }
 
 	status, err := svc.Claim(context.Background(), 7)
 	require.NoError(t, err)
@@ -216,11 +224,31 @@ func TestDailyCheckInServiceReplayDoesNotInvalidateCachesAgain(t *testing.T) {
 func TestDailyCheckInServiceRejectsInvalidRewardSource(t *testing.T) {
 	repo := &dailyCheckInRepositoryStub{}
 	svc := newDailyCheckInService(repo, nil, nil)
-	svc.reward = func() (int, error) { return 4, nil }
+	svc.reward = func() (float64, error) { return 2, nil }
 
 	_, err := svc.Claim(context.Background(), 7)
 	require.ErrorContains(t, err, "reward")
 	require.Zero(t, repo.claimCalls)
+}
+
+func TestDailyCheckInServiceProjectsBalanceHistory(t *testing.T) {
+	checkedAt := mustParseCheckInTime(t, "2026-07-21T03:04:05+08:00")
+	repo := &dailyCheckInRepositoryStub{
+		userItems: []DailyCheckInRecord{{
+			ID: 41, UserID: 7, RewardAmount: 0.25, CheckedInAt: checkedAt, CreatedAt: checkedAt,
+		}},
+		userTotal: 1,
+	}
+	svc := newDailyCheckInService(repo, nil, nil)
+
+	items, total, err := svc.ListForUserBalanceHistory(context.Background(), 7, 1, 20)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), total)
+	require.Len(t, items, 1)
+	require.Equal(t, int64(41), items[0].ID)
+	require.Equal(t, "CHECKIN-41", items[0].Code)
+	require.Equal(t, RedeemTypeDailyCheckIn, items[0].Type)
+	require.Equal(t, 0.25, items[0].Value)
 }
 
 func TestDailyCheckInServiceAdminListDefaultsToCurrentServiceDay(t *testing.T) {

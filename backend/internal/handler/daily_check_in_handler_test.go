@@ -31,6 +31,10 @@ func (r *dailyCheckInHandlerRepo) ListForAdmin(context.Context, service.DailyChe
 	return nil, 0, nil
 }
 
+func (r *dailyCheckInHandlerRepo) ListForUser(context.Context, int64, int, int) ([]service.DailyCheckInRecord, int64, error) {
+	return nil, 0, nil
+}
+
 func TestDailyCheckInHandlerClaimUsesAuthenticatedUserAndEnvelope(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	checkedAt := time.Date(2026, 7, 21, 3, 4, 5, 0, time.FixedZone("Asia/Shanghai", 8*60*60))

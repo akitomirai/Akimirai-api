@@ -88,12 +88,18 @@
       <template #table>
         <DataTable :columns="columns" :data="records" :loading="loading" row-key="id">
           <template #cell-user="{ row }">
-            <div class="min-w-0 max-w-[260px] whitespace-normal">
-              <div class="break-all font-medium text-gray-900 dark:text-white">{{ row.email }}</div>
+            <button
+              type="button"
+              data-test="daily-check-in-user"
+              class="min-w-0 max-w-[260px] whitespace-normal text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-dark-900"
+              :aria-label="t('admin.dailyCheckIns.viewUserHistory', { email: row.email })"
+              @click="handleUserClick(row.user_id)"
+            >
+              <div class="break-all font-medium text-primary-700 hover:underline dark:text-primary-300">{{ row.email }}</div>
               <div class="mt-0.5 break-all text-xs text-gray-500 dark:text-gray-400">
                 {{ row.username || '-' }} · #{{ row.user_id }}
               </div>
-            </div>
+            </button>
           </template>
 
           <template #cell-service_date="{ value }">
@@ -142,6 +148,12 @@
       </template>
     </TablePageLayout>
   </AppLayout>
+  <UserBalanceHistoryModal
+    :show="showBalanceHistoryModal"
+    :user="balanceHistoryUser"
+    :hide-actions="true"
+    @close="closeBalanceHistoryModal"
+  />
 </template>
 
 <script setup lang="ts">
@@ -150,11 +162,13 @@ import { useI18n } from 'vue-i18n'
 
 import { adminAPI, type DailyCheckInAdminQuery, type DailyCheckInAdminRecord } from '@/api/admin'
 import DataTable from '@/components/common/DataTable.vue'
+import UserBalanceHistoryModal from '@/components/admin/user/UserBalanceHistoryModal.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import type { Column } from '@/components/common/types'
 import Icon from '@/components/icons/Icon.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
+import type { AdminUser } from '@/types'
 import { useAppStore } from '@/stores'
 
 type DateMode = 'current' | 'history'
@@ -170,6 +184,8 @@ const pageSize = ref(20)
 const query = ref('')
 const serviceDate = ref('')
 const dateMode = ref<DateMode>('current')
+const showBalanceHistoryModal = ref(false)
+const balanceHistoryUser = ref<AdminUser | null>(null)
 
 const activeModeClass = 'bg-white text-primary-700 shadow-sm dark:bg-dark-700 dark:text-primary-300'
 const inactiveModeClass = 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
@@ -241,6 +257,20 @@ function onPageSizeChange(nextPageSize: number) {
   pageSize.value = nextPageSize
   page.value = 1
   fetchRecords()
+}
+
+async function handleUserClick(userId: number) {
+  try {
+    balanceHistoryUser.value = await adminAPI.users.getById(userId, true)
+    showBalanceHistoryModal.value = true
+  } catch {
+    appStore.showError(t('admin.usage.failedToLoadUser'))
+  }
+}
+
+function closeBalanceHistoryModal() {
+  showBalanceHistoryModal.value = false
+  balanceHistoryUser.value = null
 }
 
 function formatAmount(value: number): string {

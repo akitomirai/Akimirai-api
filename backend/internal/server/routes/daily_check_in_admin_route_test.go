@@ -27,6 +27,10 @@ func (dailyCheckInAdminRouteRepo) ListForAdmin(context.Context, service.DailyChe
 	return []service.DailyCheckInAdminRecord{}, 0, nil
 }
 
+func (dailyCheckInAdminRouteRepo) ListForUser(context.Context, int64, int, int) ([]service.DailyCheckInRecord, int64, error) {
+	return nil, 0, nil
+}
+
 func TestDailyCheckInAdminRouteRequiresAdminMiddleware(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	checkInHandler := adminhandler.NewDailyCheckInHandler(

@@ -702,6 +702,17 @@ func (s *adminServiceImpl) GetUserBalanceHistory(ctx context.Context, userID int
 		}
 		return codes, total, totalRecharged, nil
 	}
+	if codeType == RedeemTypeDailyCheckIn {
+		codes, total, err := s.listDailyCheckInBalanceHistory(ctx, userID, params)
+		if err != nil {
+			return nil, 0, 0, err
+		}
+		totalRecharged, err := s.redeemCodeRepo.SumPositiveBalanceByUser(ctx, userID)
+		if err != nil {
+			return nil, 0, 0, err
+		}
+		return codes, total, totalRecharged, nil
+	}
 
 	if codeType == "" {
 		return s.getAllUserBalanceHistory(ctx, userID, params)
@@ -734,13 +745,54 @@ func (s *adminServiceImpl) getAllUserBalanceHistory(ctx context.Context, userID 
 	if err != nil {
 		return nil, 0, 0, err
 	}
-	codes := mergeBalanceHistoryCodes(redeemCodes, affiliateCodes, params)
+	dailyCodes, dailyTotal, err := s.listDailyCheckInBalanceHistoryForMerge(ctx, userID, needed)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	codes := mergeBalanceHistoryCodes(redeemCodes, affiliateCodes, params, dailyCodes)
 
 	totalRecharged, err := s.redeemCodeRepo.SumPositiveBalanceByUser(ctx, userID)
 	if err != nil {
 		return nil, 0, 0, err
 	}
-	return codes, redeemTotal + affiliateTotal, totalRecharged, nil
+	return codes, redeemTotal + affiliateTotal + dailyTotal, totalRecharged, nil
+}
+
+func (s *adminServiceImpl) listDailyCheckInBalanceHistoryForMerge(ctx context.Context, userID int64, needed int) ([]RedeemCode, int64, error) {
+	if s == nil || s.dailyCheckInService == nil || needed <= 0 {
+		return nil, 0, nil
+	}
+
+	var (
+		out   []RedeemCode
+		total int64
+	)
+	for page := 1; len(out) < needed; page++ {
+		codes, currentTotal, err := s.listDailyCheckInBalanceHistory(
+			ctx,
+			userID,
+			pagination.PaginationParams{Page: page, PageSize: 1000},
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+		total = currentTotal
+		out = append(out, codes...)
+		if len(codes) < 1000 || int64(len(out)) >= total {
+			break
+		}
+	}
+	if len(out) > needed {
+		out = out[:needed]
+	}
+	return out, total, nil
+}
+
+func (s *adminServiceImpl) listDailyCheckInBalanceHistory(ctx context.Context, userID int64, params pagination.PaginationParams) ([]RedeemCode, int64, error) {
+	if s == nil || s.dailyCheckInService == nil {
+		return nil, 0, nil
+	}
+	return s.dailyCheckInService.ListForUserBalanceHistory(ctx, userID, params.Page, params.PageSize)
 }
 
 func (s *adminServiceImpl) listRedeemBalanceHistoryForMerge(ctx context.Context, userID int64, needed int) ([]RedeemCode, int64, error) {
@@ -877,8 +929,11 @@ WHERE user_id = $1
 	return total.Int64, nil
 }
 
-func mergeBalanceHistoryCodes(redeemCodes, affiliateCodes []RedeemCode, params pagination.PaginationParams) []RedeemCode {
+func mergeBalanceHistoryCodes(redeemCodes, affiliateCodes []RedeemCode, params pagination.PaginationParams, extra ...[]RedeemCode) []RedeemCode {
 	combined := append(append([]RedeemCode{}, redeemCodes...), affiliateCodes...)
+	for _, codes := range extra {
+		combined = append(combined, codes...)
+	}
 	sort.SliceStable(combined, func(i, j int) bool {
 		return redeemCodeHistoryTime(combined[i]).After(redeemCodeHistoryTime(combined[j]))
 	})

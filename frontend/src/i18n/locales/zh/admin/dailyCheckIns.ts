@@ -13,6 +13,7 @@ export default {
     user: '用户',
     reward: '奖励',
     balanceChange: '余额变更',
-    checkedInAt: '签到时间'
+    checkedInAt: '签到时间',
+    viewUserHistory: '查看用户 {email} 的余额流水'
   }
 }

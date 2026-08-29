@@ -660,6 +660,8 @@ export default {
       typeConcurrency: 'Concurrency (Redeem)',
       typeAdminConcurrency: 'Concurrency (Admin)',
       typeSubscription: 'Subscription',
+      typeDailyCheckIn: 'Balance (Check-in)',
+      balanceAddedDailyCheckIn: 'Check-in',
       failedToLoadBalanceHistory: 'Failed to load balance history',
       createdAt: 'Created',
       totalRecharged: 'Total Recharged',

@@ -415,7 +415,11 @@ func (s *OpenAIGatewayService) buildUpstreamRequestOpenAIPassthrough(
 		apiKeyID := getAPIKeyIDFromContext(c)
 		// 先保存客户端原始值，再做 compact 补充，避免后续统一隔离时读到已处理的值。
 		clientSessionID := strings.TrimSpace(req.Header.Get("session_id"))
+		if clientSessionID == "" {
+			clientSessionID = strings.TrimSpace(req.Header.Get("session-id"))
+		}
 		clientConversationID := strings.TrimSpace(req.Header.Get("conversation_id"))
+		req.Header.Del("session-id")
 		if isOpenAIResponsesCompactPath(c) {
 			req.Header.Set("accept", "application/json")
 			if req.Header.Get("version") == "" {

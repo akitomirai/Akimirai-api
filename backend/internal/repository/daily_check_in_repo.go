@@ -183,6 +183,71 @@ func (r *dailyCheckInRepository) ListForAdmin(
 	return items, total, nil
 }
 
+func (r *dailyCheckInRepository) ListForUser(
+	ctx context.Context,
+	userID int64,
+	page, pageSize int,
+) ([]service.DailyCheckInRecord, int64, error) {
+	if r == nil || r.db == nil {
+		return nil, 0, errors.New("nil daily check-in database")
+	}
+	if userID <= 0 {
+		return nil, 0, service.ErrUserNotFound
+	}
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if pageSize > 1000 {
+		pageSize = 1000
+	}
+
+	var total int64
+	if err := r.db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM daily_check_ins WHERE user_id = $1
+	`, userID).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count daily check-ins for user history: %w", err)
+	}
+
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT id, user_id, service_date::text, reward_amount::double precision,
+			balance_before::double precision, balance_after::double precision,
+			checked_in_at, created_at
+		FROM daily_check_ins
+		WHERE user_id = $1
+		ORDER BY checked_in_at DESC, id DESC
+		LIMIT $2 OFFSET $3
+	`, userID, pageSize, (page-1)*pageSize)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list daily check-ins for user history: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	items := make([]service.DailyCheckInRecord, 0)
+	for rows.Next() {
+		var item service.DailyCheckInRecord
+		if err := rows.Scan(
+			&item.ID,
+			&item.UserID,
+			&item.ServiceDate,
+			&item.RewardAmount,
+			&item.BalanceBefore,
+			&item.BalanceAfter,
+			&item.CheckedInAt,
+			&item.CreatedAt,
+		); err != nil {
+			return nil, 0, fmt.Errorf("scan daily check-in user history row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterate daily check-in user history: %w", err)
+	}
+	return items, total, nil
+}
+
 func dailyCheckInAdminWhere(filter service.DailyCheckInAdminFilter) (string, []any) {
 	clauses := make([]string, 0, 2)
 	args := make([]any, 0, 2)

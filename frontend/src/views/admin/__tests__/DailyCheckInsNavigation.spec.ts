@@ -23,7 +23,7 @@ describe('admin daily check-in navigation contract', () => {
     const expectedKeys = [
       'title', 'description', 'loadFailed', 'empty', 'currentDay', 'history',
       'keyword', 'keywordPlaceholder', 'serviceDate', 'allHistory', 'user',
-      'reward', 'balanceChange', 'checkedInAt'
+      'reward', 'balanceChange', 'checkedInAt', 'viewUserHistory'
     ]
     const zhMessages = (zh.admin as Record<string, Record<string, string>>).dailyCheckIns
     const enMessages = (en.admin as Record<string, Record<string, string>>).dailyCheckIns

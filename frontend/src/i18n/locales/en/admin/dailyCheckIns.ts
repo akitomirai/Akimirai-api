@@ -13,6 +13,7 @@ export default {
     user: 'User',
     reward: 'Reward',
     balanceChange: 'Balance change',
-    checkedInAt: 'Checked in at'
+    checkedInAt: 'Checked in at',
+    viewUserHistory: 'View balance history for {email}'
   }
 }

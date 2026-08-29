@@ -3032,6 +3032,102 @@ func TestOpenAIBuildUpstreamRequestPreservesCodexIdentityHeaders(t *testing.T) {
 	require.True(t, openai.EvaluateEngineFingerprint(req.Header, body, openai.DefaultEngineFingerprintSignals))
 }
 
+func TestOpenAIBuildUpstreamRequestsForwardSessionIDHeaderVariants(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	body := []byte(`{"model":"gpt-5","input":"hello"}`)
+	account := &Account{Platform: PlatformOpenAI, Type: AccountTypeAPIKey}
+	svc := &OpenAIGatewayService{cfg: &config.Config{
+		Security: config.SecurityConfig{
+			URLAllowlist: config.URLAllowlistConfig{Enabled: false},
+		},
+	}}
+
+	for _, tt := range []struct {
+		name       string
+		build      func(*gin.Context, []byte) (*http.Request, error)
+		headerName string
+	}{
+		{
+			name:       "managed standard path/session-id",
+			headerName: "session-id",
+			build: func(c *gin.Context, body []byte) (*http.Request, error) {
+				return svc.buildUpstreamRequest(c.Request.Context(), c, account, body, "token", false, "", false)
+			},
+		},
+		{
+			name:       "managed standard path/session_id",
+			headerName: "session_id",
+			build: func(c *gin.Context, body []byte) (*http.Request, error) {
+				return svc.buildUpstreamRequest(c.Request.Context(), c, account, body, "token", false, "", false)
+			},
+		},
+		{
+			name:       "passthrough path/session-id",
+			headerName: "session-id",
+			build: func(c *gin.Context, body []byte) (*http.Request, error) {
+				return svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
+			},
+		},
+		{
+			name:       "passthrough path/session_id",
+			headerName: "session_id",
+			build: func(c *gin.Context, body []byte) (*http.Request, error) {
+				return svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(rec)
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+			c.Request.Header.Set(tt.headerName, "codex-session-id")
+			c.Request.Header.Set("X-Unapproved-Header", "must-not-forward")
+
+			req, err := tt.build(c, body)
+			require.NoError(t, err)
+			require.Equal(t, "codex-session-id", req.Header.Get(tt.headerName))
+			require.Empty(t, req.Header.Get("X-Unapproved-Header"))
+		})
+	}
+}
+
+func TestOpenAIBuildUpstreamRequestOAuthIsolatesCodexSessionIDHeader(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	body := []byte(`{"model":"gpt-5","prompt_cache_key":"body-session","input":"hello"}`)
+	account := &Account{
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeOAuth,
+		Credentials: map[string]any{
+			"chatgpt_account_id": "chatgpt-session-test",
+		},
+	}
+	svc := &OpenAIGatewayService{}
+
+	t.Run("managed path drops raw hyphen header", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(rec)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+		c.Request.Header.Set("session-id", "client-session")
+
+		req, err := svc.buildUpstreamRequest(c.Request.Context(), c, account, body, "token", true, "body-session", false)
+		require.NoError(t, err)
+		require.Empty(t, req.Header.Get("session-id"))
+		require.Equal(t, isolateOpenAISessionID(0, "body-session"), req.Header.Get("session_id"))
+	})
+
+	t.Run("passthrough path maps hyphen header through isolation", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(rec)
+		c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", bytes.NewReader(body))
+		c.Request.Header.Set("session-id", "client-session")
+
+		req, err := svc.buildUpstreamRequestOpenAIPassthrough(c.Request.Context(), c, account, body, "token")
+		require.NoError(t, err)
+		require.Empty(t, req.Header.Get("session-id"))
+		require.Equal(t, isolateOpenAISessionID(0, "client-session"), req.Header.Get("session_id"))
+	})
+}
+
 func TestOpenAIBuildUpstreamRequestOAuthOfficialClientOriginatorCompatibility(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

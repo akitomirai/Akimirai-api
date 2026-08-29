@@ -430,14 +430,14 @@ export default {
 
   checkIn: {
     available: '签到',
-    availableTitle: '领取今日签到奖励（1 配额 50% / 2 配额 30% / 3 配额 20%）',
+    availableTitle: '领取今日签到奖励（0.25 余额 50% / 0.5 余额 30% / 1 余额 20%）',
     loading: '查询中...',
     claiming: '签到中...',
-    claimed: '+{amount} 配额',
-    claimedTitle: '今日已签到：+{amount} 配额',
+    claimed: '+{amount} 余额',
+    claimedTitle: '今日已签到：+{amount} 余额',
     error: '重试签到',
     errorTitle: '先刷新签到状态，再重试领取',
-    success: '签到成功：+{amount} 配额',
+    success: '签到成功：+{amount} 余额',
     profileRefreshWarning: '奖励已到账，余额显示稍后自动刷新。'
   },
 

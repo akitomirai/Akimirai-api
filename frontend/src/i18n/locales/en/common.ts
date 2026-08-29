@@ -431,14 +431,14 @@ export default {
 
   checkIn: {
     available: 'Check in',
-    availableTitle: 'Claim today\'s reward (1 quota 50% / 2 quota 30% / 3 quota 20%)',
+    availableTitle: 'Claim today\'s reward (0.25 balance 50% / 0.5 balance 30% / 1 balance 20%)',
     loading: 'Checking...',
     claiming: 'Claiming...',
-    claimed: '+{amount} quota',
-    claimedTitle: 'Checked in today: +{amount} quota',
+    claimed: '+{amount} balance',
+    claimedTitle: 'Checked in today: +{amount} balance',
     error: 'Retry check-in',
     errorTitle: 'Refresh check-in status before retrying',
-    success: 'Check-in complete: +{amount} quota',
+    success: 'Check-in complete: +{amount} balance',
     profileRefreshWarning: 'Reward claimed. The balance display will refresh shortly.'
   },
 

@@ -661,6 +661,8 @@ export default {
       typeConcurrency: '并发（兑换码）',
       typeAdminConcurrency: '并发（管理员调整）',
       typeSubscription: '订阅',
+      typeDailyCheckIn: '余额（签到）',
+      balanceAddedDailyCheckIn: '签到',
       failedToLoadBalanceHistory: '加载余额记录失败',
       createdAt: '创建时间',
       totalRecharged: '总充值',

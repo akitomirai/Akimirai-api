@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import DailyCheckInsView from '../DailyCheckInsView.vue'
 
-const { listDailyCheckIns, showError } = vi.hoisted(() => ({
+const { listDailyCheckIns, getUserById, showError } = vi.hoisted(() => ({
   listDailyCheckIns: vi.fn(),
+  getUserById: vi.fn(),
   showError: vi.fn()
 }))
 
@@ -12,6 +13,9 @@ vi.mock('@/api/admin', () => ({
   adminAPI: {
     dailyCheckIns: {
       list: listDailyCheckIns
+    },
+    users: {
+      getById: getUserById
     }
   }
 }))
@@ -66,6 +70,12 @@ const PaginationStub = {
   `
 }
 
+const UserBalanceHistoryModalStub = {
+  props: ['show', 'user', 'hideActions'],
+  emits: ['close'],
+  template: '<div data-test="balance-history-modal" :data-show="show" :data-user-id="user?.id || null" />'
+}
+
 function mountView() {
   return mount(DailyCheckInsView, {
     global: {
@@ -76,6 +86,7 @@ function mountView() {
         },
         DataTable: DataTableStub,
         Pagination: PaginationStub,
+        UserBalanceHistoryModal: UserBalanceHistoryModalStub,
         Icon: true
       }
     }
@@ -85,10 +96,12 @@ function mountView() {
 describe('admin DailyCheckInsView', () => {
   beforeEach(() => {
     listDailyCheckIns.mockReset()
+    getUserById.mockReset()
     showError.mockReset()
     listDailyCheckIns.mockResolvedValue({
       items: [row], total: 1, page: 1, page_size: 20, pages: 1
     })
+    getUserById.mockResolvedValue({ id: 7, email: row.email, balance: 10, created_at: row.created_at })
   })
 
   it('uses the backend current day, then supports all history and exact dates', async () => {
@@ -130,5 +143,29 @@ describe('admin DailyCheckInsView', () => {
 
     expect(wrapper.get('[data-test="check-in-row"]').text()).toContain('alice@example.com')
     expect(showError).toHaveBeenCalledWith('network down')
+  })
+
+  it('opens the read-only balance history for the clicked user', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    await wrapper.get('[data-test="daily-check-in-user"]').trigger('click')
+    await flushPromises()
+
+    expect(getUserById).toHaveBeenCalledWith(7, true)
+    expect(wrapper.get('[data-test="balance-history-modal"]').attributes('data-show')).toBe('true')
+    expect(wrapper.get('[data-test="balance-history-modal"]').attributes('data-user-id')).toBe('7')
+  })
+
+  it('surfaces a user lookup failure without changing the table', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+    getUserById.mockRejectedValueOnce(new Error('user unavailable'))
+
+    await wrapper.get('[data-test="daily-check-in-user"]').trigger('click')
+    await flushPromises()
+
+    expect(showError).toHaveBeenCalledWith('admin.usage.failedToLoadUser')
+    expect(wrapper.get('[data-test="check-in-row"]').text()).toContain('alice@example.com')
   })
 })

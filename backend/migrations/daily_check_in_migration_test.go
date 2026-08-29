@@ -20,6 +20,16 @@ func TestDailyCheckInMigrationOwnsExactOnceAndBalanceInvariants(t *testing.T) {
 	require.Contains(t, sql, "checked_in_at TIMESTAMPTZ NOT NULL")
 }
 
+func TestDailyCheckInDecimalRewardMigrationPreservesHistoricalRows(t *testing.T) {
+	content, err := FS.ReadFile("200_daily_check_in_decimal_rewards.sql")
+	require.NoError(t, err)
+
+	sql := strings.Join(strings.Fields(string(content)), " ")
+	require.Contains(t, sql, "DROP CONSTRAINT IF EXISTS daily_check_ins_reward_amount_check")
+	require.Contains(t, sql, "ADD CONSTRAINT chk_daily_check_ins_reward_amount")
+	require.Contains(t, sql, "reward_amount IN (0.25, 0.5, 1, 2, 3)")
+}
+
 func TestDailyCheckInAdminIndexesCoverDefaultAndHistoryOrdering(t *testing.T) {
 	content, err := FS.ReadFile("193_daily_check_in_admin_indexes.sql")
 	require.NoError(t, err)

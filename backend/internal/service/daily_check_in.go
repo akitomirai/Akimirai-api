@@ -75,6 +75,7 @@ type DailyCheckInRepository interface {
 	GetForServiceDate(ctx context.Context, userID int64, serviceDate string) (*DailyCheckInRecord, float64, error)
 	Claim(ctx context.Context, claim DailyCheckInClaim) (*DailyCheckInRecord, bool, error)
 	ListForAdmin(ctx context.Context, filter DailyCheckInAdminFilter) ([]DailyCheckInAdminRecord, int64, error)
+	ListForUser(ctx context.Context, userID int64, page, pageSize int) ([]DailyCheckInRecord, int64, error)
 }
 
 // DailyCheckInStatus is the stable API contract used by both GET and POST.
@@ -99,7 +100,7 @@ type DailyCheckInService struct {
 	authInvalidator    APIKeyAuthCacheInvalidator
 	balanceInvalidator dailyCheckInBalanceInvalidator
 	now                func() time.Time
-	reward             func() (int, error)
+	reward             func() (float64, error)
 }
 
 func NewDailyCheckInService(
@@ -124,7 +125,7 @@ func newDailyCheckInService(
 	}
 }
 
-func secureDailyCheckInReward() (int, error) {
+func secureDailyCheckInReward() (float64, error) {
 	value, err := rand.Int(rand.Reader, big.NewInt(dailyCheckInRewardRollCount))
 	if err != nil {
 		return 0, fmt.Errorf("generate daily check-in reward: %w", err)
@@ -132,17 +133,17 @@ func secureDailyCheckInReward() (int, error) {
 	return dailyCheckInRewardFromRoll(value.Int64())
 }
 
-func dailyCheckInRewardFromRoll(roll int64) (int, error) {
+func dailyCheckInRewardFromRoll(roll int64) (float64, error) {
 	if roll < 0 || roll >= dailyCheckInRewardRollCount {
 		return 0, fmt.Errorf("daily check-in reward roll must be between 0 and 99")
 	}
 	if roll < 50 {
-		return 1, nil
+		return 0.25, nil
 	}
 	if roll < 80 {
-		return 2, nil
+		return 0.5, nil
 	}
-	return 3, nil
+	return 1, nil
 }
 
 func dailyCheckInWindow(now time.Time) (string, time.Time) {
@@ -196,8 +197,8 @@ func (s *DailyCheckInService) Claim(ctx context.Context, userID int64) (*DailyCh
 	if err != nil {
 		return nil, err
 	}
-	if reward < 1 || reward > 3 {
-		return nil, fmt.Errorf("daily check-in reward must be between 1 and 3")
+	if reward != 0.25 && reward != 0.5 && reward != 1 {
+		return nil, fmt.Errorf("daily check-in reward must be one of 0.25, 0.5, or 1")
 	}
 
 	record, created, err := s.repo.Claim(ctx, DailyCheckInClaim{
@@ -217,6 +218,52 @@ func (s *DailyCheckInService) Claim(ctx context.Context, userID int64) (*DailyCh
 		s.invalidateBalanceCaches(ctx, userID)
 	}
 	return dailyCheckInStatusFromRecord(record, !created, nextResetAt), nil
+}
+
+// ListForUserBalanceHistory exposes the immutable daily ledger in the common
+// balance-history shape. It is read-only and deliberately excludes recharge
+// accounting fields such as total_recharged.
+func (s *DailyCheckInService) ListForUserBalanceHistory(
+	ctx context.Context,
+	userID int64,
+	page, pageSize int,
+) ([]RedeemCode, int64, error) {
+	if userID <= 0 {
+		return nil, 0, ErrUserNotFound
+	}
+	if s == nil || s.repo == nil {
+		return nil, 0, fmt.Errorf("daily check-in repository is unavailable")
+	}
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	if pageSize > 1000 {
+		pageSize = 1000
+	}
+
+	records, total, err := s.repo.ListForUser(ctx, userID, page, pageSize)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list daily check-in balance history: %w", err)
+	}
+	items := make([]RedeemCode, 0, len(records))
+	for _, record := range records {
+		usedBy := record.UserID
+		usedAt := record.CheckedInAt
+		items = append(items, RedeemCode{
+			ID:        record.ID,
+			Code:      fmt.Sprintf("CHECKIN-%d", record.ID),
+			Type:      RedeemTypeDailyCheckIn,
+			Value:     record.RewardAmount,
+			Status:    StatusUsed,
+			UsedBy:    &usedBy,
+			UsedAt:    &usedAt,
+			CreatedAt: record.CreatedAt,
+		})
+	}
+	return items, total, nil
 }
 
 // ListForAdmin returns immutable ledger rows without participating in claims.

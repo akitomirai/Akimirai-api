@@ -151,3 +151,27 @@ func TestDailyCheckInRepositoryListForAdminAllDatesUsesStablePagination(t *testi
 	require.Zero(t, total)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
+
+func TestDailyCheckInRepositoryListForUserUsesStablePagination(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+
+	checkedAt := time.Date(2026, 7, 21, 3, 4, 5, 0, time.UTC)
+	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM daily_check_ins WHERE user_id = \$1`).
+		WithArgs(int64(7)).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+	mock.ExpectQuery(`SELECT id, user_id, service_date::text, reward_amount::double precision.*FROM daily_check_ins.*WHERE user_id = \$1.*ORDER BY checked_in_at DESC, id DESC.*LIMIT \$2 OFFSET \$3`).
+		WithArgs(int64(7), 20, 20).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"id", "user_id", "service_date", "reward_amount", "balance_before", "balance_after", "checked_in_at", "created_at",
+		}).AddRow(41, 7, "2026-07-21", 0.25, 10.0, 10.25, checkedAt, checkedAt))
+
+	repo := NewDailyCheckInRepository(db)
+	items, total, err := repo.ListForUser(context.Background(), 7, 2, 20)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), total)
+	require.Len(t, items, 1)
+	require.Equal(t, float64(0.25), items[0].RewardAmount)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
