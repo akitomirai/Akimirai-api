@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -63,6 +64,22 @@ func TestUserRepositoryExistsByEmailAliasIgnoresMalformedInput(t *testing.T) {
 	got, err := repo.ExistsByEmailAlias(context.Background(), "not-an-email")
 	require.NoError(t, err)
 	require.False(t, got)
+}
+
+func TestUserRepositoryExistsByEmailAliasScansPastCandidatePage(t *testing.T) {
+	repo, _ := newUserEntRepo(t)
+	ctx := context.Background()
+
+	// Non-Gmail dots are significant to the canonical identity but are removed
+	// by the SQL probe, so these rows fill the first page without being conflicts.
+	for i := 0; i < emailAliasCandidatePageSize; i++ {
+		seedUserForAliasTest(t, repo, fmt.Sprintf("over.flow+noise-%d@qq.com", i))
+	}
+	seedUserForAliasTest(t, repo, "overflow+target@qq.com")
+
+	got, err := repo.ExistsByEmailAlias(ctx, "overflow@qq.com")
+	require.NoError(t, err)
+	require.True(t, got, "a conflicting alias after the first page must still be found")
 }
 
 func TestUserRepositoryCreateWithEmailAliasGuard(t *testing.T) {

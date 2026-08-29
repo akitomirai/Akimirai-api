@@ -1171,6 +1171,12 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 		candidates = prioritizeOpenAICompactAccounts(candidates)
 	}
 	for _, acc := range candidates {
+		if stickySpillover && acc.ID == stickyAccountID {
+			// The sticky account already exhausted its bounded wait queue. It was
+			// intentionally left bound while Layer 2 served a temporary spillover;
+			// do not enqueue the same request again in the fallback layer.
+			continue
+		}
 		fresh := s.resolveFreshSchedulableOpenAIAccount(ctx, acc, platform, requestedModel, false, requiredCapability)
 		if fresh == nil {
 			continue

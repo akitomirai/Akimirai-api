@@ -1061,10 +1061,10 @@ func (r *userRepository) ExistsByEmail(ctx context.Context, email string) (bool,
 	return r.client.User.Query().Where(userEmailLookupPredicate(email)).Exist(ctx)
 }
 
-// emailAliasCandidateLimit 限制一次别名查重最多取回的候选行数。探针都以去点后的
+// emailAliasCandidatePageSize 限制一次别名查重取回的候选行数。探针都以去点后的
 // 本地部分为前缀锚定（见 dotStrippedEmailExpr），正常收件箱的变体只有个位数；
-// 上限只是兜底，避免公开未鉴权的注册/发码端点把大表整张读进内存。
-const emailAliasCandidateLimit = 50
+// 分页既避免公开未鉴权的注册/发码端点把大表整张读进内存，也不会因固定上限漏检冲突。
+const emailAliasCandidatePageSize = 50
 
 // ExistsByEmailAlias 见 service.UserRepository。软删除过滤沿用 ExistsByEmail 的默认行为。
 func (r *userRepository) ExistsByEmailAlias(ctx context.Context, email string) (bool, error) {
@@ -1093,31 +1093,48 @@ func emailAliasOwnerIDWithClient(ctx context.Context, client *dbent.Client, emai
 			dotStrippedEmailLike(escapeLikeWildcards(probe.Local)+"+%@"+escapeLikeWildcards(probe.Domain)),
 		)
 	}
-	candidates, err := client.User.Query().
-		Where(dbuser.Or(preds...)).
-		Limit(emailAliasCandidateLimit).
-		Select(dbuser.FieldID, dbuser.FieldEmail).
-		All(ctx)
-	if err != nil {
-		return 0, false, err
-	}
-
 	// 探针会有过度匹配（点号只在 Gmail 家族无意义），最终判定必须回到完整归一化规则。
 	// 返回“其他用户”优先于当前用户，避免历史重复数据让调用方误判为仅当前用户占用。
 	identity := service.NormalizeEmailForAliasDedup(email)
 	var selfID int64
 	selfExists := false
-	for _, candidate := range candidates {
-		if service.NormalizeEmailForAliasDedup(candidate.Email) != identity {
-			continue
+	var afterID int64
+	for {
+		query := client.User.Query().
+			Where(dbuser.Or(preds...)).
+			Order(dbent.Asc(dbuser.FieldID)).
+			Limit(emailAliasCandidatePageSize)
+		if afterID > 0 {
+			query = query.Where(dbuser.IDGT(afterID))
 		}
-		if candidate.ID != 0 && candidate.ID != currentUserID {
-			return candidate.ID, true, nil
+		candidates, err := query.
+			Select(dbuser.FieldID, dbuser.FieldEmail).
+			All(ctx)
+		if err != nil {
+			return 0, false, err
 		}
-		if candidate.ID == currentUserID {
-			selfID = candidate.ID
-			selfExists = true
+
+		for _, candidate := range candidates {
+			if service.NormalizeEmailForAliasDedup(candidate.Email) != identity {
+				continue
+			}
+			if candidate.ID != 0 && candidate.ID != currentUserID {
+				return candidate.ID, true, nil
+			}
+			if candidate.ID == currentUserID {
+				selfID = candidate.ID
+				selfExists = true
+			}
 		}
+
+		if len(candidates) < emailAliasCandidatePageSize {
+			break
+		}
+		nextAfterID := candidates[len(candidates)-1].ID
+		if nextAfterID <= afterID {
+			break
+		}
+		afterID = nextAfterID
 	}
 	return selfID, selfExists, nil
 }
