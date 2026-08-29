@@ -279,7 +279,7 @@ func TestNormalizeHeaderOverrideCredentials(t *testing.T) {
 	t.Run("rejects blocked headers", func(t *testing.T) {
 		for _, name := range []string{
 			"Authorization", "x-api-key", "Host", "content-length", "Transfer-Encoding",
-			"connection", "accept-encoding", "Sec-WebSocket-Key", "session_id", "X-Session-Affinity", "X-Session-Id",
+			"connection", "accept-encoding", "Sec-WebSocket-Key", "session-id", "session_id", "X-Session-Affinity", "X-Session-Id",
 			"conversation_id", "x-codex-turn-state", "chatgpt-account-id",
 			"Content-Type", "Cookie", "x-goog-api-key",
 			"X-Claude-Code-Session-Id", "x-client-request-id",

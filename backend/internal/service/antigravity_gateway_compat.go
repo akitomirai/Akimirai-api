@@ -122,6 +122,7 @@ func (s *AntigravityGatewayService) ForwardAsResponses(
 	if err != nil {
 		return nil, s.writeAntigravityCompatError(c, http.StatusBadRequest, "invalid_request_error", err.Error())
 	}
+	preserveResponsesTokenLimit(&request, claudeRequest)
 	claudeRequest.Stream = request.Stream
 	claudeBody, err := json.Marshal(claudeRequest)
 	if err != nil {
@@ -160,8 +161,19 @@ func preserveChatCompletionTokenLimit(request *apicompat.ChatCompletionsRequest,
 		limit = request.MaxCompletionTokens
 	}
 	if limit != nil && *limit > 0 {
-		claudeRequest.MaxTokens = min(*limit, antigravityCompatMaxTokens)
+		claudeRequest.MaxTokens = clampAntigravityCompatTokenLimit(*limit)
 	}
+}
+
+func preserveResponsesTokenLimit(request *apicompat.ResponsesRequest, claudeRequest *apicompat.AnthropicRequest) {
+	if request == nil || claudeRequest == nil || request.MaxOutputTokens == nil || *request.MaxOutputTokens <= 0 {
+		return
+	}
+	claudeRequest.MaxTokens = clampAntigravityCompatTokenLimit(*request.MaxOutputTokens)
+}
+
+func clampAntigravityCompatTokenLimit(limit int) int {
+	return min(limit, antigravityCompatMaxTokens)
 }
 
 func (s *AntigravityGatewayService) forwardAntigravityCompat(
